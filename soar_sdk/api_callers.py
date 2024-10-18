@@ -1,0 +1,150 @@
+import typing
+
+import phantom.app as phantom
+import requests
+from bs4 import BeautifulSoup
+
+if typing.TYPE_CHECKING:
+    from soar_sdk.connector import AppConnector
+
+
+class RestApiCaller:  # pragma: no cover
+    """
+    This is the legacy REST API calling functionality
+    which was provided by default with the App Wizard.
+    It can be used for very basic API calls with
+    the asset configuration, given the app meta file
+    will provide such.
+    """
+
+    def __init__(self, connector: "AppConnector"):
+        self.connector = connector
+
+    @staticmethod
+    def process_empty_response(response, action_result):  # pragma: no cover
+        if response.status_code == 200:
+            return phantom.APP_SUCCESS, {}
+
+        return (
+            action_result.set_status(
+                phantom.APP_ERROR,
+                "Empty response and no information in the header",
+            ),
+            None,
+        )
+
+    @staticmethod
+    def process_html_response(response, action_result):  # pragma: no cover
+        # An html response, treat it like an error
+        status_code = response.status_code
+
+        try:
+            soup = BeautifulSoup(response.text, "html.parser")
+            error_text = soup.text
+            split_lines = error_text.split("\n")
+            split_lines = [x.strip() for x in split_lines if x.strip()]
+            error_text = "\n".join(split_lines)
+        except Exception:
+            error_text = "Cannot parse error details"
+
+        message = "Status Code: {0}. Data from server:\n{1}\n".format(
+            status_code, error_text
+        )
+
+        message = message.replace("{", "{{").replace("}", "}}")
+        return action_result.set_status(phantom.APP_ERROR, message), None
+
+    @staticmethod
+    def process_json_response(r, action_result):  # pragma: no cover
+        # Try a json parse
+        try:
+            resp_json = r.json()
+        except Exception as e:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "Unable to parse JSON response. Error: {0}".format(str(e)),
+                ),
+                None,
+            )
+
+        # Please specify the status codes here
+        if 200 <= r.status_code < 399:
+            return phantom.APP_SUCCESS, resp_json
+
+        # You should process the error returned in the json
+        message = "Error from server. Status Code: {0} Data from server: {1}".format(
+            r.status_code, r.text.replace("{", "{{").replace("}", "}}")
+        )
+
+        return action_result.set_status(phantom.APP_ERROR, message), None
+
+    @classmethod
+    def process_response(cls, r, action_result):  # pragma: no cover
+        # store the r_text in debug data, it will get dumped in the logs if the action fails
+        if hasattr(action_result, "add_debug_data"):
+            action_result.add_debug_data({"r_status_code": r.status_code})
+            action_result.add_debug_data({"r_text": r.text})
+            action_result.add_debug_data({"r_headers": r.headers})
+
+        # Process each 'Content-Type' of response separately
+
+        # Process a json response
+        if "json" in r.headers.get("Content-Type", ""):
+            return cls.process_json_response(r, action_result)
+
+        # Process an HTML response, Do this no matter what the api talks.
+        # There is a high chance of a PROXY in between phantom and the rest of
+        # world, in case of errors, PROXY's return HTML, this function parses
+        # the error and adds it to the action_result.
+        if "html" in r.headers.get("Content-Type", ""):
+            return cls.process_html_response(r, action_result)
+
+        # it's not content-type that is to be parsed, handle an empty response
+        if not r.text:
+            return cls.process_empty_response(r, action_result)
+
+        # everything else is actually an error at this point
+        message = "Can't process response from server. Status Code: {0} Data from server: {1}".format(
+            r.status_code, r.text.replace("{", "{{").replace("}", "}}")
+        )
+
+        return action_result.set_status(phantom.APP_ERROR, message), None
+
+    def call(self, endpoint, action_result, method="get", **kwargs):  # pragma: no cover
+        # **kwargs can be any additional parameters that requests.request accepts
+
+        config = self.connector.get_config()
+
+        resp_json = None
+
+        try:
+            request_func = getattr(requests, method)
+        except AttributeError:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR, "Invalid method: {0}".format(method)
+                ),
+                resp_json,
+            )
+
+        # Create a URL to connect to
+        url = config.get("base_url") + endpoint
+
+        try:
+            r = request_func(
+                url,
+                # auth=(username, password),  # basic authentication
+                verify=config.get("verify_server_cert", False),
+                **kwargs,
+            )
+        except Exception as e:
+            return (
+                action_result.set_status(
+                    phantom.APP_ERROR,
+                    "Error Connecting to server. Details: {0}".format(str(e)),
+                ),
+                resp_json,
+            )
+
+        return self.process_response(r, action_result)

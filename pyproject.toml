@@ -1,0 +1,60 @@
+[tool.poetry]
+name = "Splunk SOAR App SDK"
+version = "0.1.0"
+description = "A framework for developing and testing the Splunk SOAR Apps"
+authors = [
+    "Janusz Kamieński <jkamienski@splunk.com>",
+]
+readme = "README.md"
+homepage = "https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html"
+packages = [{include = "soar_sdk"}]
+
+[tool.poetry.scripts]
+soarapps = "soar_sdk.cli.cli:main"
+
+[tool.poetry.dependencies]
+python = ">=3.9, <3.10"
+# phantom dependencies
+beautifulsoup4 = "4.10.0"
+pydantic = "1.9.0"
+requests = "2.32.3"
+responses = "0.22.0"
+distro = "1.8.0"
+pytest = "7.4.2"
+simplejson = "3.17.2"
+typer = "^0.9.0"
+toml = "^0.10.2"
+
+[tool.poetry.group.dev.dependencies]
+poetry = "1.8.2"
+coverage = "5.2.1"
+ipython = "8.18.1"
+ipdb = "^0.13.13"
+mypy = "1.2.0"
+isort = "^5.13.2"
+black = "^24.4.2"
+pytest-mock = "^3.14.0"
+pytest-watch = "^4.2.0"
+pre-commit = "3.7.0"
+types-urllib3 = "^1.26.25.13"
+types-requests = "^2.31.0.1"
+types-setuptools = "^68.0.0.0"
+types-beautifulsoup4 = "^4.12.0.5"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[virtualenvs]
+in-project = true
+
+[tool.black]
+target-version = ['py39']
+
+[tool.isort]
+profile = "black"
+py_version=39
+multi_line_output = 3
+
+[[tool.mypy.overrides]]
+disallow_untyped_defs = false

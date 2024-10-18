@@ -1,0 +1,66 @@
+# By default, run each hook only in the standard pre-commit stage
+default_stages: [commit]
+
+# Pre-commit hooks.   Configuration examples at https://pre-commit.com/
+repos:
+  # Remove trailing whitespace
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+
+  # Add missing ticket name if missing
+  - repo: https://github.com/ivellios/pre_ticket
+    rev: v1.1.0
+    hooks:
+      - id: pre_ticket
+        language_version: python3.9
+        stages: [commit-msg]
+        args: ['--regex=[a-zA-Z]+/(?P<ticket>\w+-\d+)-.*', '--format={ticket} - {message}']
+
+  # Ensure that merge markers are not committed
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-merge-conflict
+
+  # Ensure that YAML files are well-formed
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-yaml
+        args:
+          - --unsafe
+
+  # Ensure that files end in exactly one newline
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: end-of-file-fixer
+
+  # python formatter (black)
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+
+  # python linter (ruff)
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.3.7'
+    hooks:
+      - id: ruff
+
+  # python type checker
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.9.0
+    hooks:
+    - id: mypy
+      language: system
+      exclude: .*tests/.*
+
+  # isort
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        name: isort (python)
