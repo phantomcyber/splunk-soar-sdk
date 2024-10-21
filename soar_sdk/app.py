@@ -101,7 +101,9 @@ class App:
                 """
 
                 if not params:  # TODO: add tests coverage here (None, {} etc.)
-                    result = function(self, *args, **kwargs)
+                    result = function(
+                        self, {}, *args, **kwargs
+                    )  # FIXME: params should probably not be empty entirely
                 else:
                     if isinstance(params, Params):
                         parsed_params = params
