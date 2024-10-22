@@ -1,8 +1,4 @@
 import json
-
-# import sys
-# import types
-# from pprint import pprint
 from unittest import mock
 
 import pytest
@@ -11,17 +7,6 @@ from example_app.app import app
 from soar_sdk.app import App
 from soar_sdk.app_runner import AppRunner
 from soar_sdk.connector import AppConnector
-
-# FIXME: we need to provide proper mocks for the phantom library
-#
-# app_module = __import__("tests.mocks.phantom.app", fromlist=["tests.mocks.phantom"])
-# action_result_module = __import__("tests.mocks.phantom.action_result", fromlist=["tests.mocks.phantom"])
-# base_connector_module = __import__("tests.mocks.phantom.base_connector", fromlist=["tests.mocks.phantom.base_connector"])
-# sys.modules["phantom.action_result"] = action_result_module
-# sys.modules["phantom.app"] = app_module
-# sys.modules["phantom.base_connector"] = base_connector_module
-# sys.modules["phantom"] = types.ModuleType("phantom")
-#
 
 
 @pytest.fixture
