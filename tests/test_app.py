@@ -11,7 +11,7 @@ def test_app_initialization(simple_app):
 
 def test_app_debug(example_app):
     with mock.patch.object(AppConnector, attribute="debug_print") as mocked:
-        example_app.debug("Test", "Debug printing data")
+        example_app.manager.debug("Test", "Debug printing data")
         assert mocked.called
 
 

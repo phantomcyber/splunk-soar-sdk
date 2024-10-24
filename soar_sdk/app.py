@@ -3,61 +3,33 @@ import sys
 from typing import Any, Optional, Type, Union
 
 from soar_sdk.action_results import ActionResult
+from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app_runner import AppRunner
-from soar_sdk.connector import AppConnector
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
-from soar_sdk.types import MetaDescribed, meta_described
+from soar_sdk.types import meta_described
 
 
 class App:
-    def __init__(self, connector_class=AppConnector):
-        self.connector = connector_class(self)
-
-        self._actions: dict[str, MetaDescribed] = {}
-
-    def add_result(self, action_result: ActionResult):
-        self.connector.add_action_result(action_result)
-
-    def get_results(self):
-        return self.connector.get_action_results()
-
-    def get_soar_base_url(self):
-        return self.connector.get_soar_base_url()
-
-    def get_action(self, identifier: str):
-        return self.get_actions()[identifier]
-
-    def get_actions(self):
-        return self._actions
+    def __init__(self, legacy_connector_class=None):
+        self.manager = ActionsManager(legacy_connector_class)
 
     def run(self):
+        """
+        This is just a handy shortcut for reducing imports
+        in the main app code. It uses AppRunner to run locally
+        app the same way as main() in the legacy connectors.
+        """
         runner = AppRunner(self)
         runner.run()
 
-    def handle(self, input_data: str, handle: Optional[Any] = None):
+    def handle(self, input_data: str, handle: Optional[Any] = None) -> str:
         """
         Runs handling of the input data on connector
         """
-        self.connector.print_progress_message = True
-        return self.connector.handle(input_data, handle)
+        return self.manager.handle(input_data, handle)
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
-
-    def set_action(
-        self, action_identifier: str, wrapped_function: MetaDescribed
-    ) -> None:
-        """
-        Sets the handler for the function that can be called by the BaseConnector.
-        The wrapped function called by the BaseConnector will be called using the old
-        backward-compatible declaration.
-
-        :param action_identifier: name of the action
-        :param wrapped_function: the wrapped function that should
-                                 be called by the BaseConnector
-        :return: None
-        """
-        self._actions[action_identifier] = wrapped_function
 
     def action(
         self,
@@ -119,11 +91,11 @@ class App:
                 # partial backward compatibility for ease of existing
                 # apps migration.
                 if isinstance(result, ActionResult):
-                    self.connector.add_action_result(result)
+                    self.manager.soar_client.add_result(result)
                     return result.get_status()
                 if isinstance(result, tuple) and 2 <= len(result) <= 3:
                     action_result = ActionResult(*result)
-                    self.connector.add_action_result(action_result)
+                    self.manager.soar_client.add_result(action_result)
                     return result[0]
                 return result
 
@@ -169,7 +141,7 @@ class App:
             )
             inner.params_klass = the_params_klass
 
-            self.set_action(action_identifier, inner)
+            self.manager.set_action(action_identifier, inner)
 
             if "pytest" in sys.modules and function.__name__.startswith("test_"):
                 # when creating action function starting with "test_"
@@ -184,10 +156,3 @@ class App:
             return inner
 
         return app_action
-
-    def debug(
-        self,
-        tag: str,
-        dump_object: Union[str, list, dict, ActionResult, Exception] = "",
-    ):
-        self.connector.debug_print(tag, dump_object)

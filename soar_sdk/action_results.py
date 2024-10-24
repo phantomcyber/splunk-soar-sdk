@@ -17,4 +17,4 @@ class SuccessActionResult(ActionResult):
 
 class ErrorActionResult(ActionResult):
     def __init__(self, message, param: Optional[dict] = None) -> None:
-        super().__init__(True, message, param)
+        super().__init__(False, message, param)

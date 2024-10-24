@@ -10,13 +10,13 @@ from soar_sdk.connector import AppConnector
 
 
 @pytest.fixture
-def example_app():
+def example_app() -> App:
     app.connector._load_app_json = mock.Mock(return_value=True)
     app.connector.get_state_dir = mock.Mock(return_value="/tmp/")
     app.connector._load_app_json = mock.Mock(return_value=True)
 
     with open("example_app/app.json") as app_json:
-        app.connector._BaseConnector__app_json = json.load(app_json)
+        app.connector.connector._BaseConnector__app_json = json.load(app_json)
 
     return app
 
@@ -27,23 +27,23 @@ def default_args():
 
 
 @pytest.fixture
-def simple_app():
+def simple_app() -> App:
     return App()
 
 
 @pytest.fixture
-def simple_connector(simple_app):
+def simple_connector(simple_app) -> AppConnector:
     return AppConnector(simple_app)
 
 
 @pytest.fixture
-def simple_runner(simple_app, default_args):
+def simple_runner(simple_app, default_args) -> AppRunner:
     with mock.patch("argparse.ArgumentParser.parse_args", default_args):
         return AppRunner(simple_app)
 
 
 @pytest.fixture
-def simple_action_input():
+def simple_action_input() -> str:
     return json.dumps(
         {
             "asset_id": 1,
