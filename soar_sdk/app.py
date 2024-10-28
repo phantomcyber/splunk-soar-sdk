@@ -90,12 +90,13 @@ class App:
                 # This is to simplify ActionResult use, but also keep
                 # partial backward compatibility for ease of existing
                 # apps migration.
+                soar_client = self.manager.soar_client
                 if isinstance(result, ActionResult):
-                    self.manager.soar_client.add_result(result)
+                    soar_client.add_result(result)
                     return result.get_status()
                 if isinstance(result, tuple) and 2 <= len(result) <= 3:
                     action_result = ActionResult(*result)
-                    self.manager.soar_client.add_result(action_result)
+                    soar_client.add_result(action_result)
                     return result[0]
                 return result
 
@@ -143,16 +144,20 @@ class App:
 
             self.manager.set_action(action_identifier, inner)
 
-            if "pytest" in sys.modules and function.__name__.startswith("test_"):
-                # when creating action function starting with "test_"
-                # it will confuse pytest into using it as a test
-                # when importing it in the test files
-                # marking it for skip, solves the issue
-                # TODO: try adding some test on this
-                import pytest
-
-                pytest.mark.skip(inner)
+            self._dev_skip_pytest_decorated_function(function, inner)
 
             return inner
 
         return app_action
+
+    @staticmethod
+    def _dev_skip_pytest_decorated_function(function, inner):
+        if "pytest" in sys.modules and function.__name__.startswith("test_"):
+            # when creating action function starting with "test_"
+            # it will confuse pytest into using it as a test
+            # when importing it in the test files
+            # marking it for skip, solves the issue
+            # TODO: try adding some test on this
+            import pytest
+
+            pytest.mark.skip(inner)

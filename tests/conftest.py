@@ -11,14 +11,19 @@ from soar_sdk.connector import AppConnector
 
 @pytest.fixture
 def example_app() -> App:
-    app.connector._load_app_json = mock.Mock(return_value=True)
-    app.connector.get_state_dir = mock.Mock(return_value="/tmp/")
-    app.connector._load_app_json = mock.Mock(return_value=True)
+    app.manager.soar_client._load_app_json = mock.Mock(return_value=True)
+    app.manager.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
+    app.manager.soar_client._load_app_json = mock.Mock(return_value=True)
 
     with open("example_app/app.json") as app_json:
-        app.connector.connector._BaseConnector__app_json = json.load(app_json)
+        app.manager.soar_client._BaseConnector__app_json = json.load(app_json)
 
     return app
+
+
+@pytest.fixture
+def example_manager(example_app):
+    return example_app.manager
 
 
 @pytest.fixture
@@ -33,7 +38,12 @@ def simple_app() -> App:
 
 @pytest.fixture
 def simple_connector(simple_app) -> AppConnector:
-    return AppConnector(simple_app)
+    return AppConnector(simple_app.manager)
+
+
+@pytest.fixture
+def app_connector(simple_app) -> AppConnector:
+    return AppConnector(simple_app.manager)
 
 
 @pytest.fixture

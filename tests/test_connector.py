@@ -1,44 +1,45 @@
 from unittest import mock
 
-import phantom.app as phantom_app
-
 from soar_sdk.connector import AppConnector
 
 
-def test_connector_handle_sets_actions_and_runs_internal_handle(simple_connector):
-    simple_connector._handle_action = mock.Mock()  # type: ignore[method-assign]
+def test_connector_handle_sets_actions_and_runs_internal_handle(app_connector):
+    app_connector._handle_action = mock.Mock()  # type: ignore[method-assign]
 
-    simple_connector.app.set_action("action_handler1", mock.Mock())
-    simple_connector.app.set_action("action_handler2", mock.Mock())
+    app_connector.actions_manager.set_action("action_handler1", mock.Mock())
+    app_connector.actions_manager.set_action("action_handler2", mock.Mock())
 
     in_json = "{}"
 
-    simple_connector.handle(in_json, None)  # type: ignore[arg-type]
+    app_connector.handle(in_json, None)  # type: ignore[arg-type]
 
-    assert simple_connector._handle_action.call_count == 1
+    assert app_connector._handle_action.call_count == 1
 
 
-def test_connector_handle_action_runs_action_from_handlers(simple_connector):
+def test_connector_handle_action_runs_action_from_handlers(app_connector):
     mocked_handler = mock.Mock()
 
-    simple_connector.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
+    app_connector.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
         return_value="testing_handler"
     )
-    simple_connector.app.get_actions = mock.Mock(
+    app_connector.actions_manager.get_actions = mock.Mock(
         return_value={"testing_handler": mocked_handler}
     )
 
-    simple_connector.handle_action({})
+    app_connector.handle_action({})
 
     assert mocked_handler.call_count == 1
 
 
-def test_connector_handle_action_handler_not_existing(simple_connector):
-    simple_connector.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
+def test_connector_handle_action_handler_not_existing(app_connector):
+    app_connector.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
         return_value="not_existing_handler"
     )
 
-    assert simple_connector.handle_action({}) == phantom_app.APP_ERROR
+    assert app_connector.handle_action({}) == (
+        False,
+        "Missing handler for action not_existing_handler",
+    )
 
 
 def test_connector_get_phantom_base_url():

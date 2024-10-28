@@ -11,7 +11,7 @@ class SampleActionParams(Params):
     field1: int = Param(0, "Some description")
 
 
-def test_app_action_run_use_empty_params_definition(example_app):
+def test_app_action_run_use_empty_params_definition(example_app: App):
     @example_app.action()
     def foo(ctx: App, params: Params):
         assert True
@@ -51,10 +51,9 @@ def test_app_action_handling_simple_params_conversion(example_app):
         assert params.field1 == 5
 
     with mock.patch.object(
-        example_app.connector, "get_action_identifier", return_value="foo"
+        example_app.manager.soar_client, "get_action_identifier", return_value="foo"
     ):
-        example_app.connector._actions = example_app._actions
-        example_app.connector.handle_action({"field1": 5})
+        example_app.manager.soar_client.handle_action({"field1": 5})
 
 
 def test_app_action_handling_validation_error_raised(example_app):
@@ -65,7 +64,10 @@ def test_app_action_handling_validation_error_raised(example_app):
 
     with pytest.raises(ValidationError):
         with mock.patch.object(
-            example_app.connector, "get_action_identifier", return_value="foo"
+            example_app.manager.soar_client, "get_action_identifier", return_value="foo"
         ):
-            example_app.connector._actions = example_app._actions
-            example_app.connector.handle_action({"field1": "five"})
+            example_app.manager.soar_client.handle_action({"field1": "five"})
+
+
+# TODO:
+## ctx of the soar_client should be provided
