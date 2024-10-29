@@ -1,18 +1,116 @@
+from unittest import mock
+
 import pytest
+
+from soar_sdk.abstract import SOARClient
+from soar_sdk.params import Param, Params
+
+
+class SampleParams(Params):
+    int_value: int = Param(0, "Integer Value", data_type="numeric")
+    str_value: str = Param(1, "String Value")
+    pass_value: str = Param(2, "Password Value", data_type="password")
+    bool_value: bool = Param(3, "Boolean Value", data_type="boolean")
+
+
+@pytest.fixture
+def sample_params() -> SampleParams:
+    return SampleParams(
+        int_value=1,
+        str_value="test",
+        pass_value="<PASSWORD>",
+        bool_value=True,
+    )
+
+
+def test_action_decoration_fails_without_params(simple_app):
+    with pytest.raises(TypeError):
+
+        @simple_app.action()
+        def action_function_no_params():
+            pass
+
+
+def test_action_decoration_fails_without_params_type_set(simple_app):
+    with pytest.raises(TypeError) as exception_info:
+
+        @simple_app.action()
+        def action_function_no_params_type(params):
+            pass
+
+    assert "has no params type set" in str(exception_info)
+
+
+def test_action_decoration_fails_with_params_not_inheriting_from_Params(simple_app):
+    class SomeClass:
+        pass
+
+    with pytest.raises(TypeError) as exception_info:
+
+        @simple_app.action()
+        def action_with_bad_params_type(params: SomeClass):
+            pass
+
+    assert "Proper params type for action" in str(exception_info)
+
+
+def test_action_run_fails_with_wrong_params_type_passed(simple_app):
+    @simple_app.action()
+    def action_example(params: Params):
+        pass
+
+    with pytest.raises(TypeError) as exception_info:
+        action_example("")
+
+    assert "Provided params are not inheriting from Params" in str(exception_info)
+
+
+def test_action_call_with_params(simple_app, sample_params):
+    @simple_app.action()
+    def action_function(params: SampleParams, client: SOARClient):
+        assert params.int_value == 1
+        assert params.str_value == "test"
+        assert params.pass_value == "<PASSWORD>"
+        assert params.bool_value
+        client.debug("TAG", "Progress was made")
+
+    client_mock = mock.Mock()
+    client_mock.debug = mock.Mock()
+
+    action_function(sample_params, client=client_mock)
+
+    assert client_mock.debug.call_count == 1
+
+
+def test_action_call_with_params_dict(simple_app, sample_params):
+    @simple_app.action()
+    def action_function(params: SampleParams, client: SOARClient):
+        assert params.int_value == 1
+        assert params.str_value == "test"
+        assert params.pass_value == "<PASSWORD>"
+        assert params.bool_value
+        client.debug("TAG", "Progress was made")
+
+    client_mock = mock.Mock()
+    client_mock.debug = mock.Mock()
+
+    action_function(sample_params, client=client_mock)
+
+    assert client_mock.debug.call_count == 1
 
 
 def test_app_action_simple_declaration(simple_app):
     @simple_app.action()
-    def some_handler(ctx): ...
+    def some_handler(params: Params): ...
 
     assert len(simple_app.manager.get_actions()) == 1
     assert "some_handler" in simple_app.manager.get_actions()
 
 
-def test_action_decoration_with_meta(example_app):
+def test_action_decoration_with_meta(simple_app):
 
-    @example_app.action(name="Test Function", identifier="test_function_id")
-    def foo(ctx):
+    @simple_app.action(name="Test Function", identifier="test_function_id")
+    def foo(params: Params):
         """
         This action does nothing for now.
         """
@@ -34,49 +132,35 @@ def test_action_decoration_with_meta(example_app):
 
     assert foo.meta.action == "Test Function"
     assert foo.meta.description == "This action does nothing for now."
-    assert example_app.manager.get_action("test_function_id") == foo
+    assert simple_app.manager.get_action("test_function_id") == foo
 
 
-def test_action_decoration_uses_function_name_for_action_name(example_app):
+def test_action_decoration_uses_function_name_for_action_name(simple_app):
 
-    @example_app.action()
-    def action_function(ctx):
+    @simple_app.action()
+    def action_function(params: Params):
         pass
 
     assert action_function.meta.action == "action function"
 
 
-def test_action_decoration_uses_meta_identifier_for_action_name(example_app):
+def test_action_decoration_uses_meta_identifier_for_action_name(simple_app):
 
-    @example_app.action(identifier="some_identifier")
-    def action_function(ctx):
+    @simple_app.action(identifier="some_identifier")
+    def action_function(params: Params):
         pass
 
     assert action_function.meta.action == "some identifier"
 
 
-def test_action_takes_no_app_ctx(example_app):
+def test_action_with_mocked_client(simple_app, sample_params):
+    @simple_app.action()
+    def action_function(params: SampleParams, client: SOARClient):
+        client.save_progress("Progress was made")
 
-    with pytest.raises(TypeError):
+    client_mock = mock.Mock()
+    client_mock.save_progress = mock.Mock()
 
-        @example_app.action()
-        def action_with_no_ctx():
-            pass
+    action_function(sample_params, client=client_mock)
 
-
-def test_action_decorated_function_has_no_pydantic_model_specified(example_app):
-
-    with pytest.raises(TypeError):
-
-        @example_app.action()
-        def action_with_no_typehints(ctx, params):
-            pass
-
-
-def test_action_decorated_function_has_params_non_pydantic_model_type(example_app):
-
-    with pytest.raises(TypeError):
-
-        @example_app.action()
-        def action_with_no_pydantic_model_typehint(ctx, params: int):
-            pass
+    assert client_mock.save_progress.call_count == 1

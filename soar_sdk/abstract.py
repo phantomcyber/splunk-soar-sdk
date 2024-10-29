@@ -49,6 +49,14 @@ class SOARClient(ABC):
     def get_results(self):
         pass
 
+    def save_progress(
+        self,
+        progress_str_const: str,
+        *unnamed_format_args: Any,
+        **named_format_args: Any,
+    ):
+        pass
+
     @abstractmethod
     def debug(
         self,

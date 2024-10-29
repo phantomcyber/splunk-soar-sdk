@@ -1,53 +1,31 @@
 from unittest import mock
 
-import pytest
-from pydantic import ValidationError
-
 from soar_sdk.app import App
-from soar_sdk.params import Param, Params
-
-
-class SampleActionParams(Params):
-    field1: int = Param(0, "Some description")
+from soar_sdk.params import Params
+from tests.stubs import SampleActionParams
 
 
 def test_app_action_run_use_empty_params_definition(example_app: App):
+
     @example_app.action()
-    def foo(ctx: App, params: Params):
+    def foo(params: Params):
         assert True
 
-    foo({})
+    foo(Params())
 
 
-def test_app_action_run_use_params_definition_from_typehints(example_app):
+def test_app_action_run_use_params_model(example_app):
     @example_app.action()
-    def foo(ctx: App, params: SampleActionParams):
+    def foo(params: SampleActionParams):
         assert params.field1 == 5
 
-    foo({"field1": 5})
-
-
-def test_app_action_run_use_explicit_params_definition(example_app):
-    @example_app.action()
-    def foo(ctx: App, params: SampleActionParams):
-        assert params.field1 == 5
-
-    foo({"field1": 5})
-
-
-def test_app_action_run_validates_params(example_app):
-    @example_app.action(params_klass=SampleActionParams)
-    def foo(ctx, params):
-        assert params.field1 == 5
-
-    with pytest.raises(ValidationError):
-        foo({"field1": "five"})
+    foo(SampleActionParams(field1=5))
 
 
 def test_app_action_handling_simple_params_conversion(example_app):
 
     @example_app.action()
-    def foo(ctx, params: SampleActionParams):
+    def foo(params: SampleActionParams):
         assert params.field1 == 5
 
     with mock.patch.object(
@@ -59,15 +37,12 @@ def test_app_action_handling_simple_params_conversion(example_app):
 def test_app_action_handling_validation_error_raised(example_app):
 
     @example_app.action(params_klass=SampleActionParams)
-    def foo(ctx, params: SampleActionParams):
+    def foo(params: SampleActionParams):
         assert params.field1 == 5
 
-    with pytest.raises(ValidationError):
-        with mock.patch.object(
-            example_app.manager.soar_client, "get_action_identifier", return_value="foo"
-        ):
-            example_app.manager.soar_client.handle_action({"field1": "five"})
+    with mock.patch.object(
+        example_app.manager.soar_client, "get_action_identifier", return_value="foo"
+    ):
+        success, msg = example_app.manager.soar_client.handle_action({"field1": "five"})
 
-
-# TODO:
-## ctx of the soar_client should be provided
+    assert not success

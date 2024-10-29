@@ -43,6 +43,16 @@ class LegacyConnectorAdapter(SOARClient):
     def get_results(self):
         return self.connector.get_action_results()
 
+    def save_progress(
+        self,
+        progress_str_const: str,
+        *unnamed_format_args: Any,
+        **named_format_args: Any,
+    ):
+        return self.connector.save_progress(
+            progress_str_const, *unnamed_format_args, **named_format_args
+        )
+
     def debug(
         self,
         tag: str,

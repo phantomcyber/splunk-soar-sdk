@@ -2,6 +2,7 @@ import inspect
 import sys
 from typing import Any, Optional, Type, Union
 
+from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app_runner import AppRunner
@@ -47,8 +48,6 @@ class App:
         Generates a decorator for the action handling function and decorates it
         by passing action specific meta information.
         """
-        # TODO: Consider some refactoring and extracting parts of the code
-        #       for better readability.
 
         def app_action(function):
             """
@@ -57,9 +56,41 @@ class App:
             """
             action_identifier = identifier or function.__name__
 
+            action_name = name or str(action_identifier.replace("_", " "))
+
+            spec = inspect.getfullargspec(function)
+
+            # validating params argument
+            the_params_klass = params_klass or Params
+            if params_klass is None:
+                # try to fetch from the function args typehints
+                if not len(spec.args):
+                    raise TypeError(
+                        "Action function must accept at least the params "
+                        "positional argument"
+                    )
+                params_arg = spec.args[0]
+                annotated_params_type: Optional[type] = spec.annotations.get(params_arg)
+                if annotated_params_type is None:
+                    raise TypeError(
+                        f"Action {action_name} has no params type set. "
+                        "The params argument must provide type which is derived "
+                        "from Params class"
+                    )
+                if issubclass(annotated_params_type, Params):
+                    the_params_klass = annotated_params_type
+                else:
+                    raise TypeError(
+                        f"Proper params type for action {action_name} is not "
+                        f"derived from Params class."
+                    )
+
+            is_client_expected = len(spec.args) > 1 and "client" in spec.args
+
             @meta_described
             def inner(
-                params: Optional[Union[Params, dict[str, Any]]] = None,
+                params: Optional[Union[Params, dict[str, Any]]],
+                client: SOARClient = self.manager.soar_client,
                 *args,
                 **kwargs,
             ):  # pragma: no cover
@@ -72,63 +103,32 @@ class App:
                 class for backward compatibility.
                 """
 
-                if not params:  # TODO: add tests coverage here (None, {} etc.)
-                    result = function(
-                        self, {}, *args, **kwargs
-                    )  # FIXME: params should probably not be empty entirely
+                if isinstance(params, Params):
+                    action_params = params
                 else:
-                    if isinstance(params, Params):
-                        parsed_params = params
-                    else:
-                        # Params model class is defined in the meta
-                        # try parsing the object using pydantic functionality
-                        params_expected_klass: Type[Params] = inner.params_klass
-                        parsed_params = params_expected_klass.parse_obj(params)
-                    result = function(self, parsed_params, *args, **kwargs)
+                    raise TypeError(
+                        f"Provided params are not inheriting from Params class for action {action_name}"
+                    )
+
+                if is_client_expected:
+                    result = function(action_params, client, *args, **kwargs)
+                else:
+                    result = function(action_params, *args, **kwargs)
 
                 # Handling multiple ways of returning response from action
                 # This is to simplify ActionResult use, but also keep
                 # partial backward compatibility for ease of existing
                 # apps migration.
-                soar_client = self.manager.soar_client
                 if isinstance(result, ActionResult):
-                    soar_client.add_result(result)
+                    client.add_result(result)
                     return result.get_status()
                 if isinstance(result, tuple) and 2 <= len(result) <= 3:
                     action_result = ActionResult(*result)
-                    soar_client.add_result(action_result)
+                    client.add_result(action_result)
                     return result[0]
                 return result
 
-            action_name = name or str(action_identifier.replace("_", " "))
-
-            the_params_klass = params_klass or Params
-            if params_klass is None:
-                # try to fetch from the function args typehints
-                spec = inspect.getfullargspec(function)
-                if not len(spec.args):
-                    raise TypeError(
-                        "Action function must accept at least the ctx: App "
-                        "positional argument"
-                    )
-                if len(spec.args) >= 2:
-                    params_arg = spec.args[1]
-                    annotated_params_type: Optional[type] = spec.annotations.get(
-                        params_arg
-                    )
-                    if annotated_params_type is None:
-                        raise TypeError(
-                            f"Proper params type for action {action_name} is not set. "
-                            "It should be derived from Params class"
-                        )
-                    if issubclass(annotated_params_type, Params):
-                        the_params_klass = annotated_params_type
-                    else:
-                        raise TypeError(
-                            f"Proper params type for action {action_name} is not "
-                            f"derived from Params class."
-                        )
-
+            # setting up meta information for the decorated function
             inner.meta = ActionMeta(
                 action=action_name,
                 identifier=identifier or function.__name__,

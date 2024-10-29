@@ -1,6 +1,8 @@
 import typing
 from typing import Any, Optional
 
+from pydantic import ValidationError
+
 from phantom.action_result import ActionResult
 from phantom.base_connector import BaseConnector
 
@@ -54,7 +56,14 @@ class AppConnector(SOARClient, BaseConnector):
         self.debug_print("action_id", self.get_action_identifier())
 
         if handler := self.actions_manager.get_action(action_id):
-            return handler(param)
+            try:
+                params_obj = handler.params_klass.parse_obj(param)
+            except ValidationError:
+                # FIXME: Consider adding more details to this error, but be aware
+                #  of possible PIIs.
+                return False, f"Invalid input params for {action_id}"
+
+            return handler(params_obj)
 
         return False, f"Missing handler for action {action_id}"
 

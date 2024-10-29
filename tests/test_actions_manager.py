@@ -7,7 +7,7 @@ from soar_sdk.params import Params
 
 def test_get_action(simple_app: App):
     @simple_app.action()
-    def some_action(ctx, params: Params):
+    def some_action(params: Params):
         pass
 
     assert simple_app.manager.get_action("some_action") is some_action
@@ -15,7 +15,7 @@ def test_get_action(simple_app: App):
 
 def test_get_actions(simple_app: App):
     @simple_app.action()
-    def some_action(ctx, params: Params):
+    def some_action(params: Params):
         pass
 
     assert simple_app.manager.get_actions() == {"some_action": some_action}
