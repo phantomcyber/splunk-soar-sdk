@@ -144,13 +144,11 @@ class App:
         inheritance. This is automatically covered by AppConnector, but can be also
         useful for when using in testing with mocked SOARClient implementation.
         """
-        if isinstance(params, Params):
-            action_params = params
-        else:
+        if not isinstance(params, Params):
             raise TypeError(
                 f"Provided params are not inheriting from Params class for action {action_name}"
             )
-        return action_params
+        return params
 
     @staticmethod
     def _adapt_action_result(result, client):
