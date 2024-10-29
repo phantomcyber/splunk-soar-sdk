@@ -16,9 +16,9 @@ class App:
 
     def run(self):
         """
-        This is just a handy shortcut for reducing imports
-        in the main app code. It uses AppRunner to run locally
-        app the same way as main() in the legacy connectors.
+        This is just a handy shortcut for reducing imports in the main app code.
+        It uses AppRunner to run locally app the same way as main() in the legacy
+        connectors.
         """
         runner = AppRunner(self)
         runner.run()
@@ -144,20 +144,20 @@ class App:
 
             self.manager.set_action(action_identifier, inner)
 
-            self._dev_skip_pytest_decorated_function(function, inner)
+            self._dev_skip_in_pytest(function, inner)
 
             return inner
 
         return app_action
 
     @staticmethod
-    def _dev_skip_pytest_decorated_function(function, inner):
+    def _dev_skip_in_pytest(function, inner):
+        """
+        When running pytest, all actions with a name starting with `test_`
+        will be treated as test. This method will mark them as to be skipped.
+        """
         if "pytest" in sys.modules and function.__name__.startswith("test_"):
-            # when creating action function starting with "test_"
-            # it will confuse pytest into using it as a test
-            # when importing it in the test files
-            # marking it for skip, solves the issue
-            # TODO: try adding some test on this
+            # importing locally to not require this package in the runtime requirements
             import pytest
 
             pytest.mark.skip(inner)

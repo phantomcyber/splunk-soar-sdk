@@ -10,10 +10,9 @@ from soar_sdk.types import MetaDescribed
 
 class ActionsManager:
     """
-    ActionsManager supports working on both: old legacy
-    connectors and new connectors. If you provide legacy connector
-    class from the old implementation, it will be adapted
-    to the new interfaces and used by App to properly run old handlers.
+    ActionsManager supports working on both: old legacy connectors and new connectors.
+    If you provide legacy connector class from the old implementation, it will be
+    adapted to the new interfaces and used by App to properly run old handlers.
     """
 
     def __init__(self, legacy_connector_class: Optional[type[BaseConnector]] = None):

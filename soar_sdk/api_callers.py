@@ -1,8 +1,9 @@
 import typing
 
-import phantom.app as phantom
 import requests
 from bs4 import BeautifulSoup
+
+import phantom.app as phantom
 
 if typing.TYPE_CHECKING:
     from soar_sdk.connector import AppConnector
@@ -10,11 +11,9 @@ if typing.TYPE_CHECKING:
 
 class RestApiCaller:  # pragma: no cover
     """
-    This is the legacy REST API calling functionality
-    which was provided by default with the App Wizard.
-    It can be used for very basic API calls with
-    the asset configuration, given the app meta file
-    will provide such.
+    This is the legacy REST API calling functionality which was provided by default
+    with the App Wizard. It can be used for very basic API calls with the asset
+    configuration, given the app meta file will provide such.
     """
 
     def __init__(self, connector: "AppConnector"):

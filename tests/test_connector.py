@@ -3,7 +3,7 @@ from unittest import mock
 from soar_sdk.connector import AppConnector
 
 
-def test_connector_handle_sets_actions_and_runs_internal_handle(app_connector):
+def test_app_connector_handle_runs_legacy__handle_action(app_connector: AppConnector):
     app_connector._handle_action = mock.Mock()  # type: ignore[method-assign]
 
     app_connector.actions_manager.set_action("action_handler1", mock.Mock())
@@ -16,7 +16,7 @@ def test_connector_handle_sets_actions_and_runs_internal_handle(app_connector):
     assert app_connector._handle_action.call_count == 1
 
 
-def test_connector_handle_action_runs_action_from_handlers(app_connector):
+def test_app_connector_handle_action_runs_app_action(app_connector: AppConnector):
     mocked_handler = mock.Mock()
 
     app_connector.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
@@ -31,7 +31,7 @@ def test_connector_handle_action_runs_action_from_handlers(app_connector):
     assert mocked_handler.call_count == 1
 
 
-def test_connector_handle_action_handler_not_existing(app_connector):
+def test_app_connector_handle_action_handler_not_existing(app_connector: AppConnector):
     app_connector.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
         return_value="not_existing_handler"
     )
@@ -42,7 +42,7 @@ def test_connector_handle_action_handler_not_existing(app_connector):
     )
 
 
-def test_connector_get_phantom_base_url():
+def test_app_connector_delegates_get_phantom_base_url():
     with mock.patch.object(
         AppConnector,
         attribute="_get_phantom_base_url",
@@ -51,7 +51,7 @@ def test_connector_get_phantom_base_url():
         assert AppConnector.get_soar_base_url() == "some_url"
 
 
-def test_connector_set_csrf_info(simple_connector):
+def test_app_connector_delegates_set_csrf_info(simple_connector: AppConnector):
     simple_connector._set_csrf_info = mock.Mock()  # type: ignore[method-assign]
 
     simple_connector.set_csrf_info("", "")
