@@ -20,8 +20,8 @@ def Param(
     """
     Representation of the param passed into the action. The param needs extra meta
     information that is later used for the configuration of the app and use in
-    playbooks. This function takes care of the required information for the JSON
-    manifest file and fills in defaults.
+    playbooks. This function takes care of the required information for the manifest
+    JSON file and fills in defaults.
 
     :param order: The order key, starting at 0, allows the app
       author to control the display order of the controls in the UI.

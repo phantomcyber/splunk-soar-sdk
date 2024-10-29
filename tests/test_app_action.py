@@ -4,6 +4,7 @@ import pytest
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.params import Param, Params
+from tests.stubs import SampleActionParams
 
 
 class SampleParams(Params):
@@ -24,11 +25,13 @@ def sample_params() -> SampleParams:
 
 
 def test_action_decoration_fails_without_params(simple_app):
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError) as exception_info:
 
         @simple_app.action()
         def action_function_no_params():
             pass
+
+    assert "Action function must accept at least the params" in str(exception_info)
 
 
 def test_action_decoration_fails_without_params_type_set(simple_app):
@@ -52,6 +55,22 @@ def test_action_decoration_fails_with_params_not_inheriting_from_Params(simple_a
             pass
 
     assert "Proper params type for action" in str(exception_info)
+
+
+def test_action_decoration_passing_params_type_as_hint(simple_app):
+    @simple_app.action()
+    def foo(params: SampleActionParams):
+        assert True
+
+    foo(SampleActionParams())
+
+
+def test_action_decoration_passing_params_type_as_argument(simple_app):
+    @simple_app.action(params_klass=SampleActionParams)
+    def foo(params):
+        assert True
+
+    foo(SampleActionParams())
 
 
 def test_action_run_fails_with_wrong_params_type_passed(simple_app):

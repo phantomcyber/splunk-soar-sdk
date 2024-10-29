@@ -57,13 +57,13 @@ class AppConnector(SOARClient, BaseConnector):
 
         if handler := self.actions_manager.get_action(action_id):
             try:
-                params_obj = handler.params_klass.parse_obj(param)
+                params = handler.meta.parameters.parse_obj(param)
             except ValidationError:
                 # FIXME: Consider adding more details to this error, but be aware
                 #  of possible PIIs.
                 return False, f"Invalid input params for {action_id}"
 
-            return handler(params_obj)
+            return handler(params)
 
         return False, f"Missing handler for action {action_id}"
 

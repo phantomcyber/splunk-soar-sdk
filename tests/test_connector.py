@@ -47,7 +47,7 @@ def test_app_connector_action_handle_raises_validation_error(
     app_connector: AppConnector,
 ):
     testing_handler = mock.Mock()
-    testing_handler.params_klass = SampleActionParams
+    testing_handler.meta.parameters = SampleActionParams
 
     app_connector.get_action_identifier = mock.Mock()
     app_connector.actions_manager.get_action = mock.Mock(return_value=testing_handler)

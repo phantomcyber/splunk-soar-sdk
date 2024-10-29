@@ -1,6 +1,6 @@
 import inspect
 import sys
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Type
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
@@ -45,88 +45,44 @@ class App:
         versions: str = "EQ(*)",
     ):
         """
-        Generates a decorator for the action handling function and decorates it
-        by passing action specific meta information.
+        Generates a decorator for the action handling function attaching action
+        specific meta information to the function.
         """
 
         def app_action(function):
             """
-            Decorates the action handling function adding the passed specific
-            meta information on the action.
+            Decorator for the action handling function. Adds the specific meta
+            information to the action passed to the generator. Validates types used on
+            the action arguments and adapts output for fast and seamless development.
             """
             action_identifier = identifier or function.__name__
-
             action_name = name or str(action_identifier.replace("_", " "))
 
             spec = inspect.getfullargspec(function)
-
-            # validating params argument
-            the_params_klass = params_klass or Params
-            if params_klass is None:
-                # try to fetch from the function args typehints
-                if not len(spec.args):
-                    raise TypeError(
-                        "Action function must accept at least the params "
-                        "positional argument"
-                    )
-                params_arg = spec.args[0]
-                annotated_params_type: Optional[type] = spec.annotations.get(params_arg)
-                if annotated_params_type is None:
-                    raise TypeError(
-                        f"Action {action_name} has no params type set. "
-                        "The params argument must provide type which is derived "
-                        "from Params class"
-                    )
-                if issubclass(annotated_params_type, Params):
-                    the_params_klass = annotated_params_type
-                else:
-                    raise TypeError(
-                        f"Proper params type for action {action_name} is not "
-                        f"derived from Params class."
-                    )
-
+            validated_params_klass = self._validate_params_klass(
+                params_klass, spec, action_name
+            )
             is_client_expected = len(spec.args) > 1 and "client" in spec.args
 
             @meta_described
             def inner(
-                params: Optional[Union[Params, dict[str, Any]]],
+                params: Params,
+                /,
                 client: SOARClient = self.manager.soar_client,
                 *args,
                 **kwargs,
             ):  # pragma: no cover
                 """
-                This wrapper function is being called by BaseConnector
-                following the old compatibility of the function declaration.
-
-                This wrapper injects app context into the function,
-                so the handler can access app information and connector
-                class for backward compatibility.
+                Validates input params and adapts the results from the action.
                 """
-
-                if isinstance(params, Params):
-                    action_params = params
-                else:
-                    raise TypeError(
-                        f"Provided params are not inheriting from Params class for action {action_name}"
-                    )
+                action_params = self._validate_params(params, action_name)
 
                 if is_client_expected:
-                    result = function(action_params, client, *args, **kwargs)
-                else:
-                    result = function(action_params, *args, **kwargs)
+                    kwargs.update({"client": client})
 
-                # Handling multiple ways of returning response from action
-                # This is to simplify ActionResult use, but also keep
-                # partial backward compatibility for ease of existing
-                # apps migration.
-                if isinstance(result, ActionResult):
-                    client.add_result(result)
-                    return result.get_status()
-                if isinstance(result, tuple) and 2 <= len(result) <= 3:
-                    action_result = ActionResult(*result)
-                    client.add_result(action_result)
-                    return result[0]
-                return result
+                result = function(action_params, *args, **kwargs)
+
+                return self._adapt_action_result(result, client)
 
             # setting up meta information for the decorated function
             inner.meta = ActionMeta(
@@ -136,11 +92,10 @@ class App:
                 verbose=verbose,  # FIXME: must start with a capital and end with full stop
                 type=action_type,
                 read_only=read_only,
-                parameters=the_params_klass,
+                parameters=validated_params_klass,
                 output=output or [],  # FIXME: all output need to contain params
                 versions=versions,
             )
-            inner.params_klass = the_params_klass
 
             self.manager.set_action(action_identifier, inner)
 
@@ -149,6 +104,72 @@ class App:
             return inner
 
         return app_action
+
+    @staticmethod
+    def _validate_params_klass(params_klass, spec, action_name):
+        """
+        Validates the class used for params argument of the action. Ensures the class
+        is defined and provided as it is also used for building the manifest JSON file.
+        """
+        # validating params argument
+        validated_params_klass = params_klass or Params
+        if params_klass is None:
+            # try to fetch from the function args typehints
+            if not len(spec.args):
+                raise TypeError(
+                    "Action function must accept at least the params "
+                    "positional argument"
+                )
+            params_arg = spec.args[0]
+            annotated_params_type: Optional[type] = spec.annotations.get(params_arg)
+            if annotated_params_type is None:
+                raise TypeError(
+                    f"Action {action_name} has no params type set. "
+                    "The params argument must provide type which is derived "
+                    "from Params class"
+                )
+            if issubclass(annotated_params_type, Params):
+                validated_params_klass = annotated_params_type
+            else:
+                raise TypeError(
+                    f"Proper params type for action {action_name} is not "
+                    f"derived from Params class."
+                )
+        return validated_params_klass
+
+    @staticmethod
+    def _validate_params(params, action_name):
+        """
+        Validates input params, checking them against the use of proper Params class
+        inheritance. This is automatically covered by AppConnector, but can be also
+        useful for when using in testing with mocked SOARClient implementation.
+        """
+        if isinstance(params, Params):
+            action_params = params
+        else:
+            raise TypeError(
+                f"Provided params are not inheriting from Params class for action {action_name}"
+            )
+        return action_params
+
+    @staticmethod
+    def _adapt_action_result(result, client):
+        """
+        Handles multiple ways of returning response from action. The simplest result
+        can be returned from the action as a tuple of scucess boolean value and an extra
+        message to add.
+
+        For backward compatibility, it also supports returning ActionResult object as
+        in the legacy Connectors.
+        """
+        if isinstance(result, ActionResult):
+            client.add_result(result)
+            return result.get_status()
+        if isinstance(result, tuple) and 2 <= len(result) <= 3:
+            action_result = ActionResult(*result)
+            client.add_result(action_result)
+            return result[0]
+        return result
 
     @staticmethod
     def _dev_skip_in_pytest(function, inner):

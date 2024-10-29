@@ -14,6 +14,15 @@ def test_app_action_run_use_empty_params_definition(example_app: App):
     foo(Params())
 
 
+def test_app_action_run_define_params_klass_in_decorator(example_app: App):
+
+    @example_app.action(params_klass=SampleActionParams)
+    def foo(params):
+        assert True
+
+    foo(SampleActionParams())
+
+
 def test_app_action_run_use_params_model(example_app):
     @example_app.action()
     def foo(params: SampleActionParams):
