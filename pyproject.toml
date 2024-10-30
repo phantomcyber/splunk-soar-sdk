@@ -14,16 +14,16 @@ soarapps = "soar_sdk.cli.cli:main"
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.10"
-# phantom dependencies
+toml = "^0.10.2"
+typer = "^0.12.5"
+# SOAR phantom lib dependencies
 beautifulsoup4 = "4.10.0"
-pydantic = "1.9.0"
+pydantic = "1.10.13"
 requests = "2.32.3"
 responses = "0.22.0"
 distro = "1.8.0"
 pytest = "7.4.2"
 simplejson = "3.17.2"
-typer = "^0.9.0"
-toml = "^0.10.2"
 
 [tool.poetry.group.dev.dependencies]
 poetry = "1.8.2"
@@ -32,14 +32,14 @@ ipython = "8.18.1"
 ipdb = "^0.13.13"
 mypy = "1.2.0"
 isort = "^5.13.2"
-black = "^24.4.2"
+black = "^24.10.0"
 pytest-cov = "^5.0.0"
 pytest-mock = "^3.14.0"
 pytest-watch = "^4.2.0"
 pre-commit = "3.7.0"
 types-urllib3 = "^1.26.25.13"
 types-requests = "^2.31.0.1"
-types-setuptools = "^68.0.0.0"
+types-setuptools = "^70.0.0.0"
 types-beautifulsoup4 = "^4.12.0.5"
 
 [build-system]
