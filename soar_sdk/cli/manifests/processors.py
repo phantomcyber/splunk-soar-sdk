@@ -9,7 +9,7 @@ from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
 
 
-class MetafileUpdateProcessor:
+class ManifestProcessor:
 
     def __init__(self, json_filename, project_context: str = "."):
         self.json_filename = json_filename
@@ -19,7 +19,7 @@ class MetafileUpdateProcessor:
     def create(self):
         """
         Creates the App Manifest JSON information with all sources
-        and save it back to the meta file.
+        and save it back to the manifesst file.
         """
 
         app = self.get_app()

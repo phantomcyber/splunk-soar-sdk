@@ -3,12 +3,12 @@ from pprint import pprint
 
 import typer
 
-from .processors import MetafileUpdateProcessor
+from .processors import ManifestProcessor
 
-metafiles = typer.Typer()
+manifests = typer.Typer()
 
 
-@metafiles.command()
+@manifests.command()
 def display(filename):
     with open(filename, "r") as f:
         meta = json.load(f)
@@ -16,6 +16,6 @@ def display(filename):
     pprint(meta)
 
 
-@metafiles.command()
+@manifests.command()
 def create(filename, project_context: str):
-    MetafileUpdateProcessor(filename, project_context).create()
+    ManifestProcessor(filename, project_context).create()

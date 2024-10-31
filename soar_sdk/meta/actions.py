@@ -2,7 +2,7 @@ from typing import Type
 
 from pydantic import BaseModel, Field
 
-from soar_sdk.cli.metafiles.serializers import ParamsSerializer
+from soar_sdk.cli.manifest.serializers import ParamsSerializer
 from soar_sdk.params import Params
 
 
