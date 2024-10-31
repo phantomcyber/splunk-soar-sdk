@@ -24,20 +24,20 @@ class ParamsSerializer:
         }
 
     @staticmethod
-    def get_sorted_fields_keys(params_klass: type[Params]) -> list[str]:
+    def get_sorted_fields_keys(params_class: type[Params]) -> list[str]:
         return sorted(
-            params_klass.__fields__.keys(),
-            key=lambda field: params_klass.__fields__[field].field_info.extra.get(  # type: ignore
+            params_class.__fields__.keys(),
+            key=lambda field: params_class.__fields__[field].field_info.extra.get(  # type: ignore
                 "order"
             ),
         )
 
     @classmethod
-    def serialize_fields_info(cls, params_klass: type[Params]) -> dict[str, Any]:
+    def serialize_fields_info(cls, params_class: type[Params]) -> dict[str, Any]:
         return {
-            params_klass.__fields__[field].name: cls.serialize_field_info(
-                params_klass.__fields__[field]
+            params_class.__fields__[field].name: cls.serialize_field_info(
+                params_class.__fields__[field]
             )
-            for field in cls.get_sorted_fields_keys(params_klass)
+            for field in cls.get_sorted_fields_keys(params_class)
             # FIXME: we should use model_fields in pydantic 2+
         }

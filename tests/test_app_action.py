@@ -59,15 +59,15 @@ def test_action_decoration_fails_with_params_not_inheriting_from_Params(simple_a
 
 def test_action_decoration_passing_params_type_as_hint(simple_app):
     @simple_app.action()
-    def foo(params: SampleActionParams):
+    def foo(params: SampleActionParams, client: SOARClient):
         assert True
 
     foo(SampleActionParams())
 
 
 def test_action_decoration_passing_params_type_as_argument(simple_app):
-    @simple_app.action(params_klass=SampleActionParams)
-    def foo(params):
+    @simple_app.action(params_class=SampleActionParams)
+    def foo(params, client: SOARClient):
         assert True
 
     foo(SampleActionParams())
@@ -75,7 +75,7 @@ def test_action_decoration_passing_params_type_as_argument(simple_app):
 
 def test_action_run_fails_with_wrong_params_type_passed(simple_app):
     @simple_app.action()
-    def action_example(params: Params):
+    def action_example(params: Params, client: SOARClient):
         pass
 
     with pytest.raises(TypeError) as exception_info:

@@ -8,7 +8,7 @@ from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app_runner import AppRunner
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
-from soar_sdk.types import meta_described
+from soar_sdk.types import Action, meta_described
 
 
 class App:
@@ -40,7 +40,7 @@ class App:
         verbose: str = "",
         action_type: str = "generic",  # TODO: consider introducing enum type for that
         read_only: bool = True,
-        params_klass: Optional[Type[Params]] = None,
+        params_class: Optional[Type[Params]] = None,
         output: Optional[list[str]] = None,
         versions: str = "EQ(*)",
     ):
@@ -49,7 +49,7 @@ class App:
         specific meta information to the function.
         """
 
-        def app_action(function):
+        def app_action(function) -> Action:
             """
             Decorator for the action handling function. Adds the specific meta
             information to the action passed to the generator. Validates types used on
@@ -59,10 +59,9 @@ class App:
             action_name = name or str(action_identifier.replace("_", " "))
 
             spec = inspect.getfullargspec(function)
-            validated_params_klass = self._validate_params_klass(
-                params_klass, spec, action_name
+            validated_params_class = self._validate_params_class(
+                params_class, spec, action_name
             )
-            is_client_expected = len(spec.args) > 1 and "client" in spec.args
 
             @meta_described
             def inner(
@@ -76,12 +75,7 @@ class App:
                 Validates input params and adapts the results from the action.
                 """
                 action_params = self._validate_params(params, action_name)
-
-                if is_client_expected:
-                    kwargs.update({"client": client})
-
-                result = function(action_params, *args, **kwargs)
-
+                result = function(action_params, client=client, *args, **kwargs)
                 return self._adapt_action_result(result, client)
 
             # setting up meta information for the decorated function
@@ -92,7 +86,7 @@ class App:
                 verbose=verbose,  # FIXME: must start with a capital and end with full stop
                 type=action_type,
                 read_only=read_only,
-                parameters=validated_params_klass,
+                parameters=validated_params_class,
                 output=output or [],  # FIXME: all output need to contain params
                 versions=versions,
             )
@@ -106,14 +100,14 @@ class App:
         return app_action
 
     @staticmethod
-    def _validate_params_klass(params_klass, spec, action_name):
+    def _validate_params_class(params_class, spec, action_name):
         """
         Validates the class used for params argument of the action. Ensures the class
         is defined and provided as it is also used for building the manifest JSON file.
         """
         # validating params argument
-        validated_params_klass = params_klass or Params
-        if params_klass is None:
+        validated_params_class = params_class or Params
+        if params_class is None:
             # try to fetch from the function args typehints
             if not len(spec.args):
                 raise TypeError(
@@ -129,13 +123,13 @@ class App:
                     "from Params class"
                 )
             if issubclass(annotated_params_type, Params):
-                validated_params_klass = annotated_params_type
+                validated_params_class = annotated_params_type
             else:
                 raise TypeError(
                     f"Proper params type for action {action_name} is not "
                     f"derived from Params class."
                 )
-        return validated_params_klass
+        return validated_params_class
 
     @staticmethod
     def _validate_params(params, action_name):

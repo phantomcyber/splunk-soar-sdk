@@ -5,7 +5,7 @@ from phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.adapters import LegacyConnectorAdapter
 from soar_sdk.connector import AppConnector
-from soar_sdk.types import MetaDescribed
+from soar_sdk.types import Action
 
 
 class ActionsManager:
@@ -19,9 +19,9 @@ class ActionsManager:
         self.legacy_soar_client: Optional[SOARClient] = self._get_legacy_soar_client(
             legacy_connector_class
         )
-        self.soar_client: SOARClient = AppConnector(self)
+        self.soar_client: AppConnector = AppConnector(self)
 
-        self._actions: dict[str, MetaDescribed] = {}
+        self._actions: dict[str, Action] = {}
 
     def _get_legacy_soar_client(
         self, legacy_connector_class: Optional[type[BaseConnector]]
@@ -30,15 +30,13 @@ class ActionsManager:
             return LegacyConnectorAdapter(legacy_connector_class)
         return None
 
-    def get_action(self, identifier: str) -> Optional[MetaDescribed]:
+    def get_action(self, identifier: str) -> Optional[Action]:
         return self.get_actions().get(identifier)
 
     def get_actions(self) -> dict:
         return self._actions
 
-    def set_action(
-        self, action_identifier: str, wrapped_function: MetaDescribed
-    ) -> None:
+    def set_action(self, action_identifier: str, wrapped_function: Action) -> None:
         """
         Sets the handler for the function that can be called by the BaseConnector.
         The wrapped function called by the BaseConnector will be called using the old

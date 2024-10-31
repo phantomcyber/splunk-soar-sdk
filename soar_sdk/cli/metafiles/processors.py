@@ -18,7 +18,7 @@ class MetafileUpdateProcessor:
 
     def create(self):
         """
-        Creates the App Meta information with all sources
+        Creates the App Manifest JSON information with all sources
         and save it back to the meta file.
         """
 

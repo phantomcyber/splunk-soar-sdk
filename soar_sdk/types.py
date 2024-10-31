@@ -4,12 +4,12 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 
 
-class MetaDescribed(Protocol):
+class Action(Protocol):
     meta: ActionMeta
-    params_klass: type[Params]
+    params_class: type[Params]
 
     def __call__(self, *args, **kwargs) -> bool: ...
 
 
-def meta_described(func: Any) -> MetaDescribed:
+def meta_described(func: Any) -> Action:
     return func
