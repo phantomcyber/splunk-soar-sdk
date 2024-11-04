@@ -5,6 +5,7 @@ from phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.adapters import LegacyConnectorAdapter
 from soar_sdk.connector import AppConnector
+from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.types import Action
 
 
@@ -35,6 +36,9 @@ class ActionsManager:
 
     def get_actions(self) -> dict:
         return self._actions
+
+    def get_actions_meta_list(self) -> list[ActionMeta]:
+        return [action.meta for action in self.get_actions().values()]
 
     def set_action(self, action_identifier: str, wrapped_function: Action) -> None:
         """

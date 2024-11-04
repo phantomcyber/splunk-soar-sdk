@@ -16,7 +16,7 @@ def example_app() -> App:
     app.manager.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
     app.manager.soar_client._load_app_json = mock.Mock(return_value=True)
 
-    with open("example_app/app.json") as app_json:
+    with open("tests/example_app/app.json") as app_json:
         app.manager.soar_client._BaseConnector__app_json = json.load(app_json)
 
     return app

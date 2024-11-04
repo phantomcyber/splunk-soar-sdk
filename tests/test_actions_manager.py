@@ -21,7 +21,7 @@ def test_actions_manager_adapts_legacy_connector():
 
 def test_get_action(simple_app: App):
     @simple_app.action()
-    def some_action(params: Params):
+    def some_action(params: Params, client):
         pass
 
     assert simple_app.manager.get_action("some_action") is some_action
@@ -29,10 +29,18 @@ def test_get_action(simple_app: App):
 
 def test_get_actions(simple_app: App):
     @simple_app.action()
-    def some_action(params: Params):
+    def some_action(params: Params, client):
         pass
 
     assert simple_app.manager.get_actions() == {"some_action": some_action}
+
+
+def test_get_actions_meta_list(simple_app: App):
+    @simple_app.action()
+    def some_action(params: Params, client):
+        pass
+
+    assert simple_app.manager.get_actions_meta_list() == [some_action.meta]
 
 
 def test_debug(example_manager):
