@@ -19,7 +19,7 @@ class ManifestProcessor:
     def create(self):
         """
         Creates the App Manifest JSON information with all sources
-        and save it back to the manifesst file.
+        and save it back to the manifest file.
         """
 
         app = self.get_app()

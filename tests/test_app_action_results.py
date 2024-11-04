@@ -1,85 +1,42 @@
 from unittest import mock
 
-import phantom.app as phantom
-from phantom.action_result import ActionResult as PhantomActionResult
-from soar_sdk.action_results import ActionResult, ErrorActionResult, SuccessActionResult
-from soar_sdk.app import App
+from soar_sdk.abstract import SOARClient
+from soar_sdk.action_results import ActionResult
+from tests.mocks.dynamic_mocks import ArgReturnMock
+from tests.stubs import SampleActionParams
 
 
-def test_app_action_called_with_legacy_result_set(example_app, simple_action_input):
-    action_result = example_app.manager.soar_client.add_action_result(
-        PhantomActionResult(dict())
-    )
-    mock_function = mock.Mock(
-        return_value=action_result.set_status(
-            phantom.APP_SUCCESS, "Testing function run"
-        )
-    )
-    example_app.manager._actions["test_connectivity"] = mock_function
-
-    example_app.handle(simple_action_input, None)
-
-    assert mock_function.call_count == 1
-
-
-def test_app_action_called_with_new_single_result_set(example_app, simple_action_input):
-    action_result = ActionResult(True, "Testing function run")
-    mock_function = mock.Mock(return_value=action_result)
-    example_app.manager._actions["test_connectivity"] = mock_function
-
-    example_app.handle(simple_action_input, None)
-
-    assert mock_function.call_count == 1
-
-
-def test_app_action_called_with_returned_simple_result(
-    example_app, simple_action_input
+def test_app_action_called_with_legacy_result_set_returns_this_result(
+    simple_app, simple_action_input
 ):
-    mock_function = mock.Mock(return_value=(True, "Testing function run"))
-    example_app.manager._actions["test_connectivity"] = mock_function
+    action_result = ActionResult(True, "Action succeeded")
+    client_mock = mock.Mock()
+    client_mock.add_result = mock.Mock(return_value=action_result)
 
-    example_app.handle(simple_action_input, None)
+    @simple_app.action()
+    def action_returning_action_result(params: SampleActionParams, client: SOARClient):
+        return action_result
 
-    assert mock_function.call_count == 1
-
-
-def test_app_action_called_with_returned_success_result(
-    example_app, simple_action_input
-):
-    mock_function = mock.Mock(return_value=SuccessActionResult("Testing function run"))
-    example_app.manager._actions["test_connectivity"] = mock_function
-
-    example_app.handle(simple_action_input, None)
-
-    assert mock_function.call_count == 1
-
-
-def test_app_action_called_with_returned_error_result(example_app, simple_action_input):
-    mock_function = mock.Mock(
-        return_value=ErrorActionResult("Testing function run error")
+    result = action_returning_action_result(
+        SampleActionParams(field1=5), client=client_mock
     )
 
-    example_app.manager._actions["test_connectivity"] = mock_function
-
-    example_app.handle(simple_action_input, None)
-
-    assert mock_function.call_count == 1
+    assert result is True
+    assert client_mock.add_result.call_count == 1
+    client_mock.add_result.assert_called_with(action_result)
 
 
-def test_app_action_called_with_multiple_results_set(
-    example_app: App, simple_action_input
+def test_app_action_called_with_tuple_creates_the_result(
+    simple_app, simple_action_input
 ):
-    soar_client = example_app.manager.soar_client
-    action_result1 = ActionResult(True, "Testing function run 1")
-    soar_client.add_result(action_result1)
-    action_result2 = ActionResult(True, "Testing function run 2")
-    soar_client.add_result(action_result2)
+    client_mock = mock.Mock()
+    client_mock.add_result = ArgReturnMock()
 
-    mock_function = mock.Mock(return_value=(True, "Multiple action results returned"))
+    @simple_app.action()
+    def action_returning_tuple(params: SampleActionParams, client: SOARClient):
+        return True, "Action succeeded"
 
-    example_app.manager.set_action("test_connectivity", mock_function)
+    result = action_returning_tuple(SampleActionParams(field1=5), client=client_mock)
 
-    example_app.handle(simple_action_input, None)
-
-    assert mock_function.call_count == 1
-    assert len(soar_client.get_action_results()) == 3
+    assert result is True
+    assert client_mock.add_result.call_count == 1

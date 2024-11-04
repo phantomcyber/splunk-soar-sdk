@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from example_app.app import app
+from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.app_runner import AppRunner
 from soar_sdk.connector import AppConnector
@@ -11,6 +11,7 @@ from soar_sdk.connector import AppConnector
 
 @pytest.fixture
 def example_app() -> App:
+    app = App()
     app.manager.soar_client._load_app_json = mock.Mock(return_value=True)
     app.manager.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
     app.manager.soar_client._load_app_json = mock.Mock(return_value=True)
@@ -37,6 +38,11 @@ def simple_app() -> App:
 
 
 @pytest.fixture
+def simple_manager(simple_app) -> ActionsManager:
+    return simple_app.manager
+
+
+@pytest.fixture
 def simple_connector(simple_app) -> AppConnector:
     return AppConnector(simple_app.manager)
 
@@ -58,7 +64,7 @@ def simple_action_input() -> str:
         {
             "asset_id": 1,
             "config": {},
-            "parameters": [],
+            "parameters": [{}],
             "identifier": "test_connectivity",
         }
     )

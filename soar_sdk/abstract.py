@@ -14,15 +14,15 @@ class SOARClient(ABC):
 
     @abstractmethod
     def get_soar_base_url(self):
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def set_csrf_info(self, token: str, referer: str) -> None:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def handle_action(self, param):
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def handle(
@@ -31,31 +31,32 @@ class SOARClient(ABC):
         handle: Optional[Any],
     ) -> str:
         """Public method for handling the input data with the selected handler"""
-        return ""
+        pass  # pragma: no cover
 
     @abstractmethod
     def initialize(self) -> bool:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def finalize(self) -> bool:
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def add_result(self, action_result: ActionResult):
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def get_results(self):
-        pass
+        pass  # pragma: no cover
 
+    @abstractmethod
     def save_progress(
         self,
         progress_str_const: str,
         *unnamed_format_args: Any,
         **named_format_args: Any,
     ):
-        pass
+        pass  # pragma: no cover
 
     @abstractmethod
     def debug(
@@ -63,4 +64,4 @@ class SOARClient(ABC):
         tag: str,
         dump_object: Union[str, list, dict, ActionResult, Exception] = "",
     ) -> None:
-        pass
+        pass  # pragma: no cover

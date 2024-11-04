@@ -1,5 +1,0 @@
-[run]
-source = soar_sdk
-
-[report]
-show_missing = true

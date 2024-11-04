@@ -59,3 +59,17 @@ multi_line_output = 3
 
 [[tool.mypy.overrides]]
 disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+addopts = "--ignore=example_app --ignore=demo_app --cov"
+
+[tool.coverage.run]
+source = [
+    "soar_sdk"
+]
+omit = [
+    "soar_sdk/api_callers.py"  # moved 1:1 from App Wizard, not re-designed yet
+]
+
+[tool.coverage.report]
+show_missing = true

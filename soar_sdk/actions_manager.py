@@ -50,9 +50,9 @@ class ActionsManager:
         self._actions[action_identifier] = wrapped_function
 
     @staticmethod
-    def get_action_identifier_from_input(input_data: str):
+    def get_action_identifier_from_input(input_data: str) -> str:
         data = json.loads(input_data)
-        return data.get("identifier")
+        return data.get("identifier", "")
 
     def handle(self, input_data: str, handle: Optional[Any] = None) -> str:
         """
