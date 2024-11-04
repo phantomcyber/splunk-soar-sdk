@@ -73,3 +73,7 @@ omit = [
 
 [tool.coverage.report]
 show_missing = true
+exclude_lines = [
+    "# pragma: no cover",
+    "if typing.TYPE_CHECKING:",  # ignore type checks import blocks
+]
