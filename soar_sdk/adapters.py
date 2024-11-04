@@ -27,7 +27,7 @@ class LegacyConnectorAdapter(SOARClient):
     def handle(
         self,
         input_data: str,
-        handle: Optional[Any],
+        handle: Optional[Any] = None,
     ) -> str:
         return self.connector._handle_action(input_data, handle)
 
