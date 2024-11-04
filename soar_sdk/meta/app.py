@@ -1,5 +1,3 @@
-from typing import Any
-
 from pydantic import BaseModel, Field
 
 from .actions import ActionMeta
@@ -31,6 +29,3 @@ class AppMeta(BaseModel):
     actions: list[ActionMeta] = Field(default_factory=list)
 
     pip39_dependencies: dict = Field(default_factory=dict)
-
-    def update(self, data: dict[str, Any]):
-        self.__dict__.update(data)

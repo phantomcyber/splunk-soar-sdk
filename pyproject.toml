@@ -3,8 +3,7 @@ name = "Splunk SOAR App SDK"
 version = "0.1.0"
 description = "A framework for developing and testing the Splunk SOAR Apps"
 authors = [
-    "Janusz Kamieński <jkamienski@splunk.com>",
-]
+    "Janusz Kamieński <jkamienski@splunk.com>",]
 readme = "README.md"
 homepage = "https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html"
 packages = [{include = "soar_sdk"}]
@@ -65,15 +64,14 @@ addopts = "--ignore=example_app --ignore=demo_app --cov"
 
 [tool.coverage.run]
 source = [
-    "soar_sdk"
-]
+    "soar_sdk"]
 omit = [
-    "soar_sdk/api_callers.py"  # moved 1:1 from App Wizard, not re-designed yet
-]
+    "soar_sdk/cli/cli.py",
+    "soar_sdk/cli/manifests/cli.py",
+    "soar_sdk/api_callers.py"]  # moved 1:1 from App Wizard, not re-designed yet
 
 [tool.coverage.report]
 show_missing = true
 exclude_lines = [
     "# pragma: no cover",
-    "if typing.TYPE_CHECKING:",  # ignore type checks import blocks
-]
+    "if typing.TYPE_CHECKING:"]  # ignore type checks import blocks

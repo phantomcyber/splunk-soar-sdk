@@ -1,6 +1,5 @@
+from soar_sdk.cli.manifests.serializers import ParamsSerializer
 from soar_sdk.params import Param, Params
-
-from ..manifests.serializers import ParamsSerializer
 
 
 def test_params_get_sorted_fields_keys_sorts_by_field_order_value():
