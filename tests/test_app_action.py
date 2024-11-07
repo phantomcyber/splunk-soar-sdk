@@ -122,8 +122,8 @@ def test_app_action_simple_declaration(simple_app):
     @simple_app.action()
     def some_handler(params: Params): ...
 
-    assert len(simple_app.manager.get_actions()) == 1
-    assert "some_handler" in simple_app.manager.get_actions()
+    assert len(simple_app.actions_provider.get_actions()) == 1
+    assert "some_handler" in simple_app.actions_provider.get_actions()
 
 
 def test_action_decoration_with_meta(simple_app):
@@ -151,7 +151,7 @@ def test_action_decoration_with_meta(simple_app):
 
     assert foo.meta.action == "Test Function"
     assert foo.meta.description == "This action does nothing for now."
-    assert simple_app.manager.get_action("test_function_id") == foo
+    assert simple_app.actions_provider.get_action("test_function_id") == foo
 
 
 def test_action_decoration_uses_function_name_for_action_name(simple_app):

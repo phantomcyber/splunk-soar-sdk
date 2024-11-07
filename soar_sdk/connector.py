@@ -9,7 +9,7 @@ from phantom.base_connector import BaseConnector
 from .abstract import SOARClient
 
 if typing.TYPE_CHECKING:
-    from .actions_manager import ActionsManager
+    from .actions_provider import ActionsProvider
 
 
 class AppConnector(BaseConnector, SOARClient):
@@ -23,12 +23,12 @@ class AppConnector(BaseConnector, SOARClient):
     In the future it should be replaced by another class accessing SOAR API.
     """
 
-    def __init__(self, actions_manager: "ActionsManager"):
+    def __init__(self, actions_provider: "ActionsProvider"):
 
         # Call the BaseConnectors init first
         super().__init__()
 
-        self.actions_manager = actions_manager
+        self.actions_provider = actions_provider
 
         self._state: dict = {}
 
@@ -55,7 +55,7 @@ class AppConnector(BaseConnector, SOARClient):
 
         self.debug_print("action_id", self.get_action_identifier())
 
-        if handler := self.actions_manager.get_action(action_id):
+        if handler := self.actions_provider.get_action(action_id):
             try:
                 params = handler.meta.parameters.parse_obj(param)
             except ValidationError:

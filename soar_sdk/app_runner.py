@@ -65,7 +65,9 @@ class AppRunner:
 
         if self.username and self.password:
             try:
-                login_url = self.app.manager.soar_client.get_soar_base_url() + "/login"
+                login_url = (
+                    self.app.actions_provider.soar_client.get_soar_base_url() + "/login"
+                )
 
                 print("Accessing the Login page")
                 r = requests.get(login_url, verify=False)
@@ -86,7 +88,7 @@ class AppRunner:
                 self.headers = headers
 
                 if self.session_id is not None:
-                    self.app.manager.soar_client.set_csrf_info(
+                    self.app.actions_provider.soar_client.set_csrf_info(
                         self.csrftoken, self.headers["Referer"]
                     )
 

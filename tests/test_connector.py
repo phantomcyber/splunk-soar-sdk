@@ -7,8 +7,8 @@ from tests.stubs import SampleActionParams
 def test_app_connector_handle_runs_legacy__handle_action(app_connector: AppConnector):
     app_connector._handle_action = mock.Mock()  # type: ignore[method-assign]
 
-    app_connector.actions_manager.set_action("action_handler1", mock.Mock())
-    app_connector.actions_manager.set_action("action_handler2", mock.Mock())
+    app_connector.actions_provider.set_action("action_handler1", mock.Mock())
+    app_connector.actions_provider.set_action("action_handler2", mock.Mock())
 
     in_json = "{}"
 
@@ -23,7 +23,7 @@ def test_app_connector_handle_action_runs_app_action(app_connector: AppConnector
     app_connector.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
         return_value="testing_handler"
     )
-    app_connector.actions_manager.get_actions = mock.Mock(
+    app_connector.actions_provider.get_actions = mock.Mock(
         return_value={"testing_handler": mocked_handler}
     )
 
@@ -50,7 +50,7 @@ def test_app_connector_action_handle_raises_validation_error(
     testing_handler.meta.parameters = SampleActionParams
 
     app_connector.get_action_identifier = mock.Mock()
-    app_connector.actions_manager.get_action = mock.Mock(return_value=testing_handler)
+    app_connector.actions_provider.get_action = mock.Mock(return_value=testing_handler)
 
     success, msg = app_connector.handle_action({"field1": "five"})
     assert not success

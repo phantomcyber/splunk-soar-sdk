@@ -1,19 +1,20 @@
 import inspect
 import sys
+from functools import wraps
 from typing import Any, Optional, Type
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
-from soar_sdk.actions_manager import ActionsManager
+from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app_runner import AppRunner
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
-from soar_sdk.types import Action, meta_described
+from soar_sdk.types import Action, action_protocol
 
 
 class App:
     def __init__(self, legacy_connector_class=None):
-        self.manager = ActionsManager(legacy_connector_class)
+        self.actions_provider = ActionsProvider(legacy_connector_class)
 
     def run(self):
         """
@@ -28,7 +29,7 @@ class App:
         """
         Runs handling of the input data on connector
         """
-        return self.manager.handle(input_data, handle)
+        return self.actions_provider.handle(input_data, handle)
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
 
@@ -63,14 +64,15 @@ class App:
                 params_class, spec, action_name
             )
 
-            @meta_described
+            @wraps(function)
+            @action_protocol
             def inner(
                 params: Params,
                 /,
-                client: SOARClient = self.manager.soar_client,
+                client: SOARClient = self.actions_provider.soar_client,
                 *args,
                 **kwargs,
-            ):  # pragma: no cover
+            ):
                 """
                 Validates input params and adapts the results from the action.
                 """
@@ -91,7 +93,7 @@ class App:
                 versions=versions,
             )
 
-            self.manager.set_action(action_identifier, inner)
+            self.actions_provider.set_action(action_identifier, inner)
 
             self._dev_skip_in_pytest(function, inner)
 

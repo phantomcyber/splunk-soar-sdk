@@ -11,5 +11,5 @@ class Action(Protocol):
     def __call__(self, *args, **kwargs) -> bool: ...
 
 
-def meta_described(func: Any) -> Action:
+def action_protocol(func: Any) -> Action:
     return func

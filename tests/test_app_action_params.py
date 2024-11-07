@@ -38,9 +38,11 @@ def test_app_action_handling_simple_params_conversion(example_app):
         assert params.field1 == 5
 
     with mock.patch.object(
-        example_app.manager.soar_client, "get_action_identifier", return_value="foo"
+        example_app.actions_provider.soar_client,
+        "get_action_identifier",
+        return_value="foo",
     ):
-        example_app.manager.soar_client.handle_action({"field1": 5})
+        example_app.actions_provider.soar_client.handle_action({"field1": 5})
 
 
 def test_app_action_handling_validation_error_raised(example_app):
@@ -50,8 +52,12 @@ def test_app_action_handling_validation_error_raised(example_app):
         assert params.field1 == 5
 
     with mock.patch.object(
-        example_app.manager.soar_client, "get_action_identifier", return_value="foo"
+        example_app.actions_provider.soar_client,
+        "get_action_identifier",
+        return_value="foo",
     ):
-        success, msg = example_app.manager.soar_client.handle_action({"field1": "five"})
+        success, msg = example_app.actions_provider.soar_client.handle_action(
+            {"field1": "five"}
+        )
 
     assert not success

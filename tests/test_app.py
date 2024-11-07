@@ -11,7 +11,7 @@ def test_app_run(example_app):
 
 
 def test_handle(example_app: App):
-    with mock.patch.object(example_app.manager, "handle") as mock_handle:
+    with mock.patch.object(example_app.actions_provider, "handle") as mock_handle:
         example_app.handle(mock.Mock())
 
     mock_handle.assert_called_once()

@@ -3,7 +3,7 @@ from unittest import mock
 
 import pytest
 
-from soar_sdk.actions_manager import ActionsManager
+from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app import App
 from soar_sdk.app_runner import AppRunner
 from soar_sdk.connector import AppConnector
@@ -12,19 +12,19 @@ from soar_sdk.connector import AppConnector
 @pytest.fixture
 def example_app() -> App:
     app = App()
-    app.manager.soar_client._load_app_json = mock.Mock(return_value=True)
-    app.manager.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
-    app.manager.soar_client._load_app_json = mock.Mock(return_value=True)
+    app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
+    app.actions_provider.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
+    app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
 
     with open("tests/example_app/app.json") as app_json:
-        app.manager.soar_client._BaseConnector__app_json = json.load(app_json)
+        app.actions_provider.soar_client._BaseConnector__app_json = json.load(app_json)
 
     return app
 
 
 @pytest.fixture
-def example_manager(example_app):
-    return example_app.manager
+def example_provider(example_app):
+    return example_app.actions_provider
 
 
 @pytest.fixture
@@ -38,18 +38,18 @@ def simple_app() -> App:
 
 
 @pytest.fixture
-def simple_manager(simple_app) -> ActionsManager:
-    return simple_app.manager
+def simple_provider(simple_app) -> ActionsProvider:
+    return simple_app.actions_provider
 
 
 @pytest.fixture
 def simple_connector(simple_app) -> AppConnector:
-    return AppConnector(simple_app.manager)
+    return AppConnector(simple_app.actions_provider)
 
 
 @pytest.fixture
 def app_connector(simple_app) -> AppConnector:
-    return AppConnector(simple_app.manager)
+    return AppConnector(simple_app.actions_provider)
 
 
 @pytest.fixture
