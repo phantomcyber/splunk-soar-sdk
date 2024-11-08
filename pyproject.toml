@@ -60,7 +60,7 @@ multi_line_output = 3
 disallow_untyped_defs = false
 
 [tool.pytest.ini_options]
-addopts = "--ignore=example_app --ignore=demo_app --cov"
+addopts = "--ignore=example_app --cov"
 
 [tool.coverage.run]
 source = [
