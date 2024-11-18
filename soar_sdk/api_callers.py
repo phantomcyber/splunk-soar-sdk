@@ -16,7 +16,7 @@ class RestApiCaller:  # pragma: no cover
     configuration, given the app meta file will provide such.
     """
 
-    def __init__(self, connector: "AppConnector"):
+    def __init__(self, connector: "AppConnector") -> None:
         self.connector = connector
 
     @staticmethod

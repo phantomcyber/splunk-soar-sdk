@@ -13,10 +13,10 @@ from soar_sdk.types import Action, action_protocol
 
 
 class App:
-    def __init__(self, legacy_connector_class=None):
+    def __init__(self, legacy_connector_class: Optional[type[BaseConnector] = None) -> None:
         self.actions_provider = ActionsProvider(legacy_connector_class)
 
-    def run(self):
+    def run(self) -> None:
         """
         This is just a handy shortcut for reducing imports in the main app code.
         It uses AppRunner to run locally app the same way as main() in the legacy
@@ -150,7 +150,7 @@ class App:
     def _adapt_action_result(result, client):
         """
         Handles multiple ways of returning response from action. The simplest result
-        can be returned from the action as a tuple of scucess boolean value and an extra
+        can be returned from the action as a tuple of success boolean value and an extra
         message to add.
 
         For backward compatibility, it also supports returning ActionResult object as

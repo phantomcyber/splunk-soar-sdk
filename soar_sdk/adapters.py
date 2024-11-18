@@ -12,7 +12,7 @@ if typing.TYPE_CHECKING:
 
 class LegacyConnectorAdapter(SOARClient):
 
-    def __init__(self, legacy_connector_class: type[BaseConnector]):
+    def __init__(self, legacy_connector_class: type[BaseConnector]) -> None:
         self.connector = legacy_connector_class()
 
     def get_soar_base_url(self) -> str:
@@ -37,7 +37,7 @@ class LegacyConnectorAdapter(SOARClient):
     def finalize(self) -> bool:
         return self.connector.finalize()
 
-    def add_result(self, action_result: ActionResult):
+    def add_result(self, action_result: ActionResult) -> None:
         return self.connector.add_action_result(action_result)
 
     def get_results(self):
@@ -48,7 +48,7 @@ class LegacyConnectorAdapter(SOARClient):
         progress_str_const: str,
         *unnamed_format_args: Any,
         **named_format_args: Any,
-    ):
+    ) -> None:
         return self.connector.save_progress(
             progress_str_const, *unnamed_format_args, **named_format_args
         )
@@ -57,5 +57,5 @@ class LegacyConnectorAdapter(SOARClient):
         self,
         tag: str,
         dump_object: Union[str, list, dict, ActionResult, Exception] = "",
-    ):
+    ) -> None:
         self.connector.debug_print(tag, dump_object)

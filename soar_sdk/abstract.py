@@ -42,7 +42,7 @@ class SOARClient(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def add_result(self, action_result: ActionResult):
+    def add_result(self, action_result: ActionResult) -> None:
         pass  # pragma: no cover
 
     @abstractmethod
@@ -55,7 +55,7 @@ class SOARClient(ABC):
         progress_str_const: str,
         *unnamed_format_args: Any,
         **named_format_args: Any,
-    ):
+    ) -> None:
         pass  # pragma: no cover
 
     @abstractmethod
