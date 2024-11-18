@@ -60,9 +60,15 @@ class AppConnector(BaseConnector, SOARClient):
             except ValidationError:
                 # FIXME: Consider adding more details to this error, but be aware
                 #  of possible PIIs.
+                self.save_progress(
+                    "Validation Error - the params data for action could not be parsed"
+                )
                 return
 
             handler(params)
+
+        else:
+            raise RuntimeError(f"Action {action_id} not found.")
 
     def initialize(self):
         # Load the state in initialize, use it to store data

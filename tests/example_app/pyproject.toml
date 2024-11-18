@@ -16,7 +16,7 @@ python = ">=3.9, <3.10"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "3.7.0"
-coverage = "5.2.1"
+coverage = "^7.6.7"
 mypy = "1.2.0"
 pytest = "7.4.2"
 pytest-mock = "^3.14.0"

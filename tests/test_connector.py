@@ -1,5 +1,7 @@
 from unittest import mock
 
+import pytest
+
 from soar_sdk.connector import AppConnector
 from tests.stubs import SampleActionParams
 
@@ -37,10 +39,8 @@ def test_app_connector_handle_action_handler_not_existing(app_connector: AppConn
         return_value="not_existing_handler"
     )
 
-    assert app_connector.handle_action({}) == (
-        False,
-        "Missing handler for action not_existing_handler",
-    )
+    with pytest.raises(RuntimeError):
+        app_connector.handle_action({})
 
 
 def test_app_connector_action_handle_raises_validation_error(
@@ -51,10 +51,11 @@ def test_app_connector_action_handle_raises_validation_error(
 
     app_connector.get_action_identifier = mock.Mock()
     app_connector.actions_provider.get_action = mock.Mock(return_value=testing_handler)
+    app_connector.save_progress = mock.Mock()
 
-    success, msg = app_connector.handle_action({"field1": "five"})
-    assert not success
-    assert msg.startswith("Invalid input params")
+    app_connector.handle_action({"field1": "five"})
+
+    assert app_connector.save_progress.call_count == 1
 
 
 def test_app_connector_delegates_get_phantom_base_url():

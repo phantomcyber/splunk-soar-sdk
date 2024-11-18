@@ -26,7 +26,7 @@ simplejson = "3.17.2"
 
 [tool.poetry.group.dev.dependencies]
 poetry = "1.8.2"
-coverage = "5.2.1"
+coverage = "^7.6.7"
 ipython = "8.18.1"
 ipdb = "^0.13.13"
 mypy = "1.2.0"
@@ -48,7 +48,7 @@ build-backend = "poetry.core.masonry.api"
 in-project = true
 
 [tool.pytest.ini_options]
-addopts = "--ignore=example_app --cov"
+addopts = "--ignore=demo_app --cov"  # TODO: Remove demo_app ignore, once it's no longer used
 
 [tool.coverage.run]
 source = [

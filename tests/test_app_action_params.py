@@ -52,8 +52,4 @@ def test_app_action_handling_validation_error_raised(example_app):
         "get_action_identifier",
         return_value="foo",
     ):
-        success, msg = example_app.actions_provider.soar_client.handle_action(
-            {"field1": "five"}
-        )
-
-    assert not success
+        example_app.actions_provider.soar_client.handle_action({"field1": "five"})
