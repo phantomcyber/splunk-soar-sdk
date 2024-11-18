@@ -28,7 +28,7 @@ class SOARClient(ABC):
     def handle(
         self,
         input_data: str,
-        handle: Optional[Any],
+        handle: Optional[Any] = None,
     ) -> str:
         """Public method for handling the input data with the selected handler"""
         pass  # pragma: no cover
