@@ -1,7 +1,7 @@
 import inspect
 import sys
 from functools import wraps
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Type, Union, Callable
 
 from phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
@@ -64,7 +64,7 @@ class App:
 
             spec = inspect.getfullargspec(function)
             validated_params_class = self._validate_params_class(
-                params_class, spec, action_name
+                action_name, spec, params_class
             )
 
             @wraps(function)
@@ -75,7 +75,7 @@ class App:
                 client: SOARClient = self.actions_provider.soar_client,
                 *args,
                 **kwargs,
-            ):
+            ) -> bool:
                 """
                 Validates input params and adapts the results from the action.
                 """
@@ -105,7 +105,11 @@ class App:
         return app_action
 
     @staticmethod
-    def _validate_params_class(params_class, spec, action_name):
+    def _validate_params_class(
+        action_name: str,
+        spec: inspect.FullArgSpec,
+        params_class: Optional[type[Params]] = None,
+    ):
         """
         Validates the class used for params argument of the action. Ensures the class
         is defined and provided as it is also used for building the manifest JSON file.
@@ -137,7 +141,7 @@ class App:
         return validated_params_class
 
     @staticmethod
-    def _validate_params(params, action_name):
+    def _validate_params(params: Params, action_name: str):
         """
         Validates input params, checking them against the use of proper Params class
         inheritance. This is automatically covered by AppConnector, but can be also
@@ -152,7 +156,7 @@ class App:
     @staticmethod
     def _adapt_action_result(
         result: Union[ActionResult, tuple[bool, str], bool], client: SOARClient
-    ):
+    ) -> bool:
         """
         Handles multiple ways of returning response from action. The simplest result
         can be returned from the action as a tuple of success boolean value and an extra
@@ -168,10 +172,10 @@ class App:
             action_result = ActionResult(*result)
             client.add_result(action_result)
             return result[0]
-        return result
+        return False
 
     @staticmethod
-    def _dev_skip_in_pytest(function, inner):
+    def _dev_skip_in_pytest(function: Callable, inner: Action):
         """
         When running pytest, all actions with a name starting with `test_`
         will be treated as test. This method will mark them as to be skipped.

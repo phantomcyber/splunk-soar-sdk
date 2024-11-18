@@ -1,3 +1,4 @@
+import typing
 from typing import Any, Protocol
 
 from soar_sdk.meta.actions import ActionMeta
@@ -12,4 +13,4 @@ class Action(Protocol):
 
 
 def action_protocol(func: Any) -> Action:
-    return func
+    return typing.cast(Action, func)
