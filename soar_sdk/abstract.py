@@ -13,7 +13,7 @@ class SOARClient(ABC):
     """
 
     @abstractmethod
-    def get_soar_base_url(self):
+    def get_soar_base_url(self) -> str:
         pass  # pragma: no cover
 
     @abstractmethod
