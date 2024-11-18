@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union
 
+from phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.action_results import ActionResult
 
 
@@ -21,7 +22,12 @@ class SOARClient(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def handle_action(self, param):
+    def handle_action(self, param: dict[str, Any]) -> None:
+        """
+        The actual handling method that is being called internally by BaseConnector
+        at the momment.
+        :param param: dict containing parameters for the action
+        """
         pass  # pragma: no cover
 
     @abstractmethod
@@ -42,11 +48,11 @@ class SOARClient(ABC):
         pass  # pragma: no cover
 
     @abstractmethod
-    def add_result(self, action_result: ActionResult) -> None:
+    def add_result(self, action_result: ActionResult) -> PhantomActionResult:
         pass  # pragma: no cover
 
     @abstractmethod
-    def get_results(self):
+    def get_results(self) -> list[ActionResult]:
         pass  # pragma: no cover
 
     @abstractmethod

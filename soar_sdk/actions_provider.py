@@ -34,7 +34,7 @@ class ActionsProvider:
     def get_action(self, identifier: str) -> Optional[Action]:
         return self.get_actions().get(identifier)
 
-    def get_actions(self) -> dict:
+    def get_actions(self) -> dict[str, Action]:
         return self._actions
 
     def get_actions_meta_list(self) -> list[ActionMeta]:

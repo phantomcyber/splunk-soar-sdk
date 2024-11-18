@@ -1,8 +1,9 @@
 import inspect
 import sys
 from functools import wraps
-from typing import Any, Optional, Type
+from typing import Any, Optional, Type, Union
 
+from phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_provider import ActionsProvider
@@ -13,7 +14,9 @@ from soar_sdk.types import Action, action_protocol
 
 
 class App:
-    def __init__(self, legacy_connector_class: Optional[type[BaseConnector] = None) -> None:
+    def __init__(
+        self, legacy_connector_class: Optional[type[BaseConnector]] = None
+    ) -> None:
         self.actions_provider = ActionsProvider(legacy_connector_class)
 
     def run(self) -> None:
@@ -147,7 +150,9 @@ class App:
         return params
 
     @staticmethod
-    def _adapt_action_result(result, client):
+    def _adapt_action_result(
+        result: Union[ActionResult, tuple[bool, str], bool], client: SOARClient
+    ):
         """
         Handles multiple ways of returning response from action. The simplest result
         can be returned from the action as a tuple of success boolean value and an extra

@@ -1,13 +1,10 @@
-import typing
 from typing import Any, Optional, Union
 
+from phantom.action_result import ActionResult as PhantomActionResult
 from phantom.base_connector import BaseConnector
 from soar_sdk.action_results import ActionResult
 
 from .abstract import SOARClient
-
-if typing.TYPE_CHECKING:
-    pass
 
 
 class LegacyConnectorAdapter(SOARClient):
@@ -21,7 +18,7 @@ class LegacyConnectorAdapter(SOARClient):
     def set_csrf_info(self, token: str, referer: str) -> None:
         self.connector._set_csrf_info(token, referer)
 
-    def handle_action(self, param):
+    def handle_action(self, param: dict[str, Any]) -> None:
         self.connector.handle_action(param)
 
     def handle(
@@ -37,7 +34,7 @@ class LegacyConnectorAdapter(SOARClient):
     def finalize(self) -> bool:
         return self.connector.finalize()
 
-    def add_result(self, action_result: ActionResult) -> None:
+    def add_result(self, action_result: ActionResult) -> PhantomActionResult:
         return self.connector.add_action_result(action_result)
 
     def get_results(self):

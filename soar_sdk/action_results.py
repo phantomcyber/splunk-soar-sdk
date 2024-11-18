@@ -5,7 +5,9 @@ from phantom.action_result import ActionResult as PhantomActionResult
 
 class ActionResult(PhantomActionResult):
 
-    def __init__(self, status: bool, message: str, param: Optional[dict] = None) -> None:
+    def __init__(
+        self, status: bool, message: str, param: Optional[dict] = None
+    ) -> None:
         super().__init__(param)
         self.set_status(status, message)
 

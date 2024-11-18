@@ -43,7 +43,7 @@ class AppConnector(BaseConnector, SOARClient):
     def handle(
         self,
         input_data: str,
-        handle: Optional[Any],
+        handle: Optional[Any] = None,
     ) -> str:
         """Public method for handling the input data with the selected handler"""
         self.print_progress_message = True
@@ -61,11 +61,9 @@ class AppConnector(BaseConnector, SOARClient):
             except ValidationError:
                 # FIXME: Consider adding more details to this error, but be aware
                 #  of possible PIIs.
-                return False, f"Invalid input params for {action_id}"
+                return
 
-            return handler(params)
-
-        return False, f"Missing handler for action {action_id}"
+            handler(params)
 
     def initialize(self):
         # Load the state in initialize, use it to store data
