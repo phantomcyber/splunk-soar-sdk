@@ -127,7 +127,6 @@ def test_app_action_simple_declaration(simple_app):
 
 
 def test_action_decoration_with_meta(simple_app):
-
     @simple_app.action(name="Test Function", identifier="test_function_id")
     def foo(params: Params):
         """
@@ -155,7 +154,6 @@ def test_action_decoration_with_meta(simple_app):
 
 
 def test_action_decoration_uses_function_name_for_action_name(simple_app):
-
     @simple_app.action()
     def action_function(params: Params):
         pass
@@ -164,7 +162,6 @@ def test_action_decoration_uses_function_name_for_action_name(simple_app):
 
 
 def test_action_decoration_uses_meta_identifier_for_action_name(simple_app):
-
     @simple_app.action(identifier="some_identifier")
     def action_function(params: Params):
         pass

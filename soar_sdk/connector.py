@@ -24,7 +24,6 @@ class AppConnector(BaseConnector, SOARClient):
     """
 
     def __init__(self, actions_provider: "ActionsProvider"):
-
         # Call the BaseConnectors init first
         super().__init__()
 

@@ -21,15 +21,11 @@ repos:
           - --unsafe
       - id: end-of-file-fixer
 
-  - repo: https://github.com/psf/black
-    rev: 24.10.0
-    hooks:
-      - id: black
-
   - repo: https://github.com/charliermarsh/ruff-pre-commit
     rev: 'v0.7.0'
     hooks:
       - id: ruff
+      - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.12.1
@@ -37,9 +33,3 @@ repos:
     - id: mypy
       language: system
       exclude: .*tests/.*
-
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        name: isort (python)

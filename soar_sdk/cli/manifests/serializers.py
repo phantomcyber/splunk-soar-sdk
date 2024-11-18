@@ -6,7 +6,6 @@ from soar_sdk.params import Params
 
 
 class ParamsSerializer:
-
     @staticmethod
     def serialize_field_info(field: ModelField) -> dict[str, Any]:
         extra = field.field_info.extra

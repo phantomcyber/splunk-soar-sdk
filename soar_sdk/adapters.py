@@ -8,7 +8,6 @@ from .abstract import SOARClient
 
 
 class LegacyConnectorAdapter(SOARClient):
-
     def __init__(self, legacy_connector_class: type[BaseConnector]) -> None:
         self.connector = legacy_connector_class()
 

@@ -4,10 +4,8 @@ from .app import AppMeta
 
 
 class TOMLDataAdapter:
-
     @staticmethod
     def load_data(filepath: str) -> AppMeta:
-
         with open(filepath) as f:
             toml_data = toml.load(f)
 

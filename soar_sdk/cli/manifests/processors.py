@@ -11,7 +11,6 @@ from soar_sdk.meta.app import AppMeta
 
 
 class ManifestProcessor:
-
     def __init__(self, manifest_path: str, project_context: str = "."):
         self.manifest_path = manifest_path
         self.project_context = Path(project_context)

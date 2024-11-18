@@ -5,7 +5,6 @@ from tests.stubs import BaseConnectorMock
 
 
 def test_legacy_connector_adapter_delegates_method_calls():
-
     adapter = LegacyConnectorAdapter(BaseConnectorMock)
 
     adapter.get_soar_base_url()
