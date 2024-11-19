@@ -4,7 +4,7 @@ from pydantic.fields import Field, FieldInfo
 from pydantic.main import BaseModel
 
 
-def Param(
+def Param(  # type: ignore
     order: int,
     description: str,
     default: str = "",

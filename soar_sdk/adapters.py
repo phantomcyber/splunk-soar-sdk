@@ -36,7 +36,7 @@ class LegacyConnectorAdapter(SOARClient):
     def add_result(self, action_result: ActionResult) -> PhantomActionResult:
         return self.connector.add_action_result(action_result)
 
-    def get_results(self):
+    def get_results(self) -> list:
         return self.connector.get_action_results()
 
     def save_progress(

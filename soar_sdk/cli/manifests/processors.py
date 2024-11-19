@@ -26,7 +26,7 @@ class ManifestProcessor:
 
         return app_meta
 
-    def create(self):
+    def create(self) -> None:
         """
         Creates the App Manifest JSON information with all sources
         and save it back to the manifest file.
@@ -41,7 +41,7 @@ class ManifestProcessor:
             f"{self.project_context.as_posix()}/pyproject.toml"
         )
 
-    def save_json_manifest(self, app_meta: AppMeta):  # pragma: no cover
+    def save_json_manifest(self, app_meta: AppMeta) -> None:
         with open(self.manifest_path, "w") as f:
             json.dump(app_meta.dict(), f, indent=4)
 

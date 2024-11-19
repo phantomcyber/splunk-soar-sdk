@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Type, Any
 
 from pydantic import BaseModel, Field
 
@@ -17,7 +17,7 @@ class ActionMeta(BaseModel):
     parameters: Type[Params] = Field(default=Params)
     output: list = Field(default_factory=list)
 
-    def dict(self, *args, **kwargs):
+    def dict(self, *args, **kwargs) -> dict[str, Any]:  # type: ignore
         data = super().dict(*args, **kwargs)
         data["parameters"] = ParamsSerializer.serialize_fields_info(self.parameters)
         return data

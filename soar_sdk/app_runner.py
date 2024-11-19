@@ -2,7 +2,7 @@ import argparse
 import json
 import typing
 from pprint import pprint
-from typing import Optional
+from typing import Optional, Any
 
 import requests
 
@@ -25,7 +25,7 @@ class AppRunner:
     :password: the SOAR instance user password
     """
 
-    def __init__(self, app: "App"):
+    def __init__(self, app: "App") -> None:
         self.app = app
         self.session_id: Optional[str] = None
         self.headers: dict = {}
@@ -34,7 +34,7 @@ class AppRunner:
         self.password: str = ""
         self.input_test_json: str = ""
 
-    def parse_args(self):  # pragma: no cover
+    def parse_args(self) -> None:  # pragma: no cover
         argparser = argparse.ArgumentParser()
 
         argparser.add_argument("input_test_json", help="Input Test JSON file")
@@ -47,14 +47,16 @@ class AppRunner:
         self.password = args.password
         self.input_test_json = args.input_test_json
 
-    def load_input_test_json(self):  # pragma: no cover
+    def load_input_test_json(self) -> dict[str, Any]:  # pragma: no cover
         with open(self.input_test_json) as f:
             in_json = f.read()
-            in_json = json.loads(in_json)
-            print(json.dumps(in_json, indent=4))
-        return in_json
 
-    def login(self):  # pragma: no cover
+        in_json_dict = json.loads(in_json)
+        print(json.dumps(in_json, indent=4))
+
+        return in_json_dict
+
+    def login(self) -> None:  # pragma: no cover
         """Signs into SOAR to retrieve session ID and CSRF token for later API calls"""
 
         if self.username is not None and self.password is None:
@@ -96,7 +98,7 @@ class AppRunner:
                 print("Unable to get session id from the platform. Error: " + str(e))
                 exit(1)
 
-    def run(self):
+    def run(self) -> None:
         self.parse_args()
         self.login()
         in_json = self.load_input_test_json()

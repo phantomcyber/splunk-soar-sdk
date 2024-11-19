@@ -9,7 +9,7 @@ class Action(Protocol):
     meta: ActionMeta
     params_class: type[Params]
 
-    def __call__(self, *args, **kwargs) -> bool: ...
+    def __call__(self, *args, **kwargs) -> bool: ...  # type: ignore
 
 
 def action_protocol(func: Any) -> Action:

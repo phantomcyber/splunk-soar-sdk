@@ -1,11 +1,13 @@
-import typing
+from typing import Tuple, Optional, TYPE_CHECKING, Any
 
 import requests
 from bs4 import BeautifulSoup
+from requests import Response
 
 import phantom.app as phantom
+from phantom.action_result import ActionResult as PhantomActionResult
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from soar_sdk.connector import AppConnector
 
 
@@ -20,7 +22,9 @@ class RestApiCaller:  # pragma: no cover
         self.connector = connector
 
     @staticmethod
-    def process_empty_response(response, action_result):  # pragma: no cover
+    def process_empty_response(
+        response: Response, action_result: PhantomActionResult
+    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         if response.status_code == 200:
             return phantom.APP_SUCCESS, {}
 
@@ -33,7 +37,9 @@ class RestApiCaller:  # pragma: no cover
         )
 
     @staticmethod
-    def process_html_response(response, action_result):  # pragma: no cover
+    def process_html_response(
+        response: Response, action_result: PhantomActionResult
+    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # An html response, treat it like an error
         status_code = response.status_code
 
@@ -54,7 +60,9 @@ class RestApiCaller:  # pragma: no cover
         return action_result.set_status(phantom.APP_ERROR, message), None
 
     @staticmethod
-    def process_json_response(r, action_result):  # pragma: no cover
+    def process_json_response(
+        r: Response, action_result: PhantomActionResult
+    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # Try a json parse
         try:
             resp_json = r.json()
@@ -79,7 +87,9 @@ class RestApiCaller:  # pragma: no cover
         return action_result.set_status(phantom.APP_ERROR, message), None
 
     @classmethod
-    def process_response(cls, r, action_result):  # pragma: no cover
+    def process_response(
+        cls, r: Response, action_result: PhantomActionResult
+    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # store the r_text in debug data, it will get dumped in the logs if the action fails
         if hasattr(action_result, "add_debug_data"):
             action_result.add_debug_data({"r_status_code": r.status_code})
@@ -110,12 +120,18 @@ class RestApiCaller:  # pragma: no cover
 
         return action_result.set_status(phantom.APP_ERROR, message), None
 
-    def call(self, endpoint, action_result, method="get", **kwargs):  # pragma: no cover
+    def call(
+        self,
+        endpoint: str,
+        action_result: PhantomActionResult,
+        method: str = "get",
+        **kwargs: dict[str, Any],
+    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # **kwargs can be any additional parameters that requests.request accepts
 
         config = self.connector.get_config()
 
-        resp_json = None
+        resp_json = None  # FIXME: it is never changed
 
         try:
             request_func = getattr(requests, method)
@@ -128,7 +144,7 @@ class RestApiCaller:  # pragma: no cover
             )
 
         # Create a URL to connect to
-        url = config.get("base_url") + endpoint
+        url = config.get("base_url", "") + endpoint
 
         try:
             r = request_func(

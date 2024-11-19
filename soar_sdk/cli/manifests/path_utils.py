@@ -2,10 +2,11 @@ import os
 import sys
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 
 @contextmanager
-def add_to_path(path: Path):
+def add_to_path(path: Path) -> Iterator[None]:
     """
     Add the path to sys.path temporarily
     """
@@ -19,7 +20,7 @@ def add_to_path(path: Path):
 
 
 @contextmanager
-def context_directory(path: Path):
+def context_directory(path: Path) -> Iterator[None]:
     """
     Temporarily change the current working directory and add it to path
     as if the code inside was running directly from the given path.

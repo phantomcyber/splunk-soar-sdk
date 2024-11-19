@@ -9,7 +9,7 @@ manifests = typer.Typer()
 
 
 @manifests.command()
-def display(filename):
+def display(filename: str) -> None:
     with open(filename, "r") as f:
         meta = json.load(f)
 
@@ -17,5 +17,5 @@ def display(filename):
 
 
 @manifests.command()
-def create(filename, project_context: str):
+def create(filename: str, project_context: str) -> None:
     ManifestProcessor(filename, project_context).create()

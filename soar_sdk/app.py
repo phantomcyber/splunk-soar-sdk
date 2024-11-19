@@ -1,7 +1,7 @@
 import inspect
 import sys
 from functools import wraps
-from typing import Any, Optional, Type, Union, Callable
+from typing import Any, Optional, Type, Union, Callable, Iterable
 
 from phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
@@ -47,13 +47,13 @@ class App:
         params_class: Optional[Type[Params]] = None,
         output: Optional[list[str]] = None,
         versions: str = "EQ(*)",
-    ):
+    ) -> Callable[[Callable], Callable]:
         """
         Generates a decorator for the action handling function attaching action
         specific meta information to the function.
         """
 
-        def app_action(function) -> Action:
+        def app_action(function: Callable) -> Action:
             """
             Decorator for the action handling function. Adds the specific meta
             information to the action passed to the generator. Validates types used on
@@ -73,8 +73,8 @@ class App:
                 params: Params,
                 /,
                 client: SOARClient = self.actions_provider.soar_client,
-                *args,
-                **kwargs,
+                *args: Iterable[Any],
+                **kwargs: dict[str, Any],
             ) -> bool:
                 """
                 Validates input params and adapts the results from the action.
@@ -109,7 +109,7 @@ class App:
         action_name: str,
         spec: inspect.FullArgSpec,
         params_class: Optional[type[Params]] = None,
-    ):
+    ) -> type[Params]:
         """
         Validates the class used for params argument of the action. Ensures the class
         is defined and provided as it is also used for building the manifest JSON file.
@@ -141,7 +141,7 @@ class App:
         return validated_params_class
 
     @staticmethod
-    def _validate_params(params: Params, action_name: str):
+    def _validate_params(params: Params, action_name: str) -> Params:
         """
         Validates input params, checking them against the use of proper Params class
         inheritance. This is automatically covered by AppConnector, but can be also
@@ -175,7 +175,7 @@ class App:
         return False
 
     @staticmethod
-    def _dev_skip_in_pytest(function: Callable, inner: Action):
+    def _dev_skip_in_pytest(function: Callable, inner: Action) -> None:
         """
         When running pytest, all actions with a name starting with `test_`
         will be treated as test. This method will mark them as to be skipped.

@@ -3,7 +3,7 @@ from typing import Any, Optional
 
 from pydantic import ValidationError
 
-from phantom.action_result import ActionResult
+from phantom.action_result import ActionResult as PhantomActionResult
 from phantom.base_connector import BaseConnector
 
 from .abstract import SOARClient
@@ -48,7 +48,7 @@ class AppConnector(BaseConnector, SOARClient):
         self.print_progress_message = True
         return self._handle_action(input_data, handle)
 
-    def handle_action(self, param):
+    def handle_action(self, param: dict[str, Any]) -> None:
         # Get the action that we are supposed to execute for this App Run
         action_id = self.get_action_identifier()
 
@@ -70,7 +70,7 @@ class AppConnector(BaseConnector, SOARClient):
         else:
             raise RuntimeError(f"Action {action_id} not found.")
 
-    def initialize(self):
+    def initialize(self) -> bool:
         # Load the state in initialize, use it to store data
         # that needs to be accessed across actions
         self._state = self.load_state() or {}
@@ -89,19 +89,19 @@ class AppConnector(BaseConnector, SOARClient):
 
         return True
 
-    def finalize(self):
+    def finalize(self) -> bool:
         self.save_state(self._state)
         return True
 
-    def add_result(self, action_result: ActionResult):
+    def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
         return self.add_action_result(action_result)
 
-    def get_results(self):
+    def get_results(self) -> list:
         return self.get_action_results()
 
     def debug(
         self,
         tag: str,
-        dump_object: typing.Union[str, list, dict, ActionResult, Exception] = "",
-    ):
+        dump_object: typing.Union[str, list, dict, PhantomActionResult, Exception] = "",
+    ) -> None:
         self.debug_print(tag, dump_object)
