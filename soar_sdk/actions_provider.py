@@ -17,19 +17,16 @@ class ActionsProvider:
     """
 
     def __init__(self, legacy_connector_class: Optional[type[BaseConnector]] = None):
-        self.legacy_soar_client: Optional[SOARClient] = self._get_legacy_soar_client(
-            legacy_connector_class
-        )
+        if legacy_connector_class is not None:
+            self.legacy_soar_client: Optional[SOARClient] = LegacyConnectorAdapter(
+                legacy_connector_class
+            )
+        else:
+            self.legacy_soar_client = None
+
         self.soar_client: AppConnector = AppConnector(self)
 
         self._actions: dict[str, Action] = {}
-
-    def _get_legacy_soar_client(
-        self, legacy_connector_class: Optional[type[BaseConnector]]
-    ) -> Optional[SOARClient]:
-        if legacy_connector_class:
-            return LegacyConnectorAdapter(legacy_connector_class)
-        return None
 
     def get_action(self, identifier: str) -> Optional[Action]:
         return self.get_actions().get(identifier)
