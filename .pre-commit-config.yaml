@@ -1,0 +1,35 @@
+# By default, run each hook only in the standard pre-commit stage
+default_stages: [commit]
+
+# Pre-commit hooks.   Configuration examples at https://pre-commit.com/
+repos:
+  - repo: https://github.com/ivellios/pre_ticket
+    rev: v1.1.0
+    hooks:
+      - id: pre_ticket
+        language_version: python3.9
+        stages: [commit-msg]
+        args: ['--regex=[a-zA-Z]+/(?P<ticket>\w+-\d+)-.*', '--format={ticket} - {message}']
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-yaml
+        args:
+          - --unsafe
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: 'v0.7.0'
+    hooks:
+      - id: ruff
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.12.1
+    hooks:
+    - id: mypy
+      language: system
+      exclude: .*tests/.*

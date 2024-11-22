@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "Example Application"
+version = "0.1.0"
+description = "This is the example SOAR app for testing"
+authors = [
+    "John Doe <email@domain.com>",
+]
+readme = "README.md"
+homepage = "https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.9, <3.10"
+#splunk-soar-sdk = "^0.1.0"
+"splunk soar app sdk" = {path = "../", develop = true}
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "3.7.0"
+coverage = "^7.6.7"
+mypy = "1.2.0"
+pytest = "7.4.2"
+pytest-mock = "^3.14.0"
+pytest-watch = "^4.2.0"
+ruff = "^0.7.4"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[virtualenvs]
+in-project = true
+
+[tool.soar.app]
+app_module = "src.app.app"
+appid = "1e1618e7-2f70-4fc0-916a-f96facc2d2e4"
+type = "sandbox"
+product_vendor = "Splunk"
+logo = "logo.svg"
+logo_dark = "logo_dark.svg"
+product_name = "Example App"
+python_version = "3"
+product_version_regex = ".*"
+publisher = "Splunk"
+license = "Copyright"
+package_name = "example_app"
+min_phantom_version = "6.2.2.134"
+app_wizard_version = "1.0.0"
+fips_compliant = false
+main_module = "app.py"
