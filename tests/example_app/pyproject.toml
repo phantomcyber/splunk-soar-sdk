@@ -31,7 +31,6 @@ build-backend = "poetry.core.masonry.api"
 in-project = true
 
 [tool.soar.app]
-app_module = "src.app.app"
 appid = "1e1618e7-2f70-4fc0-916a-f96facc2d2e4"
 type = "sandbox"
 product_vendor = "Splunk"
@@ -46,4 +45,4 @@ package_name = "example_app"
 min_phantom_version = "6.2.2.134"
 app_wizard_version = "1.0.0"
 fips_compliant = false
-main_module = "app.py"
+main_module = "src/app.py:app"

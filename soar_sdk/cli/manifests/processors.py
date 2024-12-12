@@ -45,9 +45,19 @@ class ManifestProcessor:
         with open(self.manifest_path, "w") as f:
             json.dump(app_meta.dict(), f, indent=4)
 
+    @staticmethod
+    def get_module_dot_path(main_module: str) -> str:
+        """Returns module dot-path based on the main module setting
+        e.g. src/app.py:app -> src.app
+        """
+        module_path = main_module.split(":")[0]
+        module_path = module_path[:-3] if module_path.endswith(".py") else module_path
+        module_path = module_path[:-4] if module_path.endswith(".pyc") else module_path
+        return module_path.replace("/", ".")
+
     def import_app_instance(self, app_meta: AppMeta) -> App:
-        module_name = ".".join(app_meta.app_module.split(".")[:-1])
-        app_instance_name = app_meta.app_module.split(".")[-1]
+        module_name = self.get_module_dot_path(app_meta.main_module)
+        app_instance_name = app_meta.main_module.split(":")[-1]
 
         with context_directory(self.project_context):
             # operate as if running in the project context directory

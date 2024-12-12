@@ -1,3 +1,4 @@
+import pytest
 from unittest import mock
 
 from soar_sdk.cli.manifests.processors import ManifestProcessor
@@ -24,3 +25,16 @@ def test_save_json(open_mock):
         processor.save_json_manifest(mock.Mock())
 
     mock_json.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "main_module, dot_path",
+    (
+        ("src/app.py:app", "src.app"),
+        ("src/modules/app.py:app", "src.modules.app"),
+        ("src/app:app", "src.app"),
+        ("src/app.pyc:app", "src.app"),
+    ),
+)
+def test_get_module_dot_path(main_module, dot_path):
+    assert ManifestProcessor.get_module_dot_path(main_module) == dot_path
