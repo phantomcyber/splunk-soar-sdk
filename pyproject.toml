@@ -3,7 +3,10 @@ name = "Splunk SOAR App SDK"
 version = "0.1.0"
 description = "A framework for developing and testing the Splunk SOAR Apps"
 authors = [
-    "Janusz Kamieński <jkamienski@splunk.com>",]
+    "Jacob Davis <jacobd@splunk.com>",
+    "Janusz Kamieński <jkamienski@splunk.com>",
+    "Michał Posłuszny <mposluszny@splunk.com>"
+]
 readme = "README.md"
 homepage = "https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html"
 packages = [{include = "soar_sdk"}]
