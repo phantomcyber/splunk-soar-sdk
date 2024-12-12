@@ -11,9 +11,9 @@ class AppMeta(BaseModel):
     product_vendor: str
     app_version: str
     license: str
-    main_module: str
     min_phantom_version: str
     package_name: str
+    main_module: str = "src/app.py:app"  # TODO: Some validation would be nice
     logo: str = ""
     logo_dark: str = ""
     product_name: str = ""
@@ -21,7 +21,6 @@ class AppMeta(BaseModel):
     product_version_regex: str = ".*"
     publisher: str = ""
     utctime_updated: str = ""
-    app_module: str = "src.app.app"
     app_wizard_version: str = ""
     fips_compliant: bool = False
 
