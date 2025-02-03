@@ -1,0 +1,200 @@
+
+# Getting Started
+
+In this section we will guide you through the basic process of creating your first draft of the SOAR App.
+
+## Actions philosophy
+
+Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality.
+Each app provides a new set of actions that can used for the security investigation (also automated one,
+when used in playbooks). Usually, a single app adds actions for one specific tool or 3rd party service
+(eg. whois lookup or geolocation).
+
+When building your app, you will focus on implementing the actions like sending data to the external service
+or
+
+This SDK is a set of tools to build, test and run your own app that will extend the SOAR installation by implementing
+actions.
+
+# Your first app
+
+
+
+## The app structure
+
+The SDK works with the common python library structure written using poetry. You can quickly dive into
+the app development by using one of the app templates available in the `app_templates` directory of the SDK repository.
+
+To create your own app you should either copy the `app_templates/simple_app` files as your own project directory or
+create the starting directory/files structure yourself that will reflect this tree:
+
+```shell
+
+my_app/
+├─ src/
+│  ├─ __init__.py
+│  ├─ app.py
+├─ tests/
+│  ├─ __init__.py
+│  ├─ test_app.py
+├─ .pre-commit-config.yaml
+├─ logo.svg
+├─ logo_dark.svg
+├─ pyproject.toml
+```
+
+We describe and explain each of the files in full in the dedicated [documentation pages about the app structure](/docs/app_structure/index.md).
+
+For now, let's shortly go over each of the components in the structure, so we can create our first action.
+
+### The `src` directory and the `app.py` file
+
+In this directory you will develop your app source code. We typically place here the `app.py` file
+with the main module code. Keep in mind you can always add more python modules to this directory and import
+them in the `app.py` file to create cleaner maintainable code.
+
+In the `app.py` file we typically create the `App` instance and define actions and provide its implementation.
+This module will be used in our `pyproject.toml` app configuration to point the `app` object as `main_module` for
+use in SOAR platform when running actions.
+
+[Read the detailed documentation on the `app.py` file contents](/docs/app_structure/app.py.md)
+
+Note that the `test_connectivity` action is mandatory for each app. It is used when installing the app in
+the SOAR platform and checked usually when a new asset is added for the app. This is why it is always provided
+in the app scratch files.
+
+### The `tests` directory and the `test_app.py` file
+
+In this directory you will add unit test files for the app. The sample test file should be present there with at least
+basic tests on the actions you create.
+
+[Read the detailed documentation on the `test_app.py` file contents](/docs/app_structure/test_app.py.md)
+
+### The `logo*.svg` files
+
+These files are used by SOAR platform to present your application in the web UI. You should always provide
+two versions of the logo. The regular one is used for light mode and the `_dark` file is used for the dark mode.
+
+### `pyproject.toml` configuration file
+
+This file defines the app development parameters, dependencies, and also configuration data for the app.
+
+In this file you will define poetry dependencies (including this SDK) and basic information like the name
+of the app, its version, description, authors, and other params.
+
+[Read the detailed documentation on the `pyproject.toml` file contents](/docs/app_structure/test_app.py.md)
+
+
+## Creating your first action
+
+Your app should already have the `app` object instance created in the `app.py` file. In the future you will
+initialize it with extra arguments, like the asset configuration, to specify the asset data. You can read more on
+[how to initialize the app on the dedicated docs page](/docs/app_configuration.md).
+
+For now let's focus on creating a very simple action and see the basics of its structure. You should already have
+one action defined in your `app.py` file called `test_connectivity` which must be created in every app. You can check
+how it is constructed. Our first action will be very similar to it.
+
+The `app` instance provides the `action` decorator which is used to turn your python functions into SOAR App actions.
+
+Here's the code of the simplest action you can create:
+
+```python
+@app.action()
+def my_action(params: Params, client: SOARClient):
+    """This is the first custom action in the app"""
+    return True, "Action run successful"
+```
+
+Let's break down this example to explain what happens here.
+
+### `App.action` decorator
+
+```python
+@app.action()
+```
+
+The decorator is connecting your function with the app instance and the SOAR engine.
+
+It's responsible for many things related to running the app under the hood, so you can
+focus on developing the action. Here are some things it takes care of:
+
+- registers your action, so it is invoked when running the app in SOAR platform
+- sets the configuration values for the action (which you can define by providing extra params in the call parenthesis)
+- checks if the action params are provided, valid and of the proper type
+- inspects your action arguments types and validates them
+
+For more, [read the doc page dedicated to the `App.action` decorator](/docs/action_decorator.md).
+
+### The action declaration
+
+```python
+def my_action(params: Params, client: SOARClient):
+```
+
+`my_action` is the identifier of the action and as such it will be visible later in the SOAR platform.
+`App.action` decorator automatically converts this to _"my action"_ string name that will be used then generating
+the app Manifest file and the documentation.
+
+Each action should accept and define `params` and `client` arguments with proper typehints.
+
+The `params` argument should always be of the class type inherited from `soar_sdk.params.Params`.
+You can [read more on defining the action params in the separate docs page](/docs/action_params.md).
+
+The `client` is automatically injected into your action function run and should not be passed when manually
+calling the decorated function. You can pass it though, if you want to mock the `SOARClient` instance in your tests.
+[Read more on testing the actions](/docs/testing/actions.md)
+
+### The action description docstring
+
+```python
+    """This is the first custom action in the app"""
+```
+
+You should always provide the docstring for your action. It makes your code easier to understand and maintain, but
+also, the docstring is (by defualt) used by the `App.action` decorator to generate the action description for the
+app documentation in SOAR platform.
+
+The description should be kept short and simple, explaining what the action does.
+
+### The action result
+
+```python
+    return True, "Action run successful"
+```
+
+Each action must return at least one action result. While you can create multiple instances of the action result
+and pass more than one values, the one that is most important is the general action result.
+
+Prior to SDK, the connectors had to define and create their own `ActionResult` instances. This is simplified now
+in SDK. Simply return a two-element tuple. The first value should be a `boolean` of `True` if action run was successful,
+or `False` otherwise. The second tuple element is the result comment which can be useful for logging the action runs
+and debugging.
+
+[Read more on action results and outputs for actions](/docs/action_outputs.md)
+
+As you can see, this simple action is taking bare `Params` object, so with no defined params and simply returns
+the result of successful run.
+
+## Building the app
+
+### Generating the Manifest file
+
+### Building dependencies wheels
+
+### Creating installation package
+
+## Installing and running the app
+
+# Next steps
+
+Now that you have a working app, you can start its development. Here's what can check next when working
+with the app you create:
+
+- [writing the tests](/docs/testing/index.md)
+- [defining action params](/docs/action_params.md)
+- [defining and using the action output](/docs/action_outputs.md)
+- [configuring the app assets](/docs/app_configuration.md)
+
+For more advanced topics, see the [advanced apps development docs page](/docs/advanced_usage.md).
+It covers old connectors porting, good practices, using the old connectors API and more.
