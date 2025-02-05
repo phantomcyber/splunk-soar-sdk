@@ -16,23 +16,15 @@ from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.params import Params
 
-from .params import SomeActionParams
 
 app = App()
 
 
 @app.action(action_type="test")
-def test_connectivity(params: Params, client: SOARClient):
+def test_connectivity(params: Params, client: SOARClient) -> tuple[bool, str]:
     """Testing the connectivity service."""
     client.save_progress("Connectivity checked!")
     return True, "Connectivity checked!"
-
-
-@app.action()
-def some_action(params: SomeActionParams, client: SOARClient):
-    """This is some action..."""
-    client.save_progress(f"Some action is being run with: {params}")
-    return True, "Some action has ended!"
 
 
 if __name__ == "__main__":

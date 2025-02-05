@@ -57,7 +57,7 @@ them in the `app.py` file to create cleaner maintainable code.
 In the `app.py` file we typically create the `App` instance and define actions and provide its implementation.
 This module will be used in our `pyproject.toml` app configuration to point the `app` object as `main_module` for
 use in SOAR platform when running actions.
-
+![logo_dark.svg](../../../Downloads/logo_dark.svg)
 [Read the detailed documentation on the `app.py` file contents](/docs/app_structure/app.py.md)
 
 Note that the `test_connectivity` action is mandatory for each app. It is used when installing the app in
@@ -84,6 +84,24 @@ In this file you will define poetry dependencies (including this SDK) and basic 
 of the app, its version, description, authors, and other params.
 
 [Read the detailed documentation on the `pyproject.toml` file contents](/docs/app_structure/test_app.py.md)
+
+
+## Configuring the environment
+
+Once you have your starting app file structure, you will need to set up your app development environment.
+
+In your app directory install the pre-commit hooks:
+
+```shell
+pre-commit install
+```
+
+Then you need to set up the environment using poetry. It will set up the virtual environment and install
+necessary dependencies:
+
+```shell
+poetry install
+```
 
 
 ## Creating your first action
@@ -177,7 +195,27 @@ and debugging.
 As you can see, this simple action is taking bare `Params` object, so with no defined params and simply returns
 the result of successful run.
 
-## Building the app
+## Testing and building the app
+
+### Test your app
+
+In order to run tests (there's only one at the moment) you will use pyest in the shell of the poetry virtual env:
+
+```shell
+poetry run pytest
+```
+
+You can also enter the shell first to always work in the context of your virtual env. First run:
+
+```shell
+poetry shell
+```
+
+From this shell, you will be able to run `soarapps` commands from the SDK CLI. Now you can simply run:
+
+```shell
+pytest
+```
 
 ### Generating the Manifest file
 

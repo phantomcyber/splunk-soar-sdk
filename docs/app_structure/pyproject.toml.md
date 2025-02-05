@@ -16,7 +16,7 @@ Here's the example file contents for starting app:
 ```toml
 [tool.poetry]
 name = "Example Application"
-version = "0.1.0"
+version = "0.0.1"
 description = "This is the basic example SOAR app"
 authors = [
     "John Doe <email@domain.com>",
@@ -27,7 +27,7 @@ packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.9, <3.10"
-splunk-soar-sdk = "^0.1.0"
+splunk-soar-sdk = "^0.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pre-commit = "3.7.0"
@@ -51,7 +51,7 @@ type = "sandbox"
 product_vendor = "Splunk"
 logo = "logo.svg"
 logo_dark = "logo_dark.svg"
-product_name = "Demo App"
+product_name = "Example App"
 python_version = "3"
 product_version_regex = ".*"
 publisher = "Splunk"
