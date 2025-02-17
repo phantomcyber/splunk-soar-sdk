@@ -143,7 +143,7 @@ focus on developing the action. Here are some things it takes care of:
 - checks if the action params are provided, valid and of the proper type
 - inspects your action arguments types and validates them
 
-For more, [read the doc page dedicated to the `App.action` decorator](/docs/action_decorator.md).
+For more, [read the doc page dedicated to the `App.action` decorator](/docs/actions/action_decorator.md).
 
 ### The action declaration
 
@@ -158,7 +158,7 @@ the app Manifest file and the documentation.
 Each action should accept and define `params` and `client` arguments with proper typehints.
 
 The `params` argument should always be of the class type inherited from `soar_sdk.params.Params`.
-You can [read more on defining the action params in the separate docs page](/docs/action_params.md).
+You can [read more on defining the action params in the separate docs page](/docs/actions/action_params.md).
 
 The `client` is automatically injected into your action function run and should not be passed when manually
 calling the decorated function. You can pass it though, if you want to mock the `SOARClient` instance in your tests.
@@ -190,7 +190,7 @@ in SDK. Simply return a two-element tuple. The first value should be a `boolean`
 or `False` otherwise. The second tuple element is the result comment which can be useful for logging the action runs
 and debugging.
 
-[Read more on action results and outputs for actions](/docs/action_outputs.md)
+[Read more on action results and outputs for actions](/docs/actions/action_outputs.md)
 
 As you can see, this simple action is taking bare `Params` object, so with no defined params and simply returns
 the result of successful run.
@@ -294,8 +294,8 @@ Now that you have a working app, you can start its development. Here's what can 
 with the app you create:
 
 - [writing the tests](/docs/testing/index.md)
-- [defining action params](/docs/action_params.md)
-- [defining and using the action output](/docs/action_outputs.md)
+- [defining action params](/docs/actions/action_params.md)
+- [defining and using the action output](/docs/actions/action_outputs.md)
 - [configuring the app assets](/docs/app_configuration.md)
 
 For more advanced topics, see the [advanced apps development docs page](/docs/advanced_usage.md).
