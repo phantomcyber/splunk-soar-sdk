@@ -227,7 +227,7 @@ The manifest file should be always generated automatically by using the SDK tool
 SDK CLI command in your project directory:
 
 ```shell
-soarapps manifests create first_app.json .
+soarapps manifests create my_app.json .
 ```
 
 The json file is the target manifest JSON filename to be created. The trailing dot is a context in which the manifest
