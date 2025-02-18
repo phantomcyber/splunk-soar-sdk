@@ -7,9 +7,9 @@ with this file for managing the dev environment and dependencies. Additionally, 
 section (table) with meta information needed for generating the [SOAR App Manifest](/docs/app_manifest.md).
 
 The file contents provide:
-- basic application info (eg. name, version, description)
+- basic application info (e.g. name, version, description)
 - dependencies - which SDK uses for building the app dependency wheels
-- soar app Manifest information - the data required for creating the app Manifest (eg. appid, type, )
+- soar app Manifest information - the data required for creating the app Manifest (e.g. appid, type )
 
 Here's the example file contents for starting app:
 
@@ -83,7 +83,7 @@ the app development:
 The following packages are optional, but strongly recommended for following the good practices
 and keeping your app maintainable:
 - `mypy` for taking care of static type checking
-- `pytest-watch` for contantly running tests while developing (eg. in TDD)
+- `pytest-watch` for contantly running tests while developing (e.g. in TDD)
 - `ruff` for linting and formatting the code ([check more](https://github.com/astral-sh/ruff))
 
 ## SOAR App information table

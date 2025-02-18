@@ -8,7 +8,7 @@ In this section we will guide you through the basic process of creating your fir
 Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality.
 Each app provides a new set of actions that can used for the security investigation (also automated one,
 when used in playbooks). Usually, a single app adds actions for one specific tool or 3rd party service
-(eg. whois lookup or geolocation).
+(e.g. whois lookup or geolocation).
 
 When building your app, you will focus on implementing the actions like sending data to the external service
 or
@@ -245,7 +245,7 @@ reuse for your needs. You can check the [SDK pyproject.toml](/pyproject.toml) fi
 of SDK that you can use. Since you already use SDK as a dependency, the others will be available in your development
 environment as well (and in your configured IDE).
 
-First, make sure you have no `wheels` directory in your app directory. If you do (eg. from the last build), you need
+First, make sure you have no `wheels` directory in your app directory. If you do (e.g. from the last build), you need
 to remove it.
 
 **TODO**: We should change the way wheels-building tool works to not require this step.

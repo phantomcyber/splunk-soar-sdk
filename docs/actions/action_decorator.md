@@ -5,7 +5,7 @@ The Action decorator is the core functionality of the SDK. It moves the boilerpl
 leaving space for writing the actual action implementation.
 
 The main responsibility of the decorator is to convert the python function into the Action, which is a meta-described
-function with extra information (eg. its name, description, or params).
+function with extra information (e.g. its name, description, or params).
 
 Moreover, when decorating the function (on the module importing process), it is instantly verified against the necessary
 setup. So if you miss the action params, or description, you will know even before the code is executed in the runtime.
@@ -13,9 +13,9 @@ As soon, as you import the action to your tests, you will know if it is properly
 
 The main responsibilities of the decorator are:
 - validation of [the Params model](./action_params.md)
-- replacement the decorated function with it's own function for running actions
+- replacement of the decorated function with its own function for running actions
 - registration of the action for the app
-- extension of the action with its meta information (eg. name, description, type)
+- extension of the action with its meta information (e.g. name, description, type)
 - handling of the returned Action Result (**FIXME** this is subject to change and actions will return Output instance instead)
 
 For more on well constructed actions, check the [Action Anatomy docs](./action_anatomy.md).
