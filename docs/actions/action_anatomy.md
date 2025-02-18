@@ -58,7 +58,7 @@ The `params` argument will contain the data passed to the action in the runtime.
 from another action in the Playbook, or directly by an investigator in the process of working with containers.
 
 Every action needs to specify the type of this argument with a typehint. The type should be a class inheriting from
-`sdk.params.Params` class. It is a dedicated pydantic model, which is responsible for validating the data passed into
+`soar_sdk.params.Params` class. It is a dedicated pydantic model, which is responsible for validating the data passed into
 the action, and defining the expected data types for the manifest file.
 
 You can read more about [building the Params Models on a separate docs page](./action_params.md).
@@ -72,7 +72,7 @@ The default SOAR Client is connected to the SOAR platform and as such will requi
 But, when testing your actions, you can pass your own SOAR client mock overwriting the default one. That way you
 don't need a running SOAR platform for testing your actions.
 
-For this argument you should always set `sdk.abstract.SOARClient` as the type, to get the best hints support in your
+For this argument you should always set `soar_sdk.abstract.SOARClient` as the type, to get the best hints support in your
 IDE.
 
 You can learn more on actions testing in [the testing docs pages](/docs/testing/index.md).

@@ -77,7 +77,7 @@ The default value is `True`.
 ### `params_class: Type[Params]`
 
 Each action has params passed to the `params` argument of the action function. The type of the argument needs to be set,
-and it should inherit from `sdk.params.Params` class. By default, the decorator uses a type provided in the function
+and it should inherit from `soar_sdk.params.Params` class. By default, the decorator uses a type provided in the function
 declaration for the `params` argument:
 
 ```python
