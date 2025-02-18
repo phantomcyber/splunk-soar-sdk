@@ -57,7 +57,7 @@ them in the `app.py` file to create cleaner maintainable code.
 In the `app.py` file we typically create the `App` instance and define actions and provide its implementation.
 This module will be used in our `pyproject.toml` app configuration to point the `app` object as `main_module` for
 use in SOAR platform when running actions.
-![logo_dark.svg](../../../Downloads/logo_dark.svg)
+
 [Read the detailed documentation on the `app.py` file contents](/docs/app_structure/app.py.md)
 
 Note that the `test_connectivity` action is mandatory for each app. It is used when installing the app in
