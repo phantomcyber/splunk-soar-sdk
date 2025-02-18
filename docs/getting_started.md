@@ -26,7 +26,7 @@ its crucial components and functionality.
 The SDK works with the common python library structure written using poetry. You can quickly dive into
 the app development by using one of the app templates available in the `app_templates` directory of the SDK repository.
 
-To create your own app you should either copy the `app_templates/simple_app` files as your own project directory or
+To create your own app you should either copy the [`app_templates/basic_app`](/app_templates/basic_app) files as your own project directory or
 create the starting directory/files structure yourself that will reflect this tree:
 
 ```shell
