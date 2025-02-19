@@ -290,7 +290,7 @@ of the platform.
 
 # Next steps
 
-Now that you have a working app, you can start its development. Here's what can check next when working
+Now that you have a working app, you can start its development. Here's what you can check next when working
 with the app you create:
 
 - [writing the tests](/docs/testing/index.md)
