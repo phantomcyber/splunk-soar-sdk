@@ -11,7 +11,7 @@ when used in playbooks). Usually, a single app adds actions for one specific too
 (e.g. whois lookup or geolocation).
 
 When building your app, you will focus on implementing the actions like sending data to the external service
-or
+or updating the containers on SOAR platform.
 
 This SDK is a set of tools to build, test and run your own app that will extend the SOAR installation by implementing
 actions.
@@ -83,7 +83,7 @@ This file defines the app development parameters, dependencies, and also configu
 In this file you will define poetry dependencies (including this SDK) and basic information like the name
 of the app, its version, description, authors, and other params.
 
-[Read the detailed documentation on the `pyproject.toml` file contents](/docs/app_structure/test_app.py.md)
+[Read the detailed documentation on the `pyproject.toml` file contents](/docs/app_structure/pyproject.toml.md)
 
 
 ## Configuring the environment
@@ -271,8 +271,6 @@ pre-commit run package-app-dependencies --all-files
 
 This command will create a new `wheels` directory and wheel files with dependencies in it. It will also update the
 manifest file with a list of dependencies pointing to the proper wheel files.
-
-Note that this hook will run by default on all your commit changes.
 
 ### Creating installation package
 
