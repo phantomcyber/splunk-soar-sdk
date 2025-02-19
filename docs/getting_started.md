@@ -152,7 +152,7 @@ def my_action(params: Params, client: SOARClient):
 ```
 
 `my_action` is the identifier of the action and as such it will be visible later in the SOAR platform.
-`App.action` decorator automatically converts this to _"my action"_ string name that will be used then generating
+`App.action` decorator automatically converts this to _"my action"_ string name that will be used when generating
 the app Manifest file and the documentation.
 
 Each action should accept and define `params` and `client` arguments with proper typehints.
