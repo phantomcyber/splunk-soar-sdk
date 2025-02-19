@@ -6,7 +6,7 @@ In this section we will guide you through the basic process of creating your fir
 ## Actions philosophy
 
 Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality.
-Each app provides a new set of actions that can used for the security investigation (also automated one,
+Each app provides a new set of actions that can be used for the security investigation (also automated one,
 when used in playbooks). Usually, a single app adds actions for one specific tool or 3rd party service
 (e.g. whois lookup or geolocation).
 
