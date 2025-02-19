@@ -83,7 +83,7 @@ the app development:
 The following packages are optional, but strongly recommended for following the good practices
 and keeping your app maintainable:
 - `mypy` for taking care of static type checking
-- `pytest-watch` for contantly running tests while developing (e.g. in TDD)
+- `pytest-watch` for constantly running tests while developing (e.g. in TDD)
 - `ruff` for linting and formatting the code ([check more](https://github.com/astral-sh/ruff))
 
 ## SOAR App information table
