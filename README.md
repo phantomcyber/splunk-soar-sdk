@@ -19,9 +19,3 @@ as one of the dependencies in your Splunk SOAR App using poetry (see the _Creati
 # Getting started
 
 In order to start using SDK and build your first SOAR App, follow the [Getting Started guide](/docs/getting_started.md).
-
-
-# Contributing
-
-The Splunk SOAR App is developed and provided by Splunk. For more on options to get involved in the development
-check the [contribution rules document](/CONTRIBUTING.md)
