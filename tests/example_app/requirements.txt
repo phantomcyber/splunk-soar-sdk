@@ -1,4 +1,0 @@
-toml==0.10.2
-distro==1.8.0
-simplejson==3.17.2
-typer==0.9.4

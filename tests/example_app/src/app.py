@@ -7,7 +7,7 @@ app = App()
 
 
 @app.action(action_type="test")
-def test_connectivity(param: Params, client: SOARClient):
+def test_connectivity(param: Params, client: SOARClient) -> tuple[bool, str]:
     client.debug("params", param.json())
     return True, "Connectivity is here"
 
