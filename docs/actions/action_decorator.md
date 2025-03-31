@@ -87,11 +87,15 @@ def my_action(params: MyActionParams, client: SOARClient)
 If, for any reason, you cannot provide this class as a type hint, you can provide it explicitly as the `params_class`
 keyword argument for action. It will be used in place of the default functionality.
 
-### `output`
+### `output_class: Type[ActionOutput]`
 
-**FIXME** Not yet implemented. The outputs are not yet available in the SDK. This documentation should be updated.
+Each action has a return type, which is usually a structured JSON object. The type of this object should inherit from the `soar_sdk.action_results.ActionOutput` class. This type can be specified in the decorator, but it defaults to using the return type of the handler function.
 
-The action output should be defined as described in [the official documentation](https://docs.splunk.com/Documentation/SOAR/current/DevelopApps/Metadata#Action_Section:_Output).
+```python
+def my_action(params: MyActionParams, client: SOARClient) -> MyActionOutput
+```
+
+For more info, see the [Action Outputs page](./action_outputs.md).
 
 ### `versions`
 

@@ -10,6 +10,7 @@ from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app_runner import AppRunner
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.types import Action, action_protocol
 
 
@@ -45,7 +46,7 @@ class App:
         action_type: str = "generic",  # TODO: consider introducing enum type for that
         read_only: bool = True,
         params_class: Optional[Type[Params]] = None,
-        output: Optional[list[str]] = None,
+        output_class: Optional[Type[ActionOutput]] = None,
         versions: str = "EQ(*)",
     ) -> Callable[[Callable], Callable]:
         """
@@ -66,6 +67,21 @@ class App:
             validated_params_class = self._validate_params_class(
                 action_name, spec, params_class
             )
+
+            return_type = inspect.signature(function).return_annotation
+            if return_type is not inspect.Signature.empty:
+                validated_output_class = return_type
+            elif output_class is not None:
+                validated_output_class = output_class
+            else:
+                raise TypeError(
+                    "Action function must specify a return type via type hint or output_class parameter"
+                )
+
+            if not issubclass(validated_output_class, ActionOutput):
+                raise TypeError(
+                    "Return type for action function must be derived from ActionOutput class."
+                )
 
             @wraps(function)
             @action_protocol
@@ -92,7 +108,7 @@ class App:
                 type=action_type,
                 read_only=read_only,
                 parameters=validated_params_class,
-                output=output or [],  # FIXME: all output need to contain params
+                output=validated_output_class,  # FIXME: all output need to contain params
                 versions=versions,
             )
 
@@ -155,7 +171,8 @@ class App:
 
     @staticmethod
     def _adapt_action_result(
-        result: Union[ActionResult, tuple[bool, str], bool], client: SOARClient
+        result: Union[ActionOutput, ActionResult, tuple[bool, str], bool],
+        client: SOARClient,
     ) -> bool:
         """
         Handles multiple ways of returning response from action. The simplest result
@@ -165,6 +182,15 @@ class App:
         For backward compatibility, it also supports returning ActionResult object as
         in the legacy Connectors.
         """
+        if isinstance(result, ActionOutput):
+            output_dict = result.dict()
+            result = ActionResult(
+                status=True,
+                message="",
+                param=output_dict,
+            )
+            client.add_result(result)
+            return True
         if isinstance(result, ActionResult):
             client.add_result(result)
             return result.get_status()

@@ -1,5 +1,6 @@
-from soar_sdk.cli.manifests.serializers import ParamsSerializer
+from soar_sdk.cli.manifests.serializers import ParamsSerializer, OutputsSerializer
 from soar_sdk.params import Param, Params
+from soar_sdk.action_results import ActionOutput, OutputField
 
 
 def test_params_get_sorted_fields_keys_sorts_by_field_order_value():
@@ -87,3 +88,133 @@ def test_params_serialize_fields_info():
 
     for param in serialized_params:
         assert serialized_params[param] == expected_params[param]
+
+
+def test_outputs_serialize_with_defaults():
+    serialized_outputs = OutputsSerializer.serialize_datapaths(Params, ActionOutput)
+    assert serialized_outputs == [
+        {
+            "data_path": "action_result.status",
+            "type": "string",
+            "example_values": ["success", "failure"],
+        },
+        {
+            "data_path": "action_result.message",
+            "type": "string",
+        },
+    ]
+
+
+def test_outputs_serialize_output_class():
+    class SampleNestedOutput(ActionOutput):
+        bool_value: bool
+
+    class SampleOutput(ActionOutput):
+        string_value: str
+        int_value: int
+        list_value: list[str]
+        cef_value: str = OutputField(cef_types=["ip"], example_values=["1.1.1.1"])
+        nested_value: SampleNestedOutput
+
+    serialized_outputs = OutputsSerializer.serialize_datapaths(Params, SampleOutput)
+
+    assert serialized_outputs == [
+        {
+            "data_path": "action_result.status",
+            "type": "string",
+            "example_values": ["success", "failure"],
+        },
+        {
+            "data_path": "action_result.message",
+            "type": "string",
+        },
+        {
+            "data_path": "action_result.data.*.string_value",
+            "type": "string",
+        },
+        {
+            "data_path": "action_result.data.*.int_value",
+            "type": "numeric",
+        },
+        {
+            "data_path": "action_result.data.*.list_value.*",
+            "type": "string",
+        },
+        {
+            "data_path": "action_result.data.*.cef_value",
+            "type": "string",
+            "contains": ["ip"],
+            "example_values": ["1.1.1.1"],
+        },
+        {
+            "data_path": "action_result.data.*.nested_value.bool_value",
+            "type": "boolean",
+        },
+    ]
+
+
+def test_outputs_serialize_with_parameters_class():
+    class SampleParams(Params):
+        int_value: int = Param(0, "Integer Value", data_type="numeric")
+        str_value: str = Param(1, "String Value")
+        bool_value: bool = Param(2, "Boolean Value", data_type="boolean")
+
+    class SampleNestedOutput(ActionOutput):
+        bool_value: bool
+
+    class SampleOutput(ActionOutput):
+        string_value: str
+        int_value: int
+        list_value: list[str]
+        cef_value: str = OutputField(cef_types=["ip"], example_values=["1.1.1.1"])
+        nested_value: SampleNestedOutput
+
+    serialized_outputs = OutputsSerializer.serialize_datapaths(
+        SampleParams, SampleOutput
+    )
+
+    assert serialized_outputs == [
+        {
+            "data_path": "action_result.status",
+            "type": "string",
+            "example_values": ["success", "failure"],
+        },
+        {
+            "data_path": "action_result.message",
+            "type": "string",
+        },
+        {
+            "data_path": "action_result.parameter.int_value",
+            "type": "numeric",
+        },
+        {
+            "data_path": "action_result.parameter.str_value",
+            "type": "string",
+        },
+        {
+            "data_path": "action_result.parameter.bool_value",
+            "type": "boolean",
+        },
+        {
+            "data_path": "action_result.data.*.string_value",
+            "type": "string",
+        },
+        {
+            "data_path": "action_result.data.*.int_value",
+            "type": "numeric",
+        },
+        {
+            "data_path": "action_result.data.*.list_value.*",
+            "type": "string",
+        },
+        {
+            "data_path": "action_result.data.*.cef_value",
+            "type": "string",
+            "contains": ["ip"],
+            "example_values": ["1.1.1.1"],
+        },
+        {
+            "data_path": "action_result.data.*.nested_value.bool_value",
+            "type": "boolean",
+        },
+    ]

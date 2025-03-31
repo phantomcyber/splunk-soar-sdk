@@ -1,5 +1,6 @@
 from unittest import mock
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Param, Params
 
 
@@ -27,3 +28,15 @@ class BaseConnectorMock(mock.Mock):
         # mocking all BaseConnector methods
         for method_name in self.mocked_methods:
             setattr(self, method_name, mock.MagicMock())
+
+
+class SampleNestedOutput(ActionOutput):
+    bool_value: bool
+
+
+class SampleOutput(ActionOutput):
+    string_value: str
+    int_value: int
+    list_value: list[str]
+    bool_value: bool
+    nested_value: SampleNestedOutput

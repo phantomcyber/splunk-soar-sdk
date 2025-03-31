@@ -1,4 +1,6 @@
-from typing import Optional
+from typing import Optional, Iterator, get_origin, get_args, TypedDict, Any
+from typing_extensions import NotRequired
+from pydantic import BaseModel, Field
 
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
@@ -19,3 +21,68 @@ class SuccessActionResult(ActionResult):
 class ErrorActionResult(ActionResult):
     def __init__(self, message: str, param: Optional[dict] = None) -> None:
         super().__init__(False, message, param)
+
+
+class OutputFieldSpecification(TypedDict):
+    data_path: str
+    type: str
+    contains: NotRequired[list[str]]
+    example_values: NotRequired[list[str]]
+
+
+def OutputField(
+    cef_types: Optional[list[str]] = None, example_values: Optional[list[str]] = None
+) -> Any:
+    return Field(
+        examples=example_values,
+        cef_types=cef_types,
+    )
+
+
+class ActionOutput(BaseModel):
+    """
+    ActionOutput defines the JSON schema that an action is expected to output.
+
+    It is translated into SOAR datapaths, example values, and CEF fields.
+    """
+
+    @classmethod
+    def _to_json_schema(
+        cls, parent_datapath: str = "action_result.data.*"
+    ) -> Iterator[OutputFieldSpecification]:
+        """
+        Converts the ActionOutput class to a JSON schema.
+        """
+        for field_name, field in cls.__fields__.items():
+            field_type = field.annotation
+            datapath = parent_datapath + f".{field_name}"
+
+            # Handle list types, even nested ones
+            while get_origin(field_type) is list:
+                field_type = get_args(field_type)[0]
+                datapath += ".*"
+
+            if issubclass(field_type, ActionOutput):
+                # If the field is another ActionOutput, recursively call _to_json_schema
+                for sub_field in field_type._to_json_schema(datapath):
+                    yield sub_field
+                continue
+            elif field_type is str:
+                type_name = "string"
+            elif field_type in (int, float):
+                type_name = "numeric"
+            elif field_type is bool:
+                type_name = "boolean"
+            else:
+                raise TypeError(
+                    f"Unsupported field type: {field_type} for field {field_name}"
+                )
+
+            schema_field = OutputFieldSpecification(data_path=datapath, type=type_name)
+
+            if cef_types := field.field_info.extra.get("cef_types"):
+                schema_field["contains"] = cef_types
+            if examples := field.field_info.extra.get("examples"):
+                schema_field["example_values"] = examples
+
+            yield schema_field
