@@ -26,5 +26,8 @@ except ImportError:
         def get_status(self) -> bool:
             return self.status
 
+        def get_param(self) -> dict:
+            return self.param
+
 
 __all__ = ["ActionResult"]

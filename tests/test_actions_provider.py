@@ -10,6 +10,7 @@ from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app import App
 from soar_sdk.connector import AppConnector
 from soar_sdk.params import Params
+from soar_sdk.action_results import ActionOutput
 
 
 def test_actions_provider_adapts_legacy_connector():
@@ -21,7 +22,7 @@ def test_actions_provider_adapts_legacy_connector():
 
 def test_get_action(simple_app: App):
     @simple_app.action()
-    def some_action(params: Params, client):
+    def some_action(params: Params, client) -> ActionOutput:
         pass
 
     assert simple_app.actions_provider.get_action("some_action") is some_action
@@ -29,7 +30,7 @@ def test_get_action(simple_app: App):
 
 def test_get_actions(simple_app: App):
     @simple_app.action()
-    def some_action(params: Params, client):
+    def some_action(params: Params, client) -> ActionOutput:
         pass
 
     assert simple_app.actions_provider.get_actions() == {"some_action": some_action}
@@ -37,7 +38,7 @@ def test_get_actions(simple_app: App):
 
 def test_get_actions_meta_list(simple_app: App):
     @simple_app.action()
-    def some_action(params: Params, client):
+    def some_action(params: Params, client) -> ActionOutput:
         pass
 
     assert simple_app.actions_provider.get_actions_meta_list() == [some_action.meta]
@@ -132,7 +133,7 @@ def test_action_called_with_multiple_results_set(example_app, simple_action_inpu
     client = example_app.actions_provider.soar_client
 
     @example_app.action()
-    def test_connectivity(params: Params, client: SOARClient):
+    def test_connectivity(params: Params, client: SOARClient) -> ActionOutput:
         action_result1 = ActionResult(True, "Testing function run 1")
         action_result2 = ActionResult(True, "Testing function run 2")
         client.add_result(action_result1)
