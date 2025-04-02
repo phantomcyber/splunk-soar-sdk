@@ -103,3 +103,7 @@ dmypy.json
 
 .idea/
 .vscode
+
+# Exclude the phantom libs if they have been copied into the project
+src/phantom/
+src/phantom_common/
