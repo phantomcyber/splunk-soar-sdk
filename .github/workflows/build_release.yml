@@ -1,0 +1,39 @@
+name: Build and upload artifacts for release
+on:
+  push:
+    tags:
+      - "*"
+
+jobs:
+  build-release:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.13
+      - name: Install uv
+        run: pip install --upgrade pip && pip install uv
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Build package
+        run: uv build
+      - name: Find the GitHub release and upload the artifacts to it
+        uses: actions/github-script@v7
+        env:
+          owner: "${{github.repository_owner}}"
+          repo: "${{github.repository}}"
+          tag: "${{github.ref_name}}"
+        with:
+          script: |
+            const fs = require('fs');
+            const { owner, repo, tag } = process.env;
+            const artifacts = fs.readdirSync("dist").filter(f => f.endsWith(".whl") || f.endsWith(".tar.gz"));
+            const release_id = github.rest.repos.getReleaseByTag({ owner, repo, tag }).id;
+            artifacts.forEach(name => {
+              const data = fs.readFileSync(`dist/${name}`);
+              github.rest.repos.uploadReleaseAsset({ owner, repo, release_id, name, data });
+            });
