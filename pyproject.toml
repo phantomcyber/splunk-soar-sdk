@@ -3,7 +3,7 @@ name = "soar_sdk"
 version = "0.1.0"
 description = "A framework for developing and testing the Splunk SOAR Apps"
 readme = "README.md"
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9, <3.14"
 authors = [
     { name = "Jacob Davis", email = "jacobd@splunk.com" },
     { name = "Janusz Kamieński", email = "jkamienski@splunk.com" },
@@ -46,6 +46,9 @@ dev = [
     "types-requests>=2.31.0.1,<3",
     "types-urllib3>=1.26.25.13,<2",
 ]
+
+[[tool.uv.index]]
+url = "https://pypi.python.org/simple"
 
 [tool.pytest.ini_options]
 addopts = "--ignore=app_templates --cov"  # TODO: Remove demo_app ignore, once it's no longer used
