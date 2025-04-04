@@ -1,0 +1,85 @@
+name: Tests and Code Quality
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Ruff:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.13]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: pip install --upgrade pip && pip install uv
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Ruff - ${{ matrix.python-version }}
+        run: uv run ruff check
+  Ruff-Format:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.13]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: pip install --upgrade pip && pip install uv
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Ruff-Format - ${{ matrix.python-version }}
+        run: uv run ruff format --check
+
+  MyPy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.13]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install uv
+        run: pip install --upgrade pip && pip install uv
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: MyPy - ${{ matrix.python-version }}
+        run: uv run mypy .
+
+  # These will always fail until we break the dependency on phantom core libs
+  # Pytest:
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     matrix:
+  #       python-version: [3.9, 3.13]
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #     - name: Install uv
+  #       run: pip install --upgrade pip && pip install uv
+  #     - name: Install dependencies
+  #       run: uv sync --frozen
+  #     - name: Pytest + Coverage - ${{ matrix.python-version }}
+  #       run: uv run pytest
