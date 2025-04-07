@@ -8,6 +8,22 @@ on:
       - main
 
 jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install commitlint
+        run: npm i -g @commitlint/cli @commitlint/config-conventional
+      - name: Commitlint
+        run: commitlint --from "origin/${{ github.base_ref }}" --to "origin/${{ github.head_ref }}"
+
   Ruff:
     runs-on: ubuntu-latest
     strategy:
