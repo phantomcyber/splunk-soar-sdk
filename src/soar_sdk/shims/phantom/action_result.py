@@ -1,9 +1,9 @@
 try:
-    from phantom.action_result import *  # noqa: F403
+    from phantom.action_result import ActionResult
 except ImportError:
     from typing import Optional, Union
 
-    class ActionResult:
+    class ActionResult:  # type: ignore[no-redef]
         def __init__(self, param: Optional[dict] = None) -> None:
             self.status = False
 
@@ -25,3 +25,6 @@ except ImportError:
 
         def get_status(self) -> bool:
             return self.status
+
+
+__all__ = ["ActionResult"]
