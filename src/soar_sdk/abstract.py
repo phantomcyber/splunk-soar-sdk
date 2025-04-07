@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union
 
-from phantom.action_result import ActionResult as PhantomActionResult
+from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.action_results import ActionResult
 
 

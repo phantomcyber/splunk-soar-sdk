@@ -3,7 +3,7 @@ import sys
 from functools import wraps
 from typing import Any, Optional, Type, Union, Callable, Iterable
 
-from phantom.base_connector import BaseConnector
+from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_provider import ActionsProvider

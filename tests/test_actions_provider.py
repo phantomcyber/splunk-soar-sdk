@@ -2,8 +2,8 @@ from unittest import mock
 
 import pytest
 
-import phantom.app as phantom
-from phantom.action_result import ActionResult as PhantomActionResult
+import soar_sdk.shims.phantom.app as phantom
+from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult, ErrorActionResult, SuccessActionResult
 from soar_sdk.actions_provider import ActionsProvider

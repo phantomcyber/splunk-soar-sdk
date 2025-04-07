@@ -1,7 +1,7 @@
 import json
 from typing import Any, Optional
 
-from phantom.base_connector import BaseConnector
+from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.adapters import LegacyConnectorAdapter
 from soar_sdk.connector import AppConnector
