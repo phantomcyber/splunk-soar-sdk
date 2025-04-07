@@ -1,5 +1,5 @@
 try:
-    from phantom.base_connector import *  # noqa: F403
+    from phantom.base_connector import BaseConnector
 except ImportError:
     import json
     import abc
@@ -8,7 +8,7 @@ except ImportError:
 
     from typing import Union, Optional, Any
 
-    class BaseConnector:
+    class BaseConnector:  # type: ignore[no-redef]
         def __init__(self) -> None:
             self.action_results: list[ActionResult] = []
 
@@ -73,3 +73,6 @@ except ImportError:
 
         def initialize(self) -> bool:
             return True
+
+
+__all__ = ["BaseConnector"]
