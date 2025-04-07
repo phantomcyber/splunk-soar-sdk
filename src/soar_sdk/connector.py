@@ -3,8 +3,8 @@ from typing import Any, Optional
 
 from pydantic import ValidationError
 
-from phantom.action_result import ActionResult as PhantomActionResult
-from phantom.base_connector import BaseConnector
+from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
+from soar_sdk.shims.phantom.base_connector import BaseConnector
 
 from .abstract import SOARClient
 

@@ -4,8 +4,8 @@ import requests
 from bs4 import BeautifulSoup
 from requests import Response
 
-import phantom.app as phantom
-from phantom.action_result import ActionResult as PhantomActionResult
+import soar_sdk.shims.phantom.app as phantom
+from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
 if TYPE_CHECKING:
     from soar_sdk.connector import AppConnector

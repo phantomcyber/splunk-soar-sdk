@@ -1,6 +1,6 @@
 from typing import Optional
 
-from phantom.action_result import ActionResult as PhantomActionResult
+from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
 
 class ActionResult(PhantomActionResult):

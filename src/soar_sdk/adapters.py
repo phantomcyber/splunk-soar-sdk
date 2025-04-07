@@ -1,7 +1,7 @@
 from typing import Any, Optional, Union
 
-from phantom.action_result import ActionResult as PhantomActionResult
-from phantom.base_connector import BaseConnector
+from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
+from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.action_results import ActionResult
 
 from .abstract import SOARClient
