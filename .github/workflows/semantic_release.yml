@@ -1,0 +1,23 @@
+name: Run Semantic Release
+on:
+  push:
+    branches:
+      - main
+      - alpha
+
+jobs:
+  semantic_release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install semantic-release dependencies
+        run: npm install --global semantic-release @semantic-release/exec @semantic-release/git
+      - name: Run Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: semantic-release
