@@ -7,7 +7,8 @@ function uploadReleaseArtifacts({ github, context }) {
   const artifacts = fs
     .readdirSync("dist")
     .filter((f) => f.endsWith(".whl") || f.endsWith(".tar.gz"));
-  const release_id = github.rest.repos.getReleaseByTag({ owner, repo, tag }).id;
+  const release_id = github.rest.repos.getReleaseByTag({ owner, repo, tag })
+    .data.id;
 
   artifacts.forEach((name) => {
     const data = fs.readFileSync(`dist/${name}`);
