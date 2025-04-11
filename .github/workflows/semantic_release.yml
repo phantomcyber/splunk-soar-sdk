@@ -36,7 +36,7 @@ jobs:
         with:
           script: |
             const fs = require('fs');
-            const versionNumber = fs.readFileSync("release_version.txt").toString().trim();
+            const tag = fs.readFileSync("release_version.txt").toString().trim();
             const {owner, repo} = context.repo;
 
             const artifacts = fs.readdirSync("dist").filter(f => f.endsWith(".whl") || f.endsWith(".tar.gz"));
