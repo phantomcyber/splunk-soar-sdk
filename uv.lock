@@ -759,7 +759,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/49/45/a16db4f0fa383aaf0
 
 [[package]]
 name = "soar-sdk"
-version = "1.0.0a6"
+version = "1.0.0a7"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
