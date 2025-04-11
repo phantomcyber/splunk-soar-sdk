@@ -13,7 +13,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "python .github/utils/update_version.py ${nextRelease.version} && uv lock",
+        "prepareCmd": "uv run .github/utils/update_version.py ${nextRelease.version} && uv lock",
         "verifyReleaseCmd": "echo \"${nextRelease.version}\" > release_version.txt",
         "generateNotesCmd": "echo \"${nextRelease.notes}\" > release_notes.txt"
       }
