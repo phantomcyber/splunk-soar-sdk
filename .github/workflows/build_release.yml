@@ -1,12 +1,10 @@
 name: Build and upload artifacts for release
 on:
-  push:
-    tags:
-      - "*"
+  release:
+    types: [published]
 
 jobs:
   build-release:
-    if: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/alpha' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
