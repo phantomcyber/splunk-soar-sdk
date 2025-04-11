@@ -1,6 +1,6 @@
 import importlib
 import json
-from datetime import datetime, UTC
+from datetime import datetime, timezone
 from pathlib import Path
 from pprint import pprint
 
@@ -22,7 +22,9 @@ class ManifestProcessor:
         app_meta: AppMeta = self.load_toml_app_meta()
         app = self.import_app_instance(app_meta)
         app_meta.actions = app.actions_provider.get_actions_meta_list()
-        app_meta.utctime_updated = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        app_meta.utctime_updated = datetime.now(timezone.utc).strftime(
+            "%Y-%m-%dT%H:%M:%S.%fZ"
+        )
 
         return app_meta
 
