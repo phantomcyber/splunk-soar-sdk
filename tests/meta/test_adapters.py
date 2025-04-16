@@ -5,4 +5,4 @@ from soar_sdk.meta.app import AppMeta
 def test_loading_toml_file():
     meta: AppMeta = TOMLDataAdapter.load_data("tests/example_app/pyproject.toml")
     assert meta.main_module == "src/app.py:app"
-    assert meta.name == "Example Application"
+    assert meta.name == "exampleapp"
