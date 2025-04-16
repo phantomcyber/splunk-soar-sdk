@@ -1,34 +1,24 @@
-[tool.poetry]
-name = "Example Application"
+[project]
+name = "exampleapp"
 version = "0.1.0"
-description = "This is the example SOAR app for testing"
-authors = [
-    "John Doe <email@domain.com>",
-]
+description = "This is the basic example SOAR app"
 readme = "README.md"
-homepage = "https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html"
-packages = [{include = "src"}]
+requires-python = ">=3.9, <3.14"
+authors = [
+    { name = "John Smith", email = "jsmith@example.com" }
+]
+dependencies = []
 
-[tool.poetry.dependencies]
-python = ">=3.9, <3.10"
-#splunk-soar-sdk = "^0.1.0"
-"splunk soar app sdk" = {path = "../", develop = true}
-
-[tool.poetry.group.dev.dependencies]
-pre-commit = "3.7.0"
-coverage = "^7.6.7"
-mypy = "1.2.0"
-pytest = "7.4.2"
-pytest-mock = "^3.14.0"
-pytest-watch = "^4.2.0"
-ruff = "^0.7.4"
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
-
-[virtualenvs]
-in-project = true
+[dependency-groups]
+dev = [
+    "coverage==7.6.7",
+    "mypy==1.2.0",
+    "pre-commit==3.7.0",
+    "pytest==7.4.2",
+    "pytest-mock==3.14.0",
+    "pytest-watch==4.2.0",
+    "ruff==0.7.4",
+]
 
 [tool.soar.app]
 appid = "1e1618e7-2f70-4fc0-916a-f96facc2d2e4"
