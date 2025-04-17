@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
+from soar_sdk.meta.datatypes import as_datatype
+
 
 class ActionResult(PhantomActionResult):
     def __init__(
@@ -67,16 +69,13 @@ class ActionOutput(BaseModel):
                 for sub_field in field_type._to_json_schema(datapath):
                     yield sub_field
                 continue
-            elif field_type is str:
-                type_name = "string"
-            elif field_type in (int, float):
-                type_name = "numeric"
-            elif field_type is bool:
-                type_name = "boolean"
             else:
-                raise TypeError(
-                    f"Unsupported field type: {field_type} for field {field_name}"
-                )
+                try:
+                    type_name = as_datatype(field_type)
+                except TypeError as e:
+                    raise TypeError(
+                        f"Failed to serialize output field {field_name}: {e}"
+                    )
 
             schema_field = OutputFieldSpecification(data_path=datapath, type=type_name)
 
