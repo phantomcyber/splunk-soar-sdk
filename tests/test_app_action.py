@@ -11,7 +11,7 @@ from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 class SampleParams(Params):
     int_value: int = Param(description="Integer Value")
     str_value: str = Param(description="String Value")
-    pass_value: str = Param(description="Password Value")
+    pass_value: str = Param(description="Password Value", sensitive=True)
     bool_value: bool = Param(description="Boolean Value")
 
 

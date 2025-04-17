@@ -17,6 +17,7 @@ def Param(
     values_list: Optional[list] = None,
     cef_types: Optional[list] = None,
     allow_list: bool = False,
+    sensitive: bool = False,
 ) -> FieldInfo:
     """
     Representation of the param passed into the action. The param needs extra meta
@@ -60,6 +61,7 @@ def Param(
         values_list=values_list,
         cef_types=cef_types,
         allow_list=allow_list,
+        sensitive=sensitive,
     )
 
 
@@ -101,6 +103,13 @@ class Params(BaseModel):
                 raise TypeError(
                     f"Failed to serialize action parameter {field_name}: {e}"
                 )
+
+            if field.field_info.extra.get("sensitive", False):
+                if field_type is not str:
+                    raise TypeError(
+                        f"Sensitive parameter {field_name} must be type str, not {field_type.__name__}"
+                    )
+                type_name = "password"
 
             if not (description := field.field_info.description):
                 description = Params._default_field_description(field_name)
