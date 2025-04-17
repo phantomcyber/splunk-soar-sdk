@@ -1,34 +1,91 @@
 {
+    "name": "exampleapp",
+    "description": "This is the basic example SOAR app",
     "appid": "9b388c08-67de-4ca4-817f-26f8fb7cbf55",
-    "name": "Splunk SOAR SDK Example App",
-    "description": "The example app - used for the integration tests of the Splunk SOAR App SDK",
     "type": "sandbox",
     "product_vendor": "Splunk Inc.",
+    "app_version": "0.1.0",
+    "license": "Copyright (c) Splunk Inc., 2025",
+    "min_phantom_version": "6.2.2.134",
+    "package_name": "example_app",
+    "main_module": "src/app.py:app",
     "logo": "example.png",
-    "logo_dark": "example.png",
+    "logo_dark": "example_dark.png",
     "product_name": "Example App",
     "python_version": "3",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "license": "Copyright (c) Splunk Inc., 2024",
-    "app_version": "1.0.0",
-    "utctime_updated": "2024-06-19T12:17:29.170834Z",
-    "package_name": "example_app",
-    "main_module": "example_app.py",
-    "min_phantom_version": "6.2.2.134",
+    "utctime_updated": "2025-04-17T12:00:00.000000Z",
     "app_wizard_version": "1.0.0",
+    "fips_compliant": false,
     "configuration": {},
     "actions": [
         {
             "action": "test connectivity",
             "identifier": "test_connectivity",
-            "description": "Validate the asset configuration for connectivity using supplied configuration",
+            "description": "test connectivity",
             "verbose": "",
             "type": "test",
             "read_only": true,
+            "versions": "EQ(*)",
             "parameters": {},
-            "output": [],
-            "versions": "EQ(*)"
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "action": "reverse string",
+            "identifier": "reverse_string",
+            "description": "reverse string",
+            "verbose": "",
+            "type": "test",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "parameters": {
+                "input_string": {
+                    "order": 0,
+                    "name": "input_string",
+                    "description": "Input String",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.input_string",
+                    "type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.reversed_string",
+                    "type": "string"
+                }
+            ]
         }
-    ]
+    ],
+    "pip39_dependencies": {}
 }
