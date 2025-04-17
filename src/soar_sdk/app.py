@@ -83,8 +83,8 @@ class App:
                     "Return type for action function must be derived from ActionOutput class."
                 )
 
-            @wraps(function)
             @action_protocol
+            @wraps(function)
             def inner(
                 params: Params,
                 /,
