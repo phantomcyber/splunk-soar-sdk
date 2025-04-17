@@ -9,10 +9,10 @@ from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 
 
 class SampleParams(Params):
-    int_value: int = Param(0, "Integer Value", data_type="numeric")
-    str_value: str = Param(1, "String Value")
-    pass_value: str = Param(2, "Password Value", data_type="password")
-    bool_value: bool = Param(3, "Boolean Value", data_type="boolean")
+    int_value: int = Param(description="Integer Value")
+    str_value: str = Param(description="String Value")
+    pass_value: str = Param(description="Password Value")
+    bool_value: bool = Param(description="Boolean Value")
 
 
 @pytest.fixture

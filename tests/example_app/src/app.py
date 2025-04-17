@@ -1,7 +1,7 @@
 #!/usr/bin/python
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
-from soar_sdk.params import Params, Param
+from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 
 app = App()
@@ -14,7 +14,7 @@ def test_connectivity(param: Params, client: SOARClient) -> ActionOutput:
 
 
 class ReverseStringParams(Params):
-    input_string: str = Param(0, "Input String", data_type="string")
+    input_string: str
 
 
 class ReverseStringOutput(ActionOutput):

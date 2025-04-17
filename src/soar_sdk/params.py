@@ -1,21 +1,22 @@
-from typing import Optional
+from typing import Optional, TypedDict, Union
+from typing_extensions import NotRequired
 
-from pydantic.fields import Field, FieldInfo
+from collections import OrderedDict
+
+from pydantic.fields import Field, FieldInfo, Undefined
 from pydantic.main import BaseModel
 
+from soar_sdk.meta.datatypes import as_datatype
 
-def Param(  # type: ignore
-    order: int,
-    description: str,
-    default: str = "",
-    *,
+
+def Param(
+    description: Optional[str] = None,
     required: bool = True,
-    primary: bool = True,
+    primary: bool = False,
+    default: Optional[str] = None,
     values_list: Optional[list] = None,
-    contains: Optional[list] = None,
-    data_type: str = "string",
+    cef_types: Optional[list] = None,
     allow_list: bool = False,
-    **kwargs,
 ) -> FieldInfo:
     """
     Representation of the param passed into the action. The param needs extra meta
@@ -50,22 +51,78 @@ def Param(  # type: ignore
     """
     if values_list is None:
         values_list = []
-    if contains is None:
-        contains = []
 
     return Field(
         default=default,
         description=description,
-        order=order,
         required=required,
         primary=primary,
         values_list=values_list,
-        contains=contains,
-        data_type=data_type,
+        cef_types=cef_types,
         allow_list=allow_list,
-        **kwargs,
     )
 
 
+class InputFieldSpecification(TypedDict):
+    order: int
+    name: str
+    description: str
+    data_type: str
+    contains: NotRequired[list[str]]
+    required: bool
+    primary: bool
+    values_list: NotRequired[list[str]]
+    allow_list: bool
+    default: NotRequired[Union[str, int, float, bool]]
+
+
 class Params(BaseModel):
-    pass
+    """
+    Params defines the inputs for an action. It can contain strings, booleans, or numbers -- no lists or dictionaries.
+
+    Params fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in soar_sdk.params.Param.
+    """
+
+    @staticmethod
+    def _default_field_description(field_name: str) -> str:
+        words = field_name.split("_")
+        return " ".join(words).title()
+
+    @classmethod
+    def _to_json_schema(cls) -> OrderedDict[str, InputFieldSpecification]:
+        params: OrderedDict[str, InputFieldSpecification] = OrderedDict()
+
+        for field_order, (field_name, field) in enumerate(cls.__fields__.items()):
+            field_type = field.annotation
+
+            try:
+                type_name = as_datatype(field_type)
+            except TypeError as e:
+                raise TypeError(
+                    f"Failed to serialize action parameter {field_name}: {e}"
+                )
+
+            if not (description := field.field_info.description):
+                description = Params._default_field_description(field_name)
+
+            params_field = InputFieldSpecification(
+                order=field_order,
+                name=field_name,
+                description=description,
+                data_type=type_name,
+                required=field.field_info.extra.get("required", True),
+                primary=field.field_info.extra.get("primary", False),
+                allow_list=field.field_info.extra.get("allow_list", False),
+            )
+
+            if cef_types := field.field_info.extra.get("cef_types"):
+                params_field["contains"] = cef_types
+            if default := field.field_info.default:
+                if default != Undefined:
+                    params_field["default"] = default
+            if values_list := field.field_info.extra.get("values_list"):
+                params_field["values_list"] = values_list
+
+            params[field_name] = params_field
+
+        return params

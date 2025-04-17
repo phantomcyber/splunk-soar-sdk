@@ -58,9 +58,9 @@ addopts = "--ignore=app_templates --cov"  # TODO: Remove demo_app ignore, once i
 source = [
     "soar_sdk"]
 omit = [
-    "soar_sdk/cli/cli.py",
-    "soar_sdk/cli/manifests/cli.py",
-    "soar_sdk/api_callers.py"]  # moved 1:1 from App Wizard, not re-designed yet
+    "src/soar_sdk/api_callers.py",  # moved 1:1 from App Wizard, not re-designed yet
+    "src/soar_sdk/shims/*",  # shims for BaseConnector, should not need testing
+]
 
 [tool.coverage.report]
 show_missing = true
