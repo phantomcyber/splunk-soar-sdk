@@ -52,6 +52,22 @@ dev = [
 [[tool.uv.index]]
 url = "https://pypi.python.org/simple"
 
+[tool.uv]
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'aarch64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'aarch64' and python_version == '3.13'",
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+]
+
 [tool.pytest.ini_options]
 addopts = "--ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail"
 
