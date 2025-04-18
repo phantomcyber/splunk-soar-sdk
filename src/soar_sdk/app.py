@@ -189,8 +189,7 @@ class App:
                 message="",
                 param=output_dict,
             )
-            client.add_result(result)
-            return True
+
         if isinstance(result, ActionResult):
             client.add_result(result)
             return result.get_status()

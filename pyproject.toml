@@ -41,6 +41,7 @@ dev = [
     "pytest-cov>=5,<6",
     "pytest-mock>=3.14.0,<4",
     "pytest-watch>=4.2.0,<5",
+    "pytest-xdist>=3.6.1",
     "ruff>=0.7.4,<1",
     "tomlkit>=0.13.2",
     "types-beautifulsoup4>=4.12.0.5,<5",
@@ -52,11 +53,13 @@ dev = [
 url = "https://pypi.python.org/simple"
 
 [tool.pytest.ini_options]
-addopts = "--ignore=app_templates --cov"  # TODO: Remove demo_app ignore, once it's no longer used
+addopts = "--ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail"
 
 [tool.coverage.run]
+branch = true
 source = [
-    "soar_sdk"]
+    "src/soar_sdk"
+]
 omit = [
     "src/soar_sdk/api_callers.py",  # moved 1:1 from App Wizard, not re-designed yet
     "src/soar_sdk/shims/*",  # shims for BaseConnector, should not need testing
@@ -66,4 +69,6 @@ omit = [
 show_missing = true
 exclude_lines = [
     "# pragma: no cover",
-    "if typing.TYPE_CHECKING:"]  # ignore type checks import blocks
+    "if typing.TYPE_CHECKING:",  # ignore type checks import blocks
+    "if __name__ == \"__main__\":",  # ignore main blocks
+]

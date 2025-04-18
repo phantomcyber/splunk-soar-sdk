@@ -1,3 +1,4 @@
+import pytest
 from soar_sdk.action_results import ActionOutput, OutputField
 
 
@@ -16,6 +17,10 @@ class ExampleActionOutput(ActionOutput):
     )
     nested_type: ExampleInnerData
     list_of_types: list[ExampleInnerData]
+
+
+class BadActionOutput(ActionOutput):
+    byte_field: bytes
 
 
 def test_action_output_to_json_schema():
@@ -43,6 +48,11 @@ def test_action_output_to_json_schema():
 
     schema = list(ExampleActionOutput._to_json_schema())
     assert schema == expected_schema
+
+
+def test_action_output_to_json_schema_bad_type():
+    with pytest.raises(TypeError):
+        next(BadActionOutput._to_json_schema())
 
 
 def test_parse_action_output():
