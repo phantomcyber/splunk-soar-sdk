@@ -75,7 +75,7 @@ class ActionOutput(BaseModel):
                 except TypeError as e:
                     raise TypeError(
                         f"Failed to serialize output field {field_name}: {e}"
-                    )
+                    ) from None
 
             schema_field = OutputFieldSpecification(data_path=datapath, type=type_name)
 
