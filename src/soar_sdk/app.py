@@ -19,6 +19,7 @@ class App:
         self, legacy_connector_class: Optional[type[BaseConnector]] = None
     ) -> None:
         self.actions_provider = ActionsProvider(legacy_connector_class)
+        self._test_connectivity_implemented = False
 
     def run(self) -> None:
         """
@@ -119,6 +120,81 @@ class App:
             return inner
 
         return app_action
+
+    def test_connectivity(self) -> Callable[[Callable], Callable]:
+        """
+        Generates a decorator for test connectivity attaching action
+        specific meta information to the function.
+        """
+
+        def test_con_function(function: Callable) -> Action:
+            """
+            Decorator for the test connectivity function. Makes sure that only 1 function
+            in the app is decorated with this decorator and attaches generic metadata to the
+            action. Validates that the only param passed is the SOARClient and adapts the return
+            value based on the success or failure of test connectivity.
+            """
+
+            if self._test_connectivity_implemented:
+                raise TypeError(
+                    "The 'test_connectivity' decorator can only be used once per App instance."
+                )
+
+            self._test_connectivity_implemented = True
+
+            signature = inspect.signature(function)
+            if len(signature.parameters) != 1:
+                raise TypeError(
+                    "Test connectivity function should accept the soar client as a parameter."
+                )
+
+            first_param = next(iter(signature.parameters.values()))
+            if first_param.annotation is not SOARClient:
+                raise TypeError(
+                    "Test connectivity function should only accept the client as a parameter."
+                )
+
+            if signature.return_annotation not in (None, inspect._empty):
+                raise TypeError(
+                    "Test connectivity function must not return any value (return type should be None)."
+                )
+
+            action_identifier = function.__name__
+            action_name = str(action_identifier.replace("_", " "))
+
+            @action_protocol
+            @wraps(function)
+            def inner(client: SOARClient = self.actions_provider.soar_client) -> bool:
+                try:
+                    result = function(client=client)
+                    if result is not None:
+                        raise RuntimeError(
+                            "Test connectivity function must not return any value (return type should be None)."
+                        )
+                except Exception as e:
+                    return self._adapt_action_result(
+                        ActionResult(status=False, message=str(e)), client
+                    )
+                return self._adapt_action_result(
+                    ActionResult(status=True, message="Test connectivity successful"),
+                    client,
+                )
+
+            inner.meta = ActionMeta(
+                action=action_name,
+                identifier=action_identifier,
+                description=inspect.getdoc(function) or action_name,
+                verbose="Basic test for app.",
+                type="test",
+                read_only=True,
+                versions="EQ(*)",
+            )
+
+            self.actions_provider.set_action(action_identifier, inner)
+            self._dev_skip_in_pytest(function, inner)
+            return inner
+
+        return test_con_function
 
     @staticmethod
     def _validate_params_class(
