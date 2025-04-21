@@ -7,10 +7,9 @@ from soar_sdk.action_results import ActionOutput
 app = App()
 
 
-@app.action(action_type="test")
-def test_connectivity(param: Params, client: SOARClient) -> ActionOutput:
-    client.debug("params", param.json())
-    return ActionOutput()
+@app.test_connectivity()
+def test_connectivity(client: SOARClient):
+    client.debug("testing connectivity")
 
 
 class ReverseStringParams(Params):

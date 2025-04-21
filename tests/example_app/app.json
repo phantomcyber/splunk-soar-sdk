@@ -24,7 +24,7 @@
             "action": "test connectivity",
             "identifier": "test_connectivity",
             "description": "test connectivity",
-            "verbose": "",
+            "verbose": "Basic test for app.",
             "type": "test",
             "read_only": true,
             "versions": "EQ(*)",
