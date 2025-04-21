@@ -225,6 +225,19 @@ def test_action_decoration_fails_with_return_type_not_inheriting_from_ActionOutp
     )
 
 
+def test_action_cannot_be_test_connectivity(simple_app):
+    with pytest.raises(TypeError) as exception_info:
+
+        @simple_app.action()
+        def test_connectivity(params: Params, client: SOARClient) -> ActionOutput:
+            pass
+
+    assert (
+        "The 'test_connectivity' action identifier is reserved and cannot be used. Please use the test_connectivity decorator instead."
+        in str(exception_info)
+    )
+
+
 def test_action_decoration_passing_output_type_as_hint(simple_app):
     @simple_app.action()
     def foo(params: SampleActionParams, client: SOARClient) -> SampleOutput:
