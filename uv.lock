@@ -878,7 +878,7 @@ wheels = [
 
 [[package]]
 name = "soar-sdk"
-version = "1.0.0a11"
+version = "1.0.0a12"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
