@@ -65,6 +65,6 @@ def simple_action_input() -> str:
             "asset_id": 1,
             "config": {},
             "parameters": [{}],
-            "identifier": "test_connectivity",
+            "identifier": "test_action",
         }
     )

@@ -73,7 +73,7 @@ def test_action_called_with_legacy_result_set(example_provider, simple_action_in
             phantom.APP_SUCCESS, "Testing function run"
         )
     )
-    example_provider._actions["test_connectivity"] = mock_function
+    example_provider._actions["test_action"] = mock_function
 
     example_provider.handle(simple_action_input, None)
 
@@ -85,7 +85,7 @@ def test_action_called_with_new_single_result_set(
 ):
     action_result = ActionResult(True, "Testing function run")
     mock_function = mock.Mock(return_value=action_result)
-    example_provider._actions["test_connectivity"] = mock_function
+    example_provider._actions["test_action"] = mock_function
 
     example_provider.handle(simple_action_input, None)
 
@@ -96,7 +96,7 @@ def test_action_called_with_returned_simple_result(
     example_provider, simple_action_input
 ):
     mock_function = mock.Mock(return_value=(True, "Testing function run"))
-    example_provider._actions["test_connectivity"] = mock_function
+    example_provider._actions["test_action"] = mock_function
 
     example_provider.handle(simple_action_input, None)
 
@@ -107,7 +107,7 @@ def test_action_called_with_returned_success_result(
     example_provider, simple_action_input
 ):
     mock_function = mock.Mock(return_value=SuccessActionResult("Testing function run"))
-    example_provider._actions["test_connectivity"] = mock_function
+    example_provider._actions["test_action"] = mock_function
 
     example_provider.handle(simple_action_input, None)
 
@@ -121,7 +121,7 @@ def test_action_called_with_returned_error_result(
         return_value=ErrorActionResult("Testing function run error")
     )
 
-    example_provider._actions["test_connectivity"] = mock_function
+    example_provider._actions["test_action"] = mock_function
 
     example_provider.handle(simple_action_input, None)
 
@@ -133,7 +133,7 @@ def test_action_called_with_multiple_results_set(example_app, simple_action_inpu
     client = example_app.actions_provider.soar_client
 
     @example_app.action()
-    def test_connectivity(params: Params, client: SOARClient) -> ActionOutput:
+    def test_action(params: Params, client: SOARClient) -> ActionOutput:
         action_result1 = ActionResult(True, "Testing function run 1")
         action_result2 = ActionResult(True, "Testing function run 2")
         client.add_result(action_result1)

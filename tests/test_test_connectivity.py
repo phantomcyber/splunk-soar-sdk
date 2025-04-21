@@ -12,7 +12,7 @@ def test_connectivity_decoration_fails_without_client(simple_app):
             pass
 
     assert (
-        "Test connectivity function should accept the soar client as a parameter"
+        "Test connectivity function should accept the SOAR client as a parameter"
         in str(exception_info)
     )
 

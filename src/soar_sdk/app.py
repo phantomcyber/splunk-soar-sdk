@@ -62,6 +62,10 @@ class App:
             the action arguments and adapts output for fast and seamless development.
             """
             action_identifier = identifier or function.__name__
+            if action_identifier == "test_connectivity":
+                raise TypeError(
+                    "The 'test_connectivity' action identifier is reserved and cannot be used. Please use the test_connectivity decorator instead."
+                )
             action_name = name or str(action_identifier.replace("_", " "))
 
             spec = inspect.getfullargspec(function)
@@ -145,7 +149,7 @@ class App:
             signature = inspect.signature(function)
             if len(signature.parameters) != 1:
                 raise TypeError(
-                    "Test connectivity function should accept the soar client as a parameter."
+                    "Test connectivity function should accept the SOAR client as a parameter."
                 )
 
             first_param = next(iter(signature.parameters.values()))
@@ -159,8 +163,8 @@ class App:
                     "Test connectivity function must not return any value (return type should be None)."
                 )
 
-            action_identifier = function.__name__
-            action_name = str(action_identifier.replace("_", " "))
+            action_identifier = "test_connectivity"
+            action_name = "test connectivity"
 
             @action_protocol
             @wraps(function)
