@@ -174,7 +174,10 @@ class UvLock(BaseModel):
     package: list[UvPackage]
 
     def get_package_entry(self, name: str) -> UvPackage:
-        return [p for p in self.package if p.name == name][0]
+        package = next((p for p in self.package if p.name == name), None)
+        if package is None:
+            raise LookupError(f"No package '{name}' found in uv.lock")
+        return package
 
     def build_package_list(self, root_package_name: str) -> list[UvPackage]:
         packages = {root_package_name: self.get_package_entry(root_package_name)}
