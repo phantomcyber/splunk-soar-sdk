@@ -1,6 +1,8 @@
-from soar_sdk.meta.dependencies import UvWheel, UvPackage
+from soar_sdk.meta.dependencies import UvWheel, UvPackage, UvLock
 
 from typing import TypedDict, Optional
+
+import pytest
 
 
 def test_parse_uvwheel():
@@ -100,3 +102,13 @@ class TestUvPackage:
             == "wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
         )
         assert wheel.input_file_aarch64 is None
+
+
+class TestUvLock:
+    def test_missing_package_entry(self):
+        lock = UvLock(package=[])
+
+        with pytest.raises(LookupError) as e:
+            lock.get_package_entry("requests")
+
+        assert e.match("No package 'requests' found in uv.lock")
