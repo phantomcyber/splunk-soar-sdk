@@ -9,7 +9,7 @@ from soar_sdk.app import App
 from soar_sdk.cli.manifests.path_utils import context_directory
 from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
-from soar_sdk.meta.dependencies import UvLock, DependencyList
+from soar_sdk.meta.dependencies import UvLock
 
 
 class ManifestProcessor:
@@ -31,11 +31,11 @@ class ManifestProcessor:
         uv_lock = self.load_app_uv_lock()
         dependencies = uv_lock.build_package_list(app_meta.name)
 
-        app_meta.pip39_dependencies = DependencyList(
-            wheels=[d.resolve_py39() for d in dependencies]
+        app_meta.pip39_dependencies = uv_lock.resolve_python39_dependencies(
+            dependencies
         )
-        app_meta.pip313_dependencies = DependencyList(
-            wheels=[d.resolve_py313() for d in dependencies]
+        app_meta.pip313_dependencies = uv_lock.resolve_python313_dependencies(
+            dependencies
         )
 
         return app_meta

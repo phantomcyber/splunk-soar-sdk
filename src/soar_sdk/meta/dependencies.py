@@ -1,8 +1,12 @@
 from typing import Optional
 from pydantic import BaseModel, Field, PrivateAttr
 
+from logging import getLogger
+
 # from functools import cached_property
 # TODO: when we upgrade to pydantic 2, we can replace our properties with cached properties
+
+logger = getLogger(__name__)
 
 
 class DependencyWheel(BaseModel):
@@ -133,8 +137,8 @@ class UvPackage(BaseModel):
             wheel.input_file_aarch64 = f"wheels/{dir_name}/{wheel_aarch64.basename}.whl"
             wheel._wheel_aarch64 = wheel_aarch64
         except FileNotFoundError:
-            print(
-                f"Warning: Could not find a suitable {dir_name} / aarch64 wheel for {self.name=}, {self.version=} -- the built package might not work on ARM systems"
+            logger.warning(
+                f"Could not find a suitable {dir_name} / aarch64 wheel for {self.name=}, {self.version=} -- the built package might not work on ARM systems"
             )
 
         return wheel
@@ -201,3 +205,11 @@ class UvLock(BaseModel):
         # TODO: denylist for wheels that shouldn't be used in connectors (simplejson, django, etc.)
 
         return sorted(packages.values(), key=lambda p: p.name)
+
+    @staticmethod
+    def resolve_python39_dependencies(packages: list[UvPackage]) -> DependencyList:
+        return DependencyList(wheels=[p.resolve_py39() for p in packages])
+
+    @staticmethod
+    def resolve_python313_dependencies(packages: list[UvPackage]) -> DependencyList:
+        return DependencyList(wheels=[p.resolve_py313() for p in packages])
