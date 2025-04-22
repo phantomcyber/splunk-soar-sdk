@@ -1,5 +1,6 @@
 import importlib
 import json
+import toml
 from datetime import datetime, timezone
 from pathlib import Path
 from pprint import pprint
@@ -8,6 +9,7 @@ from soar_sdk.app import App
 from soar_sdk.cli.manifests.path_utils import context_directory
 from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
+from soar_sdk.meta.dependencies import UvLock, DependencyList
 
 
 class ManifestProcessor:
@@ -26,6 +28,16 @@ class ManifestProcessor:
             "%Y-%m-%dT%H:%M:%S.%fZ"
         )
 
+        uv_lock = self.load_app_uv_lock()
+        dependencies = uv_lock.build_package_list(app_meta.name)
+
+        app_meta.pip39_dependencies = DependencyList(
+            wheels=[d.resolve_py39() for d in dependencies]
+        )
+        app_meta.pip313_dependencies = DependencyList(
+            wheels=[d.resolve_py313() for d in dependencies]
+        )
+
         return app_meta
 
     def create(self) -> None:
@@ -42,6 +54,11 @@ class ManifestProcessor:
         return TOMLDataAdapter.load_data(
             f"{self.project_context.as_posix()}/pyproject.toml"
         )
+
+    def load_app_uv_lock(self) -> UvLock:
+        with (self.project_context / "uv.lock").open() as f:
+            lockfile = toml.load(f)
+        return UvLock(**lockfile)
 
     def save_json_manifest(self, app_meta: AppMeta) -> None:
         with open(self.manifest_path, "w") as f:

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from .actions import ActionMeta
+from .dependencies import DependencyList
 
 
 class AppMeta(BaseModel):
@@ -27,4 +28,5 @@ class AppMeta(BaseModel):
     configuration: dict = Field(default_factory=dict)
     actions: list[ActionMeta] = Field(default_factory=list)
 
-    pip39_dependencies: dict = Field(default_factory=dict)
+    pip39_dependencies: DependencyList = Field(default_factory=DependencyList)
+    pip313_dependencies: DependencyList = Field(default_factory=DependencyList)

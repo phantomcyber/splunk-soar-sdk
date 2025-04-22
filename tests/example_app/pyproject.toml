@@ -7,17 +7,38 @@ requires-python = ">=3.9, <3.14"
 authors = [
     { name = "John Smith", email = "jsmith@example.com" }
 ]
-dependencies = []
+dependencies = [
+    "requests>=2.32.3",
+]
 
 [dependency-groups]
 dev = [
     "coverage==7.6.7",
     "mypy==1.2.0",
-    "pre-commit==3.7.0",
+    "pre-commit==4.2.0",
     "pytest==7.4.2",
     "pytest-mock==3.14.0",
     "pytest-watch==4.2.0",
     "ruff==0.7.4",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.python.org/simple"
+
+[tool.uv]
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.13'",
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
 ]
 
 [tool.soar.app]
