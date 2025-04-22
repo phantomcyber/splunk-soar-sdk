@@ -1,12 +1,19 @@
 try:
     from phantom.base_connector import BaseConnector
+
+    _soar_is_available = True
 except ImportError:
+    _soar_is_available = False
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING or not _soar_is_available:
     import json
     import abc
 
     from soar_sdk.shims.phantom.action_result import ActionResult
 
-    from typing import Union, Optional, Any
+    from typing import Union, Any
 
     class BaseConnector:  # type: ignore[no-redef]
         def __init__(self) -> None:
@@ -19,8 +26,8 @@ except ImportError:
         def save_progress(
             self,
             progress_str_const: str,
-            *unnamed_format_args: Any,
-            **named_format_args: Any,
+            *unnamed_format_args: object,
+            **named_format_args: object,
         ) -> None:
             return
 
@@ -45,7 +52,7 @@ except ImportError:
         def handle_action(self, param: dict[str, Any]) -> None:
             pass
 
-        def _handle_action(self, in_json: str, _handle: Optional[Any]) -> str:
+        def _handle_action(self, in_json: str, handle: int) -> str:
             input_object = json.loads(in_json)
 
             self.action_identifier = input_object.get("identifier", "")

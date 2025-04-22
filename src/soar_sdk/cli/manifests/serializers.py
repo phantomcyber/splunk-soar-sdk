@@ -1,4 +1,5 @@
-from typing import Any, Iterator
+from typing import Any
+from collections.abc import Iterator
 
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.params import Params

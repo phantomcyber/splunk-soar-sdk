@@ -14,7 +14,7 @@ def test_app_connector_handle_runs_legacy__handle_action(app_connector: AppConne
 
     in_json = "{}"
 
-    app_connector.handle(in_json, None)  # type: ignore[arg-type]
+    app_connector.handle(in_json)  # type: ignore[arg-type]
 
     assert app_connector._handle_action.call_count == 1
 

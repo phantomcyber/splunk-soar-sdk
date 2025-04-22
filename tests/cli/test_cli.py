@@ -43,7 +43,7 @@ def test_main_function_calls_app():
 def test_main_execution_on_name_main():
     """Test the __name__ == "__main__" block exists and would execute main()."""
     # Directly inspect the source code to verify the main check exists
-    with open(cli_module.__file__, "r") as f:
+    with open(cli_module.__file__) as f:
         source_code = f.read()
 
     # Verify the module contains the if __name__ == "__main__" check

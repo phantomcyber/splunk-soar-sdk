@@ -75,7 +75,7 @@ def test_action_called_with_legacy_result_set(example_provider, simple_action_in
     )
     example_provider._actions["test_action"] = mock_function
 
-    example_provider.handle(simple_action_input, None)
+    example_provider.handle(simple_action_input)
 
     assert mock_function.call_count == 1
 
@@ -87,7 +87,7 @@ def test_action_called_with_new_single_result_set(
     mock_function = mock.Mock(return_value=action_result)
     example_provider._actions["test_action"] = mock_function
 
-    example_provider.handle(simple_action_input, None)
+    example_provider.handle(simple_action_input)
 
     assert mock_function.call_count == 1
 
@@ -98,7 +98,7 @@ def test_action_called_with_returned_simple_result(
     mock_function = mock.Mock(return_value=(True, "Testing function run"))
     example_provider._actions["test_action"] = mock_function
 
-    example_provider.handle(simple_action_input, None)
+    example_provider.handle(simple_action_input)
 
     assert mock_function.call_count == 1
 
@@ -109,7 +109,7 @@ def test_action_called_with_returned_success_result(
     mock_function = mock.Mock(return_value=SuccessActionResult("Testing function run"))
     example_provider._actions["test_action"] = mock_function
 
-    example_provider.handle(simple_action_input, None)
+    example_provider.handle(simple_action_input)
 
     assert mock_function.call_count == 1
 
@@ -123,7 +123,7 @@ def test_action_called_with_returned_error_result(
 
     example_provider._actions["test_action"] = mock_function
 
-    example_provider.handle(simple_action_input, None)
+    example_provider.handle(simple_action_input)
 
     assert mock_function.call_count == 1
 

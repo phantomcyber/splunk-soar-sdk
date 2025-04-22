@@ -1,4 +1,5 @@
-from typing import Optional, Iterator, get_origin, get_args, TypedDict, Any
+from typing import Optional, get_origin, get_args, TypedDict, Any
+from collections.abc import Iterator
 from typing_extensions import NotRequired
 from pydantic import BaseModel, Field
 
@@ -34,7 +35,7 @@ class OutputFieldSpecification(TypedDict):
 
 def OutputField(
     cef_types: Optional[list[str]] = None, example_values: Optional[list[str]] = None
-) -> Any:
+) -> Any:  # noqa: ANN401
     return Field(
         examples=example_values,
         cef_types=cef_types,
@@ -66,8 +67,7 @@ class ActionOutput(BaseModel):
 
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema
-                for sub_field in field_type._to_json_schema(datapath):
-                    yield sub_field
+                yield from field_type._to_json_schema(datapath)
                 continue
             else:
                 try:

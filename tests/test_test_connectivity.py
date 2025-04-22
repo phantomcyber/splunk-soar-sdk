@@ -31,11 +31,11 @@ def test_connectivity_decoration_fails_without_correct_type(simple_app):
 
 
 def test_connectivity_decoration_fails_when_used_more_than_once(simple_app):
-    with pytest.raises(TypeError) as exception_info:
+    @simple_app.test_connectivity()
+    def test_connectivity(client: SOARClient):
+        pass
 
-        @simple_app.test_connectivity()
-        def test_connectivity(client: SOARClient):
-            pass
+    with pytest.raises(TypeError) as exception_info:
 
         @simple_app.test_connectivity()
         def test_connectivity2(client: SOARClient):

@@ -102,7 +102,7 @@ class Params(BaseModel):
             except TypeError as e:
                 raise TypeError(
                     f"Failed to serialize action parameter {field_name}: {e}"
-                )
+                ) from None
 
             if field.field_info.extra.get("sensitive", False):
                 if field_type is not str:
@@ -126,9 +126,8 @@ class Params(BaseModel):
 
             if cef_types := field.field_info.extra.get("cef_types"):
                 params_field["contains"] = cef_types
-            if default := field.field_info.default:
-                if default != Undefined:
-                    params_field["default"] = default
+            if (default := field.field_info.default) and default != Undefined:
+                params_field["default"] = default
             if values_list := field.field_info.extra.get("values_list"):
                 params_field["values_list"] = values_list
 

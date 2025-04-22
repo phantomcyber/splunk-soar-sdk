@@ -1,4 +1,4 @@
-from typing import Tuple, Optional, TYPE_CHECKING, Any
+from typing import Optional, TYPE_CHECKING, Any
 
 import requests
 from bs4 import BeautifulSoup
@@ -24,7 +24,7 @@ class RestApiCaller:  # pragma: no cover
     @staticmethod
     def process_empty_response(
         response: Response, action_result: PhantomActionResult
-    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
+    ) -> tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         if response.status_code == 200:
             return phantom.APP_SUCCESS, {}
 
@@ -39,7 +39,7 @@ class RestApiCaller:  # pragma: no cover
     @staticmethod
     def process_html_response(
         response: Response, action_result: PhantomActionResult
-    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
+    ) -> tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # An html response, treat it like an error
         status_code = response.status_code
 
@@ -52,9 +52,7 @@ class RestApiCaller:  # pragma: no cover
         except Exception:
             error_text = "Cannot parse error details"
 
-        message = "Status Code: {0}. Data from server:\n{1}\n".format(
-            status_code, error_text
-        )
+        message = f"Status Code: {status_code}. Data from server:\n{error_text}\n"
 
         message = message.replace("{", "{{").replace("}", "}}")
         return action_result.set_status(phantom.APP_ERROR, message), None
@@ -62,7 +60,7 @@ class RestApiCaller:  # pragma: no cover
     @staticmethod
     def process_json_response(
         r: Response, action_result: PhantomActionResult
-    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
+    ) -> tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # Try a json parse
         try:
             resp_json = r.json()
@@ -70,7 +68,7 @@ class RestApiCaller:  # pragma: no cover
             return (
                 action_result.set_status(
                     phantom.APP_ERROR,
-                    "Unable to parse JSON response. Error: {0}".format(str(e)),
+                    f"Unable to parse JSON response. Error: {e!s}",
                 ),
                 None,
             )
@@ -80,7 +78,7 @@ class RestApiCaller:  # pragma: no cover
             return phantom.APP_SUCCESS, resp_json
 
         # You should process the error returned in the json
-        message = "Error from server. Status Code: {0} Data from server: {1}".format(
+        message = "Error from server. Status Code: {} Data from server: {}".format(
             r.status_code, r.text.replace("{", "{{").replace("}", "}}")
         )
 
@@ -89,7 +87,7 @@ class RestApiCaller:  # pragma: no cover
     @classmethod
     def process_response(
         cls, r: Response, action_result: PhantomActionResult
-    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
+    ) -> tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # store the r_text in debug data, it will get dumped in the logs if the action fails
         if hasattr(action_result, "add_debug_data"):
             action_result.add_debug_data({"r_status_code": r.status_code})
@@ -114,7 +112,7 @@ class RestApiCaller:  # pragma: no cover
             return cls.process_empty_response(r, action_result)
 
         # everything else is actually an error at this point
-        message = "Can't process response from server. Status Code: {0} Data from server: {1}".format(
+        message = "Can't process response from server. Status Code: {} Data from server: {}".format(
             r.status_code, r.text.replace("{", "{{").replace("}", "}}")
         )
 
@@ -126,7 +124,7 @@ class RestApiCaller:  # pragma: no cover
         action_result: PhantomActionResult,
         method: str = "get",
         **kwargs: dict[str, Any],
-    ) -> Tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
+    ) -> tuple[bool, Optional[dict[Any, Any]]]:  # pragma: no cover
         # **kwargs can be any additional parameters that requests.request accepts
 
         config = self.connector.get_config()
@@ -138,7 +136,7 @@ class RestApiCaller:  # pragma: no cover
         except AttributeError:
             return (
                 action_result.set_status(
-                    phantom.APP_ERROR, "Invalid method: {0}".format(method)
+                    phantom.APP_ERROR, f"Invalid method: {method}"
                 ),
                 resp_json,
             )
@@ -149,7 +147,6 @@ class RestApiCaller:  # pragma: no cover
         try:
             r = request_func(
                 url,
-                # auth=(username, password),  # basic authentication
                 verify=config.get("verify_server_cert", False),
                 **kwargs,
             )
@@ -157,7 +154,7 @@ class RestApiCaller:  # pragma: no cover
             return (
                 action_result.set_status(
                     phantom.APP_ERROR,
-                    "Error Connecting to server. Details: {0}".format(str(e)),
+                    f"Error Connecting to server. Details: {e!s}",
                 ),
                 resp_json,
             )

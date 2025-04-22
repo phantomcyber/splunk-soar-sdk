@@ -11,7 +11,7 @@ from soar_sdk.meta.app import AppMeta
 
 
 class ManifestProcessor:
-    def __init__(self, manifest_path: str, project_context: str = "."):
+    def __init__(self, manifest_path: str, project_context: str = ".") -> None:
         self.manifest_path = manifest_path
         self.project_context = Path(project_context)
 
@@ -53,8 +53,8 @@ class ManifestProcessor:
         e.g. src/app.py:app -> src.app
         """
         module_path = main_module.split(":")[0]
-        module_path = module_path[:-3] if module_path.endswith(".py") else module_path
-        module_path = module_path[:-4] if module_path.endswith(".pyc") else module_path
+        module_path = module_path.removesuffix(".py")
+        module_path = module_path.removesuffix(".pyc")
         return module_path.replace("/", ".")
 
     def import_app_instance(self, app_meta: AppMeta) -> App:
