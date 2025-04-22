@@ -1,4 +1,4 @@
-name: Tests and Code Quality
+name: PR Checks
 on:
   push:
     branches:
@@ -10,43 +10,22 @@ on:
       - alpha
 
 jobs:
-  Ruff:
+  Precommit:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.9, 3.13]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install uv
-        run: pip install --upgrade pip && pip install uv
-      - name: Install dependencies
-        run: uv sync --frozen
-      - name: Ruff - ${{ matrix.python-version }}
-        run: uv run ruff check
-
-  Ruff-Format:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.9, 3.13]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: astral-sh/setup-uv@v5
+      - name: Install pre-commit
+        run: uv tool install pre-commit --with pre-commit-uv
+      - name: Run pre-commit
+        run: pre-commit run --all-files --show-diff-on-failure
+      - name: Cache pre-commit
+        uses: actions/cache@v4
         with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install uv
-        run: pip install --upgrade pip && pip install uv
-      - name: Install dependencies
-        run: uv sync --frozen
-      - name: Ruff-Format - ${{ matrix.python-version }}
-        run: uv run ruff format --check
+          path: ~/.cache/pre-commit
+          key: ${{ runner.os }}-pre-commit-cache
 
   MyPy:
     runs-on: ubuntu-latest
@@ -56,16 +35,13 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install uv
-        run: pip install --upgrade pip && pip install uv
-      - name: Install dependencies
-        run: uv sync --frozen
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
       - name: MyPy - ${{ matrix.python-version }}
-        run: uv run mypy .
+        run: uv run --locked mypy .
 
   Pytest:
     runs-on: ubuntu-latest
@@ -75,13 +51,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install uv
-        run: pip install --upgrade pip && pip install uv
-      - name: Install dependencies
-        run: uv sync --frozen
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
       - name: Pytest + Coverage - ${{ matrix.python-version }}
-        run: uv run pytest
+        run: uv run --locked pytest
