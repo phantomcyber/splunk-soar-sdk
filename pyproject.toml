@@ -35,7 +35,7 @@ dev = [
     "coverage>=7.6.7,<8",
     "ipdb>=0.13.13,<1",
     "ipython==8.18.1",
-    "mypy>1.2,<2",
+    "mypy>=1.2,<2",
     "pre-commit>=4.2.0,<5",
     "pytest==7.4.2",
     "pytest-cov>=5,<6",
@@ -60,13 +60,16 @@ environments = [
     "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
     "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.9'",
     "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.13'",
-    "sys_platform == 'darwin' and platform_machine == 'aarch64' and python_version == '3.9'",
-    "sys_platform == 'darwin' and platform_machine == 'aarch64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.13'",
 ]
 required-environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
 ]
+
+[tool.uv.workspace]
+members = ["tests/example_app"]
 
 [tool.pytest.ini_options]
 addopts = "--ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail"

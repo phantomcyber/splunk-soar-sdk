@@ -87,5 +87,62 @@
             ]
         }
     ],
-    "pip39_dependencies": {}
+    "pip39_dependencies": {
+        "wheels": [
+            {
+                "module": "certifi",
+                "input_file": "wheels/python39/certifi-2025.1.31-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python39/certifi-2025.1.31-py3-none-any.whl"
+            },
+            {
+                "module": "charset-normalizer",
+                "input_file": "wheels/python39/charset_normalizer-3.4.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                "input_file_aarch64": "wheels/python39/charset_normalizer-3.4.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+            },
+            {
+                "module": "idna",
+                "input_file": "wheels/python39/idna-3.10-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python39/idna-3.10-py3-none-any.whl"
+            },
+            {
+                "module": "requests",
+                "input_file": "wheels/python39/requests-2.32.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python39/requests-2.32.3-py3-none-any.whl"
+            },
+            {
+                "module": "urllib3",
+                "input_file": "wheels/python39/urllib3-2.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python39/urllib3-2.4.0-py3-none-any.whl"
+            }
+        ]
+    },
+    "pip313_dependencies": {
+        "wheels": [
+            {
+                "module": "certifi",
+                "input_file": "wheels/python313/certifi-2025.1.31-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python313/certifi-2025.1.31-py3-none-any.whl"
+            },
+            {
+                "module": "charset-normalizer",
+                "input_file": "wheels/python313/charset_normalizer-3.4.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/charset_normalizer-3.4.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+            },
+            {
+                "module": "idna",
+                "input_file": "wheels/python313/idna-3.10-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python313/idna-3.10-py3-none-any.whl"
+            },
+            {
+                "module": "requests",
+                "input_file": "wheels/python313/requests-2.32.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python313/requests-2.32.3-py3-none-any.whl"
+            },
+            {
+                "module": "urllib3",
+                "input_file": "wheels/python313/urllib3-2.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/python313/urllib3-2.4.0-py3-none-any.whl"
+            }
+        ]
+    }
 }
