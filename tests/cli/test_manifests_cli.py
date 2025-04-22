@@ -1,5 +1,5 @@
 import json
-import os
+from pathlib import Path
 import tempfile
 from unittest import mock
 
@@ -25,18 +25,18 @@ def temp_manifest_file():
             "description": "A test app",
         }
         json.dump(test_data, temp_file)
-        temp_file_path = temp_file.name
+        temp_file_path = Path(temp_file.name)
 
     yield temp_file_path
 
     # Clean up the temporary file
-    if os.path.exists(temp_file_path):
-        os.unlink(temp_file_path)
+    if temp_file_path.exists():
+        temp_file_path.unlink()
 
 
 def test_manifests_display_command(temp_manifest_file):
     """Test the manifest display command with a temporary manifest file."""
-    result = runner.invoke(manifests, ["display", temp_manifest_file])
+    result = runner.invoke(manifests, ["display", str(temp_manifest_file)])
 
     # Verify the command executed successfully
     assert result.exit_code == 0
@@ -53,7 +53,7 @@ def test_manifests_create_command(temp_manifest_file):
     with mock.patch.object(ManifestProcessor, "create") as mock_create:
         project_context = "test_context"
         result = runner.invoke(
-            manifests, ["create", temp_manifest_file, project_context]
+            manifests, ["create", str(temp_manifest_file), project_context]
         )
 
         # Verify the command executed successfully
@@ -64,29 +64,28 @@ def test_manifests_create_command(temp_manifest_file):
 def test_manifests_create_command_executes_creation():
     """Test that the create command actually executes the manifest creation process."""
     with tempfile.NamedTemporaryFile(delete=False) as output_file:
-        output_path = output_file.name
+        output_path = Path(output_file.name)
 
     try:
-        with tempfile.TemporaryDirectory() as project_dir:
-            # Create a manifest processor that will actually run
-            with mock.patch.object(
+        with (
+            tempfile.TemporaryDirectory() as project_dir,
+            mock.patch.object(
                 ManifestProcessor, "__init__", return_value=None
-            ) as mock_init:
-                with mock.patch.object(ManifestProcessor, "create") as mock_create:
-                    # Run the command
-                    result = runner.invoke(
-                        manifests, ["create", output_path, project_dir]
-                    )
+            ) as mock_init,
+            mock.patch.object(ManifestProcessor, "create") as mock_create,
+        ):
+            # Run the command
+            result = runner.invoke(manifests, ["create", str(output_path), project_dir])
 
-                    # Verify command executed successfully
-                    assert result.exit_code == 0
+            # Verify command executed successfully
+            assert result.exit_code == 0
 
-                    # Verify processor was initialized with correct parameters
-                    mock_init.assert_called_once_with(output_path, project_dir)
+            # Verify processor was initialized with correct parameters
+            mock_init.assert_called_once_with(str(output_path), project_dir)
 
-                    # Verify create method was called
-                    mock_create.assert_called_once()
+            # Verify create method was called
+            mock_create.assert_called_once()
     finally:
         # Clean up the temporary output file
-        if os.path.exists(output_path):
-            os.unlink(output_path)
+        if output_path.exists():
+            output_path.unlink()

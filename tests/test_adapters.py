@@ -9,7 +9,7 @@ def test_legacy_connector_adapter_delegates_method_calls():
 
     adapter.get_soar_base_url()
     adapter.set_csrf_info(mock.Mock(), mock.Mock())
-    adapter.handle(mock.Mock(), mock.Mock())
+    adapter.handle(mock.Mock())
     adapter.handle_action(mock.Mock())
     adapter.initialize()
     adapter.finalize()

@@ -1,3 +1,4 @@
+from typing import ClassVar
 from unittest import mock
 
 from soar_sdk.action_results import ActionOutput
@@ -9,7 +10,7 @@ class SampleActionParams(Params):
 
 
 class BaseConnectorMock(mock.Mock):
-    mocked_methods = [
+    mocked_methods: ClassVar[list[str]] = [
         "_get_phantom_base_url",
         "_set_csrf_info",
         "handle_action",

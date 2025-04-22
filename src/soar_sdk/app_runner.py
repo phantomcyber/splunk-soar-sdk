@@ -6,8 +6,10 @@ from typing import Optional, Any
 
 import requests
 
+from soar_sdk.shims.phantom.install_info import get_verify_ssl_setting
+
 if typing.TYPE_CHECKING:
-    from .app import App  # pragma: no cover
+    from .app import App
 
 
 class AppRunner:
@@ -71,8 +73,7 @@ class AppRunner:
                     self.app.actions_provider.soar_client.get_soar_base_url() + "/login"
                 )
 
-                print("Accessing the Login page")
-                r = requests.get(login_url, verify=False)
+                r = requests.get(login_url, verify=get_verify_ssl_setting(), timeout=10)
                 self.csrftoken = r.cookies["csrftoken"]
 
                 data = dict()
@@ -84,8 +85,13 @@ class AppRunner:
                 headers["Cookie"] = "csrftoken=" + self.csrftoken
                 headers["Referer"] = login_url
 
-                print("Logging into Platform to get the session id")
-                r2 = requests.post(login_url, verify=False, data=data, headers=headers)
+                r2 = requests.post(
+                    login_url,
+                    verify=get_verify_ssl_setting(),
+                    data=data,
+                    headers=headers,
+                    timeout=10,
+                )
                 self.session_id = r2.cookies["sessionid"]
                 self.headers = headers
 
@@ -106,5 +112,5 @@ class AppRunner:
         if self.session_id is not None:
             in_json["user_session_token"] = self.session_id
 
-        ret_val = self.app.handle(json.dumps(in_json), None)
+        ret_val = self.app.handle(json.dumps(in_json))
         pprint(json.loads(ret_val))

@@ -68,7 +68,92 @@ omit = [
 [tool.coverage.report]
 show_missing = true
 exclude_lines = [
-    "# pragma: no cover",
-    "if typing.TYPE_CHECKING:",  # ignore type checks import blocks
-    "if __name__ == \"__main__\":",  # ignore main blocks
+    '# pragma: no cover',
+    'if typing.TYPE_CHECKING:',  # ignore type checks import blocks
+    'if __name__ == "__main__":',  # ignore main blocks
+    'raise NotImplementedError',  # ignore NotImplementedError
+    '^ *(pass|\.\.\.)( *#.+)?$',  # ignore pass and ...
+    '^ *def .+: \.\.\.( *#.+)?$',  # ignore def f(): ...
 ]
+
+
+[tool.ruff]
+output-format = "full"  # <full|concise>
+fix = true
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "ERA",  # commented out code
+    "YTT",  # bad use of sys.version_info
+    "ANN",  # type annotations
+    "S",    # security issues
+    "B",    # bugbear
+    "A",    # builtins
+    "DTZ",  # datetime footguns
+    "T10",  # breakpoints
+    "ISC",  # implicit string concatenation
+    "PT",   # pytest style
+    "SIM",  # simplify
+    "PTH",  # use pathlib
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "PL",   # pylint
+    "UP",   # pyupgrade
+    "RUF",  # ruff's own rules
+]
+ignore = [
+    "E402",    # Module level import not at top of file.
+    "E501",    # Line too long. Format covers this.
+    "PT006",   # Opinions about types for pytest.parametrize
+    "PT007",   # Opinions about types for pytest.parametrize
+    "PTH123",  # Allow builtin open()
+    "PLR",     # pylint refactors
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = [
+    "ANN",  # Disable flake8-annotations rules for test files
+    "S",    # Disable flake8-bandit rules for test files
+]
+"src/**/*" = [
+    "PT",  # Disable pytest rules for src files
+]
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+# This is necessary since we rely on runtime type annotations in our code and in pydantic
+keep-runtime-typing = true
+
+[tool.ruff.format]
+docstring-code-format = true
+
+
+[tool.mypy]
+pretty = true
+color_output = true
+show_error_codes = true
+disallow_any_generics = false
+disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+no_implicit_optional = true
+show_error_context = true
+strict_equality = true
+check_untyped_defs = true
+exclude = [
+    'tests/.*',
+]
+
+[[tool.mypy.overrides]]
+module = "phantom.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "phantom_common.*"
+ignore_missing_imports = true

@@ -1,4 +1,4 @@
-from typing import Type, Any
+from typing import Any, Type  # noqa: UP035
 
 from pydantic import BaseModel, Field
 
@@ -15,10 +15,10 @@ class ActionMeta(BaseModel):
     type: str  # contain, correct, generic, investigate or test
     read_only: bool
     versions: str
-    parameters: Type[Params] = Field(default=Params)
-    output: Type[ActionOutput] = Field(default=ActionOutput)
+    parameters: Type[Params] = Field(default=Params)  # noqa: UP006
+    output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
 
-    def dict(self, *args, **kwargs) -> dict[str, Any]:  # type: ignore
+    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
         data = super().dict(*args, **kwargs)
         data["parameters"] = ParamsSerializer.serialize_fields_info(self.parameters)
         data["output"] = OutputsSerializer.serialize_datapaths(

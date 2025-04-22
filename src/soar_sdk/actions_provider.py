@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional
+from typing import Optional
 
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
@@ -16,7 +16,9 @@ class ActionsProvider:
     adapted to the new interfaces and used by App to properly run old handlers.
     """
 
-    def __init__(self, legacy_connector_class: Optional[type[BaseConnector]] = None):
+    def __init__(
+        self, legacy_connector_class: Optional[type[BaseConnector]] = None
+    ) -> None:
         if legacy_connector_class is not None:
             self.legacy_soar_client: Optional[SOARClient] = LegacyConnectorAdapter(
                 legacy_connector_class
@@ -55,15 +57,15 @@ class ActionsProvider:
         data = json.loads(input_data)
         return data.get("identifier", "")
 
-    def handle(self, input_data: str, handle: Optional[Any] = None) -> str:
+    def handle(self, input_data: str) -> str:
         """
         Runs handling of the input data on connector
         """
         action_id = self.get_action_identifier_from_input(input_data)
         if self.get_action(action_id):
-            return self.soar_client.handle(input_data, handle)
+            return self.soar_client.handle(input_data)
         elif self.legacy_soar_client:
-            return self.legacy_soar_client.handle(input_data, handle)
+            return self.legacy_soar_client.handle(input_data)
         else:
             raise RuntimeError(
                 f"Action {action_id} not recognized"

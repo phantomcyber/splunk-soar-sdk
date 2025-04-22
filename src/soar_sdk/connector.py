@@ -1,5 +1,5 @@
 import typing
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import ValidationError
 
@@ -23,7 +23,7 @@ class AppConnector(BaseConnector, SOARClient):
     In the future it should be replaced by another class accessing SOAR API.
     """
 
-    def __init__(self, actions_provider: "ActionsProvider"):
+    def __init__(self, actions_provider: "ActionsProvider") -> None:
         # Call the BaseConnectors init first
         super().__init__()
 
@@ -39,14 +39,10 @@ class AppConnector(BaseConnector, SOARClient):
         """Public method for setting the CSRF token in connector."""
         self._set_csrf_info(token, referer)
 
-    def handle(
-        self,
-        input_data: str,
-        handle: Optional[Any] = None,
-    ) -> str:
-        """Public method for handling the input data with the selected handler"""
+    def handle(self, input_data: str) -> str:
+        """Public method for executing an action from a JSON string."""
         self.print_progress_message = True
-        return self._handle_action(input_data, handle)
+        return self._handle_action(input_data, 0)
 
     def handle_action(self, param: dict[str, Any]) -> None:
         # Get the action that we are supposed to execute for this App Run
@@ -75,8 +71,8 @@ class AppConnector(BaseConnector, SOARClient):
         # that needs to be accessed across actions
         self._state = self.load_state() or {}
 
-        # get the asset config
-        # config = self.get_config()
+        # TODO: get the asset config
+        # config = self.get_config()  # noqa: ERA001
         """
         # Access values in asset config by the name
 

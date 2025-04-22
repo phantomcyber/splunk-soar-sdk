@@ -1,7 +1,8 @@
 import inspect
 import sys
 from functools import wraps
-from typing import Any, Optional, Type, Union, Callable, Iterable
+from typing import Any, Optional, Union, Callable
+from collections.abc import Iterable
 
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
@@ -30,11 +31,11 @@ class App:
         runner = AppRunner(self)
         runner.run()
 
-    def handle(self, input_data: str, handle: Optional[Any] = None) -> str:
+    def handle(self, input_data: str) -> str:
         """
         Runs handling of the input data on connector
         """
-        return self.actions_provider.handle(input_data, handle)
+        return self.actions_provider.handle(input_data)
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
 
@@ -46,8 +47,8 @@ class App:
         verbose: str = "",
         action_type: str = "generic",  # TODO: consider introducing enum type for that
         read_only: bool = True,
-        params_class: Optional[Type[Params]] = None,
-        output_class: Optional[Type[ActionOutput]] = None,
+        params_class: Optional[type[Params]] = None,
+        output_class: Optional[type[ActionOutput]] = None,
         versions: str = "EQ(*)",
     ) -> Callable[[Callable], Callable]:
         """
@@ -101,7 +102,7 @@ class App:
                 Validates input params and adapts the results from the action.
                 """
                 action_params = self._validate_params(params, action_name)
-                result = function(action_params, client=client, *args, **kwargs)
+                result = function(action_params, *args, client=client, **kwargs)
                 return self._adapt_action_result(result, client)
 
             # setting up meta information for the decorated function
@@ -216,8 +217,7 @@ class App:
             # try to fetch from the function args typehints
             if not len(spec.args):
                 raise TypeError(
-                    "Action function must accept at least the params "
-                    "positional argument"
+                    "Action function must accept at least the params positional argument"
                 )
             params_arg = spec.args[0]
             annotated_params_type: Optional[type] = spec.annotations.get(params_arg)
@@ -231,8 +231,7 @@ class App:
                 validated_params_class = annotated_params_type
             else:
                 raise TypeError(
-                    f"Proper params type for action {action_name} is not "
-                    f"derived from Params class."
+                    f"Proper params type for action {action_name} is not derived from Params class."
                 )
         return validated_params_class
 

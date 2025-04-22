@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.action_results import ActionResult
@@ -15,11 +15,11 @@ class SOARClient(ABC):
 
     @abstractmethod
     def get_soar_base_url(self) -> str:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def set_csrf_info(self, token: str, referer: str) -> None:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def handle_action(self, param: dict[str, Any]) -> None:
@@ -28,41 +28,40 @@ class SOARClient(ABC):
         at the momment.
         :param param: dict containing parameters for the action
         """
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def handle(
         self,
         input_data: str,
-        handle: Optional[Any] = None,
     ) -> str:
         """Public method for handling the input data with the selected handler"""
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def initialize(self) -> bool:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def finalize(self) -> bool:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def add_result(self, action_result: ActionResult) -> PhantomActionResult:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def get_results(self) -> list[ActionResult]:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def save_progress(
         self,
         progress_str_const: str,
-        *unnamed_format_args: Any,
-        **named_format_args: Any,
+        *unnamed_format_args: object,
+        **named_format_args: object,
     ) -> None:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def debug(
@@ -70,4 +69,4 @@ class SOARClient(ABC):
         tag: str,
         dump_object: Union[str, list, dict, ActionResult, Exception] = "",
     ) -> None:
-        pass  # pragma: no cover
+        pass

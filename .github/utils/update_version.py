@@ -11,7 +11,7 @@ def update_version(version: str) -> None:
 
     try:
         # Read the pyproject.toml file
-        with open(pyproject_path, "r") as file:
+        with open(pyproject_path) as file:
             pyproject_content = file.read()
 
         # Parse the TOML content
