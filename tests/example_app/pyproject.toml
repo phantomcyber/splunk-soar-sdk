@@ -9,6 +9,7 @@ authors = [
 ]
 dependencies = [
     "requests>=2.32.3",
+    "soar-sdk",
 ]
 
 [dependency-groups]
@@ -24,6 +25,9 @@ dev = [
 
 [[tool.uv.index]]
 url = "https://pypi.python.org/simple"
+
+[tool.uv.sources]
+soar-sdk = { workspace = true }
 
 [tool.uv]
 environments = [
@@ -45,8 +49,8 @@ required-environments = [
 appid = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
 type = "sandbox"
 product_vendor = "Splunk Inc."
-logo = "example.png"
-logo_dark = "example_dark.png"
+logo = "logo.svg"
+logo_dark = "logo_dark.svg"
 product_name = "Example App"
 python_version = "3"
 product_version_regex = ".*"
@@ -56,4 +60,4 @@ package_name = "example_app"
 min_phantom_version = "6.2.2.134"
 app_wizard_version = "1.0.0"
 fips_compliant = false
-main_module = "src/app.py:app"
+main_module = "src/app:app"

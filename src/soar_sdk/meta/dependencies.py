@@ -1,5 +1,6 @@
 from typing import Optional
-from pydantic import BaseModel, Field, PrivateAttr
+from collections.abc import Generator
+from pydantic import BaseModel, Field
 
 from logging import getLogger
 
@@ -8,18 +9,6 @@ import hashlib
 
 
 logger = getLogger(__name__)
-
-
-class DependencyWheel(BaseModel):
-    module: str
-    input_file: str
-    input_file_aarch64: Optional[str] = None
-    _wheel: "UvWheel" = PrivateAttr()
-    _wheel_aarch64: Optional["UvWheel"] = PrivateAttr()
-
-
-class DependencyList(BaseModel):
-    wheels: list[DependencyWheel] = Field(default_factory=list)
 
 
 class UvWheel(BaseModel):
@@ -80,6 +69,25 @@ class UvWheel(BaseModel):
         wheel_bytes: bytes = wheel_request.content
         self.validate_hash(wheel_bytes)
         return wheel_bytes
+
+
+class DependencyWheel(BaseModel):
+    module: str
+    input_file: str
+    input_file_aarch64: Optional[str] = None
+
+    wheel: UvWheel = Field(exclude=True, default=None)
+    wheel_aarch64: Optional[UvWheel] = Field(exclude=True, default=None)
+
+    def collect_wheels(self) -> Generator[tuple[str, bytes]]:
+        yield (self.input_file, self.wheel.fetch())
+
+        if self.input_file_aarch64 is not None and self.wheel_aarch64 is not None:
+            yield (self.input_file_aarch64, self.wheel_aarch64.fetch())
+
+
+class DependencyList(BaseModel):
+    wheels: list[DependencyWheel] = Field(default_factory=list)
 
 
 class UvDependency(BaseModel):
@@ -147,7 +155,7 @@ class UvPackage(BaseModel):
         wheel = DependencyWheel(
             module=self.name,
             input_file=f"wheels/{dir_name}/{wheel_x86_64.basename}.whl",
-            _wheel=wheel_x86_64,
+            wheel=wheel_x86_64,
         )
 
         try:
@@ -155,7 +163,7 @@ class UvPackage(BaseModel):
                 abi_precedence, python_precedence, self.platform_precedence_aarch64
             )
             wheel.input_file_aarch64 = f"wheels/{dir_name}/{wheel_aarch64.basename}.whl"
-            wheel._wheel_aarch64 = wheel_aarch64
+            wheel.wheel_aarch64 = wheel_aarch64
         except FileNotFoundError:
             logger.warning(
                 f"Could not find a suitable {dir_name} / aarch64 wheel for {self.name=}, {self.version=} -- the built package might not work on ARM systems"

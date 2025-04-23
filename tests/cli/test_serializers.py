@@ -121,12 +121,12 @@ def test_outputs_serialize_with_defaults():
     assert serialized_outputs == [
         {
             "data_path": "action_result.status",
-            "type": "string",
+            "data_type": "string",
             "example_values": ["success", "failure"],
         },
         {
             "data_path": "action_result.message",
-            "type": "string",
+            "data_type": "string",
         },
     ]
 
@@ -147,34 +147,34 @@ def test_outputs_serialize_output_class():
     assert serialized_outputs == [
         {
             "data_path": "action_result.status",
-            "type": "string",
+            "data_type": "string",
             "example_values": ["success", "failure"],
         },
         {
             "data_path": "action_result.message",
-            "type": "string",
+            "data_type": "string",
         },
         {
             "data_path": "action_result.data.*.string_value",
-            "type": "string",
+            "data_type": "string",
         },
         {
             "data_path": "action_result.data.*.int_value",
-            "type": "numeric",
+            "data_type": "numeric",
         },
         {
             "data_path": "action_result.data.*.list_value.*",
-            "type": "string",
+            "data_type": "string",
         },
         {
             "data_path": "action_result.data.*.cef_value",
-            "type": "string",
+            "data_type": "string",
             "contains": ["ip"],
             "example_values": ["1.1.1.1"],
         },
         {
             "data_path": "action_result.data.*.nested_value.bool_value",
-            "type": "boolean",
+            "data_type": "boolean",
         },
     ]
 
@@ -203,50 +203,50 @@ def test_outputs_serialize_with_parameters_class():
     assert serialized_outputs == [
         {
             "data_path": "action_result.status",
-            "type": "string",
+            "data_type": "string",
             "example_values": ["success", "failure"],
         },
         {
             "data_path": "action_result.message",
-            "type": "string",
+            "data_type": "string",
         },
         {
             "data_path": "action_result.parameter.int_value",
-            "type": "numeric",
+            "data_type": "numeric",
         },
         {
             "data_path": "action_result.parameter.str_value",
-            "type": "string",
+            "data_type": "string",
         },
         {
             "data_path": "action_result.parameter.bool_value",
-            "type": "boolean",
+            "data_type": "boolean",
         },
         {
             "data_path": "action_result.parameter.cef_value",
-            "type": "string",
+            "data_type": "string",
             "contains": ["user name"],
         },
         {
             "data_path": "action_result.data.*.string_value",
-            "type": "string",
+            "data_type": "string",
         },
         {
             "data_path": "action_result.data.*.int_value",
-            "type": "numeric",
+            "data_type": "numeric",
         },
         {
             "data_path": "action_result.data.*.list_value.*",
-            "type": "string",
+            "data_type": "string",
         },
         {
             "data_path": "action_result.data.*.cef_value",
-            "type": "string",
+            "data_type": "string",
             "contains": ["ip"],
             "example_values": ["1.1.1.1"],
         },
         {
             "data_path": "action_result.data.*.nested_value.bool_value",
-            "type": "boolean",
+            "data_type": "boolean",
         },
     ]

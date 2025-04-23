@@ -8,9 +8,9 @@
     "license": "Copyright (c) Splunk Inc., 2025",
     "min_phantom_version": "6.2.2.134",
     "package_name": "example_app",
-    "main_module": "src/app.py:app",
-    "logo": "example.png",
-    "logo_dark": "example_dark.png",
+    "main_module": "src/app:app",
+    "logo": "logo.svg",
+    "logo_dark": "logo_dark.svg",
     "product_name": "Example App",
     "python_version": "3",
     "product_version_regex": ".*",
@@ -32,7 +32,7 @@
             "output": [
                 {
                     "data_path": "action_result.status",
-                    "type": "string",
+                    "data_type": "string",
                     "example_values": [
                         "success",
                         "failure"
@@ -40,7 +40,7 @@
                 },
                 {
                     "data_path": "action_result.message",
-                    "type": "string"
+                    "data_type": "string"
                 }
             ]
         },
@@ -66,7 +66,7 @@
             "output": [
                 {
                     "data_path": "action_result.status",
-                    "type": "string",
+                    "data_type": "string",
                     "example_values": [
                         "success",
                         "failure"
@@ -74,15 +74,15 @@
                 },
                 {
                     "data_path": "action_result.message",
-                    "type": "string"
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.parameter.input_string",
-                    "type": "string"
+                    "data_type": "string"
                 },
                 {
                     "data_path": "action_result.data.*.reversed_string",
-                    "type": "string"
+                    "data_type": "string"
                 }
             ]
         }

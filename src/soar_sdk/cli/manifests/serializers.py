@@ -24,7 +24,7 @@ class OutputsSerializer:
         for field_name, field in params_class.__fields__.items():
             spec = OutputFieldSpecification(
                 data_path=f"action_result.parameter.{field_name}",
-                type=as_datatype(field.annotation),
+                data_type=as_datatype(field.annotation),
             )
             if cef_types := field.field_info.extra.get("cef_types"):
                 spec["contains"] = cef_types
@@ -36,12 +36,12 @@ class OutputsSerializer:
     ) -> list[OutputFieldSpecification]:
         status = OutputFieldSpecification(
             data_path="action_result.status",
-            type="string",
+            data_type="string",
             example_values=["success", "failure"],
         )
         message = OutputFieldSpecification(
             data_path="action_result.message",
-            type="string",
+            data_type="string",
         )
         params = cls.serialize_parameter_datapaths(params_class)
         outputs = outputs_class._to_json_schema()
