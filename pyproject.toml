@@ -69,11 +69,11 @@ omit = [
 show_missing = true
 exclude_lines = [
     '# pragma: no cover',
-    'if typing.TYPE_CHECKING:',  # ignore type checks import blocks
-    'if __name__ == "__main__":',  # ignore main blocks
-    'raise NotImplementedError',  # ignore NotImplementedError
-    '^ *(pass|\.\.\.)( *#.+)?$',  # ignore pass and ...
-    '^ *def .+: \.\.\.( *#.+)?$',  # ignore def f(): ...
+    'if (typing\.)?TYPE_CHECKING:',  # ignore type checking blocks
+    'if __name__ == "__main__":',    # ignore main blocks
+    'raise NotImplementedError',     # ignore NotImplementedError
+    '^ *(pass|\.\.\.)( *#.+)?$',     # ignore pass and ...
+    '^ *def .+: \.\.\.( *#.+)?$',    # ignore def f(): ...
 ]
 
 
