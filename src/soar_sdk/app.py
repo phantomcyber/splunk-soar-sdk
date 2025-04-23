@@ -2,7 +2,6 @@ import inspect
 import sys
 from functools import wraps
 from typing import Any, Optional, Union, Callable
-from collections.abc import Iterable
 
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
@@ -52,7 +51,7 @@ class App:
         params_class: Optional[type[Params]] = None,
         output_class: Optional[type[ActionOutput]] = None,
         versions: str = "EQ(*)",
-    ) -> Callable[[Callable], Callable]:
+    ) -> Callable[[Callable], Action]:
         """
         Generates a decorator for the action handling function attaching action
         specific meta information to the function.
@@ -69,6 +68,11 @@ class App:
                 raise TypeError(
                     "The 'test_connectivity' action identifier is reserved and cannot be used. Please use the test_connectivity decorator instead."
                 )
+            if self.actions_provider.get_action(action_identifier):
+                raise TypeError(
+                    f"Action identifier '{action_identifier}' is already used. Please use a different identifier."
+                )
+
             action_name = name or str(action_identifier.replace("_", " "))
 
             spec = inspect.getfullargspec(function)
@@ -97,8 +101,8 @@ class App:
                 params: Params,
                 /,
                 client: SOARClient = self.actions_provider.soar_client,
-                *args: Iterable[Any],
-                **kwargs: dict[str, Any],
+                *args: Any,  # noqa: ANN401
+                **kwargs: Any,  # noqa: ANN401
             ) -> bool:
                 """
                 Validates input params and adapts the results from the action.
@@ -128,7 +132,7 @@ class App:
 
         return app_action
 
-    def test_connectivity(self) -> Callable[[Callable], Callable]:
+    def test_connectivity(self) -> Callable[[Callable], Action]:
         """
         Generates a decorator for test connectivity attaching action
         specific meta information to the function.
@@ -142,25 +146,12 @@ class App:
             value based on the success or failure of test connectivity.
             """
 
-            if self._test_connectivity_implemented:
+            if self.actions_provider.get_action("test_connectivity"):
                 raise TypeError(
                     "The 'test_connectivity' decorator can only be used once per App instance."
                 )
 
-            self._test_connectivity_implemented = True
-
             signature = inspect.signature(function)
-            if len(signature.parameters) != 1:
-                raise TypeError(
-                    "Test connectivity function should accept the SOAR client as a parameter."
-                )
-
-            first_param = next(iter(signature.parameters.values()))
-            if first_param.annotation is not SOARClient:
-                raise TypeError(
-                    "Test connectivity function should only accept the client as a parameter."
-                )
-
             if signature.return_annotation not in (None, inspect._empty):
                 raise TypeError(
                     "Test connectivity function must not return any value (return type should be None)."
