@@ -5,56 +5,78 @@ from typing import TypedDict, Optional
 import pytest
 
 
-def test_parse_uvwheel():
-    class UvWheelTest(TypedDict):
-        wheel: UvWheel
-        basename: str
-        distribution: str
-        version: str
-        build_tag: Optional[str]
-        python_tags: list[str]
-        abi_tags: list[str]
-        platform_tags: list[str]
+class TestUvWheel:
+    def test_parse_uvwheel(self):
+        class UvWheelTest(TypedDict):
+            wheel: UvWheel
+            basename: str
+            distribution: str
+            version: str
+            build_tag: Optional[str]
+            python_tags: list[str]
+            abi_tags: list[str]
+            platform_tags: list[str]
 
-    tests = [
-        UvWheelTest(
-            wheel=UvWheel(
-                url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
-                hash="sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe",
-                size=166393,
+        tests = [
+            UvWheelTest(
+                wheel=UvWheel(
+                    url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
+                    hash="sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe",
+                    size=166393,
+                ),
+                basename="certifi-2025.1.31-py3-none-any",
+                distribution="certifi",
+                version="2025.1.31",
+                build_tag=None,
+                python_tags=["py3"],
+                abi_tags=["none"],
+                platform_tags=["any"],
             ),
-            basename="certifi-2025.1.31-py3-none-any",
-            distribution="certifi",
-            version="2025.1.31",
-            build_tag=None,
-            python_tags=["py3"],
-            abi_tags=["none"],
-            platform_tags=["any"],
-        ),
-        UvWheelTest(
-            wheel=UvWheel(
-                url="https://example.com/fictional_package-2.2.2-32a-py3-none-any.whl",
-                hash="sha256:asdf",
-                size=9999,
+            UvWheelTest(
+                wheel=UvWheel(
+                    url="https://example.com/fictional_package-2.2.2-32a-py3-none-any.whl",
+                    hash="sha256:asdf",
+                    size=9999,
+                ),
+                basename="fictional_package-2.2.2-32a-py3-none-any",
+                distribution="fictional_package",
+                version="2.2.2",
+                build_tag="32a",
+                python_tags=["py3"],
+                abi_tags=["none"],
+                platform_tags=["any"],
             ),
-            basename="fictional_package-2.2.2-32a-py3-none-any",
-            distribution="fictional_package",
-            version="2.2.2",
-            build_tag="32a",
-            python_tags=["py3"],
-            abi_tags=["none"],
-            platform_tags=["any"],
-        ),
-    ]
+        ]
 
-    for test in tests:
-        assert test["wheel"].basename == test["basename"]
-        assert test["wheel"].distribution == test["distribution"]
-        assert test["wheel"].version == test["version"]
-        assert test["wheel"].build_tag == test["build_tag"]
-        assert test["wheel"].python_tags == test["python_tags"]
-        assert test["wheel"].abi_tags == test["abi_tags"]
-        assert test["wheel"].platform_tags == test["platform_tags"]
+        for test in tests:
+            assert test["wheel"].basename == test["basename"]
+            assert test["wheel"].distribution == test["distribution"]
+            assert test["wheel"].version == test["version"]
+            assert test["wheel"].build_tag == test["build_tag"]
+            assert test["wheel"].python_tags == test["python_tags"]
+            assert test["wheel"].abi_tags == test["abi_tags"]
+            assert test["wheel"].platform_tags == test["platform_tags"]
+
+    def test_fetch_wheel(self):
+        wheel = UvWheel(
+            url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
+            hash="sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe",
+            size=166393,
+        )
+        wheel_bytes = wheel.fetch()
+        assert len(wheel_bytes) == wheel.size
+
+    def test_fetch_wheel_hash_mismatch(self):
+        wheel = UvWheel(
+            url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
+            hash="sha256:deadbeef",
+            size=166393,
+        )
+        with pytest.raises(
+            ValueError,
+            match="Retrieved wheel for certifi-2025.1.31 did not match the expected checksum",
+        ):
+            wheel.fetch()
 
 
 class TestUvPackage:
@@ -108,7 +130,5 @@ class TestUvLock:
     def test_missing_package_entry(self):
         lock = UvLock(package=[])
 
-        with pytest.raises(LookupError) as e:
+        with pytest.raises(LookupError, match="No package 'requests' found in uv.lock"):
             lock.get_package_entry("requests")
-
-        assert e.match("No package 'requests' found in uv.lock")
