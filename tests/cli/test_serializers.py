@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 from soar_sdk.cli.manifests.serializers import ParamsSerializer, OutputsSerializer
 from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput, OutputField
@@ -45,77 +43,75 @@ def test_params_serialize_fields_info():
 
     serialized_params = ParamsSerializer.serialize_fields_info(SampleParams)
 
-    expected_params = OrderedDict(
-        {
-            "name": {
-                "name": "name",
-                "description": "Username",
-                "data_type": "string",
-                "contains": ["user name"],
-                "required": True,
-                "primary": True,
-                "allow_list": False,
-                "order": 0,
-            },
-            "event_id": {
-                "name": "event_id",
-                "description": "Some id of the event",
-                "data_type": "numeric",
-                "contains": ["event id"],
-                "required": True,
-                "primary": False,
-                "allow_list": False,
-                "order": 1,
-            },
-            "event_description": {
-                "name": "event_description",
-                "description": "Event Description",
-                "data_type": "string",
-                "required": True,
-                "primary": False,
-                "allow_list": False,
-                "order": 2,
-            },
-            "event_tags": {
-                "name": "event_tags",
-                "description": "Event Tags",
-                "data_type": "string",
-                "required": False,
-                "primary": False,
-                "allow_list": True,
-                "order": 3,
-            },
-            "send_notifications": {
-                "name": "send_notifications",
-                "description": "Send Notifications",
-                "data_type": "boolean",
-                "default": True,
-                "required": True,
-                "primary": False,
-                "allow_list": False,
-                "order": 4,
-            },
-            "platform": {
-                "name": "platform",
-                "description": "Platform",
-                "data_type": "string",
-                "required": True,
-                "primary": False,
-                "allow_list": False,
-                "values_list": ["windows", "linux", "mac"],
-                "order": 5,
-            },
-            "api_key": {
-                "name": "api_key",
-                "description": "Api Key",
-                "data_type": "password",
-                "required": True,
-                "primary": False,
-                "allow_list": False,
-                "order": 6,
-            },
-        }
-    )
+    expected_params = {
+        "name": {
+            "name": "name",
+            "description": "Username",
+            "data_type": "string",
+            "contains": ["user name"],
+            "required": True,
+            "primary": True,
+            "allow_list": False,
+            "order": 0,
+        },
+        "event_id": {
+            "name": "event_id",
+            "description": "Some id of the event",
+            "data_type": "numeric",
+            "contains": ["event id"],
+            "required": True,
+            "primary": False,
+            "allow_list": False,
+            "order": 1,
+        },
+        "event_description": {
+            "name": "event_description",
+            "description": "Event Description",
+            "data_type": "string",
+            "required": True,
+            "primary": False,
+            "allow_list": False,
+            "order": 2,
+        },
+        "event_tags": {
+            "name": "event_tags",
+            "description": "Event Tags",
+            "data_type": "string",
+            "required": False,
+            "primary": False,
+            "allow_list": True,
+            "order": 3,
+        },
+        "send_notifications": {
+            "name": "send_notifications",
+            "description": "Send Notifications",
+            "data_type": "boolean",
+            "default": True,
+            "required": True,
+            "primary": False,
+            "allow_list": False,
+            "order": 4,
+        },
+        "platform": {
+            "name": "platform",
+            "description": "Platform",
+            "data_type": "string",
+            "required": True,
+            "primary": False,
+            "allow_list": False,
+            "values_list": ["windows", "linux", "mac"],
+            "order": 5,
+        },
+        "api_key": {
+            "name": "api_key",
+            "description": "Api Key",
+            "data_type": "password",
+            "required": True,
+            "primary": False,
+            "allow_list": False,
+            "order": 6,
+        },
+    }
 
     assert serialized_params == expected_params
 
