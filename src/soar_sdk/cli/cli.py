@@ -2,7 +2,7 @@ import typer
 
 from soar_sdk.cli.manifests.cli import manifests
 
-CONTEXT_SETTINGS = dict(help_option_names=["-h", "--help"])
+CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 HELP = """A command-line tool for helping with SOAR Apps development"""
 
 app = typer.Typer(
