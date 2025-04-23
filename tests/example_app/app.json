@@ -48,7 +48,7 @@
             "action": "reverse string",
             "identifier": "reverse_string",
             "description": "reverse string",
-            "verbose": "",
+            "verbose": "Reverses a string.",
             "type": "test",
             "read_only": true,
             "versions": "EQ(*)",

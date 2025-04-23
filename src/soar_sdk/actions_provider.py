@@ -1,6 +1,6 @@
-import json
 from typing import Optional
 
+from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.adapters import LegacyConnectorAdapter
@@ -19,12 +19,9 @@ class ActionsProvider:
     def __init__(
         self, legacy_connector_class: Optional[type[BaseConnector]] = None
     ) -> None:
+        self.legacy_soar_client: Optional[SOARClient] = None
         if legacy_connector_class is not None:
-            self.legacy_soar_client: Optional[SOARClient] = LegacyConnectorAdapter(
-                legacy_connector_class
-            )
-        else:
-            self.legacy_soar_client = None
+            self.legacy_soar_client = LegacyConnectorAdapter(legacy_connector_class)
 
         self.soar_client: AppConnector = AppConnector(self)
 
@@ -52,16 +49,13 @@ class ActionsProvider:
         """
         self._actions[action_identifier] = wrapped_function
 
-    @staticmethod
-    def get_action_identifier_from_input(input_data: str) -> str:
-        data = json.loads(input_data)
-        return data.get("identifier", "")
-
-    def handle(self, input_data: str, handle: Optional[int] = None) -> str:
+    def handle(
+        self, input_data: InputSpecification, handle: Optional[int] = None
+    ) -> str:
         """
         Runs handling of the input data on connector
         """
-        action_id = self.get_action_identifier_from_input(input_data)
+        action_id = input_data.identifier
         if self.get_action(action_id):
             return self.soar_client.handle(input_data, handle)
         elif self.legacy_soar_client:

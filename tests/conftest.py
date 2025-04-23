@@ -5,8 +5,11 @@ import pytest
 
 from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app import App
-from soar_sdk.app_runner import AppRunner
+from soar_sdk.asset import BaseAsset
 from soar_sdk.connector import AppConnector
+from soar_sdk.input_spec import AppConfig, InputSpecification
+from soar_sdk.action_results import ActionOutput
+from tests.stubs import SampleActionParams
 
 
 @pytest.fixture
@@ -38,6 +41,49 @@ def simple_app() -> App:
 
 
 @pytest.fixture
+def app_with_action() -> App:
+    """Create an app with a pre-configured 'test_action' for testing."""
+    app = App()
+
+    @app.action(
+        name="Test Action",
+        identifier="test_action",
+        description="Test action description",
+        verbose="Test action verbose description",
+    )
+    def test_action(params: SampleActionParams) -> ActionOutput:
+        """Test action description"""
+        return ActionOutput()
+
+    return app
+
+
+@pytest.fixture
+def app_with_asset_action() -> App:
+    """Create an app with a pre-configured action that requires an asset."""
+    app = App()
+
+    @app.action(
+        name="Test Action With Asset",
+        identifier="test_action_with_asset",
+        description="Test action that requires an asset",
+    )
+    def test_action_with_asset(params: SampleActionParams, asset: dict) -> ActionOutput:
+        """Test action that requires an asset"""
+        return ActionOutput()
+
+    return app
+
+
+@pytest.fixture
+def app_with_simple_asset() -> App:
+    class Asset(BaseAsset):
+        base_url: str
+
+    return App(asset_cls=Asset)
+
+
+@pytest.fixture
 def simple_provider(simple_app) -> ActionsProvider:
     return simple_app.actions_provider
 
@@ -53,18 +99,12 @@ def app_connector(simple_app) -> AppConnector:
 
 
 @pytest.fixture
-def simple_runner(simple_app, default_args) -> AppRunner:
-    with mock.patch("argparse.ArgumentParser.parse_args", default_args):
-        return AppRunner(simple_app)
-
-
-@pytest.fixture
-def simple_action_input() -> str:
-    return json.dumps(
-        {
-            "asset_id": 1,
-            "config": {},
-            "parameters": [{}],
-            "identifier": "test_action",
-        }
+def simple_action_input() -> InputSpecification:
+    return InputSpecification(
+        asset_id="1",
+        identifier="test_action",
+        action="test_action",
+        config=AppConfig(
+            app_version="1.0.0", directory=".", main_module="example_connector.py"
+        ),
     )

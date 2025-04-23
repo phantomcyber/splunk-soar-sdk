@@ -15,4 +15,4 @@ def test_connectivity(params: Params, client: SOARClient) -> ActionOutput:
 
 
 if __name__ == "__main__":
-    app.run()
+    app.cli()

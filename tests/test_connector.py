@@ -3,20 +3,19 @@ from unittest import mock
 import pytest
 
 from soar_sdk.connector import AppConnector
+from soar_sdk.input_spec import InputSpecification
 from tests.stubs import SampleActionParams
 
 
-def test_app_connector_handle_runs_legacy__handle_action(app_connector: AppConnector):
-    app_connector._handle_action = mock.Mock()  # type: ignore[method-assign]
-
+def test_app_connector_handle_runs_legacy__handle_action(
+    app_connector: AppConnector, simple_action_input: InputSpecification
+):
     app_connector.actions_provider.set_action("action_handler1", mock.Mock())
     app_connector.actions_provider.set_action("action_handler2", mock.Mock())
 
-    in_json = "{}"
-
-    app_connector.handle(in_json)  # type: ignore[arg-type]
-
-    assert app_connector._handle_action.call_count == 1
+    with mock.patch.object(app_connector, "_handle_action") as mock_handle_action:
+        app_connector.handle(simple_action_input)
+        assert mock_handle_action.call_count == 1
 
 
 def test_app_connector_handle_action_runs_app_action(app_connector: AppConnector):
@@ -54,7 +53,6 @@ def test_app_connector_action_handle_raises_validation_error(
     app_connector.save_progress = mock.Mock()
 
     app_connector.handle_action({"field1": "five"})
-
     assert app_connector.save_progress.call_count == 1
 
 

@@ -1,14 +1,14 @@
-import typing
-from typing import Any, Optional
+from typing import Any, TYPE_CHECKING, Union, Optional
 
 from pydantic import ValidationError
 
+from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 
 from .abstract import SOARClient
 
-if typing.TYPE_CHECKING:
+if TYPE_CHECKING:
     from .actions_provider import ActionsProvider
 
 
@@ -39,21 +39,22 @@ class AppConnector(BaseConnector, SOARClient):
         """Public method for setting the CSRF token in connector."""
         self._set_csrf_info(token, referer)
 
-    def handle(self, input_data: str, handle: Optional[int] = None) -> str:
+    def handle(
+        self, input_data: InputSpecification, handle: Optional[int] = None
+    ) -> str:
         """Public method for executing an action from a JSON string."""
         self.print_progress_message = True
-        return self._handle_action(input_data, handle or 0)
+        return self._handle_action(input_data.json(), handle or 0)
 
     def handle_action(self, param: dict[str, Any]) -> None:
         # Get the action that we are supposed to execute for this App Run
         action_id = self.get_action_identifier()
-
-        self.debug_print("action_id", self.get_action_identifier())
+        self.debug_print("action_id", action_id)
 
         if handler := self.actions_provider.get_action(action_id):
             try:
                 params = handler.meta.parameters.parse_obj(param)
-            except ValidationError:
+            except (ValueError, ValidationError):
                 # FIXME: Consider adding more details to this error, but be aware
                 #  of possible PIIs.
                 self.save_progress(
@@ -92,12 +93,12 @@ class AppConnector(BaseConnector, SOARClient):
     def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
         return self.add_action_result(action_result)
 
-    def get_results(self) -> list:
+    def get_results(self) -> list[PhantomActionResult]:
         return self.get_action_results()
 
     def debug(
         self,
         tag: str,
-        dump_object: typing.Union[str, list, dict, PhantomActionResult, Exception] = "",
+        dump_object: Union[str, list, dict, PhantomActionResult, Exception] = "",
     ) -> None:
         self.debug_print(tag, dump_object)
