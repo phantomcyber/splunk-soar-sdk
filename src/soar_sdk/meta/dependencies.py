@@ -3,8 +3,9 @@ from pydantic import BaseModel, Field, PrivateAttr
 
 from logging import getLogger
 
-# from functools import cached_property
-# TODO: when we upgrade to pydantic 2, we can replace our properties with cached properties
+import requests
+import hashlib
+
 
 logger = getLogger(__name__)
 
@@ -29,6 +30,7 @@ class UvWheel(BaseModel):
     # The wheel file name is specified by PEP427. It's either a 5- or 6-tuple:
     # {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
     # We can parse this to determine which configurations it supports.
+    # TODO: when we upgrade to pydantic 2, we can replace these properties with cached properties.
     @property
     def basename(self) -> str:
         filename = self.url.split("/")[-1]
@@ -60,6 +62,24 @@ class UvWheel(BaseModel):
     @property
     def platform_tags(self) -> list[str]:
         return self.basename.split("-")[-1].split(".")
+
+    def validate_hash(self, wheel: bytes) -> None:
+        algorithm, expected_digest = self.hash.split(":")
+        actual_digest = hashlib.new(algorithm, wheel).hexdigest()
+        if expected_digest != actual_digest:
+            raise ValueError(
+                f"Retrieved wheel for {self.distribution}-{self.version} did not match the expected checksum. {expected_digest=}, {actual_digest=}, {self.url=}"
+            )
+
+    def fetch(self) -> bytes:
+        wheel_request = requests.get(
+            self.url,
+            timeout=10,
+        )
+        wheel_request.raise_for_status()
+        wheel_bytes: bytes = wheel_request.content
+        self.validate_hash(wheel_bytes)
+        return wheel_bytes
 
 
 class UvDependency(BaseModel):
