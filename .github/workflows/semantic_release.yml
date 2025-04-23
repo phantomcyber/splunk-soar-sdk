@@ -26,12 +26,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "lts/*"
-      - name: Set up Python 3.13
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
       - name: Install uv
-        run: pip install --upgrade pip && pip install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.13
       - name: Install semantic-release dependencies
         run: npm install --global semantic-release @semantic-release/exec @semantic-release/git
       - name: Run Semantic Release
