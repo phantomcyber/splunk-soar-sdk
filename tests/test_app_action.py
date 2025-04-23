@@ -3,6 +3,7 @@ from unittest import mock
 import pytest
 
 from soar_sdk.abstract import SOARClient
+from soar_sdk.app import App
 from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
@@ -37,36 +38,30 @@ def sample_output() -> SampleOutput:
 
 
 def test_action_decoration_fails_without_params(simple_app):
-    with pytest.raises(TypeError) as exception_info:
+    with pytest.raises(TypeError, match=r".*must accept at least"):
 
         @simple_app.action()
         def action_function_no_params() -> ActionOutput:
             pass
 
-    assert "Action function must accept at least the params" in str(exception_info)
-
 
 def test_action_decoration_fails_without_params_type_set(simple_app):
-    with pytest.raises(TypeError) as exception_info:
+    with pytest.raises(TypeError, match=r".*no params type set"):
 
         @simple_app.action()
         def action_function_no_params_type(params) -> ActionOutput:
             pass
-
-    assert "has no params type set" in str(exception_info)
 
 
 def test_action_decoration_fails_with_params_not_inheriting_from_Params(simple_app):
     class SomeClass:
         pass
 
-    with pytest.raises(TypeError) as exception_info:
+    with pytest.raises(TypeError, match=r".*Proper params type for action"):
 
         @simple_app.action()
         def action_with_bad_params_type(params: SomeClass):
             pass
-
-    assert "Proper params type for action" in str(exception_info)
 
 
 def test_action_decoration_passing_params_type_as_hint(simple_app):
@@ -90,13 +85,11 @@ def test_action_run_fails_with_wrong_params_type_passed(simple_app):
     def action_example(params: Params, client: SOARClient) -> ActionOutput:
         pass
 
-    with pytest.raises(TypeError) as exception_info:
+    with pytest.raises(TypeError, match=r".*not inheriting from Params"):
         action_example("")
 
-    assert "Provided params are not inheriting from Params" in str(exception_info)
 
-
-def test_action_call_with_params(simple_app, sample_params):
+def test_action_call_with_params(simple_app: App, sample_params: SampleParams):
     @simple_app.action()
     def action_function(params: SampleParams, client: SOARClient) -> ActionOutput:
         assert params.int_value == 1
@@ -105,12 +98,9 @@ def test_action_call_with_params(simple_app, sample_params):
         assert params.bool_value
         client.debug("TAG", "Progress was made")
 
-    client_mock = mock.Mock()
-    client_mock.debug = mock.Mock()
-
+    client_mock = mock.Mock(spec=SOARClient)
     action_function(sample_params, client=client_mock)
-
-    assert client_mock.debug.call_count == 1
+    client_mock.debug.assert_called_once()
 
 
 def test_action_call_with_params_dict(simple_app, sample_params):
@@ -195,16 +185,11 @@ def test_action_with_mocked_client(simple_app, sample_params):
 
 
 def test_action_decoration_fails_without_return_type(simple_app):
-    with pytest.raises(TypeError) as exception_info:
+    with pytest.raises(TypeError, match=r".*must specify.*return type"):
 
         @simple_app.action()
         def action_function(params: Params, client: SOARClient):
             pass
-
-    assert (
-        "Action function must specify a return type via type hint or output_class parameter"
-        in str(exception_info)
-    )
 
 
 def test_action_decoration_fails_with_return_type_not_inheriting_from_ActionOutput(
@@ -213,29 +198,31 @@ def test_action_decoration_fails_with_return_type_not_inheriting_from_ActionOutp
     class SomeClass:
         pass
 
-    with pytest.raises(TypeError) as exception_info:
+    with pytest.raises(TypeError, match=r".*Return type.*must be derived"):
 
         @simple_app.action()
         def action_function(params: Params, client: SOARClient) -> SomeClass:
             pass
 
-    assert (
-        "Return type for action function must be derived from ActionOutput class."
-        in str(exception_info)
-    )
-
 
 def test_action_cannot_be_test_connectivity(simple_app):
-    with pytest.raises(TypeError) as exception_info:
+    with pytest.raises(TypeError, match=r".*test_connectivity.*reserved"):
 
         @simple_app.action()
         def test_connectivity(params: Params, client: SOARClient) -> ActionOutput:
             pass
 
-    assert (
-        "The 'test_connectivity' action identifier is reserved and cannot be used. Please use the test_connectivity decorator instead."
-        in str(exception_info)
-    )
+
+def test_action_names_must_be_unique(simple_app: App):
+    @simple_app.action(identifier="test_function_id")
+    def action_test(params: Params) -> ActionOutput:
+        pass
+
+    with pytest.raises(TypeError, match=r".*already used"):
+
+        @simple_app.action(identifier="test_function_id")
+        def other_action_test(params: Params) -> ActionOutput:
+            pass
 
 
 def test_action_decoration_passing_output_type_as_hint(simple_app):
