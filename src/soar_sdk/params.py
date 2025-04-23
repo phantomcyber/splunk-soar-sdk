@@ -1,8 +1,6 @@
 from typing import Optional, TypedDict, Union
 from typing_extensions import NotRequired
 
-from collections import OrderedDict
-
 from pydantic.fields import Field, FieldInfo, Undefined
 from pydantic.main import BaseModel
 
@@ -91,8 +89,8 @@ class Params(BaseModel):
         return " ".join(words).title()
 
     @classmethod
-    def _to_json_schema(cls) -> OrderedDict[str, InputFieldSpecification]:
-        params: OrderedDict[str, InputFieldSpecification] = OrderedDict()
+    def _to_json_schema(cls) -> dict[str, InputFieldSpecification]:
+        params: dict[str, InputFieldSpecification] = {}
 
         for field_order, (field_name, field) in enumerate(cls.__fields__.items()):
             field_type = field.annotation
