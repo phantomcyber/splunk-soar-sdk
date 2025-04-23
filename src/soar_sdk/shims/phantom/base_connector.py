@@ -36,9 +36,9 @@ if TYPE_CHECKING or not _soar_is_available:
             _tag: str,
             _dump_object: Union[str, list, dict, ActionResult, Exception],
         ) -> None:
-            return
+            print(_tag, _dump_object)
 
-        def get_action_results(self) -> list:
+        def get_action_results(self) -> list[ActionResult]:
             return self.action_results
 
         def add_action_result(self, action_result: ActionResult) -> ActionResult:
@@ -57,7 +57,7 @@ if TYPE_CHECKING or not _soar_is_available:
 
             self.action_identifier = input_object.get("identifier", "")
             self.config = input_object.get("config", {})
-            param_array = input_object.get("parameters", [{}])
+            param_array = input_object.get("parameters") or [{}]
             for param in param_array:
                 self.handle_action(param)
 

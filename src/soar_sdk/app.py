@@ -1,13 +1,17 @@
 import inspect
+import json
 import sys
 from functools import wraps
 from typing import Any, Optional, Union, Callable
 
+
+from soar_sdk.asset import BaseAsset
+from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_provider import ActionsProvider
-from soar_sdk.app_runner import AppRunner
+from soar_sdk.app_cli_runner import AppCliRunner
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
@@ -16,29 +20,51 @@ from soar_sdk.types import Action, action_protocol
 
 class App:
     def __init__(
-        self, legacy_connector_class: Optional[type[BaseConnector]] = None
+        self,
+        *,
+        asset_cls: type[BaseAsset] = BaseAsset,
+        legacy_connector_class: Optional[type[BaseConnector]] = None,
     ) -> None:
-        self.actions_provider = ActionsProvider(legacy_connector_class)
-        self._test_connectivity_implemented = False
+        self.asset_cls = asset_cls
+        self._raw_asset_config: dict[str, Any] = {}
 
-    def run(self) -> None:
+        self.actions_provider = ActionsProvider(legacy_connector_class)
+
+    def get_actions(self) -> dict[str, Action]:
+        """
+        Returns the list of actions registered in the app.
+        """
+        return self.actions_provider.get_actions()
+
+    def cli(self) -> None:
         """
         This is just a handy shortcut for reducing imports in the main app code.
         It uses AppRunner to run locally app the same way as main() in the legacy
         connectors.
         """
-        runner = AppRunner(self)
+        runner = AppCliRunner(self)
         runner.run()
 
-    def handle(self, input_data: str, handle: Optional[int] = None) -> str:
+    def handle(self, raw_input_data: str, handle: Optional[int] = None) -> str:
         """
         Runs handling of the input data on connector.
         NOTE: handle is actually a pointer address to spawn's internal state.
         In versions of SOAR >6.4.1, handle will not be passed to the app.
         """
+        input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
+        self._raw_asset_config = input_data.config.get_asset_config()
         return self.actions_provider.handle(input_data, handle=handle)
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
+
+    @property
+    def asset(self) -> BaseAsset:
+        """
+        Returns the asset instance for the app.
+        """
+        if not hasattr(self, "_asset"):
+            self._asset = self.asset_cls.parse_obj(self._raw_asset_config)
+        return self._asset
 
     def action(
         self,
@@ -108,10 +134,13 @@ class App:
                 Validates input params and adapts the results from the action.
                 """
                 action_params = self._validate_params(params, action_name)
-                result = function(action_params, *args, client=client, **kwargs)
+                kwargs = self._build_magic_args(function, client=client, **kwargs)
+
+                result = function(action_params, *args, **kwargs)
                 return self._adapt_action_result(result, client)
 
             # setting up meta information for the decorated function
+            inner.params_class = validated_params_class
             inner.meta = ActionMeta(
                 action=action_name,
                 identifier=identifier or function.__name__,
@@ -162,9 +191,14 @@ class App:
 
             @action_protocol
             @wraps(function)
-            def inner(client: SOARClient = self.actions_provider.soar_client) -> bool:
+            def inner(
+                _param: Optional[dict] = None,
+                client: SOARClient = self.actions_provider.soar_client,
+            ) -> bool:
+                kwargs = self._build_magic_args(function, client=client)
+
                 try:
-                    result = function(client=client)
+                    result = function(**kwargs)
                     if result is not None:
                         raise RuntimeError(
                             "Test connectivity function must not return any value (return type should be None)."
@@ -178,6 +212,7 @@ class App:
                     client,
                 )
 
+            inner.params_class = None
             inner.meta = ActionMeta(
                 action=action_name,
                 identifier=action_identifier,
@@ -227,6 +262,25 @@ class App:
                     f"Proper params type for action {action_name} is not derived from Params class."
                 )
         return validated_params_class
+
+    def _build_magic_args(self, function: Callable, **kwargs: object) -> dict[str, Any]:
+        """
+        Builds the auto-magic optional arguments for an action function.
+        This is used to pass the client and asset to the action function, when requested
+        """
+        sig = inspect.signature(function)
+        magic_args: dict[str, object] = {
+            "client": self.actions_provider.soar_client,
+            "asset": self.asset,
+        }
+
+        for name, value in magic_args.items():
+            given_value = kwargs.pop(name, None)
+            if name in sig.parameters:
+                # Give the original kwargs precedence over the magic args
+                kwargs[name] = given_value or value
+
+        return kwargs
 
     @staticmethod
     def _validate_params(params: Params, action_name: str) -> Params:

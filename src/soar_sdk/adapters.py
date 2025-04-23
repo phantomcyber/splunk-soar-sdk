@@ -1,5 +1,6 @@
 from typing import Any, Optional, Union
 
+from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.action_results import ActionResult
@@ -22,10 +23,10 @@ class LegacyConnectorAdapter(SOARClient):
 
     def handle(
         self,
-        input_data: str,
+        input_data: InputSpecification,
         handle: Optional[int] = None,
     ) -> str:
-        return self.connector._handle_action(input_data, handle or 0)
+        return self.connector._handle_action(input_data.json(), handle or 0)
 
     def initialize(self) -> bool:
         return self.connector.initialize()

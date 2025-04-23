@@ -1,33 +1,6 @@
 import pytest
-from soar_sdk.params import Params
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
-
-
-def test_connectivity_decoration_fails_without_client(simple_app):
-    with pytest.raises(TypeError) as exception_info:
-
-        @simple_app.test_connectivity()
-        def test_connectivity():
-            pass
-
-    assert (
-        "Test connectivity function should accept the SOAR client as a parameter"
-        in str(exception_info)
-    )
-
-
-def test_connectivity_decoration_fails_without_correct_type(simple_app):
-    with pytest.raises(TypeError) as exception_info:
-
-        @simple_app.test_connectivity()
-        def test_connectivity(client: Params):
-            pass
-
-    assert (
-        "Test connectivity function should only accept the client as a parameter."
-        in str(exception_info)
-    )
 
 
 def test_connectivity_decoration_fails_when_used_more_than_once(simple_app):

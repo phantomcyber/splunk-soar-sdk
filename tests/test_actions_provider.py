@@ -2,6 +2,7 @@ from unittest import mock
 
 import pytest
 
+from soar_sdk.input_spec import InputSpecification
 import soar_sdk.shims.phantom.app as phantom
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.abstract import SOARClient
@@ -128,7 +129,9 @@ def test_action_called_with_returned_error_result(
     assert mock_function.call_count == 1
 
 
-def test_action_called_with_multiple_results_set(example_app, simple_action_input):
+def test_action_called_with_multiple_results_set(
+    example_app: App, simple_action_input: InputSpecification
+):
     # FIXME: this is phantom_lib integration check and should be moved from here
     client = example_app.actions_provider.soar_client
 
@@ -140,7 +143,7 @@ def test_action_called_with_multiple_results_set(example_app, simple_action_inpu
         client.add_result(action_result2)
         return True, "Multiple action results set"
 
-    example_app.handle(simple_action_input)
+    example_app.handle(simple_action_input.json())
 
     assert len(client.get_action_results()) == 3
 
