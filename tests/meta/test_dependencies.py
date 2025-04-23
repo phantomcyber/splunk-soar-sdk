@@ -1,4 +1,4 @@
-from soar_sdk.meta.dependencies import UvWheel, UvPackage, UvLock
+from soar_sdk.meta.dependencies import UvWheel, UvPackage, UvLock, DependencyWheel
 
 from typing import TypedDict, Optional
 
@@ -132,3 +132,18 @@ class TestUvLock:
 
         with pytest.raises(LookupError, match="No package 'requests' found in uv.lock"):
             lock.get_package_entry("requests")
+
+
+class TestDependencyWheel:
+    def test_collect_no_aarch64_wheel(self):
+        wheel = DependencyWheel(
+            module="mypy",
+            input_file="wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            wheel=UvWheel(
+                url="https://files.pythonhosted.org/packages/3d/42/abf8568dbbe9e207ac90d650164aac43ed9c40fbae0d5f87d842d62ec485/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                hash="sha256:023fe9e618182ca6317ae89833ba422c411469156b690fde6a315ad10695a521",
+                size=12190233,
+            ),
+        )
+
+        assert len(list(wheel.collect_wheels())) == 1

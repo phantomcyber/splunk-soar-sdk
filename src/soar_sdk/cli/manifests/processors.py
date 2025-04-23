@@ -6,7 +6,7 @@ from pathlib import Path
 from pprint import pprint
 
 from soar_sdk.app import App
-from soar_sdk.cli.manifests.path_utils import context_directory
+from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.meta.dependencies import UvLock

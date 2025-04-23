@@ -28,7 +28,7 @@ class ErrorActionResult(ActionResult):
 
 class OutputFieldSpecification(TypedDict):
     data_path: str
-    type: str
+    data_type: str
     contains: NotRequired[list[str]]
     example_values: NotRequired[list[str]]
 
@@ -77,7 +77,9 @@ class ActionOutput(BaseModel):
                         f"Failed to serialize output field {field_name}: {e}"
                     ) from None
 
-            schema_field = OutputFieldSpecification(data_path=datapath, type=type_name)
+            schema_field = OutputFieldSpecification(
+                data_path=datapath, data_type=type_name
+            )
 
             if cef_types := field.field_info.extra.get("cef_types"):
                 schema_field["contains"] = cef_types

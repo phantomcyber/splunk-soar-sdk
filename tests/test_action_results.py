@@ -25,23 +25,23 @@ class BadActionOutput(ActionOutput):
 
 def test_action_output_to_json_schema():
     expected_schema = [
-        {"data_path": "action_result.data.*.stringy_field", "type": "string"},
-        {"data_path": "action_result.data.*.list_of_strings.*", "type": "string"},
-        {"data_path": "action_result.data.*.nested_lists.*.*", "type": "numeric"},
+        {"data_path": "action_result.data.*.stringy_field", "data_type": "string"},
+        {"data_path": "action_result.data.*.list_of_strings.*", "data_type": "string"},
+        {"data_path": "action_result.data.*.nested_lists.*.*", "data_type": "numeric"},
         {
             "data_path": "action_result.data.*.cef_data",
-            "type": "string",
+            "data_type": "string",
             "contains": ["ip"],
             "example_values": ["192.168.0.1", "1.1.1.1"],
         },
         {
             "data_path": "action_result.data.*.nested_type.inner_string",
-            "type": "string",
+            "data_type": "string",
             "example_values": ["example_value_1", "example_value_2"],
         },
         {
             "data_path": "action_result.data.*.list_of_types.*.inner_string",
-            "type": "string",
+            "data_type": "string",
             "example_values": ["example_value_1", "example_value_2"],
         },
     ]
