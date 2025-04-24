@@ -23,6 +23,7 @@ class ManifestProcessor:
         """
         app_meta: AppMeta = self.load_toml_app_meta()
         app = self.import_app_instance(app_meta)
+        app_meta.configuration = app.asset_cls.to_json_schema()
         app_meta.actions = app.actions_provider.get_actions_meta_list()
         app_meta.utctime_updated = datetime.now(timezone.utc).strftime(
             "%Y-%m-%dT%H:%M:%S.%fZ"

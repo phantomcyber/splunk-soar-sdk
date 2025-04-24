@@ -18,7 +18,30 @@
     "utctime_updated": "2025-04-17T12:00:00.000000Z",
     "app_wizard_version": "1.0.0",
     "fips_compliant": false,
-    "configuration": {},
+    "configuration": {
+        "base_url": {
+            "order": 0,
+            "data_type": "string",
+            "required": true
+        },
+        "api_key": {
+            "order": 1,
+            "data_type": "password",
+            "description": "API key for authentication",
+            "required": true
+        },
+        "key_header": {
+            "data_type": "string",
+            "default": "Authorization",
+            "description": "Header for API key authentication",
+            "order": 2,
+            "required": true,
+            "value_list": [
+                "Authorization",
+                "X-API-Key"
+            ]
+        }
+    },
     "actions": [
         {
             "action": "test connectivity",
