@@ -15,7 +15,36 @@ def test_package_build_command():
         destination = Path(tempdir) / "example_app.tgz"
 
         result = runner.invoke(
-            package, ["build", destination.as_posix(), example_app.as_posix()]
+            package,
+            [
+                "build",
+                destination.as_posix(),
+                example_app.as_posix(),
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert destination.is_file()
+
+
+def test_package_build_command_with_sdk_wheel():
+    with tempfile.TemporaryDirectory() as tempdir:
+        example_app = Path.cwd() / "tests/example_app"
+        destination = Path(tempdir) / "example_app.tgz"
+
+        fake_wheel = Path(tempdir) / "fake.whl"
+        with fake_wheel.open("wb") as whl:
+            whl.write(b"deadbeef")
+
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                destination.as_posix(),
+                example_app.as_posix(),
+                "--with-sdk-wheel-from",
+                fake_wheel.as_posix(),
+            ],
         )
 
         assert result.exit_code == 0

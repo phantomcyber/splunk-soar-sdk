@@ -8,7 +8,7 @@
     "license": "Copyright (c) Splunk Inc., 2025",
     "min_phantom_version": "6.2.2.134",
     "package_name": "example_app",
-    "main_module": "src/app:app",
+    "main_module": "src.app:app",
     "logo": "logo.svg",
     "logo_dark": "logo_dark.svg",
     "product_name": "Example App",
@@ -88,7 +88,7 @@
         }
     ],
     "pip39_dependencies": {
-        "wheels": [
+        "wheel": [
             {
                 "module": "certifi",
                 "input_file": "wheels/python39/certifi-2025.1.31-py3-none-any.whl",
@@ -117,7 +117,7 @@
         ]
     },
     "pip313_dependencies": {
-        "wheels": [
+        "wheel": [
             {
                 "module": "certifi",
                 "input_file": "wheels/python313/certifi-2025.1.31-py3-none-any.whl",
