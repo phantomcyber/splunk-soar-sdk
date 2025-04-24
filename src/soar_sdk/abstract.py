@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.action_results import ActionResult
@@ -34,6 +34,7 @@ class SOARClient(ABC):
     def handle(
         self,
         input_data: str,
+        handle: Optional[int] = None,
     ) -> str:
         """Public method for handling the input data with the selected handler"""
         pass

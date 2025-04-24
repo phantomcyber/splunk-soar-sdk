@@ -1,5 +1,5 @@
 import typing
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import ValidationError
 
@@ -39,10 +39,10 @@ class AppConnector(BaseConnector, SOARClient):
         """Public method for setting the CSRF token in connector."""
         self._set_csrf_info(token, referer)
 
-    def handle(self, input_data: str) -> str:
+    def handle(self, input_data: str, handle: Optional[int] = None) -> str:
         """Public method for executing an action from a JSON string."""
         self.print_progress_message = True
-        return self._handle_action(input_data, 0)
+        return self._handle_action(input_data, handle or 0)
 
     def handle_action(self, param: dict[str, Any]) -> None:
         # Get the action that we are supposed to execute for this App Run
