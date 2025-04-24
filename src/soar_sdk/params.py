@@ -12,7 +12,7 @@ def Param(
     required: bool = True,
     primary: bool = False,
     default: Optional[str] = None,
-    values_list: Optional[list] = None,
+    value_list: Optional[list] = None,
     cef_types: Optional[list] = None,
     allow_list: bool = False,
     sensitive: bool = False,
@@ -35,7 +35,7 @@ def Param(
     :param primary: Specifies if the action acts primarily on this parameter or not.
       It is used in conjunction with the contains field to display a list of contextual
       actions where the user clicks on a piece of data in the UI.
-    :param values_list: To allow the user to choose from a pre-defined list of values
+    :param value_list: To allow the user to choose from a pre-defined list of values
       displayed in a drop-down for this parameter, specify them as a list for example,
       ["one", "two", "three"]. An action can be run from the playbook, in which case
       the user can pass an arbitrary value for the parameter, so the app needs
@@ -48,15 +48,15 @@ def Param(
     :param kwargs: additional kwargs accepted by pydantic.Field
     :return: returns the FieldInfo object as pydantic.Field
     """
-    if values_list is None:
-        values_list = []
+    if value_list is None:
+        value_list = []
 
     return Field(
         default=default,
         description=description,
         required=required,
         primary=primary,
-        values_list=values_list,
+        value_list=value_list,
         cef_types=cef_types,
         allow_list=allow_list,
         sensitive=sensitive,
@@ -71,7 +71,7 @@ class InputFieldSpecification(TypedDict):
     contains: NotRequired[list[str]]
     required: bool
     primary: bool
-    values_list: NotRequired[list[str]]
+    value_list: NotRequired[list[str]]
     allow_list: bool
     default: NotRequired[Union[str, int, float, bool]]
 
@@ -126,8 +126,8 @@ class Params(BaseModel):
                 params_field["contains"] = cef_types
             if (default := field.field_info.default) and default != Undefined:
                 params_field["default"] = default
-            if values_list := field.field_info.extra.get("values_list"):
-                params_field["values_list"] = values_list
+            if value_list := field.field_info.extra.get("value_list"):
+                params_field["value_list"] = value_list
 
             params[field_name] = params_field
 
