@@ -87,7 +87,7 @@ class DependencyWheel(BaseModel):
 
 
 class DependencyList(BaseModel):
-    wheels: list[DependencyWheel] = Field(default_factory=list)
+    wheel: list[DependencyWheel] = Field(default_factory=list)
 
 
 class UvDependency(BaseModel):
@@ -236,8 +236,8 @@ class UvLock(BaseModel):
 
     @staticmethod
     def resolve_python39_dependencies(packages: list[UvPackage]) -> DependencyList:
-        return DependencyList(wheels=[p.resolve_py39() for p in packages])
+        return DependencyList(wheel=[p.resolve_py39() for p in packages])
 
     @staticmethod
     def resolve_python313_dependencies(packages: list[UvPackage]) -> DependencyList:
-        return DependencyList(wheels=[p.resolve_py313() for p in packages])
+        return DependencyList(wheel=[p.resolve_py313() for p in packages])

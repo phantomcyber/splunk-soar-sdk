@@ -60,4 +60,4 @@ package_name = "example_app"
 min_phantom_version = "6.2.2.134"
 app_wizard_version = "1.0.0"
 fips_compliant = false
-main_module = "src/app:app"
+main_module = "src.app:app"
