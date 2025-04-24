@@ -1,13 +1,19 @@
 #!/usr/bin/python
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
-from soar_sdk.asset import BaseAsset
+from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 
 
 class Asset(BaseAsset):
     base_url: str
+    api_key: str = AssetField(sensitive=True, description="API key for authentication")
+    key_header: str = AssetField(
+        default="Authorization",
+        value_list=["Authorization", "X-API-Key"],
+        description="Header for API key authentication",
+    )
 
 
 app = App(asset_cls=Asset)

@@ -1,7 +1,7 @@
-from typing import Optional, TypedDict, Union
+from typing import Optional, TypedDict, Union, Any
 from typing_extensions import NotRequired
 
-from pydantic.fields import Field, FieldInfo, Undefined
+from pydantic.fields import Field, Undefined
 from pydantic.main import BaseModel
 
 from soar_sdk.meta.datatypes import as_datatype
@@ -16,7 +16,7 @@ def Param(
     cef_types: Optional[list] = None,
     allow_list: bool = False,
     sensitive: bool = False,
-) -> FieldInfo:
+) -> Any:  # noqa: ANN401
     """
     Representation of the param passed into the action. The param needs extra meta
     information that is later used for the configuration of the app and use in
@@ -110,7 +110,7 @@ class Params(BaseModel):
                 type_name = "password"
 
             if not (description := field.field_info.description):
-                description = Params._default_field_description(field_name)
+                description = cls._default_field_description(field_name)
 
             params_field = InputFieldSpecification(
                 order=field_order,
