@@ -26,7 +26,7 @@ def build(
 ) -> None:
     output_path = Path(output_file)
     with context_directory(Path(project_context)):
-        app_meta = ManifestProcessor("app.json", ".").build()
+        app_meta = ManifestProcessor("manifest.json", ".").build()
         app_name = app_meta.name
 
         def filter_source_files(t: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
@@ -68,6 +68,6 @@ def build(
                 app_meta.pip313_dependencies.wheel.append(wheel_entry)
 
             manifest_json = json.dumps(app_meta.dict(), indent=4).encode()
-            manifest_info = tarfile.TarInfo(f"{app_name}/{app_name}.json")
+            manifest_info = tarfile.TarInfo(f"{app_name}/manifest.json")
             manifest_info.size = len(manifest_json)
             app_tarball.addfile(manifest_info, BytesIO(manifest_json))
