@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
@@ -23,8 +23,9 @@ class LegacyConnectorAdapter(SOARClient):
     def handle(
         self,
         input_data: str,
+        handle: Optional[int] = None,
     ) -> str:
-        return self.connector._handle_action(input_data, 0)
+        return self.connector._handle_action(input_data, handle or 0)
 
     def initialize(self) -> bool:
         return self.connector.initialize()

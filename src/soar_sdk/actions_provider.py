@@ -57,15 +57,15 @@ class ActionsProvider:
         data = json.loads(input_data)
         return data.get("identifier", "")
 
-    def handle(self, input_data: str) -> str:
+    def handle(self, input_data: str, handle: Optional[int] = None) -> str:
         """
         Runs handling of the input data on connector
         """
         action_id = self.get_action_identifier_from_input(input_data)
         if self.get_action(action_id):
-            return self.soar_client.handle(input_data)
+            return self.soar_client.handle(input_data, handle)
         elif self.legacy_soar_client:
-            return self.legacy_soar_client.handle(input_data)
+            return self.legacy_soar_client.handle(input_data, handle)
         else:
             raise RuntimeError(
                 f"Action {action_id} not recognized"

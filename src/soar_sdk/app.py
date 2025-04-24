@@ -31,11 +31,13 @@ class App:
         runner = AppRunner(self)
         runner.run()
 
-    def handle(self, input_data: str) -> str:
+    def handle(self, input_data: str, handle: Optional[int] = None) -> str:
         """
-        Runs handling of the input data on connector
+        Runs handling of the input data on connector.
+        NOTE: handle is actually a pointer address to spawn's internal state.
+        In versions of SOAR >6.4.1, handle will not be passed to the app.
         """
-        return self.actions_provider.handle(input_data)
+        return self.actions_provider.handle(input_data, handle=handle)
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
 
