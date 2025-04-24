@@ -38,7 +38,7 @@ def test_params_serialize_fields_info():
         event_description: str
         event_tags: str = Param(allow_list=True, required=False)
         send_notifications: bool = Param(default=True)
-        platform: str = Param(values_list=["windows", "linux", "mac"])
+        platform: str = Param(value_list=["windows", "linux", "mac"])
         api_key: str = Param(sensitive=True)
 
     serialized_params = ParamsSerializer.serialize_fields_info(SampleParams)
@@ -99,7 +99,7 @@ def test_params_serialize_fields_info():
             "required": True,
             "primary": False,
             "allow_list": False,
-            "values_list": ["windows", "linux", "mac"],
+            "value_list": ["windows", "linux", "mac"],
             "order": 5,
         },
         "api_key": {
