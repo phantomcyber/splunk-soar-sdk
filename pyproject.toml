@@ -13,7 +13,6 @@ authors = [
 dependencies = [
     "toml>=0.10.2, <1",
     "typer>=0.12.5, <1",
-
     # SOAR phantom lib dependencies
     "beautifulsoup4==4.10.0",
     "distro==1.8.0",
@@ -21,6 +20,7 @@ dependencies = [
     "requests<3",
     "responses==0.22.0",
     "simplejson<4",
+    "httpx>=0.28.1",
 ]
 
 [project.scripts]
@@ -38,10 +38,12 @@ dev = [
     "mypy>=1.2,<2",
     "pre-commit>=4.2.0,<5",
     "pytest>=7.4.2,<8",
+    "pytest-asyncio>=0.23.8",
     "pytest-cov>=5,<6",
     "pytest-mock>=3.14.0,<4",
     "pytest-watcher>=0.4.3",
     "pytest-xdist>=3.6.1",
+    "respx>=0.22.0",
     "ruff>=0.7.4,<1",
     "tomlkit>=0.13.2",
     "types-beautifulsoup4>=4.12.0.5,<5",
@@ -72,7 +74,7 @@ required-environments = [
 members = ["tests/example_app", "app_templates/basic_app"]
 
 [tool.pytest.ini_options]
-addopts = "--ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail"
+addopts = "--ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail --durations=5"
 
 [tool.coverage.run]
 branch = true

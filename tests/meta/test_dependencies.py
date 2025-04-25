@@ -20,7 +20,7 @@ class TestUvWheel:
         tests = [
             UvWheelTest(
                 wheel=UvWheel(
-                    url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
+                    url="https://notarealurl.com/certifi-2025.1.31-py3-none-any.whl",
                     hash="sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe",
                     size=166393,
                 ),
@@ -57,26 +57,24 @@ class TestUvWheel:
             assert test["wheel"].abi_tags == test["abi_tags"]
             assert test["wheel"].platform_tags == test["platform_tags"]
 
-    def test_fetch_wheel(self):
-        wheel = UvWheel(
-            url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
-            hash="sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe",
-            size=166393,
-        )
-        wheel_bytes = wheel.fetch()
-        assert len(wheel_bytes) == wheel.size
+    @pytest.mark.asyncio
+    async def test_fetch_wheel(self, wheel_resp_mock, fake_wheel: UvWheel):
+        wheel_bytes = await fake_wheel.fetch()
+        assert len(wheel_bytes) == fake_wheel.size
+        assert wheel_resp_mock.call_count == 1
 
-    def test_fetch_wheel_hash_mismatch(self):
-        wheel = UvWheel(
-            url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
-            hash="sha256:deadbeef",
-            size=166393,
-        )
+    @pytest.mark.asyncio
+    async def test_fetch_wheel_hash_mismatch(
+        self, wheel_resp_mock, fake_wheel: UvWheel
+    ):
+        fake_wheel.hash = "sha256:deadbeef"
         with pytest.raises(
             ValueError,
-            match="Retrieved wheel for certifi-2025.1.31 did not match the expected checksum",
+            match=r"Retrieved wheel.+did not match the expected checksum",
         ):
-            wheel.fetch()
+            await fake_wheel.fetch()
+
+        assert wheel_resp_mock.call_count == 1
 
 
 class TestUvPackage:
@@ -87,7 +85,7 @@ class TestUvPackage:
             dependencies=[],
             wheels=[
                 UvWheel(
-                    url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
+                    url="https://notarealurl.com/certifi-2025.1.31-py3-none-any.whl",
                     hash="sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe",
                     size=166393,
                 )
@@ -111,7 +109,7 @@ class TestUvPackage:
             version="1.2.0",
             wheels=[
                 UvWheel(
-                    url="https://files.pythonhosted.org/packages/3d/42/abf8568dbbe9e207ac90d650164aac43ed9c40fbae0d5f87d842d62ec485/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                    url="https://notarealurl.com/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                     hash="sha256:023fe9e618182ca6317ae89833ba422c411469156b690fde6a315ad10695a521",
                     size=12190233,
                 )
@@ -135,15 +133,15 @@ class TestUvLock:
 
 
 class TestDependencyWheel:
-    def test_collect_no_aarch64_wheel(self):
+    @pytest.mark.asyncio
+    async def test_collect_no_aarch64_wheel(self, wheel_resp_mock, fake_wheel: UvWheel):
         wheel = DependencyWheel(
             module="mypy",
             input_file="wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-            wheel=UvWheel(
-                url="https://files.pythonhosted.org/packages/3d/42/abf8568dbbe9e207ac90d650164aac43ed9c40fbae0d5f87d842d62ec485/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                hash="sha256:023fe9e618182ca6317ae89833ba422c411469156b690fde6a315ad10695a521",
-                size=12190233,
-            ),
+            wheel=fake_wheel,
         )
 
-        assert len(list(wheel.collect_wheels())) == 1
+        results = []
+        async for item in wheel.collect_wheels():
+            results.append(item)
+        assert len(results) == 1

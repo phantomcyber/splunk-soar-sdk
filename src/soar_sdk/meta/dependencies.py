@@ -1,10 +1,10 @@
 from typing import Optional
-from collections.abc import Generator
+from collections.abc import AsyncGenerator
 from pydantic import BaseModel, Field
 
 from logging import getLogger
 
-import requests
+import httpx
 import hashlib
 
 
@@ -60,15 +60,13 @@ class UvWheel(BaseModel):
                 f"Retrieved wheel for {self.distribution}-{self.version} did not match the expected checksum. {expected_digest=}, {actual_digest=}, {self.url=}"
             )
 
-    def fetch(self) -> bytes:
-        wheel_request = requests.get(
-            self.url,
-            timeout=10,
-        )
-        wheel_request.raise_for_status()
-        wheel_bytes: bytes = wheel_request.content
-        self.validate_hash(wheel_bytes)
-        return wheel_bytes
+    async def fetch(self) -> bytes:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.url, timeout=10)
+            response.raise_for_status()
+            wheel_bytes: bytes = response.content
+            self.validate_hash(wheel_bytes)
+            return wheel_bytes
 
 
 class DependencyWheel(BaseModel):
@@ -79,11 +77,13 @@ class DependencyWheel(BaseModel):
     wheel: UvWheel = Field(exclude=True, default=None)
     wheel_aarch64: Optional[UvWheel] = Field(exclude=True, default=None)
 
-    def collect_wheels(self) -> Generator[tuple[str, bytes]]:
-        yield (self.input_file, self.wheel.fetch())
+    async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes], None]:
+        wheel_bytes = await self.wheel.fetch()
+        yield (self.input_file, wheel_bytes)
 
         if self.input_file_aarch64 is not None and self.wheel_aarch64 is not None:
-            yield (self.input_file_aarch64, self.wheel_aarch64.fetch())
+            wheel_aarch64_bytes = await self.wheel_aarch64.fetch()
+            yield (self.input_file_aarch64, wheel_aarch64_bytes)
 
 
 class DependencyList(BaseModel):
