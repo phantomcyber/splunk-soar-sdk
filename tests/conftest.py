@@ -9,6 +9,7 @@ from soar_sdk.asset import BaseAsset
 from soar_sdk.connector import AppConnector
 from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.meta.dependencies import UvWheel
 from tests.stubs import SampleActionParams
 
 
@@ -108,3 +109,28 @@ def simple_action_input() -> InputSpecification:
             app_version="1.0.0", directory=".", main_module="example_connector.py"
         ),
     )
+
+
+@pytest.fixture
+def fake_wheel() -> UvWheel:
+    """Use with wheel_resp_mock to test the wheel download."""
+    return UvWheel(
+        url="https://files.pythonhosted.org/packages/fakepkg-1.0.0-py3-none-any.whl",
+        hash="sha256:3c7937d9ce42399210771a60640e3b35e35644b376f854a8da1de8b99fa02fe5",
+        size=19,
+    )
+
+
+@pytest.fixture
+@pytest.mark.respx(base_url="https://files.pythonhosted.org/packages")
+def wheel_resp_mock(respx_mock):
+    """
+    Fixture that automatically mocks requests to download wheels.
+    Useful for keeping tests for package builds fast and reliable.
+    """
+    # Create the mock route for wheel downloads
+    mock_route = respx_mock.get(url__regex=r".+/.+\.whl")
+    mock_route.respond(content=b"dummy wheel content")
+
+    # Provide the mock route to the test so it can make assertions
+    return mock_route
