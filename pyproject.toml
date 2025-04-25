@@ -73,9 +73,6 @@ required-environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
 ]
 
-[tool.uv.workspace]
-members = ["tests/example_app", "app_templates/basic_app"]
-
 [tool.pytest.ini_options]
 addopts = "--ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail --durations=5"
 

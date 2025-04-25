@@ -8,6 +8,7 @@ authors = [
     { name = "John Smith", email = "jsmith@example.com" }
 ]
 dependencies = [
+    "boto3>=1.38.3",
     "requests>=2.32.3",
     "soar-sdk",
 ]
@@ -27,7 +28,7 @@ dev = [
 url = "https://pypi.python.org/simple"
 
 [tool.uv.sources]
-soar-sdk = { workspace = true }
+soar-sdk = { path = "../../" }
 
 [tool.uv]
 environments = [
