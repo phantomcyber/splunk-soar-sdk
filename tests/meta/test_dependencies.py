@@ -1,4 +1,10 @@
-from soar_sdk.meta.dependencies import UvWheel, UvPackage, UvLock, DependencyWheel
+from soar_sdk.meta.dependencies import (
+    UvWheel,
+    UvPackage,
+    UvLock,
+    DependencyWheel,
+    UvDependency,
+)
 
 from typing import TypedDict, Optional
 
@@ -130,6 +136,28 @@ class TestUvLock:
 
         with pytest.raises(LookupError, match="No package 'requests' found in uv.lock"):
             lock.get_package_entry("requests")
+
+    def test_rejected_dependency(self, wheel_resp_mock, fake_wheel: UvWheel):
+        lock = UvLock(
+            package=[
+                UvPackage(
+                    name="example-app",
+                    version="1.0.0",
+                    dependencies=[
+                        UvDependency(name="fakepkg"),
+                        UvDependency(name="simplejson"),
+                    ],
+                ),
+                UvPackage(name="fakepkg", version="1.0.0", wheels=[fake_wheel]),
+                UvPackage(name="simplejson", version="3.20.1", wheels=[fake_wheel]),
+            ]
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="The 'simplejson' package is not allowed in a SOAR connector. Please remove it from your app's dependencies.",
+        ):
+            lock.build_package_list("example-app")
 
 
 class TestDependencyWheel:
