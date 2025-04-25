@@ -17,6 +17,10 @@ package = typer.Typer(invoke_without_command=True)
 
 @package.callback()
 def callback() -> None:
+    """
+    This empty callback ensures that `build` is treated as a command, instead of as the root of the CLI.
+    It overrides Typer's weird behavior that treats a single command with no siblings as a root by default.
+    """
     pass
 
 
