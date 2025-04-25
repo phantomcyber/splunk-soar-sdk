@@ -175,10 +175,6 @@ def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     if not app_tarball.is_file():
         raise typer.BadParameter(f"{app_tarball} is not a file")
 
-    # Check if the file is a tarball
-    if not app_tarball.name.endswith(".tgz"):
-        raise typer.BadParameter("App tarball must be a .tgz file")
-
     if not username:
         username = typer.prompt("Please enter your SOAR username")
 

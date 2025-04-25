@@ -168,9 +168,3 @@ def test_install_app_tarball_not_file():
     example_app = Path.cwd() / "tests/example_app"
     result = runner.invoke(package, ["install", example_app.as_posix(), "10.1.23.4"])
     assert result.exit_code != 0
-
-
-def test_install_app_tarball_not_tgz_file():
-    example_app = Path.cwd() / "tests/example_app/app.json"
-    result = runner.invoke(package, ["install", example_app.as_posix(), "10.1.23.4"])
-    assert result.exit_code != 0
