@@ -21,6 +21,8 @@ dependencies = [
     "responses==0.22.0",
     "simplejson<4",
     "httpx>=0.28.1",
+    "tqdm>=4.67.1",
+    "humanize>=4.12.2",
 ]
 
 [project.scripts]
@@ -48,6 +50,7 @@ dev = [
     "tomlkit>=0.13.2",
     "types-beautifulsoup4>=4.12.0.5,<5",
     "types-requests>=2.31.0.1,<3",
+    "types-tqdm>=4.67.0.20250417",
     "types-urllib3>=1.26.25.13,<2",
 ]
 
@@ -78,6 +81,9 @@ addopts = "--ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-m
 
 [tool.coverage.run]
 branch = true
+concurrency = [
+    "multiprocessing",
+]
 source = [
     "src/soar_sdk"
 ]
