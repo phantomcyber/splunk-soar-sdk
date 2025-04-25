@@ -1,4 +1,10 @@
-from soar_sdk.meta.dependencies import UvWheel, UvPackage, UvLock, DependencyWheel
+from soar_sdk.meta.dependencies import (
+    UvWheel,
+    UvPackage,
+    UvLock,
+    DependencyWheel,
+    UvDependency,
+)
 
 from typing import TypedDict, Optional
 
@@ -130,6 +136,38 @@ class TestUvLock:
 
         with pytest.raises(LookupError, match="No package 'requests' found in uv.lock"):
             lock.get_package_entry("requests")
+
+    def test_exclude_sdk(self):
+        lock = UvLock(
+            package=[
+                UvPackage(
+                    name="exampleapp",
+                    version="1.0.0",
+                    dependencies=[
+                        UvDependency(name="soar-sdk"),
+                        UvDependency(name="certifi"),
+                    ],
+                ),
+                UvPackage(name="soar-sdk", version="1.0.0"),
+                UvPackage(
+                    name="certifi",
+                    version="2025.1.31",
+                    wheels=[
+                        UvWheel(
+                            url="https://files.pythonhosted.org/packages/38/fc/bce832fd4fd99766c04d1ee0eead6b0ec6486fb100ae5e74c1d91292b982/certifi-2025.1.31-py3-none-any.whl",
+                            hash="sha256:ca78db4565a652026a4db2bcdf68f2fb589ea80d0be70e03929ed730746b84fe",
+                            size=166393,
+                        )
+                    ],
+                ),
+            ]
+        )
+
+        package_list = lock.build_package_list(
+            root_package_name="exampleapp", exclude_sdk=True
+        )
+
+        assert [p.name for p in package_list] == ["certifi"]
 
 
 class TestDependencyWheel:

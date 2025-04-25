@@ -84,15 +84,19 @@ def build(
     # Resolve the output path relative to the user's working directory, not the project context
     output_file = output_file.resolve()
     project_context = project_context.resolve()
+    sdk_wheel_provided = False
     if with_sdk_wheel_from:
         with_sdk_wheel_from = with_sdk_wheel_from.resolve()
+        sdk_wheel_provided = True
 
     console.print(Panel("[bold]Building SOAR App Package[/]", expand=False))
     console.print(f"[blue]App directory:[/] {project_context}")
     console.print(f"[blue]Output file:[/] {output_file}")
 
     with context_directory(project_context):
-        app_meta = ManifestProcessor("manifest.json", ".").build()
+        app_meta = ManifestProcessor("manifest.json", ".").build(
+            exclude_sdk_wheel=sdk_wheel_provided
+        )
         app_name = app_meta.name
         console.print(f"Generated manifest for app:[green] {app_name}[/]")
 

@@ -17,7 +17,7 @@ class ManifestProcessor:
         self.manifest_path = manifest_path
         self.project_context = Path(project_context)
 
-    def build(self) -> AppMeta:
+    def build(self, exclude_sdk_wheel: bool = False) -> AppMeta:
         """
         Builds full AppMeta information including actions and other extra fields
         """
@@ -30,7 +30,9 @@ class ManifestProcessor:
         )
 
         uv_lock = self.load_app_uv_lock()
-        dependencies = uv_lock.build_package_list(app_meta.name)
+        dependencies = uv_lock.build_package_list(
+            app_meta.name, exclude_sdk=exclude_sdk_wheel
+        )
 
         app_meta.pip39_dependencies = uv_lock.resolve_python39_dependencies(
             dependencies

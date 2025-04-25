@@ -211,7 +211,9 @@ class UvLock(BaseModel):
             raise LookupError(f"No package '{name}' found in uv.lock")
         return package
 
-    def build_package_list(self, root_package_name: str) -> list[UvPackage]:
+    def build_package_list(
+        self, root_package_name: str, exclude_sdk: bool = False
+    ) -> list[UvPackage]:
         packages = {root_package_name: self.get_package_entry(root_package_name)}
 
         new_packages_added = True
@@ -228,6 +230,9 @@ class UvLock(BaseModel):
 
         # Exclude the connector itself from the list of dependencies
         del packages[root_package_name]
+
+        if exclude_sdk and "soar-sdk" in packages:
+            del packages["soar-sdk"]
 
         # TODO: prune wheels that are provided with the platform (bs4, requests/urllib, etc.)
         # TODO: denylist for wheels that shouldn't be used in connectors (simplejson, django, etc.)
