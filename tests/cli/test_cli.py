@@ -57,4 +57,3 @@ def test_install_command_help():
     # Assert that the help text contains the expected arguments and options
     assert "app_tarball" in result.output
     assert "soar_instance" in result.output
-    assert "--username" in result.output

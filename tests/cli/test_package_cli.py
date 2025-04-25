@@ -6,7 +6,9 @@ from typer.testing import CliRunner
 
 from soar_sdk.cli.package.cli import package
 from soar_sdk.meta.dependencies import UvWheel
-
+from soar_sdk.cli.package import cli
+from soar_sdk.cli.package import utils
+import tempfile
 
 runner = CliRunner()
 
@@ -59,12 +61,13 @@ def test_package_build_command_with_sdk_wheel(wheel_resp_mock, tmp_path: Path):
 
 class TestInstallCommand(TestCase):
     def setUp(self):
-        self.get_patcher = patch("soar_sdk.cli.package.utils.requests.Session.get")
-        self.post_patcher = patch("soar_sdk.cli.package.utils.requests.Session.post")
+        self.get_patcher = patch.object(utils.requests.Session, "get")
+        self.post_patcher = patch.object(utils.requests.Session, "post")
 
-        # Start the patches and save the mock objects
         self.mock_get = self.get_patcher.start()
+        self.addCleanup(self.get_patcher.stop)
         self.mock_post = self.post_patcher.start()
+        self.addCleanup(self.post_patcher.stop)
 
         self.mock_get_response = MagicMock()
         self.mock_get_response.cookies.get_dict.return_value = {
@@ -80,23 +83,24 @@ class TestInstallCommand(TestCase):
         self.mock_post.return_value = self.mock_post_response
 
         # Patch `typer.prompt`
-        self.prompt_patcher = patch("typer.prompt")
-        self.mock_prompt = self.prompt_patcher.start()
+        self.mock_prompt_patcher = patch.object(cli.typer, attribute="prompt")
+        self.mock_prompt = self.mock_prompt_patcher.start()
+        self.addCleanup(self.mock_prompt_patcher.stop)
         self.mock_prompt.return_value = "test_password_or_username"
 
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".tgz") as temp_tgz:
+            self.temp_tgz_path = Path(temp_tgz.name)
+
     def tearDown(self):
-        # Stop all patches to ensure clean state for other tests
-        self.get_patcher.stop()
-        self.post_patcher.stop()
+        if self.temp_tgz_path.exists():
+            self.temp_tgz_path.unlink()
 
     def test_install_command(self):
-        destination = Path.cwd() / "tests/cli/data" / "example.tgz"
-
         result = runner.invoke(
             package,
             [
                 "install",
-                destination.as_posix(),
+                self.temp_tgz_path.as_posix(),
                 "10.1.23.4",
                 "--username",
                 "admin",
@@ -121,14 +125,12 @@ class TestInstallCommand(TestCase):
         )
 
     def test_install_username_prompt_password_env_var(self):
-        destination = Path.cwd() / "tests/cli/data" / "example.tgz"
-
         with patch.dict("os.environ", {"PHANTOM_PASSWORD": "test_password"}):
             result = runner.invoke(
                 package,
                 [
                     "install",
-                    destination.as_posix(),
+                    self.temp_tgz_path.as_posix(),
                     "https://10.1.23.4",
                 ],
             )
@@ -143,13 +145,11 @@ class TestInstallCommand(TestCase):
         )
         self.mock_post.return_value = self.mock_post_response
 
-        destination = Path.cwd() / "tests/cli/data" / "example.tgz"
-
         result = runner.invoke(
             package,
             [
                 "install",
-                destination.as_posix(),
+                self.temp_tgz_path.as_posix(),
                 "10.1.23.4",
                 "--username",
                 "admin",
@@ -158,20 +158,19 @@ class TestInstallCommand(TestCase):
 
         assert result.exit_code != 0
 
-    def test_incorrect_file_path(self):
-        result = runner.invoke(package, ["install", "random", "10.1.23.4"])
-        assert result.exit_code != 0
 
-    def test_app_tarball_not_file(self):
-        example_app = Path.cwd() / "tests/example_app"
-        result = runner.invoke(
-            package, ["install", example_app.as_posix(), "10.1.23.4"]
-        )
-        assert result.exit_code != 0
+def test_install_incorrect_file_path():
+    result = runner.invoke(package, ["install", "random", "10.1.23.4"])
+    assert result.exit_code != 0
 
-    def test_app_tarball_not_tgz_file(self):
-        example_app = Path.cwd() / "tests/example_app/app.json"
-        result = runner.invoke(
-            package, ["install", example_app.as_posix(), "10.1.23.4"]
-        )
-        assert result.exit_code != 0
+
+def test_install_app_tarball_not_file():
+    example_app = Path.cwd() / "tests/example_app"
+    result = runner.invoke(package, ["install", example_app.as_posix(), "10.1.23.4"])
+    assert result.exit_code != 0
+
+
+def test_install_app_tarball_not_tgz_file():
+    example_app = Path.cwd() / "tests/example_app/app.json"
+    result = runner.invoke(package, ["install", example_app.as_posix(), "10.1.23.4"])
+    assert result.exit_code != 0
