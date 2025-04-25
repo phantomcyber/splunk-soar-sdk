@@ -45,3 +45,16 @@ def test_cli_manifests_commands_help():
     assert result.exit_code == 0
     assert "FILENAME" in result.stdout
     assert "PROJECT_CONTEXT" in result.stdout
+
+
+def test_install_command_help():
+    # Run the `install` command with the `--help` flag
+    result = runner.invoke(cli.app, ["package", "install", "--help"])
+
+    # Assert the command executed successfully
+    assert result.exit_code == 0
+
+    # Assert that the help text contains the expected arguments and options
+    assert "app_tarball" in result.output
+    assert "soar_instance" in result.output
+    assert "--username" in result.output
