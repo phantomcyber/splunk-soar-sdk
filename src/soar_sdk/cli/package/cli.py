@@ -19,7 +19,6 @@ from soar_sdk.meta.dependencies import DependencyWheel
 from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.cli.package.utils import phantom_post_with_csrf_token, get_env_variable
 from itertools import chain
-from pprint import pprint
 
 package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
@@ -163,6 +162,7 @@ def build(
     console.print(f"[green]✓ Package successfully built and saved to:[/] {output_file}")
     console.print(f"[blue]⏱ Total build time:[/] {elapsed}")
 
+
 @package.command()
 def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     """
@@ -200,7 +200,7 @@ def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     try:
         app_install_request.raise_for_status()
     except Exception as exception:
-        typer.secho(f"Error: {exception}", err=True, fg="red")
+        console.print(f"[bold red]Error:[/] {exception}", style="red")
         raise typer.Exit(1) from exception
 
-    pprint(f"App installed successfully on {soar_instance}")
+    console.print(f"App installed successfully on {soar_instance}")
