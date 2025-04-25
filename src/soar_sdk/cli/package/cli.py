@@ -179,7 +179,8 @@ def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     if not username:
         username = typer.prompt("Please enter your SOAR username")
 
-    if not (password := os.getenv("PHANTOM_PASSWORD", "")):
+    password = os.getenv("PHANTOM_PASSWORD", "")
+    if not password:
         password = typer.prompt("Please enter your SOAR password", hide_input=True)
 
     base_url = (
