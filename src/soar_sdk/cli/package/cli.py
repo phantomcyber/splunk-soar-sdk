@@ -17,8 +17,9 @@ from rich.panel import Panel
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.meta.dependencies import DependencyWheel
 from soar_sdk.cli.path_utils import context_directory
-from soar_sdk.cli.package.utils import phantom_post_with_csrf_token, get_env_variable
+from soar_sdk.cli.package.utils import phantom_post_with_csrf_token
 from itertools import chain
+import os
 
 package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
@@ -178,8 +179,7 @@ def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     if not username:
         username = typer.prompt("Please enter your SOAR username")
 
-    password = get_env_variable("PHANTOM_PASSWORD")
-    if not password:
+    if not (password := os.getenv("PHANTOM_PASSWORD", "")):
         password = typer.prompt("Please enter your SOAR password", hide_input=True)
 
     base_url = (
