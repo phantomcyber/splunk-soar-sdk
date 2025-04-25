@@ -40,7 +40,7 @@ DEPENDENCIES_TO_REJECT = {
 class UvWheel(BaseModel):
     url: str
     hash: str
-    size: int
+    size: Optional[int] = None
 
     # The wheel file name is specified by PEP427. It's either a 5- or 6-tuple:
     # {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
