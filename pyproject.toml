@@ -8,7 +8,8 @@ authors = [
     { name = "Jacob Davis", email = "jacobd@splunk.com" },
     { name = "Janusz Kamieński", email = "jkamienski@splunk.com" },
     { name = "Scott Odle", email = "sodle@splunk.com" },
-    { name = "Michał Posłuszny", email = "mposluszny@splunk.com" }
+    { name = "Michał Posłuszny", email = "mposluszny@splunk.com" },
+    { name = "Tapish Jain", email = "tapishj@splunk.com" }
 ]
 dependencies = [
     "toml>=0.10.2, <1",
