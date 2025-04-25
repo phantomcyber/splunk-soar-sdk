@@ -17,8 +17,9 @@ from rich.panel import Panel
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.meta.dependencies import DependencyWheel
 from soar_sdk.cli.path_utils import context_directory
+from soar_sdk.cli.package.utils import phantom_post_with_csrf_token, get_env_variable
 from itertools import chain
-
+from pprint import pprint
 
 package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
@@ -161,3 +162,45 @@ def build(
     console.print(f"[green]✓ App name:[/] {app_name}")
     console.print(f"[green]✓ Package successfully built and saved to:[/] {output_file}")
     console.print(f"[blue]⏱ Total build time:[/] {elapsed}")
+
+@package.command()
+def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
+    """
+    Install the app tarball to the specified SOAR instance. Note to authenticate with your SOAR instance you can either set the PHANTOM_PASSWORD environment variable or enter the password when prompted.
+    """
+    app_tarball = app_tarball.resolve()
+    if not app_tarball.exists():
+        raise typer.BadParameter(f"App tarball {app_tarball} does not exist")
+
+    if not app_tarball.is_file():
+        raise typer.BadParameter(f"{app_tarball} is not a file")
+
+    # Check if the file is a tarball
+    if not app_tarball.name.endswith(".tgz"):
+        raise typer.BadParameter("App tarball must be a .tgz file")
+
+    if not username:
+        username = typer.prompt("Please enter your SOAR username")
+
+    password = get_env_variable("PHANTOM_PASSWORD")
+    if not password:
+        password = typer.prompt("Please enter your SOAR password", hide_input=True)
+
+    base_url = (
+        soar_instance
+        if soar_instance.startswith("https://")
+        else f"https://{soar_instance}"
+    )
+
+    payload = {"app": app_tarball.read_bytes()}
+    app_install_request = phantom_post_with_csrf_token(
+        base_url, "app_install", username, password, files=payload
+    )
+
+    try:
+        app_install_request.raise_for_status()
+    except Exception as exception:
+        typer.secho(f"Error: {exception}", err=True, fg="red")
+        raise typer.Exit(1) from exception
+
+    pprint(f"App installed successfully on {soar_instance}")
