@@ -10,11 +10,37 @@ import hashlib
 
 logger = getLogger(__name__)
 
+# These dependencies are provided by the Python runner,
+# so the SDK will not include wheels for them when building a package.
+DEPENDENCIES_TO_SKIP = {
+    "soar-sdk",
+    # List from https://docs.splunk.com/Documentation/SOAR/current/DevelopApps/FAQ
+    "beautifulsoup4",
+    "soupsieve",
+    "parse",
+    "python_dateutil",
+    "six",
+    "requests",
+    "certifi",
+    "charset_normalizer",
+    "idna",
+    "urllib3",
+    "sh",
+    "xmltodict",
+}
+
+# These dependencies should never be included with a connector,
+# so the SDK will raise an error if it finds them in the lock.
+DEPENDENCIES_TO_REJECT = {
+    "simplejson",  # no longer needed, please use the built-in `json` module instead
+    "django",  # apps should never depend on Django
+}
+
 
 class UvWheel(BaseModel):
     url: str
     hash: str
-    size: int
+    size: Optional[int] = None
 
     # The wheel file name is specified by PEP427. It's either a 5- or 6-tuple:
     # {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
@@ -222,15 +248,23 @@ class UvLock(BaseModel):
             for package in scan_pass:
                 for dependency in package.dependencies:
                     name = dependency.name
+
+                    if name in DEPENDENCIES_TO_REJECT:
+                        raise ValueError(
+                            f"The '{name}' package is not allowed in a SOAR connector. Please remove it from your app's dependencies."
+                        ) from None
+                    if name in DEPENDENCIES_TO_SKIP:
+                        logger.info(
+                            f"Not bundling wheel for '{name}' because it is included with the SOAR platform."
+                        )
+                        continue
+
                     if name not in packages:
                         packages[name] = self.get_package_entry(name)
                         new_packages_added = True
 
         # Exclude the connector itself from the list of dependencies
         del packages[root_package_name]
-
-        # TODO: prune wheels that are provided with the platform (bs4, requests/urllib, etc.)
-        # TODO: denylist for wheels that shouldn't be used in connectors (simplejson, django, etc.)
 
         return sorted(packages.values(), key=lambda p: p.name)
 
