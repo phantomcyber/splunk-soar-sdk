@@ -25,15 +25,6 @@ package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
 
 
-@package.callback()
-def callback() -> None:
-    """
-    This empty callback ensures that `build` is treated as a command, instead of as the root of the CLI.
-    It overrides Typer's weird behavior that treats a single command with no siblings as a root by default.
-    """
-    pass
-
-
 async def collect_all_wheels(wheels: list[DependencyWheel]) -> list[tuple[str, bytes]]:
     """
     Asynchronously collect all wheels from the given list of DependencyWheel objects.
@@ -179,8 +170,7 @@ def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     if not username:
         username = typer.prompt("Please enter your SOAR username")
 
-    password = os.getenv("PHANTOM_PASSWORD", "")
-    if not password:
+    if not (password := os.getenv("PHANTOM_PASSWORD", "")):
         password = typer.prompt("Please enter your SOAR password", hide_input=True)
 
     base_url = (

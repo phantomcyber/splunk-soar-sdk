@@ -11,6 +11,9 @@ from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
 from tests.stubs import SampleActionParams
+from unittest.mock import MagicMock
+from pathlib import Path
+from collections.abc import Generator
 
 
 @pytest.fixture
@@ -134,3 +137,19 @@ def wheel_resp_mock(respx_mock):
 
     # Provide the mock route to the test so it can make assertions
     return mock_route
+
+
+@pytest.fixture
+def mock_requests_session() -> Generator[MagicMock, None, None]:
+    """Fixture to mock requests.Session."""
+    with mock.patch("requests.Session") as MockSession:
+        mock_session = mock.MagicMock()
+        MockSession.return_value = mock_session
+        yield mock_session
+
+
+@pytest.fixture
+def app_tarball(tmp_path: Path) -> Path:
+    tarball_path = tmp_path / "example.tgz"
+    tarball_path.touch()
+    return tarball_path
