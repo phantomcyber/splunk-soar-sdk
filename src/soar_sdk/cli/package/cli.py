@@ -17,9 +17,10 @@ from rich.panel import Panel
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.meta.dependencies import DependencyWheel
 from soar_sdk.cli.path_utils import context_directory
-from soar_sdk.cli.package.utils import phantom_post_with_csrf_token
+from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_post
 from itertools import chain
 import os
+import httpx
 
 package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
@@ -155,6 +156,25 @@ def build(
     console.print(f"[blue]⏱ Total build time:[/] {elapsed}")
 
 
+async def upload_app(
+    soar_instance: str, username: str, password: str, app_tarball: Path
+) -> httpx.Response:
+    """
+    Asynchronously install the app on a SOAR instance
+    """
+    base_url = (
+        soar_instance
+        if soar_instance.startswith("https://")
+        else f"https://{soar_instance}"
+    )
+
+    payload = {"app": app_tarball.read_bytes()}
+    client = await phantom_get_login_session(base_url, username, password)
+    response = await phantom_post(client, "app_install", payload)
+    await client.aclose()
+    return response
+
+
 @package.command()
 def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     """
@@ -173,15 +193,8 @@ def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
     if not (password := os.getenv("PHANTOM_PASSWORD", "")):
         password = typer.prompt("Please enter your SOAR password", hide_input=True)
 
-    base_url = (
-        soar_instance
-        if soar_instance.startswith("https://")
-        else f"https://{soar_instance}"
-    )
-
-    payload = {"app": app_tarball.read_bytes()}
-    app_install_request = phantom_post_with_csrf_token(
-        base_url, "app_install", username, password, files=payload
+    app_install_request = asyncio.run(
+        upload_app(soar_instance, username, password, app_tarball)
     )
 
     try:
