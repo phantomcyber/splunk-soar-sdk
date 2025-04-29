@@ -140,12 +140,21 @@ def wheel_resp_mock(respx_mock):
 
 
 @pytest.fixture
-def mock_requests_session() -> Generator[MagicMock, None, None]:
+@pytest.mark.respx(base_url="https://10.1.23.4/")
+def mock_requests_session(respx_mock) -> Generator[MagicMock, None, None]:
     """Fixture to mock requests.Session."""
-    with mock.patch("requests.Session") as MockSession:
-        mock_session = mock.MagicMock()
-        MockSession.return_value = mock_session
-        yield mock_session
+    respx_mock.get("login").respond(
+        cookies={"csrftoken": "mocked_csrf_token"}, status_code=200
+    )
+
+    respx_mock.post("login").respond(
+        cookies={"csrftoken": "fake_csrf_token", "sessionid": "fake_session_id"},
+        status_code=200,
+    )
+
+    # Mock the POST request for app upload at /app_install
+    respx_mock.post("app_install").respond(json={"status": "success"}, status_code=201)
+    return respx_mock
 
 
 @pytest.fixture

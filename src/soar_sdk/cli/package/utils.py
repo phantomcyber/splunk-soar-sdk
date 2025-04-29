@@ -1,47 +1,46 @@
-import requests
+import httpx
 
 
-def phantom_get_login_session(
+async def phantom_get_login_session(
     base_url: str, username: str, password: str
-) -> tuple[requests.Session, requests.Response]:
-    """Log into phantom and get a token."""
-    session = requests.Session()
+) -> httpx.AsyncClient:
+    """Log into phantom and return the authenticated client. The caller needs to close the client."""
+    client = httpx.AsyncClient(base_url=base_url, verify=False)  # noqa: S501
 
-    phantom_login_url = f"{base_url}/login"
     # get the cookies from the get method
-    response = session.get(phantom_login_url, verify=False)
-    body = {
-        "username": username,
-        "password": password,
-        "csrfmiddlewaretoken": response.cookies.get_dict().get("csrftoken"),
-    }
-    login_response = session.post(
-        phantom_login_url,
-        data=body,
-        verify=False,
+    response = await client.get("/login")
+    csrf_token = response.cookies.get("csrftoken")
+
+    await client.post(
+        "/login",
+        data={
+            "username": username,
+            "password": password,
+            "csrfmiddlewaretoken": csrf_token,
+        },
         cookies=response.cookies,
-        headers=dict(Referer=phantom_login_url),
+        headers={"Referer": f"{base_url}/login"},
     )
-    print(login_response)
 
-    return session, login_response
+    return client
 
 
-def phantom_post_with_csrf_token(
-    base_url: str, endpoint: str, username: str, password: str, files: dict
-) -> requests.Response:
-    """Send a POST request with a CSRF token to the specified endpoint on the phantom instance."""
-    headers = {}
+async def phantom_post(
+    client: httpx.AsyncClient, endpoint: str, files: dict
+) -> httpx.Response:
+    """Send a POST request with a CSRF token to the specified endpoint using an authenticated token."""
     data = {}
-    print("here")
-    session, login_response = phantom_get_login_session(base_url, username, password)
-    print("here2")
+    csrftoken = client.cookies.get("csrftoken")
 
-    csrftoken = login_response.cookies.get_dict().get("csrftoken")
-    session_id = login_response.cookies["sessionid"]
-    url = f"{base_url}/{endpoint}"
-    headers["Referer"] = url
-    headers["Cookie"] = f"csrftoken={csrftoken};sessionid={session_id}"
-    data["csrfmiddlewaretoken"] = csrftoken
+    url = f"{client.base_url}/{endpoint}"
+    headers = {"Referer": url}
+    data = {"csrfmiddlewaretoken": csrftoken}
 
-    return session.post(url, files=files, data=data, headers=headers, verify=False)
+    response = await client.post(
+        endpoint,
+        files=files,
+        data=data,
+        headers=headers,
+    )
+
+    return response
