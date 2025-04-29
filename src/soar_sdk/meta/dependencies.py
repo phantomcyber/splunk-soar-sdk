@@ -124,6 +124,9 @@ class UvPackage(BaseModel):
     name: str
     version: str
     dependencies: list[UvDependency] = []
+    optional_dependencies: dict[str, list[UvDependency]] = Field(
+        default_factory=dict, alias="optional-dependencies"
+    )
     wheels: list[UvWheel] = []
 
     def _find_wheel(
@@ -246,7 +249,12 @@ class UvLock(BaseModel):
 
             scan_pass = list(packages.values())
             for package in scan_pass:
-                for dependency in package.dependencies:
+                package_dependencies = package.dependencies
+
+                for extra_group in package.optional_dependencies.values():
+                    package_dependencies += extra_group
+
+                for dependency in package_dependencies:
                     name = dependency.name
 
                     if name in DEPENDENCIES_TO_REJECT:
