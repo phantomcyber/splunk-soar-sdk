@@ -22,6 +22,7 @@
         "base_url": {
             "order": 0,
             "data_type": "string",
+            "description": "Base Url",
             "required": true
         },
         "api_key": {
