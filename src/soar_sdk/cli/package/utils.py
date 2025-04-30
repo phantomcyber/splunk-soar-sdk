@@ -11,6 +11,7 @@ async def phantom_get_login_session(
     async with httpx.AsyncClient(base_url=base_url, verify=False) as client:  # noqa: S501
         # get the cookies from the get method
         response = await client.get("/login")
+        response.raise_for_status()
         csrf_token = response.cookies.get("csrftoken")
         client.cookies.update(response.cookies)
 
@@ -27,7 +28,7 @@ async def phantom_get_login_session(
         yield client
 
 
-async def phantom_post(
+async def phantom_install_app(
     client: httpx.AsyncClient, endpoint: str, files: dict[str, bytes]
 ) -> httpx.Response:
     """Send a POST request with a CSRF token to the specified endpoint using an authenticated token."""
