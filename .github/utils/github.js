@@ -53,7 +53,7 @@ async function commentReleaseNotes({ github, context }) {
   }
 
   // Add an invisible breadcrumb to the comment body so we can find it later
-  const bodyBreadcrumb = "<!-- semantic-release-breadcrumb -->";
+  const bodyBreadcrumb = "<!-- semantic-release-breadcrumb -->\n";
   const issueContext = {
     issue_number: context.issue.number,
     owner: context.repo.owner,
