@@ -11,9 +11,7 @@ from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
 from tests.stubs import SampleActionParams
-from unittest.mock import MagicMock
 from pathlib import Path
-from collections.abc import Generator
 
 
 @pytest.fixture
@@ -141,7 +139,7 @@ def wheel_resp_mock(respx_mock):
 
 @pytest.fixture
 @pytest.mark.respx(base_url="https://10.1.23.4/")
-def mock_requests_session(respx_mock) -> Generator[MagicMock, None, None]:
+def mock_install_client(respx_mock):
     """Fixture to mock requests.Session."""
     respx_mock.get("login").respond(
         cookies={"csrftoken": "mocked_csrf_token"}, status_code=200
