@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-      - alpha
+      - beta
 
 jobs:
   semantic_release:

@@ -1,4 +1,4 @@
-import sys
+import argparse
 
 from tomlkit import parse, dumps
 from tomlkit.container import Container
@@ -33,8 +33,15 @@ def update_version(version: str) -> None:
         print(f"An error occurred: {e}")
 
 
+def parse_args() -> argparse.Namespace:
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description="Update the version in pyproject.toml")
+    parser.add_argument(
+        "version", type=str, help="New version to set in pyproject.toml"
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Usage: python update_version.py <version>")
-    else:
-        update_version(sys.argv[1])
+    args = parse_args()
+    update_version(args.version)
