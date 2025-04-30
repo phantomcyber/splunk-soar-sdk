@@ -3,11 +3,11 @@ on:
   push:
     branches:
       - main
-      - alpha
+      - beta
   pull_request:
     branches:
       - main
-      - alpha
+      - beta
 
 jobs:
   Precommit:
