@@ -8,8 +8,12 @@ on:
 jobs:
   semantic_release:
     runs-on: ubuntu-latest
+    concurrency:
+      # Guarantee only one ongoing release job per branch at a time
+      group: pypi-${{ github.ref }}
     environment:
       name: pypi
+      url: https://pypi.org/project/splunk-soar-sdk/
     permissions:
       contents: write  # Required for semantic-release to create release tags
       pull-requests: write  # Required for semantic-release to comment on PRs in release
