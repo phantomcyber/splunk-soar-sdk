@@ -1,14 +1,19 @@
-const fs = require("fs");
+import { readdir, readFile } from "node:fs/promises";
 
-function getReleaseVersion() {
-  if (fs.existsSync("release_version.txt")) {
-    return fs.readFileSync("release_version.txt").toString().trim();
+async function getReleaseVersion() {
+  try {
+    return (await readFile("release_version.txt")).toString().trim();
+  } catch (err) {
+    if (err.code === "ENOENT") {
+      // File does not exist
+      return null;
+    }
+    throw err;
   }
-  return null;
 }
 
 async function uploadReleaseArtifacts({ github, context }) {
-  const tag = getReleaseVersion();
+  const tag = await getReleaseVersion();
   if (!tag) {
     console.log("This change did not result in a release.");
     return
@@ -16,9 +21,9 @@ async function uploadReleaseArtifacts({ github, context }) {
 
   const { owner, repo } = context.repo;
 
-  const artifacts = fs
-    .readdirSync("dist")
-    .filter((f) => f.endsWith(".whl") || f.endsWith(".tar.gz"));
+  const files = await readdir("dist");
+  const artifacts = files.filter((f) => f.endsWith(".whl") || f.endsWith(".tar.gz"));
+
   const getRelease = await github.rest.repos.getReleaseByTag({
     owner,
     repo,
@@ -26,39 +31,55 @@ async function uploadReleaseArtifacts({ github, context }) {
   });
   const release_id = getRelease.data.id;
 
-  artifacts.forEach((name) => {
-    const data = fs.readFileSync(`dist/${name}`);
-    github.rest.repos.uploadReleaseAsset({
+  for await (const name of artifacts) {
+    const data = await readFile(`dist/${name}`);
+    await github.rest.repos.uploadReleaseAsset({
       owner,
       repo,
       release_id,
       name,
       data,
     });
-  });
+  }
 }
 
-function commentReleaseNotes({ github, context }) {
-  const versionNumber = getReleaseVersion();
-  if (!versionNumber) {
-    return github.rest.issues.createComment({
+async function commentReleaseNotes({ github, context }) {
+  let commentBody = "Merging this PR will not result in a release.";
+
+  const versionNumber = await getReleaseVersion();
+  if (versionNumber) {
+    const releaseNotes = (await readFile("release_notes.txt")).toString().trim();
+    commentBody = `Merging this PR will release \`${versionNumber}\` with the following release notes:\n\n${releaseNotes}`;
+  }
+
+  // Add an invisible breadcrumb to the comment body so we can find it later
+  const bodyBreadcrumb = "<!-- semantic-release-breadcrumb -->";
+  const comment = {
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    body: `${bodyBreadcrumb}${commentBody}`,
+  };
+
+  for await (const {id, body} of github.paginate.iterator(
+    github.rest.issues.listComments,
+    {
       issue_number: context.issue.number,
       owner: context.repo.owner,
       repo: context.repo.repo,
-      body: "Merging this PR will not result in a release.",
-    });
+    },
+  )) {
+    if (body.startsWith(bodyBreadcrumb)) {
+      await github.rest.issues.updateComment({
+        comment_id: id,
+        ...comment,
+      });
+      return;
+    }
   }
 
-  const releaseNotes = fs.readFileSync("release_notes.txt").toString().trim();
-
-  const commentBody = `Merging this PR will release \`${versionNumber}\` with the following release notes:\n\n${releaseNotes}`;
-
-  return github.rest.issues.createComment({
-    issue_number: context.issue.number,
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    body: commentBody,
-  });
+  // Pre-condition: we haven't already commented on this PR
+  await github.rest.issues.createComment(comment);
+  return;
 }
 
 module.exports = { uploadReleaseArtifacts, commentReleaseNotes };
