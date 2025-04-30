@@ -8,9 +8,12 @@ on:
 jobs:
   semantic_release:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write  # Required for semantic-release to create release tags
+      pull-requests: write  # Required for semantic-release to comment on PRs in release
+      id-token: write  # Required for trusted publishing
     steps:
       - uses: actions/create-github-app-token@v1
         id: app-token
@@ -40,6 +43,8 @@ jobs:
         run: git fetch --tags && git checkout "$(cat release_version.txt)"
       - name: Build package
         run: uv build
+      - name: Publish to PyPI
+        run: uv publish
       - name: Find the GitHub release and upload the artifacts to it
         uses: actions/github-script@v7
         with:
