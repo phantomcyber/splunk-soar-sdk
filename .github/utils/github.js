@@ -70,6 +70,7 @@ async function commentReleaseNotes({ github, context }) {
   )) {
     for (const {id, body} of data) {
       if (body.startsWith(bodyBreadcrumb)) {
+        console.log(`Updating comment ${id}`);
         await github.rest.issues.updateComment({
           comment_id: id,
           ...comment,
@@ -80,6 +81,7 @@ async function commentReleaseNotes({ github, context }) {
   }
 
   // Pre-condition: we haven't already commented on this PR
+  console.log("Creating comment");
   await github.rest.issues.createComment(comment);
   return;
 }
