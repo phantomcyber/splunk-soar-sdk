@@ -50,4 +50,4 @@ jobs:
         with:
           script: |
             const { commentReleaseNotes } = require(".github/utils/github.js");
-            commentReleaseNotes({github, context, core});
+            await commentReleaseNotes({github, context, core});
