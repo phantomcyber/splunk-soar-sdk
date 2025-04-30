@@ -13,7 +13,7 @@ logger = getLogger(__name__)
 # These dependencies are provided by the Python runner,
 # so the SDK will not include wheels for them when building a package.
 DEPENDENCIES_TO_SKIP = {
-    "soar-sdk",
+    "splunk-soar-sdk",
     # List from https://docs.splunk.com/Documentation/SOAR/current/DevelopApps/FAQ
     "beautifulsoup4",
     "soupsieve",

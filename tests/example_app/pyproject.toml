@@ -11,7 +11,7 @@ dependencies = [
     "boto3>=1.38.3",
     "httpx[http2]>=0.28.1",
     "requests>=2.32.3",
-    "soar-sdk",
+    "splunk-soar-sdk",
 ]
 
 [dependency-groups]
@@ -29,7 +29,7 @@ dev = [
 url = "https://pypi.python.org/simple"
 
 [tool.uv.sources]
-soar-sdk = { path = "../../" }
+splunk-soar-sdk = { path = "../../" }
 
 [tool.uv]
 environments = [
