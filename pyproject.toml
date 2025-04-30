@@ -1,15 +1,35 @@
 [project]
 name = "soar_sdk"
 version = "1.0.0-beta.1"
-description = "A framework for developing and testing the Splunk SOAR Apps"
+description = "The official framework for developing and testing Splunk SOAR Apps"
 readme = "README.md"
 requires-python = ">=3.9, <3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = [
+    "cisco",
+    "splunk",
+    "soar",
+    "phantom",
+    "app",
+    "connector",
+    "sdk",
+]
+
 authors = [
     { name = "Jacob Davis", email = "jacobd@splunk.com" },
     { name = "Tapish Jain", email = "tapishj@splunk.com" },
     { name = "Janusz Kamieński", email = "jkamienski@splunk.com" },
     { name = "Scott Odle", email = "sodle@splunk.com" },
     { name = "Michał Posłuszny", email = "mposluszny@splunk.com" }
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
     "toml>=0.10.2, <1",
@@ -25,6 +45,11 @@ dependencies = [
     "tqdm>=4.67.1",
     "humanize>=4.12.2",
 ]
+
+[project.urls]
+Homepage = "https://github.com/phantomcyber/soar-apps-sdk"
+Documentation = "https://github.com/phantomcyber/soar-apps-sdk"
+Repository = "https://github.com/phantomcyber/soar-apps-sdk"
 
 [project.scripts]
 soarapps = "soar_sdk.cli.cli:main"
