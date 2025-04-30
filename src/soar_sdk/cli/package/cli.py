@@ -17,7 +17,7 @@ from rich.panel import Panel
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.meta.dependencies import DependencyWheel
 from soar_sdk.cli.path_utils import context_directory
-from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_post
+from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
 from itertools import chain
 import os
 import httpx
@@ -170,7 +170,7 @@ async def upload_app(
 
     payload = {"app": app_tarball.read_bytes()}
     async with phantom_get_login_session(base_url, username, password) as client:
-        response = await phantom_post(client, "app_install", payload)
+        response = await phantom_install_app(client, "app_install", payload)
     return response
 
 
