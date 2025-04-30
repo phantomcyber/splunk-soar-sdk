@@ -54,26 +54,28 @@ async function commentReleaseNotes({ github, context }) {
 
   // Add an invisible breadcrumb to the comment body so we can find it later
   const bodyBreadcrumb = "<!-- semantic-release-breadcrumb -->";
-  const comment = {
+  const issueContext = {
+    issue_number: context.issue.number,
     owner: context.repo.owner,
     repo: context.repo.repo,
+  };
+
+  const comment = {
+    ...issueContext,
     body: `${bodyBreadcrumb}${commentBody}`,
   };
 
-  for await (const {id, body} of github.paginate.iterator(
-    github.rest.issues.listComments,
-    {
-      issue_number: context.issue.number,
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-    },
+  for await (const { data } of github.paginate.iterator(
+    github.rest.issues.listComments, issueContext
   )) {
-    if (body.startsWith(bodyBreadcrumb)) {
-      await github.rest.issues.updateComment({
-        comment_id: id,
-        ...comment,
-      });
-      return;
+    for (const {id, body} of data) {
+      if (body.startsWith(bodyBreadcrumb)) {
+        await github.rest.issues.updateComment({
+          comment_id: id,
+          ...comment,
+        });
+        return;
+      }
     }
   }
 
@@ -82,4 +84,4 @@ async function commentReleaseNotes({ github, context }) {
   return;
 }
 
-module.exports = { uploadReleaseArtifacts, commentReleaseNotes };
+export { uploadReleaseArtifacts, commentReleaseNotes };
