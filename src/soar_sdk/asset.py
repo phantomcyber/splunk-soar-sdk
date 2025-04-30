@@ -75,6 +75,11 @@ class BaseAsset(BaseModel):
                 )
         return values
 
+    @staticmethod
+    def _default_field_description(field_name: str) -> str:
+        words = field_name.split("_")
+        return " ".join(words).title()
+
     @classmethod
     def to_json_schema(cls) -> dict[str, AssetFieldSpecification]:
         params: dict[str, AssetFieldSpecification] = {}
@@ -96,16 +101,16 @@ class BaseAsset(BaseModel):
                     )
                 type_name = "password"
 
+            if not (description := field.field_info.description):
+                description = cls._default_field_description(field_name)
+
             params_field = AssetFieldSpecification(
                 data_type=type_name,
                 required=field.field_info.extra.get("required", True),
+                description=description,
                 order=field_order,
             )
 
-            if (
-                description := field.field_info.description
-            ) and description != Undefined:
-                params_field["description"] = description
             if (default := field.field_info.default) and default != Undefined:
                 params_field["default"] = default
             if value_list := field.field_info.extra.get("value_list"):
