@@ -169,9 +169,8 @@ async def upload_app(
     )
 
     payload = {"app": app_tarball.read_bytes()}
-    client = await phantom_get_login_session(base_url, username, password)
-    response = await phantom_post(client, "app_install", payload)
-    await client.aclose()
+    async with phantom_get_login_session(base_url, username, password) as client:
+        response = await phantom_post(client, "app_install", payload)
     return response
 
 

@@ -72,7 +72,7 @@ def set_up_install_request_responses(mocked_session):
     return mock_get, mock_post
 
 
-def test_install_command(mock_requests_session, app_tarball: Path):
+def test_install_command(mock_install_client, app_tarball: Path):
     result = runner.invoke(
         package,
         [
@@ -87,11 +87,11 @@ def test_install_command(mock_requests_session, app_tarball: Path):
 
     assert result.exit_code == 0
 
-    assert mock_requests_session.get("login").called
-    assert mock_requests_session.post("login").called
-    assert mock_requests_session.post("app_install").called
+    assert mock_install_client.get("login").called
+    assert mock_install_client.post("login").called
+    assert mock_install_client.post("app_install").called
 
-    app_install_call = mock_requests_session.post("app_install")
+    app_install_call = mock_install_client.post("app_install")
     assert app_install_call.call_count == 1
     expected_cookies = "csrftoken=fake_csrf_token; sessionid=fake_session_id"
     assert (
@@ -100,7 +100,7 @@ def test_install_command(mock_requests_session, app_tarball: Path):
 
 
 def test_install_username_prompt_password_env_var(
-    mock_requests_session, app_tarball: Path, monkeypatch
+    mock_install_client, app_tarball: Path, monkeypatch
 ):
     monkeypatch.setenv("PHANTOM_PASSWORD", "test_password")
     result = runner.invoke(
@@ -115,8 +115,8 @@ def test_install_username_prompt_password_env_var(
     assert result.exit_code == 0
 
 
-def test_install_command_with_post_error(mock_requests_session, app_tarball: Path):
-    mock_requests_session.post("app_install").respond(
+def test_install_command_with_post_error(mock_install_client, app_tarball: Path):
+    mock_install_client.post("app_install").respond(
         json={"status": "failed"}, status_code=403
     )
 
