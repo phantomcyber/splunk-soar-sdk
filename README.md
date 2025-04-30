@@ -1,14 +1,14 @@
 # Splunk SOAR SDK - the official tool for Splunk SOAR app development
 
 <!-- NOTE: Coverage is not dynamically generated, but it is true because CI fails below 100% coverage -->
-![GitHub top language](https://img.shields.io/github/languages/top/phantomcyber/splunk-soar-sdk)
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fphantomcyber%2Fsplunk-soar-sdk%2Fbeta%2Fpyproject.toml)
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/phantomcyber/splunk-soar-sdk/semantic_release.yml)
-[![Code Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/splunk/soar-apps-sdk)
-![GitHub Release](https://img.shields.io/github/v/release/phantomcyber/splunk-soar-sdk?include_prereleases)
+[![GitHub top language](https://img.shields.io/github/languages/top/phantomcyber/splunk-soar-sdk)](https://github.com/phantomcyber/splunk-soar-sdk)
+[![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fphantomcyber%2Fsplunk-soar-sdk%2Fbeta%2Fpyproject.toml)](https://github.com/phantomcyber/splunk-soar-sdk)
+[![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/phantomcyber/splunk-soar-sdk/semantic_release.yml)](https://github.com/phantomcyber/splunk-soar-sdk/deployments)
+[![Code Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/phantomcyber/splunk-soar-sdk)
+[![GitHub Release](https://img.shields.io/github/v/release/phantomcyber/splunk-soar-sdk?include_prereleases)](https://github.com/phantomcyber/splunk-soar-sdk/releases)
 [![PyPI - Version](https://img.shields.io/pypi/v/splunk-soar-sdk.svg)](https://pypi.org/project/splunk-soar-sdk/)
-![PyPI - Status](https://img.shields.io/pypi/status/splunk-soar-sdk)
-![PyPI - Types](https://img.shields.io/pypi/types/splunk-soar-sdk)
+[![PyPI - Status](https://img.shields.io/pypi/status/splunk-soar-sdk)](https://pypi.org/project/splunk-soar-sdk/)
+[![PyPI - Types](https://img.shields.io/pypi/types/splunk-soar-sdk)](https://pypi.org/project/splunk-soar-sdk/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 # Installation
