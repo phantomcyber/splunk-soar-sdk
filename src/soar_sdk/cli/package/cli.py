@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import asyncio
 import time
-from typing import Optional
+from typing import Optional, Annotated
 from tqdm import tqdm
 from rich.console import Console
 from rich.panel import Panel
@@ -60,29 +60,47 @@ async def collect_all_wheels(wheels: list[DependencyWheel]) -> list[tuple[str, b
 
 
 @package.command()
-def build(output_file: Path, project_context: Path) -> None:
+def build(
+    project_context: Annotated[
+        Path,
+        typer.Argument(
+            default_factory=Path.cwd, show_default="current working directory"
+        ),
+    ],
+    output_file: Annotated[
+        Optional[Path],
+        typer.Option("--output-file", "-o", show_default="derived from pyproject.toml"),
+    ] = None,
+) -> None:
     """
     Build a SOAR app package.
 
     Args:
-        output_file: Path where the packaged app will be saved
         project_context: Path to the app project directory
-        with_sdk_wheel_from: Optional path to an SDK wheel to include
+    Options:
+        --output-file, -o: Path where the packaged app will be saved
     """
     # Start timing the build process
     start_time = time.time()
-
-    # Resolve the output path relative to the user's working directory, not the project context
-    output_file = output_file.resolve()
     project_context = project_context.resolve()
 
     console.print(Panel("[bold]Building SOAR App Package[/]", expand=False))
     console.print(f"[blue]App directory:[/] {project_context}")
-    console.print(f"[blue]Output file:[/] {output_file}")
+
+    # Resolve the output path relative to the user's working directory, not the project context
+    cwd = Path.cwd()
+    if output_file is not None:
+        output_file = output_file.resolve()
+        console.print(f"[blue]Output file:[/] {output_file}")
 
     with context_directory(project_context):
         app_meta = ManifestProcessor("manifest.json", ".").build()
         app_name = app_meta.name
+
+        if output_file is None:
+            output_file = cwd / f"{app_name}.tgz"
+            console.print(f"[blue]Output file:[/] {output_file}")
+
         console.print(f"Generated manifest for app:[green] {app_name}[/]")
 
         def filter_source_files(t: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
