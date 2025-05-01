@@ -19,7 +19,7 @@
       {
         "prepareCmd": "uv run .github/utils/update_version.py ${nextRelease.version} && uv lock",
         "verifyReleaseCmd": "echo \"${nextRelease.version}\" > release_version.txt",
-        "generateNotesCmd": "echo \"${nextRelease.notes}\" > release_notes.txt"
+        "generateNotesCmd": "cat >release_notes.txt <<'EOF${nextRelease.gitHead}EOF'\n${nextRelease.notes}\nEOF${nextRelease.gitHead}EOF"
       }
     ],
     [
