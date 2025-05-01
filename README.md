@@ -11,7 +11,7 @@
 [![PyPI - Types](https://img.shields.io/pypi/types/splunk-soar-sdk)](https://pypi.org/project/splunk-soar-sdk/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-# Installation
+## Installation
 
 The Splunk SOAR SDK is available as [a package on PyPI](https://pypi.org/project/splunk-soar-sdk/).
 
@@ -36,14 +36,15 @@ uv add splunk-soar-sdk
 
 Running the above command will add `splunk-soar-sdk` as a dependency of your Splunk SOAR app, in your `pyproject.toml` file.
 
-# Usage
+## Usage
 
-In order to start using SDK and build your first Splunk SOAR App, follow the [Getting Started guide](/docs/getting_started.md).
+In order to start using SDK and build your first Splunk SOAR App, follow the [Getting Started guide](https://github.com/phantomcyber/splunk-soar-sdk/docs/getting_started.md).
 
 A Splunk SOAR app developed with the SDK will look something like this:
 
 Project structure:
-```
+
+```text
 string_reverser/
 ├─ src/
 │  ├─ __init__.py
@@ -58,6 +59,7 @@ string_reverser/
 ```
 
 With `app.py` containing:
+
 ```python
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
@@ -99,14 +101,13 @@ if __name__ == "__main__":
     app.cli()
 ```
 
-# Requirements
+## Requirements
 
 * [uv](https://docs.astral.sh/uv/getting-started/installation/)
 * Python >=3.9
   * Python may be installed locally [with uv](https://docs.astral.sh/uv/guides/install-python/)
 * Splunk SOAR >=6.4.0
   * You can get Splunk SOAR Community Edition from [the Splunk website](https://www.splunk.com/en_us/products/splunk-security-orchestration-and-automation.html)
-
 
 ---
 
@@ -116,7 +117,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+<http://www.apache.org/licenses/LICENSE-2.0>
 
 Unless required by applicable law or agreed to in writing,
 software distributed under the License is distributed on an "AS IS" BASIS,
