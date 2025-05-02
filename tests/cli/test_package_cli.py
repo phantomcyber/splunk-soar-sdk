@@ -38,6 +38,10 @@ def test_package_build_command_specifying_outdir(wheel_resp_mock, tmp_path: Path
     example_app = Path.cwd() / "tests/example_app"
     destination = tmp_path / "example_app.tgz"
 
+    fake_wheel = tmp_path / "fake.whl"
+    with fake_wheel.open("wb") as whl:
+        whl.write(b"deadbeef")
+
     # Create the patch for hash validation
     with patch.object(UvWheel, "validate_hash", return_value=None):
         result = runner.invoke(
@@ -47,6 +51,8 @@ def test_package_build_command_specifying_outdir(wheel_resp_mock, tmp_path: Path
                 "--output-file",
                 destination.as_posix(),
                 example_app.as_posix(),
+                "--with-sdk-wheel-from",
+                fake_wheel.as_posix(),
             ],
         )
 
