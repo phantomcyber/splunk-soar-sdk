@@ -71,6 +71,14 @@ def build(
         Optional[Path],
         typer.Option("--output-file", "-o", show_default="derived from pyproject.toml"),
     ] = None,
+    with_sdk_wheel_from: Annotated[
+        Optional[Path],
+        typer.Option(
+            "--with-sdk-wheel-from",
+            "-w",
+            help="Optional path to an SDK wheel to include",
+        ),
+    ] = None,
 ) -> None:
     """
     Build a SOAR app package.
@@ -83,6 +91,8 @@ def build(
     # Start timing the build process
     start_time = time.time()
     project_context = project_context.resolve()
+    if with_sdk_wheel_from:
+        with_sdk_wheel_from = with_sdk_wheel_from.resolve()
 
     console.print(Panel("[bold]Building SOAR App Package[/]", expand=False))
     console.print(f"[blue]App directory:[/] {project_context}")
@@ -140,6 +150,21 @@ def build(
             app_tarball.add(
                 "src", f"{app_name}/src", recursive=True, filter=filter_source_files
             )
+
+            if with_sdk_wheel_from:
+                console.print(f"[dim]Adding SDK wheel from {with_sdk_wheel_from}[/]")
+                wheel_name = with_sdk_wheel_from.name
+
+                wheel_archive_path = f"wheels/shared/{wheel_name}"
+                app_tarball.add(with_sdk_wheel_from, f"{app_name}/{wheel_archive_path}")
+
+                wheel_entry = DependencyWheel(
+                    module="soar_sdk",
+                    input_file=wheel_archive_path,
+                    input_file_aarch64=wheel_archive_path,
+                )
+                app_meta.pip39_dependencies.wheel.append(wheel_entry)
+                app_meta.pip313_dependencies.wheel.append(wheel_entry)
 
             console.print("Writing manifest")
             manifest_json = json.dumps(app_meta.dict(), indent=4).encode()

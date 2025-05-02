@@ -41,7 +41,6 @@ dependencies = [
     "pydantic<2",
     "requests<3",
     "responses==0.22.0",
-    "simplejson<4",
     "httpx>=0.28.1",
     "tqdm>=4.67.1",
     "humanize>=4.12.2",

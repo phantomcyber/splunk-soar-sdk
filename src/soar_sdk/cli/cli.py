@@ -5,7 +5,6 @@ from soar_sdk.cli.package.cli import package
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 HELP = """A command-line tool for helping with SOAR Apps development"""
-
 app = typer.Typer(
     rich_markup_mode="rich",
     help=HELP,
