@@ -23,13 +23,30 @@ class AppConnector(BaseConnector, SOARClient):
     In the future it should be replaced by another class accessing SOAR API.
     """
 
-    def __init__(self, actions_provider: "ActionsProvider") -> None:
+    # Singleton instance of the AppConnector that can be shared across the app and logger
+    _instance = None
+
+    def __new__(cls, actions_provider: "ActionsProvider" = None) -> None:
+        if cls._instance is None:
+            # Create the singleton instance if it doesn't exist
+            cls._instance = super().__new__(cls)
+            cls._instance._actions_provider = actions_provider
+        elif actions_provider is not None:
+            # Update the actions_provider if it's passed and not None
+            cls._instance._actions_provider = actions_provider
+        return cls._instance
+
+    def __init__(self, actions_provider: "ActionsProvider" = None) -> None:
         # Call the BaseConnectors init first
         super().__init__()
 
         self.actions_provider = actions_provider
 
         self._state: dict = {}
+
+    @classmethod
+    def get_instance(cls) -> "AppConnector":
+        return cls._instance
 
     @classmethod
     def get_soar_base_url(cls) -> str:
@@ -102,3 +119,10 @@ class AppConnector(BaseConnector, SOARClient):
         dump_object: Union[str, list, dict, PhantomActionResult, Exception] = "",
     ) -> None:
         self.debug_print(tag, dump_object)
+
+    def error(
+        self,
+        tag: str,
+        dump_object: Union[str, list, dict, PhantomActionResult, Exception] = "",
+    ) -> None:
+        self.error_print(tag, dump_object)

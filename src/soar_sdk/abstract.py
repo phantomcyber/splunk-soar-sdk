@@ -57,6 +57,14 @@ class SOARClient(ABC):
         pass
 
     @abstractmethod
+    def error(
+        self,
+        tag: str,
+        dump_object: Union[str, list, dict, ActionResult, Exception] = "",
+    ) -> None:
+        pass
+
+    @abstractmethod
     def save_progress(
         self,
         progress_str_const: str,
