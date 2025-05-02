@@ -36,9 +36,9 @@ class ReverseStringOutput(ActionOutput):
 def reverse_string(
     param: ReverseStringParams, client: SOARClient
 ) -> ReverseStringOutput:
-    client.debug("params", param.json())
+    client.debug("params: %s", param)
     reversed_string = param.input_string[::-1]
-    client.debug("reversed_string", reversed_string)
+    client.debug("reversed_string %s", reversed_string)
     return ReverseStringOutput(reversed_string=reversed_string)
 
 

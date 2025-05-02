@@ -23,6 +23,14 @@ if TYPE_CHECKING or not _soar_is_available:
         def _get_phantom_base_url() -> str:
             return "https://localhost:9999/"
 
+        def send_progress(
+            self,
+            progress_str_const: str,
+            *unnamed_format_args: object,
+            **named_format_args: object,
+        ) -> None:
+            return
+
         def save_progress(
             self,
             progress_str_const: str,
@@ -31,10 +39,17 @@ if TYPE_CHECKING or not _soar_is_available:
         ) -> None:
             return
 
+        def error_print(
+            self,
+            _tag: str,
+            _dump_object: Union[str, list, dict, ActionResult, Exception] = "",
+        ) -> None:
+            print(f"\033[31m{_tag}\033[0m", _dump_object)
+
         def debug_print(
             self,
             _tag: str,
-            _dump_object: Union[str, list, dict, ActionResult, Exception],
+            _dump_object: Union[str, list, dict, ActionResult, Exception] = "",
         ) -> None:
             print(_tag, _dump_object)
 
