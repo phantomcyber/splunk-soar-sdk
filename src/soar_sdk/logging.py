@@ -57,6 +57,16 @@ class SOARHandler(logging.Handler):
 
 
 class PhantomLogger(logging.Logger):
+    _instance = None
+
+    def __new__(
+        cls, name: str = "phantom_logger", *args: object, **kwargs: object
+    ) -> None:
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance.name = name  # Set the name for the first time
+        return cls._instance
+
     def __init__(self, name: str = "phantom_logger") -> None:
         super().__init__(name)
         self.setLevel(logging.DEBUG)
@@ -97,8 +107,8 @@ class PhantomLogger(logging.Logger):
         super().removeHandler(handler)
 
 
-def getLogger(nam: str = "phantom_logger") -> PhantomLogger:
+def getLogger(name: str = "phantom_logger") -> PhantomLogger:
     """
     Get a logger instance with the custom SOAR handler.
     """
-    return PhantomLogger(name=nam)
+    return PhantomLogger(name=name)
