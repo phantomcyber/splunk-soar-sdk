@@ -17,6 +17,7 @@ class TOMLDataAdapter:
                 name=uv_app_data.get("name"),
                 description=uv_app_data.get("description"),
                 app_version=uv_app_data.get("version"),
+                license=uv_app_data.get("license"),
                 **soar_app_data,
             )
         )
