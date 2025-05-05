@@ -87,8 +87,7 @@ class PhantomLogger(logging.Logger):
                 PROGRESS_LEVEL,
                 message,
                 args,
-                kwargs.pop("exc_info", None),  # type: ignore
-                kwargs,
+                **kwargs,  # type: ignore
             )
 
     def removeHandler(self, handler: logging.Handler) -> None:
@@ -100,8 +99,47 @@ class PhantomLogger(logging.Logger):
         super().removeHandler(handler)
 
 
+# Expose logging methods as top-level functions
+def debug(msg: str, *args: object, **kwargs: object) -> None:
+    getLogger().debug(msg, *args, **kwargs)  # type: ignore
+
+
+def info(msg: str, *args: object, **kwargs: object) -> None:
+    getLogger().info(msg, *args, **kwargs)  # type: ignore
+
+
+def warning(msg: str, *args: object, **kwargs: object) -> None:
+    getLogger().warning(msg, *args, **kwargs)  # type: ignore
+
+
+def error(msg: str, *args: object, **kwargs: object) -> None:
+    getLogger().error(msg, *args, **kwargs)  # type: ignore
+
+
+def critical(msg: str, *args: object, **kwargs: object) -> None:
+    getLogger().critical(msg, *args, **kwargs)  # type: ignore
+
+
+def progress(msg: str, *args: object, **kwargs: object) -> None:
+    getLogger().progress(msg, *args, **kwargs)
+
+
 def getLogger(name: str = "phantom_logger") -> PhantomLogger:
     """
     Get a logger instance with the custom SOAR handler.
     """
-    return PhantomLogger(name=name)
+
+    if PhantomLogger._instance is None:
+        return PhantomLogger(name)
+    return PhantomLogger._instance
+
+
+__all__ = [
+    "critical",
+    "debug",
+    "error",
+    "getLogger",
+    "info",
+    "progress",
+    "warning",
+]

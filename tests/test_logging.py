@@ -3,7 +3,17 @@ import pytest
 
 
 from soar_sdk.connector import AppConnector
-from soar_sdk.logging import getLogger, SOARHandler
+from soar_sdk.logging import (
+    getLogger,
+    debug,
+    error,
+    info,
+    progress,
+    critical,
+    warning,
+    SOARHandler,
+    PhantomLogger,
+)
 from soar_sdk.colors import ANSIColor
 import soar_sdk.logging
 
@@ -41,10 +51,46 @@ def test_logging(app_connector: AppConnector):
     )
 
 
+def test_standalone_logging(app_connector: AppConnector):
+    app_connector.save_progress = mock.Mock()
+    app_connector.debug_print = mock.Mock()
+    app_connector.error_print = mock.Mock()
+    app_connector.send_progress = mock.Mock()
+    info("This is an info message from the test_logging module.")
+    app_connector.save_progress.assert_called_with(
+        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m"
+    )
+
+    debug("This is a debug message from the test_logging module.")
+    app_connector.debug_print.assert_called_with(
+        "\x1b[2mThis is a debug message from the test_logging module.\x1b[0m", ""
+    )
+
+    progress("This is a progress message from the test_logging module.")
+    app_connector.send_progress.assert_called_with(
+        "This is a progress message from the test_logging module.\x1b[0m"
+    )
+
+    warning("This is a warning message from the test_logging module.")
+    app_connector.debug_print.assert_called_with(
+        "\x1b[33mThis is a warning message from the test_logging module.\x1b[0m", ""
+    )
+
+    error("This is a warning message from the test_logging module.")
+    app_connector.debug_print.assert_called_with(
+        "\x1b[1;31mThis is a warning message from the test_logging module.\x1b[0m", ""
+    )
+
+    critical("This is a critical message from the test_logging module.")
+    app_connector.error_print.assert_called_with(
+        "\x1b[1;4;31mThis is a critical message from the test_logging module.\x1b[0m",
+        "",
+    )
+
+
 def test_logging_soar_not_available(app_connector: AppConnector):
     with mock.patch.object(soar_sdk.logging, "is_soar_available", return_value=True):
-        app_connector.save_progress = mock.Mock()
-        logger = getLogger()
+        logger = PhantomLogger()
         logger.info("This is an info message from the test_logging module.")
         app_connector.save_progress.assert_called_with(
             "This is an info message from the test_logging module."
@@ -71,7 +117,7 @@ def test_connector_error_caught(app_connector: AppConnector):
 
 def test_soar_client_not_initialized(app_connector: AppConnector):
     AppConnector._instance = None
-    logger = getLogger()
+    logger = PhantomLogger()
     with pytest.raises(RuntimeError, match="SOAR client is not initialized"):
         logger.debug("Test")
 
