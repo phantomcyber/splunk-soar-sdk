@@ -24,9 +24,9 @@ class AppConnector(BaseConnector, SOARClient):
     """
 
     # Singleton instance of the AppConnector that can be shared across the app and logger
-    _instance = None
+    _instance: Optional["AppConnector"] = None
 
-    def __new__(cls, actions_provider: "ActionsProvider" = None) -> None:
+    def __new__(cls, actions_provider: "ActionsProvider") -> "AppConnector":
         if cls._instance is None:
             # Create the singleton instance if it doesn't exist
             cls._instance = super().__new__(cls)
@@ -36,7 +36,7 @@ class AppConnector(BaseConnector, SOARClient):
             cls._instance._actions_provider = actions_provider
         return cls._instance
 
-    def __init__(self, actions_provider: "ActionsProvider" = None) -> None:
+    def __init__(self, actions_provider: "ActionsProvider") -> None:
         # Call the BaseConnectors init first
         super().__init__()
 
@@ -45,7 +45,7 @@ class AppConnector(BaseConnector, SOARClient):
         self._state: dict = {}
 
     @classmethod
-    def get_instance(cls) -> "AppConnector":
+    def get_instance(cls) -> Optional["AppConnector"]:
         return cls._instance
 
     @classmethod

@@ -4,6 +4,9 @@ from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.logging import getLogger
+
+logger = getLogger()
 
 
 class Asset(BaseAsset):
@@ -21,7 +24,7 @@ app = App(asset_cls=Asset, name="example_app")
 
 @app.test_connectivity()
 def test_connectivity(client: SOARClient, asset: Asset) -> None:
-    client.debug(f"testing connectivity against {asset.base_url}")
+    logger.info(f"testing connectivity against {asset.base_url}")
 
 
 class ReverseStringParams(Params):
@@ -36,9 +39,9 @@ class ReverseStringOutput(ActionOutput):
 def reverse_string(
     param: ReverseStringParams, client: SOARClient
 ) -> ReverseStringOutput:
-    client.debug("params: %s", param)
+    logger.debug("params: %s", param)
     reversed_string = param.input_string[::-1]
-    client.debug("reversed_string %s", reversed_string)
+    logger.debug("reversed_string %s", reversed_string)
     return ReverseStringOutput(reversed_string=reversed_string)
 
 
