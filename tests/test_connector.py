@@ -5,6 +5,7 @@ import pytest
 from soar_sdk.connector import AppConnector
 from soar_sdk.input_spec import InputSpecification
 from tests.stubs import SampleActionParams
+from soar_sdk.actions_provider import ActionsProvider
 
 
 def test_app_connector_handle_runs_legacy__handle_action(
@@ -127,3 +128,13 @@ def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
 
     # Verify save_state was called with the correct state
     simple_connector.save_state.assert_called_once_with(test_state)
+
+
+def test_update_action_provider(simple_provider: ActionsProvider):
+    """Test that update_action_provider updates the action provider."""
+    # Mock the action provider
+    connector = AppConnector(None)
+    assert connector.actions_provider is None
+    connector2 = AppConnector(simple_provider)
+    assert connector2.actions_provider is simple_provider
+    assert connector.actions_provider is simple_provider

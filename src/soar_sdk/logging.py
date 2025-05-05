@@ -2,7 +2,7 @@ import logging
 from soar_sdk.colors import ANSIColor
 
 from soar_sdk.connector import AppConnector
-
+from soar_sdk.shims.phantom.install_info import is_soar_available
 
 PROGRESS_LEVEL = 25
 logging.addLevelName(PROGRESS_LEVEL, "PROGRESS")
@@ -10,7 +10,7 @@ logging.addLevelName(PROGRESS_LEVEL, "PROGRESS")
 
 class ColorFilter(logging.Filter):
     def __init__(self, *args: object, color: bool = True, **kwargs: object) -> None:
-        super().__init__(*args, **kwargs)
+        super().__init__()
         self.ansi_colors = ANSIColor(color)
 
         self.level_colors = {
@@ -40,18 +40,21 @@ class SOARHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         soar_client = AppConnector.get_instance()
+        if not soar_client:
+            # This should never happen, but added to pass mypy
+            raise RuntimeError("SOAR client is not initialized")
         try:
             message = self.format(record)
             if record.levelno == PROGRESS_LEVEL:
                 soar_client.send_progress(message)
-            elif record.levelno == logging.DEBUG:
-                soar_client.debug(message)
-            elif record.levelno == logging.INFO:
-                soar_client.save_progress(message)
-            elif record.levelno == logging.WARNING or record.levelno == logging.ERROR:
+            elif record.levelno in (logging.DEBUG, logging.WARNING, logging.ERROR):
                 soar_client.debug(message)
             elif record.levelno == logging.CRITICAL:
-                soar_client.error_print(message)
+                soar_client.error(message)
+            elif record.levelno == logging.INFO:
+                soar_client.save_progress(message)
+            else:
+                raise ValueError("Log level not supporeted")
         except Exception:
             self.handleError(record)
 
@@ -59,9 +62,7 @@ class SOARHandler(logging.Handler):
 class PhantomLogger(logging.Logger):
     _instance = None
 
-    def __new__(
-        cls, name: str = "phantom_logger", *args: object, **kwargs: object
-    ) -> None:
+    def __new__(cls, name: str = "phantom_logger") -> "PhantomLogger":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance.name = name  # Set the name for the first time
@@ -70,33 +71,25 @@ class PhantomLogger(logging.Logger):
     def __init__(self, name: str = "phantom_logger") -> None:
         super().__init__(name)
         self.setLevel(logging.DEBUG)
-        handler = SOARHandler()
-        handler.addFilter(ColorFilter())
-        self.addHandler(handler)
-        self._force_handler()
-
-    def _force_handler(self) -> None:
-        """
-        Force the logger to use the SOARHandler.
-        """
-        for handler in self.handlers:
-            if not isinstance(handler, SOARHandler):
-                self.removeHandler(handler)
+        self.handler = SOARHandler()
+        self.handler.addFilter(ColorFilter(color=not is_soar_available()))
+        console_format = "{color}{message}{reset}"
+        console_formatter = logging.Formatter(fmt=console_format, style="{")
+        self.handler.setFormatter(console_formatter)
+        self.addHandler(self.handler)
 
     def progress(self, message: str, *args: object, **kwargs: object) -> None:
         """
         Log a message with the PROGRESS level.
         """
         if self.isEnabledFor(PROGRESS_LEVEL):
-            self._log(PROGRESS_LEVEL, message, args, **kwargs)
-
-    def addHandler(self, handler: logging.Handler) -> None:
-        """
-        Add a handler to the logger.
-        """
-        if not isinstance(handler, SOARHandler):
-            raise ValueError("Changing the configuration of the looger is not allowed.")
-        super().addHandler(handler)
+            self._log(
+                PROGRESS_LEVEL,
+                message,
+                args,
+                kwargs.pop("exc_info", None),  # type: ignore
+                kwargs,
+            )
 
     def removeHandler(self, handler: logging.Handler) -> None:
         """
