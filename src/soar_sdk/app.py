@@ -16,15 +16,55 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.types import Action, action_protocol
+from pathlib import Path
 
+
+def generateuuid() -> str:
+    """
+    Generates a random UUID.
+    """
+    import uuid
+
+    return str(uuid.uuid4())
 
 class App:
     def __init__(
         self,
         *,
+        type: str,
+        logo: Path,
+        logo_dark: Path,
+        product_vendor: str,
+        product_name: str,
+        publisher: str,
+        package_name: str, 
+        min_phantom_version: str,
+        main_module: str, 
+        appid: str = generateuuid(),
+        python_version: str = "3",
+        product_version_regex: str = ".*",
+        app_wizard_version: str = "1.0.0",
+        fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
         legacy_connector_class: Optional[type[BaseConnector]] = None,
     ) -> None:
+        self.metdata = {
+            "product_name": product_name,
+            "appid": appid,
+            "type": type,
+            "product_vendor": product_vendor,
+            "min_phantom_version": min_phantom_version,
+            "package_name": package_name,
+            "main_module": main_module,
+            "logo": logo,
+            "logo_dark": logo_dark,
+            "product_name": product_name,
+            "python_version": python_version,
+            "product_version_regex": product_version_regex,
+            "publisher": publisher,
+            "app_wizard_version": app_wizard_version,
+            "fips_compliant": fips_compliant,
+        }
         self.asset_cls = asset_cls
         self._raw_asset_config: dict[str, Any] = {}
 
