@@ -19,8 +19,6 @@ __all__ = ["get_verify_ssl_setting"]
 
 def is_soar_available() -> bool:
     """
-    Returns whether the SOAR environment is available.
-
-    :return: True if the SOAR environment is available, otherwise False.
+    Returns whether SOAR is available.
     """
     return _soar_is_available
