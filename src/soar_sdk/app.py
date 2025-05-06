@@ -22,9 +22,11 @@ class App:
     def __init__(
         self,
         *,
+        name: str,
         asset_cls: type[BaseAsset] = BaseAsset,
         legacy_connector_class: Optional[type[BaseConnector]] = None,
     ) -> None:
+        self.app_name = name
         self.asset_cls = asset_cls
         self._raw_asset_config: dict[str, Any] = {}
 

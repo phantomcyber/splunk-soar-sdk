@@ -13,7 +13,7 @@ runner = CliRunner()
 
 def test_package_build_command(wheel_resp_mock, tmp_path: Path):
     example_app = Path.cwd() / "tests/example_app"
-    destination = tmp_path / "exampleapp.tgz"
+    destination = tmp_path / "example_app.tgz"
 
     # Create the patch for hash validation
     with (

@@ -16,7 +16,7 @@ from pathlib import Path
 
 @pytest.fixture
 def example_app() -> App:
-    app = App()
+    app = App(name="example_app")
     app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
     app.actions_provider.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
     app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
@@ -39,13 +39,13 @@ def default_args():
 
 @pytest.fixture
 def simple_app() -> App:
-    return App()
+    return App(name="simple_app")
 
 
 @pytest.fixture
 def app_with_action() -> App:
     """Create an app with a pre-configured 'test_action' for testing."""
-    app = App()
+    app = App(name="test_app")
 
     @app.action(
         name="Test Action",
@@ -63,7 +63,7 @@ def app_with_action() -> App:
 @pytest.fixture
 def app_with_asset_action() -> App:
     """Create an app with a pre-configured action that requires an asset."""
-    app = App()
+    app = App(name="test_app_with_asset")
 
     @app.action(
         name="Test Action With Asset",
@@ -82,7 +82,7 @@ def app_with_simple_asset() -> App:
     class Asset(BaseAsset):
         base_url: str
 
-    return App(asset_cls=Asset)
+    return App(asset_cls=Asset, name="app_with_asset")
 
 
 @pytest.fixture
