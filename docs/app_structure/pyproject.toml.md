@@ -18,6 +18,7 @@ Here's the example file contents for starting app:
 name = "Example Application"
 version = "0.0.1"
 description = "This is the basic example SOAR app"
+license = "Copyright"
 authors = [
     "John Doe <email@domain.com>",
 ]
@@ -55,7 +56,6 @@ product_name = "Example App"
 python_version = "3"
 product_version_regex = ".*"
 publisher = "Splunk"
-license = "Copyright"
 package_name = "demo_app"
 min_phantom_version = "6.2.2.134"
 app_wizard_version = "1.0.0"
