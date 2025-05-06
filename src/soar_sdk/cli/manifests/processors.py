@@ -23,6 +23,7 @@ class ManifestProcessor:
         """
         app_meta: AppMeta = self.load_toml_app_meta()
         app = self.import_app_instance(app_meta)
+        app_meta.name = app.app_name
         app_meta.configuration = app.asset_cls.to_json_schema()
         app_meta.actions = app.actions_provider.get_actions_meta_list()
         app_meta.utctime_updated = datetime.now(timezone.utc).strftime(
@@ -30,7 +31,7 @@ class ManifestProcessor:
         )
 
         uv_lock = self.load_app_uv_lock()
-        dependencies = uv_lock.build_package_list(app_meta.name)
+        dependencies = uv_lock.build_package_list(app_meta.package_name)
 
         app_meta.pip39_dependencies = uv_lock.resolve_python39_dependencies(
             dependencies

@@ -4,7 +4,7 @@ from soar_sdk.app import App
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 
-app = App()
+app = App(name="basic_app")
 
 
 @app.action(action_type="test")

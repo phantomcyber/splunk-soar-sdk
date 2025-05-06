@@ -56,7 +56,6 @@ product_name = "Example App"
 python_version = "3"
 product_version_regex = ".*"
 publisher = "Splunk"
-package_name = "demo_app"
 min_phantom_version = "6.2.2.134"
 app_wizard_version = "1.0.0"
 fips_compliant = false
