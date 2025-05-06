@@ -1,7 +1,6 @@
 from unittest import mock
 import pytest
 
-
 from soar_sdk.connector import AppConnector
 from soar_sdk.logging import (
     getLogger,
@@ -16,6 +15,17 @@ from soar_sdk.logging import (
 )
 from soar_sdk.colors import ANSIColor
 import soar_sdk.logging
+
+
+def test_root_logger(app_connector: AppConnector):
+    import logging as python_logger
+
+    logger = python_logger.getLogger()
+    app_connector.save_progress = mock.Mock()
+    logger.info("This is an info message from the test_logging module.")
+    app_connector.save_progress.assert_called_with(
+        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m"
+    )
 
 
 def test_logging(app_connector: AppConnector):
@@ -89,6 +99,7 @@ def test_standalone_logging(app_connector: AppConnector):
 
 
 def test_logging_soar_not_available(app_connector: AppConnector):
+    app_connector.save_progress = mock.Mock()
     with mock.patch.object(soar_sdk.logging, "is_soar_available", return_value=True):
         logger = PhantomLogger()
         logger.info("This is an info message from the test_logging module.")
@@ -113,13 +124,6 @@ def test_connector_error_caught(app_connector: AppConnector):
     logger.handler.handleError = mock.Mock()
     logger.critical("This is an error message from the test_logging module.")
     logger.handler.handleError.assert_called_once()
-
-
-def test_soar_client_not_initialized(app_connector: AppConnector):
-    AppConnector._instance = None
-    logger = PhantomLogger()
-    with pytest.raises(RuntimeError, match="SOAR client is not initialized"):
-        logger.debug("Test")
 
 
 def test_non_existant_log_level(app_connector: AppConnector):

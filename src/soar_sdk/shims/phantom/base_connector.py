@@ -14,6 +14,7 @@ if TYPE_CHECKING or not _soar_is_available:
     from soar_sdk.shims.phantom.action_result import ActionResult
 
     from typing import Union, Any
+    from contextlib import suppress
 
     class BaseConnector:  # type: ignore[no-redef]
         def __init__(self) -> None:
@@ -29,7 +30,12 @@ if TYPE_CHECKING or not _soar_is_available:
             *unnamed_format_args: object,
             **named_format_args: object,
         ) -> None:
-            return
+            with suppress(IndexError, KeyError, ValueError):
+                progress_str_const = progress_str_const.format(
+                    *unnamed_format_args, **named_format_args
+                )
+
+            print(progress_str_const)
 
         def save_progress(
             self,
@@ -37,14 +43,19 @@ if TYPE_CHECKING or not _soar_is_available:
             *unnamed_format_args: object,
             **named_format_args: object,
         ) -> None:
-            return
+            with suppress(IndexError, KeyError, ValueError):
+                progress_str_const = progress_str_const.format(
+                    *unnamed_format_args, **named_format_args
+                )
+
+            print(progress_str_const)
 
         def error_print(
             self,
             _tag: str,
             _dump_object: Union[str, list, dict, ActionResult, Exception] = "",
         ) -> None:
-            print(f"\033[31m{_tag}\033[0m", _dump_object)
+            print(_tag, _dump_object)
 
         def debug_print(
             self,

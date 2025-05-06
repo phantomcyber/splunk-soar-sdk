@@ -4,7 +4,7 @@ from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.abstract import SOARClient
 from soar_sdk.adapters import LegacyConnectorAdapter
-from soar_sdk.connector import AppConnector
+from soar_sdk.connector import AppConnectorManager, AppConnector
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.types import Action
 
@@ -23,7 +23,7 @@ class ActionsProvider:
         if legacy_connector_class is not None:
             self.legacy_soar_client = LegacyConnectorAdapter(legacy_connector_class)
 
-        self.soar_client: AppConnector = AppConnector(self)
+        self.soar_client: AppConnector = AppConnectorManager.create_app_connector(self)
 
         self._actions: dict[str, Action] = {}
 

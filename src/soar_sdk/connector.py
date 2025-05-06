@@ -1,4 +1,4 @@
-from typing import Any, TYPE_CHECKING, Union, Optional
+from typing import Any, TYPE_CHECKING, Union, Optional, ClassVar
 
 from pydantic import ValidationError
 
@@ -23,19 +23,6 @@ class AppConnector(BaseConnector, SOARClient):
     In the future it should be replaced by another class accessing SOAR API.
     """
 
-    # Singleton instance of the AppConnector that can be shared across the app and logger
-    _instance: Optional["AppConnector"] = None
-
-    def __new__(cls, actions_provider: "ActionsProvider") -> "AppConnector":
-        if cls._instance is None:
-            # Create the singleton instance if it doesn't exist
-            cls._instance = super().__new__(cls)
-            cls._instance._actions_provider = actions_provider
-        elif actions_provider is not None:
-            # Update the actions_provider if it's passed and not None
-            cls._instance._actions_provider = actions_provider
-        return cls._instance
-
     def __init__(self, actions_provider: "ActionsProvider") -> None:
         # Call the BaseConnectors init first
         super().__init__()
@@ -43,10 +30,6 @@ class AppConnector(BaseConnector, SOARClient):
         self.actions_provider = actions_provider
 
         self._state: dict = {}
-
-    @classmethod
-    def get_instance(cls) -> Optional["AppConnector"]:
-        return cls._instance
 
     @classmethod
     def get_soar_base_url(cls) -> str:
@@ -126,3 +109,27 @@ class AppConnector(BaseConnector, SOARClient):
         dump_object: Union[str, list, dict, PhantomActionResult, Exception] = "",
     ) -> None:
         self.error_print(tag, dump_object)
+
+
+class AppConnectorManager:
+    """
+    Manages the AppConnector instances.
+    """
+
+    _instances: ClassVar[dict[str, "AppConnector"]] = {}
+
+    @classmethod
+    def get_app_connector(cls, name: str = "mainapp") -> AppConnector:
+        if name not in cls._instances:
+            raise ValueError(f"No AppConnector instance found with key: {name}")
+        return cls._instances[name]
+
+    @classmethod
+    def create_app_connector(
+        cls, actions_provider: "ActionsProvider", name: str = "mainapp"
+    ) -> AppConnector:
+        if not actions_provider:
+            raise ValueError("ActionsProvider is required to create an AppConnector.")
+
+        cls._instances[name] = AppConnector(actions_provider)
+        return cls._instances[name]
