@@ -5,7 +5,7 @@ from .dependencies import DependencyList
 
 
 class AppMeta(BaseModel):
-    name: str
+    name: str = ""
     description: str
     appid: str
     type: str

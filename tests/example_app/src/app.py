@@ -16,7 +16,7 @@ class Asset(BaseAsset):
     )
 
 
-app = App(asset_cls=Asset)
+app = App(asset_cls=Asset, name="example_app")
 
 
 @app.test_connectivity()
