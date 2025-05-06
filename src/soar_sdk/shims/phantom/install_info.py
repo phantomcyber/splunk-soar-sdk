@@ -14,11 +14,11 @@ if TYPE_CHECKING or not _soar_is_available:
         return False
 
 
-__all__ = ["get_verify_ssl_setting"]
-
-
 def is_soar_available() -> bool:
     """
     Returns whether SOAR is available.
     """
     return _soar_is_available
+
+
+__all__ = ["get_verify_ssl_setting", "is_soar_available"]

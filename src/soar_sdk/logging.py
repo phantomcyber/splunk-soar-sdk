@@ -1,7 +1,7 @@
 import logging
 from soar_sdk.colors import ANSIColor
 
-from soar_sdk.connector import AppConnector
+from soar_sdk.connector import AppConnectorManager
 from soar_sdk.shims.phantom.install_info import is_soar_available
 
 PROGRESS_LEVEL = 25
@@ -39,10 +39,7 @@ class SOARHandler(logging.Handler):
         super().__init__()
 
     def emit(self, record: logging.LogRecord) -> None:
-        soar_client = AppConnector.get_instance()
-        if not soar_client:
-            # This should never happen, but added to pass mypy
-            raise RuntimeError("SOAR client is not initialized")
+        soar_client = AppConnectorManager.get_app_connector()
         try:
             message = self.format(record)
             if record.levelno == PROGRESS_LEVEL:
