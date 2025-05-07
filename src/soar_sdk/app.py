@@ -17,6 +17,8 @@ from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
+from soar_sdk.exceptions import ActionFailure, AssetMisconfiguration
+import traceback
 
 
 class App:
@@ -141,7 +143,22 @@ class App:
                 action_params = self._validate_params(params, action_name)
                 kwargs = self._build_magic_args(function, client=client, **kwargs)
 
-                result = function(action_params, *args, **kwargs)
+                try:
+                    result = function(action_params, *args, **kwargs)
+                except (ActionFailure, AssetMisconfiguration) as e:
+                    e.set_action_name(action_name)
+                    return self._adapt_action_result(
+                        ActionResult(status=False, message=str(e)), client
+                    )
+                except Exception as e:
+                    client.add_exception(e)
+                    tb_str = "".join(
+                        traceback.format_exception(type(e), e, e.__traceback__)
+                    )
+                    return self._adapt_action_result(
+                        ActionResult(status=False, message=tb_str), client
+                    )
+
                 return self._adapt_action_result(result, client)
 
             # setting up meta information for the decorated function
@@ -202,10 +219,24 @@ class App:
             ) -> bool:
                 kwargs = self._build_magic_args(function, client=client)
 
-                result = function(**kwargs)
-                if result is not None:
-                    raise RuntimeError(
-                        "Test connectivity function must not return any value (return type should be None)."
+                try:
+                    result = function(**kwargs)
+                    if result is not None:
+                        raise RuntimeError(
+                            "Test connectivity function must not return any value (return type should be None)."
+                        )
+                except (ActionFailure, AssetMisconfiguration) as e:
+                    e.set_action_name(action_name)
+                    return self._adapt_action_result(
+                        ActionResult(status=False, message=str(e)), client
+                    )
+                except Exception as e:
+                    client.add_exception(e)
+                    tb_str = "".join(
+                        traceback.format_exception(type(e), e, e.__traceback__)
+                    )
+                    return self._adapt_action_result(
+                        ActionResult(status=False, message=tb_str), client
                     )
 
                 return self._adapt_action_result(

@@ -63,3 +63,6 @@ class LegacyConnectorAdapter(SOARClient):
         dump_object: Union[str, list, dict, ActionResult, Exception] = "",
     ) -> None:
         self.connector.error_print(tag, dump_object)
+
+    def add_exception(self, exception: Exception) -> None:
+        self.connector._BaseConnector__conn_result.add_exception(exception)
