@@ -1,6 +1,8 @@
 import pytest
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.exceptions import AssetMisconfiguration
+from unittest import mock
 
 
 def test_connectivity_decoration_fails_when_used_more_than_once(simple_app):
@@ -76,8 +78,12 @@ def test_connectivity_bubbles_up_errors(simple_app):
     def test_connectivity(client: SOARClient):
         raise RuntimeError("Test connectivity failed")
 
-    with pytest.raises(RuntimeError):
-        test_connectivity()
+    client_mock = mock.Mock()
+
+    result = test_connectivity(client=client_mock)
+    assert not result
+    assert client_mock.add_exception.call_count == 1
+    assert client_mock.add_result.call_count == 1
 
 
 def test_connectivity_run(simple_app):
@@ -86,3 +92,14 @@ def test_connectivity_run(simple_app):
         assert True
 
     assert test_connectivity()
+
+
+def test_connectivity_action_failed(simple_app):
+    @simple_app.test_connectivity()
+    def test_connectivity(client: SOARClient) -> None:
+        raise AssetMisconfiguration("Test connectivity failed")
+
+    client_mock = mock.Mock()
+    result = test_connectivity(client=client_mock)
+    assert not result
+    assert client_mock.add_result.call_count == 1

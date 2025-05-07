@@ -5,7 +5,6 @@ from pydantic import ValidationError
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
-
 from .abstract import SOARClient
 
 if TYPE_CHECKING:

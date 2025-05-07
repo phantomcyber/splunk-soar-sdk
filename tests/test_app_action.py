@@ -7,6 +7,7 @@ from soar_sdk.app import App
 from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
+from soar_sdk.exceptions import ActionFailure
 
 
 class SampleParams(Params):
@@ -239,3 +240,25 @@ def test_action_decoration_passing_output_type_as_argument(simple_app):
         assert True
 
     foo(SampleActionParams())
+
+
+def test_action_failure_raised(simple_app: App):
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        raise ActionFailure("Action failed")
+
+    client_mock = mock.Mock()
+
+    result = action_function(Params(), client=client_mock)
+    assert not result
+    assert client_mock.add_result.call_count == 1
+
+
+def test_other_failure_raised(simple_app: App, app_connector):
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        raise ValueError("Value error occurred")
+
+    result = action_function(Params(), client=app_connector)
+
+    assert not result

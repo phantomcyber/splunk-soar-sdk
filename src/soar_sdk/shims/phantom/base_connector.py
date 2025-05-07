@@ -12,6 +12,7 @@ if TYPE_CHECKING or not _soar_is_available:
     import abc
 
     from soar_sdk.shims.phantom.action_result import ActionResult
+    from soar_sdk.shims.phantom.connector_result import ConnectorResult
 
     from typing import Union, Any
     from contextlib import suppress
@@ -19,6 +20,8 @@ if TYPE_CHECKING or not _soar_is_available:
     class BaseConnector:  # type: ignore[no-redef]
         def __init__(self) -> None:
             self.action_results: list[ActionResult] = []
+            self.__conn_result: ConnectorResult
+            self.__conn_result = ConnectorResult()
 
         @staticmethod
         def _get_phantom_base_url() -> str:

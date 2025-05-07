@@ -80,3 +80,7 @@ class SOARClient(ABC):
         dump_object: Union[str, list, dict, ActionResult, Exception] = "",
     ) -> None:
         pass
+
+    @abstractmethod
+    def add_exception(self, exception: Exception) -> None:
+        pass
