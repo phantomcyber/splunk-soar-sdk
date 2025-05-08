@@ -152,11 +152,11 @@ class App:
                     )
                 except Exception as e:
                     client.add_exception(e)
-                    tb_str = "".join(
+                    traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=tb_str), client
+                        ActionResult(status=False, message=traceback_str), client
                     )
 
                 return self._adapt_action_result(result, client)
@@ -232,11 +232,11 @@ class App:
                     )
                 except Exception as e:
                     client.add_exception(e)
-                    tb_str = "".join(
+                    traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=tb_str), client
+                        ActionResult(status=False, message=traceback_str), client
                     )
 
                 return self._adapt_action_result(
