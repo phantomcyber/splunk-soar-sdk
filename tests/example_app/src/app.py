@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset

@@ -202,16 +202,12 @@ class App:
             ) -> bool:
                 kwargs = self._build_magic_args(function, client=client)
 
-                try:
-                    result = function(**kwargs)
-                    if result is not None:
-                        raise RuntimeError(
-                            "Test connectivity function must not return any value (return type should be None)."
-                        )
-                except Exception as e:
-                    return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)), client
+                result = function(**kwargs)
+                if result is not None:
+                    raise RuntimeError(
+                        "Test connectivity function must not return any value (return type should be None)."
                     )
+
                 return self._adapt_action_result(
                     ActionResult(status=True, message="Test connectivity successful"),
                     client,

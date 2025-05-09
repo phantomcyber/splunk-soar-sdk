@@ -62,20 +62,22 @@ def test_connectivity_returns_not_none(simple_app):
     )
 
 
-def test_connectivity_returns_with_no_type_hint(simple_app):
+def test_connectivity_raises_with_no_type_hint(simple_app):
     @simple_app.test_connectivity()
     def test_connectivity(client: SOARClient):
         return ActionOutput(bool=True)
 
-    assert not test_connectivity()
+    with pytest.raises(RuntimeError):
+        test_connectivity()
 
 
-def test_connectivity_raise_during_execution(simple_app):
+def test_connectivity_bubbles_up_errors(simple_app):
     @simple_app.test_connectivity()
     def test_connectivity(client: SOARClient):
         raise RuntimeError("Test connectivity failed")
 
-    assert not test_connectivity()
+    with pytest.raises(RuntimeError):
+        test_connectivity()
 
 
 def test_connectivity_run(simple_app):

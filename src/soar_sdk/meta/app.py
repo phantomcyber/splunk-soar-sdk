@@ -14,6 +14,7 @@ class AppMeta(BaseModel):
     license: str
     min_phantom_version: str
     package_name: str
+    project_name: str = Field(exclude=True)
     main_module: str = "src/app.py:app"  # TODO: Some validation would be nice
     logo: str = ""
     logo_dark: str = ""
