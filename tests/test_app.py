@@ -4,6 +4,7 @@ from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.params import Params
+import pytest
 
 
 def test_app_run(example_app):
@@ -42,3 +43,32 @@ def test_app_asset(app_with_simple_asset: App):
     assert asset.base_url == "https://example.com"
     assert hasattr(app_with_simple_asset, "_asset")
     assert app_with_simple_asset.asset is asset
+
+
+def test_appid_not_uuid():
+    with pytest.raises(ValueError, match="Appid is not a valid uuid: invalid"):
+        App(
+            name="example_app",
+            appid="invalid",
+            app_type="sandbox",
+            product_vendor="Splunk Inc.",
+            logo="logo.svg",
+            logo_dark="logo_dark.svg",
+            product_name="Example App",
+            publisher="Splunk Inc.",
+        )
+
+    with pytest.raises(
+        ValueError,
+        match="Appid is not a valid uuid: 00000000000000000000000000000000",
+    ):
+        App(
+            name="example_app",
+            appid="00000000000000000000000000000000",
+            app_type="sandbox",
+            product_vendor="Splunk Inc.",
+            logo="logo.svg",
+            logo_dark="logo_dark.svg",
+            product_name="Example App",
+            publisher="Splunk Inc.",
+        )

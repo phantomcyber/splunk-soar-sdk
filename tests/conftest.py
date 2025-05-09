@@ -13,10 +13,21 @@ from soar_sdk.meta.dependencies import UvWheel
 from tests.stubs import SampleActionParams
 from pathlib import Path
 
+APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
+
 
 @pytest.fixture
 def example_app() -> App:
-    app = App(name="example_app")
+    app = App(
+        name="example_app",
+        appid=APP_ID,
+        app_type="sandbox",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_vendor="Splunk",
+        product_name="Example App",
+        publisher="Splunk",
+    )
     app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
     app.actions_provider.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
     app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
@@ -39,13 +50,31 @@ def default_args():
 
 @pytest.fixture
 def simple_app() -> App:
-    return App(name="simple_app")
+    return App(
+        name="simple_app",
+        appid=APP_ID,
+        app_type="sandbox",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_vendor="Splunk",
+        product_name="Example App",
+        publisher="Splunk",
+    )
 
 
 @pytest.fixture
 def app_with_action() -> App:
     """Create an app with a pre-configured 'test_action' for testing."""
-    app = App(name="test_app")
+    app = App(
+        name="test_app",
+        appid=APP_ID,
+        app_type="sandbox",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_vendor="Splunk",
+        product_name="Example App",
+        publisher="Splunk",
+    )
 
     @app.action(
         name="Test Action",
@@ -63,7 +92,16 @@ def app_with_action() -> App:
 @pytest.fixture
 def app_with_asset_action() -> App:
     """Create an app with a pre-configured action that requires an asset."""
-    app = App(name="test_app_with_asset")
+    app = App(
+        name="test_app_with_asset",
+        appid=APP_ID,
+        app_type="sandbox",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_vendor="Splunk",
+        product_name="Example App",
+        publisher="Splunk",
+    )
 
     @app.action(
         name="Test Action With Asset",
@@ -82,7 +120,17 @@ def app_with_simple_asset() -> App:
     class Asset(BaseAsset):
         base_url: str
 
-    return App(asset_cls=Asset, name="app_with_asset")
+    return App(
+        asset_cls=Asset,
+        name="app_with_asset",
+        appid=APP_ID,
+        app_type="sandbox",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_vendor="Splunk",
+        product_name="Example App",
+        publisher="Splunk",
+    )
 
 
 @pytest.fixture

@@ -73,7 +73,7 @@ class Asset(BaseAsset):
     api_key: str = AssetField(sensitive=True, description="API key for authentication")
 
 
-app = App(asset_cls=Asset)
+app = App(name="test_app", asset_cls=Asset, appid="1e1618e7-2f70-4fc0-916a-f96facc2d2e4", app_type="sandbox", logo="logo.svg", logo_dark="logo_dark.svg", product_vendor="Splunk", product_name="Example App", publisher="Splunk")
 
 
 @app.test_connectivity()
