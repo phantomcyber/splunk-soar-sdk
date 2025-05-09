@@ -51,6 +51,12 @@ def test_debug(example_provider):
         assert mocked.called
 
 
+def test_error(example_provider):
+    with mock.patch.object(AppConnector, attribute="error_print") as mocked:
+        example_provider.soar_client.error("Test", "Error printing data")
+        assert mocked.called
+
+
 def test_get_soar_base_url(example_provider):
     with mock.patch.object(
         AppConnector, attribute="get_soar_base_url", return_value="some_url"

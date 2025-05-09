@@ -16,6 +16,7 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.types import Action, action_protocol
+from soar_sdk.logging import getLogger
 
 
 class App:
@@ -29,6 +30,7 @@ class App:
         self.app_name = name
         self.asset_cls = asset_cls
         self._raw_asset_config: dict[str, Any] = {}
+        self.__logger = getLogger()
 
         self.actions_provider = ActionsProvider(legacy_connector_class)
 
@@ -55,6 +57,7 @@ class App:
         """
         input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
         self._raw_asset_config = input_data.config.get_asset_config()
+        self.__logger.handler.set_handle(handle)
         return self.actions_provider.handle(input_data, handle=handle)
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
