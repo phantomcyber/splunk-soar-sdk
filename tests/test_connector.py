@@ -2,7 +2,7 @@ from unittest import mock
 
 import pytest
 
-from soar_sdk.connector import AppConnector, AppConnectorManager
+from soar_sdk.connector import AppConnector
 from soar_sdk.input_spec import InputSpecification
 from tests.stubs import SampleActionParams
 
@@ -127,18 +127,3 @@ def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
 
     # Verify save_state was called with the correct state
     simple_connector.save_state.assert_called_once_with(test_state)
-
-
-def test_get_non_existant_connector():
-    with pytest.raises(
-        ValueError,
-        match="No AppConnector instance found with key: random_connector",
-    ):
-        AppConnectorManager.get_app_connector("random_connector")
-
-
-def test_action_provider_is_none():
-    with pytest.raises(
-        ValueError, match="ActionsProvider is required to create an AppConnector."
-    ):
-        AppConnectorManager.create_app_connector(None)

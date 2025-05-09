@@ -1,8 +1,9 @@
 import logging
 from soar_sdk.colors import ANSIColor
 
-from soar_sdk.connector import AppConnectorManager
 from soar_sdk.shims.phantom.install_info import is_soar_available
+from soar_sdk.shims.phantom.ph_ipc import ph_ipc
+from typing import Any, Optional
 
 PROGRESS_LEVEL = 25
 logging.addLevelName(PROGRESS_LEVEL, "PROGRESS")
@@ -37,23 +38,33 @@ class SOARHandler(logging.Handler):
         self,
     ) -> None:
         super().__init__()
+        self.__handle: Optional[int] = None
 
     def emit(self, record: logging.LogRecord) -> None:
-        soar_client = AppConnectorManager.get_app_connector()
         try:
             message = self.format(record)
             if record.levelno == PROGRESS_LEVEL:
-                soar_client.send_progress(message)
+                ph_ipc.sendstatus(
+                    self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, False
+                )
             elif record.levelno in (logging.DEBUG, logging.WARNING, logging.ERROR):
-                soar_client.debug(message)
+                ph_ipc.debugprint(self.__handle, message, 2)
             elif record.levelno == logging.CRITICAL:
-                soar_client.error(message)
+                ph_ipc.errorprint(self.__handle, message, 2)
             elif record.levelno == logging.INFO:
-                soar_client.save_progress(message)
+                ph_ipc.sendstatus(
+                    self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, True
+                )
             else:
                 raise ValueError("Log level not supporeted")
         except Exception:
             self.handleError(record)
+
+    def set_handle(self, handle: Optional[int]) -> None:
+        """
+        Set the action handle for the SOAR client.
+        """
+        self.__handle = handle
 
 
 class PhantomLogger(logging.Logger):
@@ -97,27 +108,27 @@ class PhantomLogger(logging.Logger):
 
 
 # Expose logging methods as top-level functions
-def debug(msg: str, *args: object, **kwargs: object) -> None:
-    getLogger().debug(msg, *args, **kwargs)  # type: ignore
+def debug(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+    getLogger().debug(msg, *args, **kwargs)
 
 
-def info(msg: str, *args: object, **kwargs: object) -> None:
-    getLogger().info(msg, *args, **kwargs)  # type: ignore
+def info(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+    getLogger().info(msg, *args, **kwargs)
 
 
-def warning(msg: str, *args: object, **kwargs: object) -> None:
-    getLogger().warning(msg, *args, **kwargs)  # type: ignore
+def warning(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+    getLogger().warning(msg, *args, **kwargs)
 
 
-def error(msg: str, *args: object, **kwargs: object) -> None:
-    getLogger().error(msg, *args, **kwargs)  # type: ignore
+def error(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+    getLogger().error(msg, *args, **kwargs)
 
 
-def critical(msg: str, *args: object, **kwargs: object) -> None:
-    getLogger().critical(msg, *args, **kwargs)  # type: ignore
+def critical(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+    getLogger().critical(msg, *args, **kwargs)
 
 
-def progress(msg: str, *args: object, **kwargs: object) -> None:
+def progress(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
     getLogger().progress(msg, *args, **kwargs)
 
 

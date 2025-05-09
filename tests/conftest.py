@@ -6,7 +6,7 @@ import pytest
 from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app import App
 from soar_sdk.asset import BaseAsset
-from soar_sdk.connector import AppConnector, AppConnectorManager
+from soar_sdk.connector import AppConnector
 from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
@@ -92,12 +92,12 @@ def simple_provider(simple_app) -> ActionsProvider:
 
 @pytest.fixture
 def simple_connector(simple_app) -> AppConnector:
-    return AppConnectorManager.create_app_connector(simple_app.actions_provider)
+    return AppConnector(simple_app.actions_provider)
 
 
 @pytest.fixture
 def app_connector(simple_app) -> AppConnector:
-    return AppConnectorManager.create_app_connector(simple_app.actions_provider)
+    return AppConnector(simple_app.actions_provider)
 
 
 @pytest.fixture

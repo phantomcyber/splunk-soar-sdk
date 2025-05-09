@@ -15,110 +15,130 @@ from soar_sdk.logging import (
 )
 from soar_sdk.colors import ANSIColor
 import soar_sdk.logging
+from soar_sdk.shims.phantom.ph_ipc import ph_ipc
+
+ph_ipc.sendstatus = mock.Mock()
+ph_ipc.debugprint = mock.Mock()
+ph_ipc.errorprint = mock.Mock()
 
 
-def test_root_logger(app_connector: AppConnector):
+def test_root_logger():
     import logging as python_logger
 
     logger = python_logger.getLogger()
-    app_connector.save_progress = mock.Mock()
     logger.info("This is an info message from the test_logging module.")
-    app_connector.save_progress.assert_called_with(
-        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m"
-    )
+    ph_ipc.sendstatus.assert_called_once()
 
 
-def test_logging(app_connector: AppConnector):
-    app_connector.save_progress = mock.Mock()
-    app_connector.debug_print = mock.Mock()
-    app_connector.error_print = mock.Mock()
-    app_connector.send_progress = mock.Mock()
+def test_logging():
     logger = getLogger()
+
     logger.info("This is an info message from the test_logging module.")
-    app_connector.save_progress.assert_called_with(
-        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m"
+    ph_ipc.sendstatus.assert_called_with(
+        None,
+        1,
+        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m",
+        True,
     )
 
     logger.debug("This is a debug message from the test_logging module.")
-    app_connector.debug_print.assert_called_with(
-        "\x1b[2mThis is a debug message from the test_logging module.\x1b[0m", ""
-    )
-
-    logger.progress("This is a progress message from the test_logging module.")
-    app_connector.send_progress.assert_called_with(
-        "This is a progress message from the test_logging module.\x1b[0m"
-    )
-
-    logger.warning("This is a warning message from the test_logging module.")
-    app_connector.debug_print.assert_called_with(
-        "\x1b[33mThis is a warning message from the test_logging module.\x1b[0m", ""
+    ph_ipc.debugprint.assert_called_with(
+        None, "\x1b[2mThis is a debug message from the test_logging module.\x1b[0m", 2
     )
 
     logger.critical("This is a critical message from the test_logging module.")
-    app_connector.error_print.assert_called_with(
+    ph_ipc.errorprint.assert_called_with(
+        None,
         "\x1b[1;4;31mThis is a critical message from the test_logging module.\x1b[0m",
-        "",
+        2,
+    )
+
+    logger.progress("This is a progress message from the test_logging module.")
+    ph_ipc.sendstatus.assert_called_with(
+        None,
+        1,
+        "This is a progress message from the test_logging module.\x1b[0m",
+        False,
+    )
+
+    logger.warning("This is a warning message from the test_logging module.")
+    ph_ipc.debugprint.assert_called_with(
+        None,
+        "\x1b[33mThis is a warning message from the test_logging module.\x1b[0m",
+        2,
+    )
+
+    logger.error("This is a warning message from the test_logging module.")
+    ph_ipc.debugprint.assert_called_with(
+        None,
+        "\x1b[1;31mThis is a warning message from the test_logging module.\x1b[0m",
+        2,
     )
 
 
 def test_standalone_logging(app_connector: AppConnector):
-    app_connector.save_progress = mock.Mock()
-    app_connector.debug_print = mock.Mock()
-    app_connector.error_print = mock.Mock()
-    app_connector.send_progress = mock.Mock()
     info("This is an info message from the test_logging module.")
-    app_connector.save_progress.assert_called_with(
-        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m"
+    ph_ipc.sendstatus.assert_called_with(
+        None,
+        1,
+        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m",
+        True,
     )
 
     debug("This is a debug message from the test_logging module.")
-    app_connector.debug_print.assert_called_with(
-        "\x1b[2mThis is a debug message from the test_logging module.\x1b[0m", ""
-    )
-
-    progress("This is a progress message from the test_logging module.")
-    app_connector.send_progress.assert_called_with(
-        "This is a progress message from the test_logging module.\x1b[0m"
-    )
-
-    warning("This is a warning message from the test_logging module.")
-    app_connector.debug_print.assert_called_with(
-        "\x1b[33mThis is a warning message from the test_logging module.\x1b[0m", ""
-    )
-
-    error("This is a warning message from the test_logging module.")
-    app_connector.debug_print.assert_called_with(
-        "\x1b[1;31mThis is a warning message from the test_logging module.\x1b[0m", ""
+    ph_ipc.debugprint.assert_called_with(
+        None, "\x1b[2mThis is a debug message from the test_logging module.\x1b[0m", 2
     )
 
     critical("This is a critical message from the test_logging module.")
-    app_connector.error_print.assert_called_with(
+    ph_ipc.errorprint.assert_called_with(
+        None,
         "\x1b[1;4;31mThis is a critical message from the test_logging module.\x1b[0m",
-        "",
+        2,
+    )
+
+    progress("This is a progress message from the test_logging module.")
+    ph_ipc.sendstatus.assert_called_with(
+        None,
+        1,
+        "This is a progress message from the test_logging module.\x1b[0m",
+        False,
+    )
+
+    warning("This is a warning message from the test_logging module.")
+    ph_ipc.debugprint.assert_called_with(
+        None,
+        "\x1b[33mThis is a warning message from the test_logging module.\x1b[0m",
+        2,
+    )
+
+    error("This is a warning message from the test_logging module.")
+    ph_ipc.debugprint.assert_called_with(
+        None,
+        "\x1b[1;31mThis is a warning message from the test_logging module.\x1b[0m",
+        2,
     )
 
 
-def test_logging_soar_not_available(app_connector: AppConnector):
-    app_connector.save_progress = mock.Mock()
+def test_logging_soar_not_available():
     with mock.patch.object(soar_sdk.logging, "is_soar_available", return_value=True):
         logger = PhantomLogger()
         logger.info("This is an info message from the test_logging module.")
-        app_connector.save_progress.assert_called_with(
-            "This is an info message from the test_logging module."
+        ph_ipc.sendstatus.assert_called_with(
+            None, 1, "This is an info message from the test_logging module.", True
         )
 
 
-def test_progress_not_called(app_connector: AppConnector):
-    app_connector.send_progress = mock.Mock()
+def test_progress_not_called():
+    ph_ipc.sendstatus = mock.Mock()
     logger = getLogger()
     logger.setLevel(50)
     logger.progress("Progress message not called because log level is too high")
-    app_connector.send_progress.assert_not_called()
+    ph_ipc.sendstatus.assert_not_called()
 
 
-def test_connector_error_caught(app_connector: AppConnector):
-    app_connector.error = mock.Mock()
-    app_connector.error.side_effect = Exception("Simulated error")
+def test_connector_error_caught():
+    ph_ipc.errorprint.side_effect = Exception("Simulated error")
 
     logger = getLogger()
     logger.handler.handleError = mock.Mock()
@@ -126,7 +146,7 @@ def test_connector_error_caught(app_connector: AppConnector):
     logger.handler.handleError.assert_called_once()
 
 
-def test_non_existant_log_level(app_connector: AppConnector):
+def test_non_existant_log_level():
     logger = getLogger()
     logger.handler.handleError = mock.Mock()
     logger.log(999, "This is a test message with an invalid log level.")

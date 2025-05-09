@@ -1,4 +1,4 @@
-from typing import Any, TYPE_CHECKING, Union, Optional, ClassVar
+from typing import Any, TYPE_CHECKING, Union, Optional
 
 from pydantic import ValidationError
 
@@ -109,27 +109,3 @@ class AppConnector(BaseConnector, SOARClient):
         dump_object: Union[str, list, dict, PhantomActionResult, Exception] = "",
     ) -> None:
         self.error_print(tag, dump_object)
-
-
-class AppConnectorManager:
-    """
-    Manages the AppConnector instances.
-    """
-
-    _instances: ClassVar[dict[str, "AppConnector"]] = {}
-
-    @classmethod
-    def get_app_connector(cls, name: str = "mainapp") -> AppConnector:
-        if name not in cls._instances:
-            raise ValueError(f"No AppConnector instance found with key: {name}")
-        return cls._instances[name]
-
-    @classmethod
-    def create_app_connector(
-        cls, actions_provider: "ActionsProvider", name: str = "mainapp"
-    ) -> AppConnector:
-        if not actions_provider:
-            raise ValueError("ActionsProvider is required to create an AppConnector.")
-
-        cls._instances[name] = AppConnector(actions_provider)
-        return cls._instances[name]
