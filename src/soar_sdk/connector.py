@@ -5,6 +5,7 @@ from pydantic import ValidationError
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
+
 from .abstract import SOARClient
 
 if TYPE_CHECKING:
@@ -108,3 +109,6 @@ class AppConnector(BaseConnector, SOARClient):
         dump_object: Union[str, list, dict, PhantomActionResult, Exception] = "",
     ) -> None:
         self.error_print(tag, dump_object)
+
+    def add_exception(self, exception: Exception) -> None:
+        self._BaseConnector__conn_result.add_exception(exception)

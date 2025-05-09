@@ -69,8 +69,10 @@ def test_connectivity_raises_with_no_type_hint(simple_app):
     def test_connectivity(client: SOARClient):
         return ActionOutput(bool=True)
 
-    with pytest.raises(RuntimeError):
-        test_connectivity()
+    client_mock = mock.Mock()
+    result = test_connectivity(client=client_mock)
+    assert not result
+    assert client_mock.add_result.call_count == 1
 
 
 def test_connectivity_bubbles_up_errors(simple_app):
