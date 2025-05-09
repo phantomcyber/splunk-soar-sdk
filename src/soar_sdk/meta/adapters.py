@@ -9,7 +9,6 @@ class TOMLDataAdapter:
         with open(filepath) as f:
             toml_data = toml.load(f)
 
-        soar_app_data = toml_data.get("tool", {}).get("soar", {}).get("app", {})
         uv_app_data = toml_data.get("project", {})
         project_name = uv_app_data.get("name")
         package_name = (
@@ -25,6 +24,6 @@ class TOMLDataAdapter:
                 license=uv_app_data.get("license"),
                 package_name=package_name,
                 project_name=project_name,
-                **soar_app_data,
+                main_module=uv_app_data.get("main_module"),
             )
         )

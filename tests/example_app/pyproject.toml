@@ -3,6 +3,7 @@ name = "exampleapp"
 version = "0.1.0"
 description = "This is the basic example SOAR app"
 license = "Copyright (c) Splunk Inc., 2025"
+main_module = "src.app:app"
 readme = "README.md"
 requires-python = ">=3.9, <3.14"
 authors = [
@@ -47,18 +48,3 @@ required-environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
 ]
-
-[tool.soar.app]
-appid = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
-type = "sandbox"
-product_vendor = "Splunk Inc."
-logo = "logo.svg"
-logo_dark = "logo_dark.svg"
-product_name = "Example App"
-python_version = "3"
-product_version_regex = ".*"
-publisher = "Splunk Inc."
-min_phantom_version = "6.2.2.134"
-app_wizard_version = "1.0.0"
-fips_compliant = false
-main_module = "src.app:app"

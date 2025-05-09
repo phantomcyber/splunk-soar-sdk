@@ -19,6 +19,15 @@ from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure, AssetMisconfiguration
 import traceback
+import uuid
+
+
+def is_valid_uuid(value: str) -> bool:
+    """Validates if a string is a valid UUID"""
+    try:
+        return str(uuid.UUID(value)).lower() == value.lower()
+    except ValueError:
+        return False
 
 
 class App:
@@ -26,13 +35,42 @@ class App:
         self,
         *,
         name: str,
+        app_type: str,
+        logo: str,
+        logo_dark: str,
+        product_vendor: str,
+        product_name: str,
+        publisher: str,
+        appid: str,
+        python_version: str = "3",
+        product_version_regex: str = ".*",
+        min_phantom_version: str = "6.3",
+        app_wizard_version: str = "1.0.0",
+        fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
         legacy_connector_class: Optional[type[BaseConnector]] = None,
     ) -> None:
-        self.app_name = name
         self.asset_cls = asset_cls
         self._raw_asset_config: dict[str, Any] = {}
         self.__logger = getLogger()
+        if not is_valid_uuid(appid):
+            raise ValueError(f"Appid is not a valid uuid: {appid}")
+
+        self.app_meta_info = {
+            "name": name,
+            "type": app_type,
+            "logo": logo,
+            "logo_dark": logo_dark,
+            "product_vendor": product_vendor,
+            "product_name": product_name,
+            "publisher": publisher,
+            "python_version": python_version,
+            "product_version_regex": product_version_regex,
+            "min_phantom_version": min_phantom_version,
+            "app_wizard_version": app_wizard_version,
+            "fips_compliant": fips_compliant,
+            "appid": appid,
+        }
 
         self.actions_provider = ActionsProvider(legacy_connector_class)
 

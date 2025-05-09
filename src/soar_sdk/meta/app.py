@@ -7,12 +7,12 @@ from .dependencies import DependencyList
 class AppMeta(BaseModel):
     name: str = ""
     description: str
-    appid: str
-    type: str
-    product_vendor: str
+    appid: str = "1e1618e7-2f70-4fc0-916a-f96facc2d2e4"  # placeholder value to pass inital validation
+    type: str = ""
+    product_vendor: str = ""
     app_version: str
     license: str
-    min_phantom_version: str
+    min_phantom_version: str = ""
     package_name: str
     project_name: str = Field(exclude=True)
     main_module: str = "src/app.py:app"  # TODO: Some validation would be nice
