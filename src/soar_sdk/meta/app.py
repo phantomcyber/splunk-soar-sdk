@@ -19,11 +19,10 @@ class AppMeta(BaseModel):
     logo: str = ""
     logo_dark: str = ""
     product_name: str = ""
-    python_version: str = "3"
+    python_version: list[str] = ["3.9", "3.13"]
     product_version_regex: str = ".*"
     publisher: str = ""
     utctime_updated: str = ""
-    app_wizard_version: str = ""
     fips_compliant: bool = False
 
     configuration: dict = Field(default_factory=dict)
