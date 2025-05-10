@@ -42,10 +42,8 @@ class App:
         product_name: str,
         publisher: str,
         appid: str,
-        python_version: str = "3",
-        product_version_regex: str = ".*",
-        min_phantom_version: str = "6.3",
-        app_wizard_version: str = "1.0.0",
+        python_version: list[str] = ["3.9", "3.13"],  # noqa: B006
+        min_phantom_version: str = "6.4.0",
         fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
         legacy_connector_class: Optional[type[BaseConnector]] = None,
@@ -65,9 +63,7 @@ class App:
             "product_name": product_name,
             "publisher": publisher,
             "python_version": python_version,
-            "product_version_regex": product_version_regex,
             "min_phantom_version": min_phantom_version,
-            "app_wizard_version": app_wizard_version,
             "fips_compliant": fips_compliant,
             "appid": appid,
         }
