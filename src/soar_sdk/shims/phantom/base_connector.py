@@ -28,12 +28,16 @@ if TYPE_CHECKING or not _soar_is_available:
         def _get_phantom_base_url() -> str:
             return "https://localhost:9999/"
 
-        def _get_product_installation_id(self) -> str:
-            content = "soar-sdk"
-            product_installation_id = hashlib.sha256(
-                content.encode("utf-8")
-            ).hexdigest()
-            return product_installation_id
+
+        def get_product_installation_id(self) -> str:
+            """
+            The real BaseConnector returns a hash of the local system's SSL cert.
+            Our fake will return the same value every time you call it in a single action, much like the real one.
+            However, to simulate the fact that different SOAR nodes should return unique values, the value returned
+            by this function will change across full script invocations, by incorporating the current PID
+            """
+            content = f"soar-sdk-{os.getpid()}".encode()
+            return hashlib.sha256(content).hexdigest()
 
         def send_progress(
             self,

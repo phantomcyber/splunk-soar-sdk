@@ -35,8 +35,6 @@ class AppConnector(BaseConnector, SOARClient):
     def get_soar_base_url(cls) -> str:
         return cls._get_phantom_base_url()
 
-    def get_product_installation_id(cls) -> str:
-        return cls.get_product_installation_id()
 
     def set_csrf_info(self, token: str, referer: str) -> None:
         """Public method for setting the CSRF token in connector."""
