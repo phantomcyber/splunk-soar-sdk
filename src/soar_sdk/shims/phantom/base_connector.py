@@ -11,6 +11,7 @@ if TYPE_CHECKING or not _soar_is_available:
     import json
     import abc
     import hashlib
+    import os
 
     from soar_sdk.shims.phantom.action_result import ActionResult
     from soar_sdk.shims.phantom.connector_result import ConnectorResult
@@ -27,7 +28,6 @@ if TYPE_CHECKING or not _soar_is_available:
         @staticmethod
         def _get_phantom_base_url() -> str:
             return "https://localhost:9999/"
-
 
         def get_product_installation_id(self) -> str:
             """
