@@ -14,7 +14,7 @@ class LegacyConnectorAdapter(SOARClient):
 
     def get_soar_base_url(self) -> str:
         return self.connector._get_phantom_base_url()
-    
+
     def get_product_installation_id(self) -> str:
         return self.connector.get_product_installation_id()
 
