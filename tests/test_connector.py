@@ -76,10 +76,10 @@ def test_app_connector_delegates_set_csrf_info(simple_connector: AppConnector):
 def test_app_connector_delegates_get_product_installation_id():
     with mock.patch.object(
         AppConnector,
-        attribute="_get_product_installation_id",
+        attribute="get_product_installation_id",
         return_value="some_hashed_id",
     ):
-        assert AppConnector._get_product_installation_id() == "some_hashed_id"
+        assert AppConnector.get_product_installation_id() == "some_hashed_id"
 
 
 def test_app_connector_initialize_loads_state(simple_connector: AppConnector):
