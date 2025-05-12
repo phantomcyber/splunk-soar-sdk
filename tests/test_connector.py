@@ -73,6 +73,15 @@ def test_app_connector_delegates_set_csrf_info(simple_connector: AppConnector):
     assert simple_connector._set_csrf_info.call_count == 1
 
 
+def test_app_connector_delegates_get_product_installation_id():
+    with mock.patch.object(
+        AppConnector,
+        attribute="_get_product_installation_id",
+        return_value="some_hashed_id",
+    ):
+        assert AppConnector._get_product_installation_id() == "some_hashed_id"
+
+
 def test_app_connector_initialize_loads_state(simple_connector: AppConnector):
     """Test that initialize loads the state from load_state method."""
     # Mock the load_state method to return a specific state
@@ -127,6 +136,7 @@ def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
 
     # Verify save_state was called with the correct state
     simple_connector.save_state.assert_called_once_with(test_state)
+
 
 def test_app_connector_delegates_get_product_installation_id():
     with mock.patch.object(
