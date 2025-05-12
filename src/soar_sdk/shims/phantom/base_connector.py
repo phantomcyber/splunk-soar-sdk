@@ -27,10 +27,12 @@ if TYPE_CHECKING or not _soar_is_available:
         @staticmethod
         def _get_phantom_base_url() -> str:
             return "https://localhost:9999/"
-        
+
         def _get_product_installation_id(self) -> str:
             content = "soar-sdk"
-            product_installation_id = hashlib.sha256(content.encode('utf-8')).hexdigest()
+            product_installation_id = hashlib.sha256(
+                content.encode("utf-8")
+            ).hexdigest()
             return product_installation_id
 
         def send_progress(
