@@ -20,7 +20,7 @@ class SOARClient(ABC):
 
     @abstractmethod
     def get_product_installation_id(self) -> str:
-        pass  # pragma: no cover
+        pass
 
     @abstractmethod
     def set_csrf_info(self, token: str, referer: str) -> None:
