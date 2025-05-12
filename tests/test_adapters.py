@@ -8,6 +8,7 @@ def test_legacy_connector_adapter_delegates_method_calls():
     adapter = LegacyConnectorAdapter(BaseConnectorMock)
 
     adapter.get_soar_base_url()
+    adapter.get_product_installation_id()
     adapter.set_csrf_info(mock.Mock(), mock.Mock())
     adapter.handle(mock.Mock())
     adapter.handle_action(mock.Mock())
