@@ -21,6 +21,7 @@ class BaseConnectorMock(mock.Mock):
         "get_action_results",
         "save_progress",
         "debug_print",
+        "get_product_installation_id",
     ]
 
     def __init__(self, *args, **kwargs):

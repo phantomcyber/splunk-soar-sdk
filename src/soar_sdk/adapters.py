@@ -14,6 +14,9 @@ class LegacyConnectorAdapter(SOARClient):
 
     def get_soar_base_url(self) -> str:
         return self.connector._get_phantom_base_url()
+    
+    def get_product_installation_id(self) -> str:
+        return self.connector.get_product_installation_id()
 
     def set_csrf_info(self, token: str, referer: str) -> None:
         self.connector._set_csrf_info(token, referer)

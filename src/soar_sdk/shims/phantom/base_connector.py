@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING or not _soar_is_available:
     import json
     import abc
+    import hashlib
 
     from soar_sdk.shims.phantom.action_result import ActionResult
     from soar_sdk.shims.phantom.connector_result import ConnectorResult
@@ -26,6 +27,11 @@ if TYPE_CHECKING or not _soar_is_available:
         @staticmethod
         def _get_phantom_base_url() -> str:
             return "https://localhost:9999/"
+        
+        def _get_product_installation_id(self) -> str:
+            content = "soar-sdk"
+            product_installation_id = hashlib.sha256(content.encode('utf-8')).hexdigest()
+            return product_installation_id
 
         def send_progress(
             self,
