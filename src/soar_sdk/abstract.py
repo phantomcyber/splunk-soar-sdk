@@ -14,6 +14,10 @@ class SOARClient(ABC):
     This interface is still a subject to change, so consider it to be WIP.
     """
 
+    ingestion_state: dict
+    auth_state: dict
+    asset_cache: dict
+
     @abstractmethod
     def get_soar_base_url(self) -> str:
         pass

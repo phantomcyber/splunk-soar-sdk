@@ -2,7 +2,12 @@ from unittest import mock
 
 import pytest
 
-from soar_sdk.connector import AppConnector
+from soar_sdk.connector import (
+    AppConnector,
+    INGEST_STATE_KEY,
+    AUTH_STATE_KEY,
+    CACHE_STATE_KEY,
+)
 from soar_sdk.input_spec import InputSpecification
 from tests.stubs import SampleActionParams
 
@@ -76,7 +81,13 @@ def test_app_connector_delegates_set_csrf_info(simple_connector: AppConnector):
 def test_app_connector_initialize_loads_state(simple_connector: AppConnector):
     """Test that initialize loads the state from load_state method."""
     # Mock the load_state method to return a specific state
-    test_state = {"key1": "value1", "key2": "value2"}
+    test_state_inner = {"test_key": "test_value"}
+    test_state = {
+        INGEST_STATE_KEY: test_state_inner,
+        AUTH_STATE_KEY: test_state_inner,
+        CACHE_STATE_KEY: test_state_inner,
+    }
+
     simple_connector.load_state = mock.Mock(return_value=test_state)
 
     # Call initialize
@@ -89,7 +100,9 @@ def test_app_connector_initialize_loads_state(simple_connector: AppConnector):
     simple_connector.load_state.assert_called_once()
 
     # Verify the state was stored correctly
-    assert simple_connector._state == test_state
+    assert simple_connector.ingestion_state == test_state_inner
+    assert simple_connector.auth_state == test_state_inner
+    assert simple_connector.asset_cache == test_state_inner
 
 
 def test_app_connector_initialize_handles_empty_state(simple_connector: AppConnector):
@@ -107,14 +120,18 @@ def test_app_connector_initialize_handles_empty_state(simple_connector: AppConne
     simple_connector.load_state.assert_called_once()
 
     # Verify the state was initialized to an empty dict
-    assert simple_connector._state == {}
+    assert simple_connector.ingestion_state == {}
+    assert simple_connector.auth_state == {}
+    assert simple_connector.asset_cache == {}
 
 
 def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
     """Test that finalize saves the current state using save_state."""
     # Set up a test state
     test_state = {"key1": "value1", "key2": "value2"}
-    simple_connector._state = test_state
+    simple_connector.ingestion_state = test_state
+    simple_connector.auth_state = test_state
+    simple_connector.asset_cache = test_state
 
     # Mock the save_state method
     simple_connector.save_state = mock.Mock()
@@ -126,4 +143,10 @@ def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
     assert result is True
 
     # Verify save_state was called with the correct state
-    simple_connector.save_state.assert_called_once_with(test_state)
+    simple_connector.save_state.assert_called_once_with(
+        {
+            INGEST_STATE_KEY: test_state,
+            AUTH_STATE_KEY: test_state,
+            CACHE_STATE_KEY: test_state,
+        }
+    )
