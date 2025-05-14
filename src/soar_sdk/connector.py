@@ -12,9 +12,9 @@ if TYPE_CHECKING:
     from .actions_provider import ActionsProvider
 
 
-INGEST_STATE_KEY = "ingestion_state"
-AUTH_STATE_KEY = "auth_state"
-CACHE_STATE_KEY = "asset_cache"
+_INGEST_STATE_KEY = "ingestion_state"
+_AUTH_STATE_KEY = "auth_state"
+_CACHE_STATE_KEY = "asset_cache"
 
 
 class AppConnector(BaseConnector, SOARClient):
@@ -78,17 +78,17 @@ class AppConnector(BaseConnector, SOARClient):
         # Load the state in initialize, use it to store data
         # that needs to be accessed across actions
         state = self.load_state() or {}
-        self.ingestion_state = state.get(INGEST_STATE_KEY, {})
-        self.auth_state = state.get(AUTH_STATE_KEY, {})
-        self.asset_cache = state.get(CACHE_STATE_KEY, {})
+        self.ingestion_state = state.get(_INGEST_STATE_KEY, {})
+        self.auth_state = state.get(_AUTH_STATE_KEY, {})
+        self.asset_cache = state.get(_CACHE_STATE_KEY, {})
 
         return True
 
     def finalize(self) -> bool:
         state = {
-            INGEST_STATE_KEY: self.ingestion_state,
-            AUTH_STATE_KEY: self.auth_state,
-            CACHE_STATE_KEY: self.asset_cache,
+            _INGEST_STATE_KEY: self.ingestion_state,
+            _AUTH_STATE_KEY: self.auth_state,
+            _CACHE_STATE_KEY: self.asset_cache,
         }
         self.save_state(state)
         return True

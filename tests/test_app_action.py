@@ -130,13 +130,12 @@ def test_action_call_with_state(simple_app, sample_params):
         assert soar.ingestion_state == initial_state
         assert soar.auth_state == initial_state
         assert soar.asset_cache == initial_state
-        soar.debug("TAG", "Progress was made")
+
         soar.ingestion_state = updated_state
         soar.auth_state = updated_state
         soar.asset_cache = updated_state
 
     client_mock = mock.Mock()
-    client_mock.debug = mock.Mock()
 
     client_mock.ingestion_state = initial_state
     client_mock.auth_state = initial_state
@@ -147,8 +146,6 @@ def test_action_call_with_state(simple_app, sample_params):
     assert client_mock.ingestion_state == updated_state
     assert client_mock.auth_state == updated_state
     assert client_mock.asset_cache == updated_state
-
-    assert client_mock.debug.call_count == 1
 
 
 def test_app_action_simple_declaration(simple_app):
