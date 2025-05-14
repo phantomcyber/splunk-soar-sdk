@@ -77,7 +77,32 @@ IDE.
 
 You can learn more on actions testing in [the testing docs pages](/docs/testing/index.md).
 
-## 6. Action Description
+## 6. Asset State
+
+The Splunk SOAR platform can preserve some state data in between action runs. This data is stored on the filesystem of the SOAR instance or Automation Broker running the action, and is tied to each individual asset.
+
+State is divided into three dictionaries, which can be accessed from the `SOARClient` object:
+
+- `client.ingestion_state`: stores checkpoints and other data used during polling operations
+- `client.auth_state`: stores session tokens and other authentication data
+- `client.asset_cache`: stores other arbitrary data that can be reused between action runs
+
+These properties are automatically loaded from the filesystem before the action handler function is invoked, and any updates are saved to the filesystem after the handler exits.
+
+State is not encrypted by default, so apps should take care to encrypt any secret data before storing it.
+
+```python
+@app.action()
+def my_stateful_action(params: Params, asset: Asset, client: SOARClient) -> MyActionOutput:
+    if not (session_token := client.auth_state.get("session_token")):
+        session_token = my_api.get_session_token(asset.client_id, asset.client_secret)
+        client.auth_state["session_token"] = session_token
+
+    result = my_api.do_something(session_token)
+    return MyActionOutput(**result)
+```
+
+## 7. Action Description
 
 The docstring is another important part of creating your action. The SDK is using it to generate the action description
 for the app manifest and the documentation in the platform. This method not only documents well your code, but also
@@ -86,7 +111,7 @@ allows to build a documentation for the actions use in the SOAR platform.
 You can pass the `description` param in the `action` decorator to differentiate your code docstring from the actual
 description, but in most cases you will want both to be the same.
 
-## 7. Action Result
+## 8. Action Result
 
 **NOTE:** this functionality is still subject to change - the returned type in the future will be Output, so this doc
 will require updates.
