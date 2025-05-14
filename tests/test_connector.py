@@ -4,9 +4,9 @@ import pytest
 
 from soar_sdk.connector import (
     AppConnector,
-    INGEST_STATE_KEY,
-    AUTH_STATE_KEY,
-    CACHE_STATE_KEY,
+    _INGEST_STATE_KEY,
+    _AUTH_STATE_KEY,
+    _CACHE_STATE_KEY,
 )
 from soar_sdk.input_spec import InputSpecification
 from tests.stubs import SampleActionParams
@@ -83,9 +83,9 @@ def test_app_connector_initialize_loads_state(simple_connector: AppConnector):
     # Mock the load_state method to return a specific state
     test_state_inner = {"test_key": "test_value"}
     test_state = {
-        INGEST_STATE_KEY: test_state_inner,
-        AUTH_STATE_KEY: test_state_inner,
-        CACHE_STATE_KEY: test_state_inner,
+        _INGEST_STATE_KEY: test_state_inner,
+        _AUTH_STATE_KEY: test_state_inner,
+        _CACHE_STATE_KEY: test_state_inner,
     }
 
     simple_connector.load_state = mock.Mock(return_value=test_state)
@@ -145,8 +145,8 @@ def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
     # Verify save_state was called with the correct state
     simple_connector.save_state.assert_called_once_with(
         {
-            INGEST_STATE_KEY: test_state,
-            AUTH_STATE_KEY: test_state,
-            CACHE_STATE_KEY: test_state,
+            _INGEST_STATE_KEY: test_state,
+            _AUTH_STATE_KEY: test_state,
+            _CACHE_STATE_KEY: test_state,
         }
     )
