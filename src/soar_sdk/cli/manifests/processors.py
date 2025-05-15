@@ -34,11 +34,8 @@ class ManifestProcessor:
         uv_lock = self.load_app_uv_lock()
         dependencies = uv_lock.build_package_list(app_meta.project_name)
 
-        app_meta.pip39_dependencies = uv_lock.resolve_python39_dependencies(
-            dependencies
-        )
-        app_meta.pip313_dependencies = uv_lock.resolve_python313_dependencies(
-            dependencies
+        app_meta.pip39_dependencies, app_meta.pip313_dependencies = (
+            uv_lock.resolve_dependencies(dependencies)
         )
 
         return app_meta

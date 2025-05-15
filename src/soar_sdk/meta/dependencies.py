@@ -107,9 +107,21 @@ class DependencyWheel(BaseModel):
         wheel_bytes = await self.wheel.fetch()
         yield (self.input_file, wheel_bytes)
 
-        if self.input_file_aarch64 is not None and self.wheel_aarch64 is not None:
+        if (
+            self.input_file_aarch64 is not None
+            and self.wheel_aarch64 is not None
+            and self.input_file_aarch64 != self.input_file
+        ):
             wheel_aarch64_bytes = await self.wheel_aarch64.fetch()
             yield (self.input_file_aarch64, wheel_aarch64_bytes)
+
+    def add_platform_prefix(self, prefix: str) -> None:
+        self.input_file = f"wheels/{prefix}/{self.input_file}"
+        if self.input_file_aarch64:
+            self.input_file_aarch64 = f"wheels/{prefix}/{self.input_file_aarch64}"
+
+    def __hash__(self) -> int:
+        return hash((type(self), *tuple(self.dict().items())))
 
 
 class DependencyList(BaseModel):
@@ -175,7 +187,7 @@ class UvPackage(BaseModel):
     ]
 
     def _resolve(
-        self, dir_name: str, abi_precedence: list[str], python_precedence: list[str]
+        self, abi_precedence: list[str], python_precedence: list[str]
     ) -> DependencyWheel:
         wheel_x86_64 = self._find_wheel(
             abi_precedence, python_precedence, self.platform_precedence_x86_64
@@ -183,7 +195,7 @@ class UvPackage(BaseModel):
 
         wheel = DependencyWheel(
             module=self.name,
-            input_file=f"wheels/{dir_name}/{wheel_x86_64.basename}.whl",
+            input_file=f"{wheel_x86_64.basename}.whl",
             wheel=wheel_x86_64,
         )
 
@@ -191,18 +203,17 @@ class UvPackage(BaseModel):
             wheel_aarch64 = self._find_wheel(
                 abi_precedence, python_precedence, self.platform_precedence_aarch64
             )
-            wheel.input_file_aarch64 = f"wheels/{dir_name}/{wheel_aarch64.basename}.whl"
+            wheel.input_file_aarch64 = f"{wheel_aarch64.basename}.whl"
             wheel.wheel_aarch64 = wheel_aarch64
         except FileNotFoundError:
             logger.warning(
-                f"Could not find a suitable {dir_name} / aarch64 wheel for {self.name=}, {self.version=} -- the built package might not work on ARM systems"
+                f"Could not find a suitable aarch64 wheel for {self.name=}, {self.version=}, {abi_precedence=}, {python_precedence=} -- the built package might not work on ARM systems"
             )
 
         return wheel
 
     def resolve_py39(self) -> DependencyWheel:
         return self._resolve(
-            dir_name="python39",
             abi_precedence=[
                 "cp39",  # Python 3.9-specific ABI
                 "abi3",  # Python 3 stable ABI
@@ -217,7 +228,6 @@ class UvPackage(BaseModel):
 
     def resolve_py313(self) -> DependencyWheel:
         return self._resolve(
-            dir_name="python313",
             abi_precedence=[
                 "cp313",  # Python 3.13-specific ABI
                 "abi3",  # Python 3 stable ABI
@@ -277,9 +287,24 @@ class UvLock(BaseModel):
         return sorted(packages.values(), key=lambda p: p.name)
 
     @staticmethod
-    def resolve_python39_dependencies(packages: list[UvPackage]) -> DependencyList:
-        return DependencyList(wheel=[p.resolve_py39() for p in packages])
+    def resolve_dependencies(
+        packages: list[UvPackage],
+    ) -> tuple[DependencyList, DependencyList]:
+        py39_wheels: list[DependencyWheel] = []
+        py313_wheels: list[DependencyWheel] = []
 
-    @staticmethod
-    def resolve_python313_dependencies(packages: list[UvPackage]) -> DependencyList:
-        return DependencyList(wheel=[p.resolve_py313() for p in packages])
+        for package in packages:
+            wheel_39 = package.resolve_py39()
+            wheel_313 = package.resolve_py313()
+
+            if wheel_39 == wheel_313:
+                wheel_39.add_platform_prefix("shared")
+                wheel_313.add_platform_prefix("shared")
+            else:
+                wheel_39.add_platform_prefix("python39")
+                wheel_313.add_platform_prefix("python313")
+
+            py39_wheels.append(wheel_39)
+            py313_wheels.append(wheel_313)
+
+        return DependencyList(wheel=py39_wheels), DependencyList(wheel=py313_wheels)

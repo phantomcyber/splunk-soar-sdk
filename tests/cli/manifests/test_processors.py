@@ -4,7 +4,12 @@ from unittest import mock
 import json
 from datetime import datetime, timezone
 
+from typing import TYPE_CHECKING
+
 from soar_sdk.cli.manifests.processors import ManifestProcessor
+
+if TYPE_CHECKING:
+    from datetime import _TzInfo
 
 
 def test_manifest_processor_creating_json_from_meta():
@@ -46,8 +51,8 @@ def test_get_module_dot_path(main_module, dot_path):
 def test_build_manifest():
     class mock_datetime(datetime):
         @classmethod
-        def now(cls, tzinfo: timezone = timezone.utc) -> datetime:
-            return datetime(year=2025, month=4, day=17, hour=12, tzinfo=tzinfo)
+        def now(cls, tz: "_TzInfo | None" = timezone.utc) -> datetime:
+            return datetime(year=2025, month=4, day=17, hour=12, tzinfo=tz)
 
     with mock.patch("soar_sdk.cli.manifests.processors.datetime", mock_datetime):
         processor = ManifestProcessor(

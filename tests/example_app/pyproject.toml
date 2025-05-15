@@ -14,6 +14,7 @@ dependencies = [
     "httpx[http2]>=0.28.1",
     "requests>=2.32.3",
     "splunk-soar-sdk",
+    "yarl>=1.20.0",
 ]
 
 [dependency-groups]

@@ -26,9 +26,9 @@ package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
 
 
-async def collect_all_wheels(wheels: list[DependencyWheel]) -> list[tuple[str, bytes]]:
+async def collect_all_wheels(wheels: set[DependencyWheel]) -> list[tuple[str, bytes]]:
     """
-    Asynchronously collect all wheels from the given list of DependencyWheel objects.
+    Asynchronously collect all wheels from the given set of DependencyWheel objects.
     """
     # Create progress bar for tracking wheel collection
     progress = tqdm(
@@ -122,7 +122,7 @@ def build(
 
         with tarfile.open(output_file, "w:gz") as app_tarball:
             # Collect all wheels from both Python versions
-            all_wheels = (
+            all_wheels = set(
                 app_meta.pip39_dependencies.wheel + app_meta.pip313_dependencies.wheel
             )
 
