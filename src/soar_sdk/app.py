@@ -2,7 +2,7 @@ import inspect
 import json
 import sys
 from functools import wraps
-from typing import Any, Optional, Union, Callable
+from typing import Any, Optional, Union, Callable, Iterator
 
 
 from soar_sdk.asset import BaseAsset
@@ -14,6 +14,7 @@ from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app_cli_runner import AppCliRunner
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
+from soar_sdk.params import OnPollParams
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
@@ -295,6 +296,101 @@ class App:
             return inner
 
         return test_con_function
+
+    def on_poll(self) -> Callable[[Callable], Action]:
+        """
+        Decorator for the on_poll action.
+        
+        The decorated function must be a generator (using yield) or return an Iterator that yields artifacts. Only one on_poll action is allowed per app.
+        """
+        def on_poll_decorator(function: Callable) -> Action:
+            if self.actions_provider.get_action("on_poll"):
+                raise TypeError("The 'on_poll' decorator can only be used once per App instance.")
+
+            # Check if function is generator function or has a return type annotation of iterator
+            is_generator = inspect.isgeneratorfunction(function)
+            signature = inspect.signature(function)
+            has_iterator_return = False
+            
+            if signature.return_annotation != inspect.Signature.empty:
+                # Check if the return annotation is an Iterator type
+                if hasattr(signature.return_annotation, "__origin__"):
+                    if signature.return_annotation.__origin__ is Iterator:
+                        has_iterator_return = True
+            
+            if not (is_generator or has_iterator_return):
+                raise TypeError("The on_poll function must be a generator (use 'yield') or return an Iterator.")
+
+            action_identifier = "on_poll"
+            action_name = "on poll"
+            
+            # Use OnPollParams for on_poll actions (constant set params for on_poll)
+            validated_params_class = OnPollParams
+
+            @action_protocol
+            @wraps(function)
+            def inner(
+                params,
+                client: SOARClient = self.actions_provider.soar_client,
+                asset=None,
+                *args,
+                **kwargs
+            ) -> bool:
+                try:
+                    # Validate poll params
+                    if validated_params_class is not None:
+                        try:
+                            action_params = validated_params_class.parse_obj(params)
+                        except Exception as e:
+                            client.save_progress(f"Parameter validation error: {str(e)}")
+                            return self._adapt_action_result(
+                                ActionResult(status=False, message=f"Invalid parameters: {str(e)}"), 
+                                client
+                            )
+                        params = action_params
+                    
+                    kwargs = self._build_magic_args(function, client=client, asset=asset, **kwargs)
+                    
+                    result = function(params, *args, **kwargs)
+                    
+                    # Process each artifact
+                    for artifact in result:
+                        # TODO: Add shim
+                        # self.asset.save_artifacts([artifact])
+                        client.save_progress(f"Yielded artifact: {artifact}")
+                    
+                    return self._adapt_action_result(ActionResult(status=True, message="Polling complete"), client)
+                except Exception as e:
+                    return self._adapt_action_result(ActionResult(status=False, message=str(e)), client)
+
+            inner.params_class = validated_params_class
+            # Create a custom ActionMeta class for on_poll to force empty outputs
+            from soar_sdk.meta.actions import ActionMeta as BaseActionMeta
+            
+            class OnPollActionMeta(BaseActionMeta):
+                def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+                    data = super().dict(*args, **kwargs)
+                    # Override the outputs with an empty list
+                    data["output"] = []
+                    return data
+            
+            inner.meta = OnPollActionMeta(
+                action=action_name,
+                identifier=action_identifier,
+                description=inspect.getdoc(function) or action_name,
+                verbose="Callback action for the on_poll ingest functionality",
+                type="ingest",
+                read_only=True,
+                parameters=validated_params_class,
+                versions="EQ(*)",
+                output=ActionOutput
+            )
+
+            self.actions_provider.set_action(action_identifier, inner)
+            self._dev_skip_in_pytest(function, inner)
+            return inner
+
+        return on_poll_decorator
 
     @staticmethod
     def _validate_params_class(

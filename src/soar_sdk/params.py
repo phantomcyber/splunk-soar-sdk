@@ -132,3 +132,29 @@ class Params(BaseModel):
             params[field_name] = params_field
 
         return params
+
+
+class OnPollParams(Params):
+    """
+    Parameters for on_poll action that receives parameters for polling time, 
+    number of events, etc. which the handler is expected to respect.
+    """
+    start_time: int = Param(
+        description="Start time for polling (epoch time)",
+    )
+    
+    end_time: int = Param(
+        description="End time for polling (epoch time)",
+    )
+    
+    container_count: int = Param(
+        description="Parameter ignored for schedule/interval polling only",
+    )
+    
+    artifact_count: int = Param(
+        description="Maximum number of artifacts to ingest", 
+    )
+    
+    container_id: int = Param(
+        description="ID of the container for artifacts",
+    )
