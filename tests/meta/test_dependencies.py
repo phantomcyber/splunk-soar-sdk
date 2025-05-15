@@ -122,6 +122,7 @@ class TestUvPackage:
             ],
         )
         wheel = package.resolve_py39()
+        wheel.add_platform_prefix("python39")
 
         assert (
             wheel.input_file
@@ -173,3 +174,17 @@ class TestDependencyWheel:
         async for item in wheel.collect_wheels():
             results.append(item)
         assert len(results) == 1
+
+    def test_hash(self, fake_wheel: UvWheel):
+        wheel1 = DependencyWheel(
+            module="mypy",
+            input_file="wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            wheel=fake_wheel,
+        )
+        wheel2 = DependencyWheel(
+            module="mypy",
+            input_file="wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            wheel=fake_wheel,
+        )
+
+        assert hash(wheel1) == hash(wheel2)

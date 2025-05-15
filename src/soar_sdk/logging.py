@@ -98,13 +98,13 @@ class PhantomLogger(logging.Logger):
                 **kwargs,  # type: ignore
             )
 
-    def removeHandler(self, handler: logging.Handler) -> None:
+    def removeHandler(self, hdlr: logging.Handler) -> None:
         """
         Remove a handler from the logger.
         """
-        if isinstance(handler, SOARHandler):
+        if isinstance(hdlr, SOARHandler):
             raise ValueError("Removing the SOARHandler is not allowed.")
-        super().removeHandler(handler)
+        super().removeHandler(hdlr)
 
 
 # Expose logging methods as top-level functions
