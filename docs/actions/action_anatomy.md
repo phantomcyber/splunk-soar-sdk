@@ -120,7 +120,7 @@ Each action should return at least information of whether it has succeeded or fa
 The result should have the status on the success (`True` or `False`) and an extra verbose description on the status
 (which can be also an empty string).
 
-You can create more than one action restult for the action. At least one must be created for the action. The SDK
+You can create more than one action result for the action. At least one must be created for the action. The SDK
 takes care of that automatically by creating and reporting one from the returned tuple.
 
 [Read more on Action Results](./action_results.md)

@@ -1,8 +1,10 @@
 #!/usr/bin/env python
+from typing import Iterator, Dict, Any, List
+from datetime import datetime, timedelta
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.params import Params
+from soar_sdk.params import Params, OnPollParams
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.logging import getLogger
 
@@ -50,8 +52,59 @@ class ReverseStringOutput(ActionOutput):
 def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStringOutput:
     logger.debug("params: %s", param)
     reversed_string = param.input_string[::-1]
-    logger.debug("reversed_string %s", reversed_string)
+    client.debug("reversed_string", reversed_string)
     return ReverseStringOutput(reversed_string=reversed_string)
+
+
+@app.on_poll()
+def on_poll(params: OnPollParams, client: SOARClient, asset: Asset) -> Iterator[Dict[str, Any]]:
+    """
+    Example on_poll implementation using a generator function with yield.
+    
+    This function demonstrates polling for data from a hypothetical API and yielding
+    artifacts that will be automatically saved by the SDK.
+    """
+    client.save_progress("Starting poll operation")
+    
+    # Log the polling parameters
+    client.debug("Polling from", f"Start time: {params.start_time}, End time: {params.end_time}")
+    client.debug("Container count", str(params.container_count))
+    client.debug("Artifact count", str(params.artifact_count))
+    client.debug("Container ID", str(params.container_id))
+    
+    # Example of using asset configuration
+    client.debug("Using base URL", asset.base_url)
+    
+    # In a real app, you would fetch data from an external API here
+    # For this example, we'll create some sample artifacts
+    
+    # Example of respecting the artifact count limit
+    artifacts_to_create = min(5, params.artifact_count)
+    
+    # Simulate collecting artifacts - using generator approach with yield
+    for i in range(artifacts_to_create):
+        client.save_progress(f"Processing artifact {i+1}/{artifacts_to_create}")
+        
+        # Create a sample artifact
+        artifact = {
+            "name": f"Sample Alert {i+1}",
+            "label": "alert",
+            "severity": "medium",
+            "source": asset.base_url,
+            "type": "network",
+            "description": f"Example alert {i+1} from polling operation",
+            "data": {
+                "alert_id": f"ALERT-{datetime.now().strftime('%Y%m%d')}-{i+1}",
+                "detected_time": (datetime.now() - timedelta(hours=i)).isoformat(),
+                "source_ip": f"10.0.0.{i+1}",
+                "destination_ip": "192.168.1.100",
+                "protocol": "TCP"
+            }
+        }
+        
+        # Yield the artifact
+        client.save_progress(f"Found artifact: {artifact['name']}")
+        yield artifact
 
 
 if __name__ == "__main__":
