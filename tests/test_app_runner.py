@@ -224,3 +224,44 @@ def test_parse_args_with_malformed_param_values(app_with_action: App):
         # Parsing args with invalid param values should raise SystemExit
         with pytest.raises(SystemExit):
             runner.parse_args(["test_action", "--param-file", param_file.name])
+
+
+def test_with_soar_authentication(
+    app_with_action: App, mock_get_any_soar_call, mock_post_any_soar_call
+):
+    """Test parsing arguments for an action that requires both asset and parameters."""
+    runner = AppCliRunner(app_with_action)
+
+    # Get the real action from our fixture
+    action = runner.app.actions_provider.get_action("test_action")
+    assert action is not None
+    action.params_class = None
+
+    args = runner.parse_args(
+        [
+            "--soar-url",
+            "10.34.5.6",
+            "--username",
+            "soar_local_admin",
+            "--password",
+            "password",
+            "test_action",
+        ]
+    )
+
+    assert args.soar_url == "10.34.5.6"
+    assert args.username == "soar_local_admin"
+    assert args.password == "password"
+
+    input_data = json.loads(args.raw_input_data)
+    assert (
+        input_data["environment_variables"]["PHANTOM_BASE_URL"]["value"]
+        == "https://10.34.5.6"
+    )
+    assert (
+        input_data["environment_variables"]["PHANTOM_USER"]["value"]
+        == "soar_local_admin"
+    )
+    assert (
+        input_data["environment_variables"]["PHANTOM_PASSWORD"]["value"] == "password"
+    )

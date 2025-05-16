@@ -7,11 +7,13 @@ from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app import App
 from soar_sdk.asset import BaseAsset
 from soar_sdk.connector import AppConnector
-from soar_sdk.input_spec import AppConfig, InputSpecification
+from soar_sdk.input_spec import AppConfig, InputSpecification, EnvironmentVariable
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
 from tests.stubs import SampleActionParams
 from pathlib import Path
+from httpx import Response
+import re
 
 APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
 
@@ -208,3 +210,81 @@ def app_tarball(tmp_path: Path) -> Path:
     tarball_path = tmp_path / "example.tgz"
     tarball_path.touch()
     return tarball_path
+
+
+@pytest.fixture
+def action_input_soar_auth() -> InputSpecification:
+    return InputSpecification(
+        asset_id="1",
+        identifier="test_action",
+        action="test_action",
+        config=AppConfig(
+            app_version="1.0.0", directory=".", main_module="example_connector.py"
+        ),
+        environment_variables={
+            "PHANTOM_BASE_URL": EnvironmentVariable(
+                type="string", value="https://10.34.5.6"
+            ),
+            "PHANTOM_USER": EnvironmentVariable(
+                type="string", value="soar_local_admin"
+            ),
+            "PHANTOM_PASSWORD": EnvironmentVariable(type="string", value="password"),
+        },
+    )
+
+
+@pytest.fixture
+def action_input_soar_platform_auth() -> InputSpecification:
+    return InputSpecification(
+        asset_id="1",
+        identifier="test_action",
+        action="test_action",
+        config=AppConfig(
+            app_version="1.0.0", directory=".", main_module="example_connector.py"
+        ),
+        user_session_token="U675T542",
+    )
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_post_artifact(respx_mock):
+    mock_route = respx_mock.post(re.compile(r".*/rest/artifact/?$")).mock(
+        return_value=Response(201, json={"message": "Mocked artifact created", "id": 1})
+    )
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_get_any_soar_call(respx_mock):
+    mock_route = respx_mock.get(re.compile(r".*")).mock(
+        return_value=Response(
+            200,
+            json={"message": "Mocked GET response"},
+            headers={"Set-Cookie": "csrftoken=mocked_csrf_token; Path=/; HttpOnly"},
+        )
+    )
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_put_any_call(respx_mock):
+    mock_route = respx_mock.put(re.compile(r".*")).mock(
+        return_value=Response(200, json={"message": "Mocked PUT response"})
+    )
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_post_any_soar_call(respx_mock):
+    mock_route = respx_mock.post(re.compile(r".*")).mock(
+        return_value=Response(
+            200,
+            json={"message": "Mocked POST response"},
+            headers={"Set-Cookie": "sessionid=mocked_session_id; Path=/; HttpOnly"},
+        )
+    )
+    return mock_route

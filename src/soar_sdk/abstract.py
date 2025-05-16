@@ -17,9 +17,20 @@ class SOARClient(ABC):
     ingestion_state: dict
     auth_state: dict
     asset_cache: dict
+    @property
+    @abstractmethod
+    def client(self) -> Any:
+        """
+        Subclasses must define the client property.
+        """
+        pass
 
     @abstractmethod
     def get_soar_base_url(self) -> str:
+        pass
+
+    @abstractmethod
+    def authenticate_soar_client(self, input_data: InputSpecification) -> None:
         pass
 
     @abstractmethod

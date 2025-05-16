@@ -150,3 +150,34 @@ def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
             _CACHE_STATE_KEY: test_state,
         }
     )
+
+
+def test_authenticate_soar_client(
+    simple_connector: AppConnector,
+    action_input_soar_auth: InputSpecification,
+    mock_get_any_soar_call,
+    mock_post_any_soar_call,
+):
+    simple_connector.authenticate_soar_client(action_input_soar_auth)
+    mock_get_any_soar_call.call_count == 1
+    request = mock_get_any_soar_call.calls[0].request
+    assert request.url == "https://10.34.5.6/login"
+    assert simple_connector.client.headers["X-CSRFToken"] == "mocked_csrf_token"
+
+    mock_post_any_soar_call.call_count == 1
+    post_request = mock_post_any_soar_call.calls[0].request
+    assert post_request.url == "https://10.34.5.6/login"
+
+    assert (
+        simple_connector.client.headers["Cookie"]
+        == "sessionid=mocked_session_id;csrftoken=mocked_csrf_token"
+    )
+
+
+def test_authenticate_soar_client_on_platform(
+    simple_connector: AppConnector,
+    action_input_soar_platform_auth: InputSpecification,
+    mock_get_any_soar_call,
+):
+    simple_connector.authenticate_soar_client(action_input_soar_platform_auth)
+    mock_get_any_soar_call.call_count == 1

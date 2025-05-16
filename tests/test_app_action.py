@@ -8,6 +8,7 @@ from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 from soar_sdk.exceptions import ActionFailure
+from httpx import Response, RequestError
 
 
 class SampleParams(Params):
@@ -288,4 +289,156 @@ def test_other_failure_raised(simple_app: App, app_connector):
 
     result = action_function(Params(), client=app_connector)
 
+    assert not result
+
+
+def test_save_artifact(simple_app: App, app_connector, mock_post_artifact):
+    app_connector.csrf_token = "fake_csrf_token"
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "container_id": 1,
+            "cef": {
+                "fileName": "test.txt",
+            },
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        client.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert mock_post_artifact.called
+
+
+def test_save_artifact_bad_json(simple_app: App, app_connector):
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        artifact = {"name": "test", "data": {1, 2, 3}}
+        client.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert not result
+
+
+def test_save_artifact_failed(simple_app: App, app_connector, mock_post_artifact):
+    app_connector.csrf_token = "fake_csrf_token"
+    mock_post_artifact.return_value = Response(
+        status_code=200, json={"failed": "something went wrong"}
+    )
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "container_id": 1,
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        client.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert not result
+
+
+def test_save_artifact_exisiting_id(simple_app: App, app_connector, mock_post_artifact):
+    app_connector.csrf_token = "fake_csrf_token"
+    mock_post_artifact.return_value = Response(
+        status_code=201, json={"existing_artifact_id": "2"}
+    )
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "container_id": 1,
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        client.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert result
+
+
+def test_save_artifact_locally(simple_app: App, app_connector):
+    app_connector.csrf_token = None
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "container_id": 1,
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        client.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert result
+
+
+def test_save_artifact_locally_missing_container(simple_app: App, app_connector):
+    app_connector.csrf_token = None
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        client.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert not result
+
+
+def test_client_get(simple_app: App, app_connector, mock_get_any_soar_call):
+    app_connector.csrf_token = "fake_csrf_token"
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        client.get("test")
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert mock_get_any_soar_call.called
+
+
+def test_client_put(simple_app: App, app_connector, mock_put_any_call):
+    app_connector.csrf_token = "fake_csrf_token"
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        client.put("test")
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
+    assert mock_put_any_call.called
+
+
+def test_artifact_creation_failed(simple_app: App, app_connector, mock_post_artifact):
+    app_connector.csrf_token = "fake_csrf_token"
+    mock_post_artifact.side_effect = RequestError("Failed to create artifact")
+
+    @simple_app.action()
+    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "container_id": 1,
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        client.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), client=app_connector)
     assert not result

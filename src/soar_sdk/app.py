@@ -94,6 +94,7 @@ class App:
         input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
         self._raw_asset_config = input_data.config.get_asset_config()
         self.__logger.handler.set_handle(handle)
+        self.actions_provider.soar_client.authenticate_soar_client(input_data)
         return self.actions_provider.handle(input_data, handle=handle)
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
