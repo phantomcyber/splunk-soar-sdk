@@ -24,6 +24,19 @@ class LegacyConnectorAdapter(SOARClient):
     def handle_action(self, param: dict[str, Any]) -> None:
         self.connector.handle_action(param)
 
+    @property
+    def client(self) -> Any:
+        """
+        Returns the client object.
+        """
+        return self.connector.client
+
+    def authenticate_soar_client(self, input_data: InputSpecification) -> None:
+        """
+        Not implemented in the legacy connector.
+        """
+        pass
+
     def handle(
         self,
         input_data: InputSpecification,

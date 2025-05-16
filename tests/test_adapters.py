@@ -20,6 +20,8 @@ def test_legacy_connector_adapter_delegates_method_calls():
     adapter.debug(mock.Mock())
     adapter.error(mock.Mock())
     adapter.add_exception(mock.Mock())
+    adapter.authenticate_soar_client(mock.Mock())
+    assert adapter.client is not None
 
     for method_name in adapter.connector.mocked_methods:
         mocked_method = getattr(adapter.connector, method_name)

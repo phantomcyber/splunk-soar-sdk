@@ -15,8 +15,10 @@ if TYPE_CHECKING or not _soar_is_available:
 
     from soar_sdk.shims.phantom.action_result import ActionResult
     from soar_sdk.shims.phantom.connector_result import ConnectorResult
+    from soar_sdk.shims.phantom.json_keys import json_keys as ph_jsons
+    from soar_sdk.shims.phantom.consts import consts as ph_consts
 
-    from typing import Union, Any
+    from typing import Union, Any, Optional
     from contextlib import suppress
 
     class BaseConnector:  # type: ignore[no-redef]
@@ -24,6 +26,15 @@ if TYPE_CHECKING or not _soar_is_available:
             self.action_results: list[ActionResult] = []
             self.__conn_result: ConnectorResult
             self.__conn_result = ConnectorResult()
+
+            self._artifact_common = {
+                ph_jsons.APP_JSON_LABEL: ph_consts.APP_DEFAULT_ARTIFACT_LABEL,
+                ph_jsons.APP_JSON_TYPE: ph_consts.APP_DEFAULT_ARTIFACT_TYPE,
+                ph_jsons.APP_JSON_DESCRIPTION: "Artifact added by sdk app",
+                ph_jsons.APP_JSON_RUN_AUTOMATION: False,  # Don't run any playbooks, when this artifact is added
+            }
+
+            self.__container_common = {}  # Todo
 
         @staticmethod
         def _get_phantom_base_url() -> str:
@@ -121,6 +132,45 @@ if TYPE_CHECKING or not _soar_is_available:
 
         def initialize(self) -> bool:
             return True
+
+        @abc.abstractmethod
+        def _save_artifact(self, artifact: dict) -> tuple[bool, str, Optional[int]]:
+            pass
+
+        def save_artifact(self, artifact: dict) -> tuple[bool, str, Optional[int]]:
+            return self._save_artifact(artifact)
+
+        @abc.abstractmethod
+        def __save__containers(
+            self, containers: list[dict], fail_on_duplicate: bool = False
+        ) -> tuple[bool, str, Optional[list]]:
+            pass
+
+        def save_containers(
+            self, containers: list[dict], fail_on_duplicate: bool = False
+        ) -> tuple[bool, str, Optional[list]]:
+            return self.__save__containers(containers, fail_on_duplicate)
+
+        def _prepare_container(self, container: dict) -> None:
+            container.update(
+                {
+                    k: v
+                    for k, v in self.__container_common.items()
+                    if (not container.get(k))
+                }
+            )
+
+            if "artifacts" in container and len(container["artifacts"]) > 0:
+                if "run_automation" not in container["artifacts"][-1]:
+                    container["artifacts"][-1]["run_automation"] = True
+                for artifact in container["artifacts"]:
+                    artifact.update(
+                        {
+                            k: v
+                            for k, v in self.__artifact_common.items()
+                            if (not artifact.get(k))
+                        }
+                    )
 
 
 __all__ = ["BaseConnector"]

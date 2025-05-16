@@ -1,15 +1,18 @@
 from typing import Any, TYPE_CHECKING, Union, Optional
 
 from pydantic import ValidationError
+import httpx
 
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
+from soar_sdk.exceptions import ActionFailure
 
 from .abstract import SOARClient
 
 if TYPE_CHECKING:
     from .actions_provider import ActionsProvider
+import json
 
 
 _INGEST_STATE_KEY = "ingestion_state"
@@ -33,10 +36,141 @@ class AppConnector(BaseConnector, SOARClient):
         super().__init__()
 
         self.actions_provider = actions_provider
+        self._client = httpx.Client(
+            base_url=AppConnector.get_soar_base_url(),
+            verify=False,  # noqa: S501
+        )
+        self.csrf_token = None
+        self._artifacts = {}
 
         self.ingestion_state: dict = {}
         self.auth_state: dict = {}
         self.asset_cache: dict = {}
+
+    @property
+    def client(self) -> httpx.Client:
+        return self._client
+
+    def authenticate_soar_client(self, input_data: InputSpecification) -> None:
+        session_id = input_data.user_session_token
+        if session_id:
+            self.__login()
+        else:
+            if all(
+                env_var in input_data.environment_variables
+                for env_var in ["PHANTOM_USER", "PHANTOM_PASSWORD", "PHANTOM_BASE_URL"]
+            ):
+                self._client = httpx.Client(
+                    base_url=input_data.environment_variables["PHANTOM_BASE_URL"].value,
+                    verify=False,  # noqa: S501
+                )
+                self.__login()
+                print("hereeeee")
+                session_id = self.get_session_id(
+                    input_data.environment_variables["PHANTOM_USER"].value,
+                    input_data.environment_variables["PHANTOM_PASSWORD"].value,
+                )
+
+        if session_id:
+            current_cookies = self._client.headers.get("Cookie", "")
+            update_cookies = f"sessionid={session_id};{current_cookies}"
+            self._client.headers.update({"Cookie": update_cookies})
+
+    def __login(self) -> None:
+        response = self._client.get("/login")
+        response.raise_for_status()
+        self.csrf_token = response.cookies.get("csrftoken")
+        self._client.cookies.update(response.cookies)
+        self._client.headers.update({"X-CSRFToken": self.csrf_token})
+        cookies = f"csrftoken={self.csrf_token}"
+        self._client.headers.update({"Cookie": cookies})
+
+    def get_session_id(self, username: str, password: str) -> str:
+        self._client.post(
+            "/login",
+            data={
+                "username": username,
+                "password": password,
+                "csrfmiddlewaretoken": self.csrf_token,
+            },
+            headers={"Referer": f"{self._client.base_url}/login"},
+        )
+        session_id = self._client.cookies.get("sessionid")
+        return session_id
+
+    def get(self, endpoint: str, **kwargs: dict) -> httpx.Response:
+        """
+        Perform a GET request to the specfic endpoint using the soar client
+        """
+        response = self._client.get(endpoint, **kwargs)
+        response.raise_for_status()
+        return response
+
+    def post(self, endpoint: str, **kwargs: dict) -> httpx.Response:
+        """
+        Perform a GET request to the specfic endpoint using the soar client
+        """
+        headers = kwargs.pop("headers", {})
+        headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
+
+        response = self._client.post(endpoint, headers=headers, **kwargs)
+
+        response.raise_for_status()
+        return response
+
+    def put(self, endpoint: str, **kwargs: dict) -> httpx.Response:
+        """
+        Perform a GET request to the specfic endpoint using the soar client
+        """
+        response = self._client.put(endpoint, **kwargs)
+        response.raise_for_status()
+        return response
+
+    def _save_artifact(self, artifact: dict) -> tuple[bool, str, Optional[int]]:
+        artifact.update(
+            {k: v for k, v in self._artifact_common.items() if (not artifact.get(k))}
+        )
+        try:
+            json.dumps(artifact)
+        except TypeError as e:
+            exception = getattr(e, "message", str(e))
+            error_msg = f"json.dumps during Save artifact failed. Possibly a value in the artifact dictionary is not encoded properly. Exception: {exception}"
+            self.error_print(error_msg)
+            raise ActionFailure(error_msg) from e
+
+        if self.csrf_token:
+            try:
+                response = self.post("rest/artifact", json=artifact)
+            except Exception as e:
+                error_msg = f"Failed to add artifact: {e}"
+                raise ActionFailure(error_msg) from e
+
+            resp_data = response.json()
+
+            if "id" in resp_data:
+                return (True, "Artifact added successfully", resp_data["id"])
+
+            if "existing_artifact_id" in resp_data:
+                return (
+                    True,
+                    "Artifact already exists",
+                    resp_data["existing_artifact_id"],
+                )
+
+            msg_cause = resp_data.get("message", "NONE_GIVEN")
+            message = f"artifact addition failed, reason from server: {msg_cause}"
+            raise ActionFailure(message)
+
+        else:
+            if "container_id" not in artifact:
+                message = "Artifact addition failed, no container ID given"
+                raise ActionFailure(message)
+
+            next_artifact_id = (
+                max(self._artifacts.keys()) if self._artifacts else 0
+            ) + 1
+            self._artifacts[next_artifact_id] = artifact
+            return (True, "Artifact added successfully", next_artifact_id)
 
     @classmethod
     def get_soar_base_url(cls) -> str:
