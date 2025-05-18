@@ -34,7 +34,7 @@ app = App(
 
 
 @app.test_connectivity()
-def test_connectivity(client: SOARClient, asset: Asset) -> None:
+def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.info(f"testing connectivity against {asset.base_url}")
 
 
@@ -47,9 +47,7 @@ class ReverseStringOutput(ActionOutput):
 
 
 @app.action(action_type="test", verbose="Reverses a string.")
-def reverse_string(
-    param: ReverseStringParams, client: SOARClient
-) -> ReverseStringOutput:
+def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStringOutput:
     logger.debug("params: %s", param)
     reversed_string = param.input_string[::-1]
     logger.debug("reversed_string %s", reversed_string)

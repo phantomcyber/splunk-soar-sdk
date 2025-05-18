@@ -168,7 +168,7 @@ class App:
             def inner(
                 params: Params,
                 /,
-                client: SOARClient = self.actions_provider.soar_client,
+                soar: SOARClient = self.actions_provider.soar_client,
                 *args: Any,  # noqa: ANN401
                 **kwargs: Any,  # noqa: ANN401
             ) -> bool:
@@ -176,25 +176,25 @@ class App:
                 Validates input params and adapts the results from the action.
                 """
                 action_params = self._validate_params(params, action_name)
-                kwargs = self._build_magic_args(function, client=client, **kwargs)
+                kwargs = self._build_magic_args(function, soar=soar, **kwargs)
 
                 try:
                     result = function(action_params, *args, **kwargs)
                 except (ActionFailure, AssetMisconfiguration) as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)), client
+                        ActionResult(status=False, message=str(e)), soar
                     )
                 except Exception as e:
-                    client.add_exception(e)
+                    soar.add_exception(e)
                     traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=traceback_str), client
+                        ActionResult(status=False, message=traceback_str), soar
                     )
 
-                return self._adapt_action_result(result, client)
+                return self._adapt_action_result(result, soar)
 
             # setting up meta information for the decorated function
             inner.params_class = validated_params_class
@@ -250,9 +250,9 @@ class App:
             @wraps(function)
             def inner(
                 _param: Optional[dict] = None,
-                client: SOARClient = self.actions_provider.soar_client,
+                soar: SOARClient = self.actions_provider.soar_client,
             ) -> bool:
-                kwargs = self._build_magic_args(function, client=client)
+                kwargs = self._build_magic_args(function, soar=soar)
 
                 try:
                     result = function(**kwargs)
@@ -263,20 +263,20 @@ class App:
                 except (ActionFailure, AssetMisconfiguration) as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)), client
+                        ActionResult(status=False, message=str(e)), soar
                     )
                 except Exception as e:
-                    client.add_exception(e)
+                    soar.add_exception(e)
                     traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=traceback_str), client
+                        ActionResult(status=False, message=traceback_str), soar
                     )
 
                 return self._adapt_action_result(
                     ActionResult(status=True, message="Test connectivity successful"),
-                    client,
+                    soar,
                 )
 
             inner.params_class = None
@@ -333,11 +333,11 @@ class App:
     def _build_magic_args(self, function: Callable, **kwargs: object) -> dict[str, Any]:
         """
         Builds the auto-magic optional arguments for an action function.
-        This is used to pass the client and asset to the action function, when requested
+        This is used to pass the soar client and asset to the action function, when requested
         """
         sig = inspect.signature(function)
         magic_args: dict[str, object] = {
-            "client": self.actions_provider.soar_client,
+            "soar": self.actions_provider.soar_client,
             "asset": self.asset,
         }
 

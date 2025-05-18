@@ -68,7 +68,7 @@ def test_action_decoration_fails_with_params_not_inheriting_from_Params(simple_a
 
 def test_action_decoration_passing_params_type_as_hint(simple_app):
     @simple_app.action()
-    def foo(params: SampleActionParams, client: SOARClient) -> ActionOutput:
+    def foo(params: SampleActionParams, soar: SOARClient) -> ActionOutput:
         assert True
 
     foo(SampleActionParams())
@@ -76,7 +76,7 @@ def test_action_decoration_passing_params_type_as_hint(simple_app):
 
 def test_action_decoration_passing_params_type_as_argument(simple_app):
     @simple_app.action(params_class=SampleActionParams)
-    def foo(params, client: SOARClient) -> ActionOutput:
+    def foo(params, soar: SOARClient) -> ActionOutput:
         assert True
 
     foo(SampleActionParams())
@@ -84,7 +84,7 @@ def test_action_decoration_passing_params_type_as_argument(simple_app):
 
 def test_action_run_fails_with_wrong_params_type_passed(simple_app):
     @simple_app.action()
-    def action_example(params: Params, client: SOARClient) -> ActionOutput:
+    def action_example(params: Params, soar: SOARClient) -> ActionOutput:
         pass
 
     with pytest.raises(TypeError, match=r".*not inheriting from Params"):
@@ -93,31 +93,31 @@ def test_action_run_fails_with_wrong_params_type_passed(simple_app):
 
 def test_action_call_with_params(simple_app: App, sample_params: SampleParams):
     @simple_app.action()
-    def action_function(params: SampleParams, client: SOARClient) -> ActionOutput:
+    def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
         assert params.int_value == 1
         assert params.str_value == "test"
         assert params.pass_value == "<PASSWORD>"
         assert params.bool_value
-        client.debug("TAG", "Progress was made")
+        soar.debug("TAG", "Progress was made")
 
     client_mock = mock.Mock(spec=SOARClient)
-    action_function(sample_params, client=client_mock)
+    action_function(sample_params, soar=client_mock)
     client_mock.debug.assert_called_once()
 
 
 def test_action_call_with_params_dict(simple_app, sample_params):
     @simple_app.action()
-    def action_function(params: SampleParams, client: SOARClient) -> ActionOutput:
+    def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
         assert params.int_value == 1
         assert params.str_value == "test"
         assert params.pass_value == "<PASSWORD>"
         assert params.bool_value
-        client.debug("TAG", "Progress was made")
+        soar.debug("TAG", "Progress was made")
 
     client_mock = mock.Mock()
     client_mock.debug = mock.Mock()
 
-    action_function(sample_params, client=client_mock)
+    action_function(sample_params, soar=client_mock)
 
     assert client_mock.debug.call_count == 1
 
@@ -202,13 +202,13 @@ def test_action_decoration_uses_meta_identifier_for_action_name(simple_app):
 
 def test_action_with_mocked_client(simple_app, sample_params):
     @simple_app.action()
-    def action_function(params: SampleParams, client: SOARClient) -> ActionOutput:
-        client.save_progress("Progress was made")
+    def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
+        soar.save_progress("Progress was made")
 
     client_mock = mock.Mock()
     client_mock.save_progress = mock.Mock()
 
-    action_function(sample_params, client=client_mock)
+    action_function(sample_params, soar=client_mock)
 
     assert client_mock.save_progress.call_count == 1
 
@@ -217,7 +217,7 @@ def test_action_decoration_fails_without_return_type(simple_app):
     with pytest.raises(TypeError, match=r".*must specify.*return type"):
 
         @simple_app.action()
-        def action_function(params: Params, client: SOARClient):
+        def action_function(params: Params, soar: SOARClient):
             pass
 
 
@@ -230,7 +230,7 @@ def test_action_decoration_fails_with_return_type_not_inheriting_from_ActionOutp
     with pytest.raises(TypeError, match=r".*Return type.*must be derived"):
 
         @simple_app.action()
-        def action_function(params: Params, client: SOARClient) -> SomeClass:
+        def action_function(params: Params, soar: SOARClient) -> SomeClass:
             pass
 
 
@@ -238,7 +238,7 @@ def test_action_cannot_be_test_connectivity(simple_app):
     with pytest.raises(TypeError, match=r".*test_connectivity.*reserved"):
 
         @simple_app.action()
-        def test_connectivity(params: Params, client: SOARClient) -> ActionOutput:
+        def test_connectivity(params: Params, soar: SOARClient) -> ActionOutput:
             pass
 
 
@@ -256,7 +256,7 @@ def test_action_names_must_be_unique(simple_app: App):
 
 def test_action_decoration_passing_output_type_as_hint(simple_app):
     @simple_app.action()
-    def foo(params: SampleActionParams, client: SOARClient) -> SampleOutput:
+    def foo(params: SampleActionParams, soar: SOARClient) -> SampleOutput:
         assert True
 
     foo(SampleActionParams())
@@ -264,7 +264,7 @@ def test_action_decoration_passing_output_type_as_hint(simple_app):
 
 def test_action_decoration_passing_output_type_as_argument(simple_app):
     @simple_app.action(output_class=SampleOutput)
-    def foo(params: SampleActionParams, client: SOARClient):
+    def foo(params: SampleActionParams, soar: SOARClient):
         assert True
 
     foo(SampleActionParams())
@@ -272,22 +272,22 @@ def test_action_decoration_passing_output_type_as_argument(simple_app):
 
 def test_action_failure_raised(simple_app: App):
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         raise ActionFailure("Action failed")
 
     client_mock = mock.Mock()
 
-    result = action_function(Params(), client=client_mock)
+    result = action_function(Params(), soar=client_mock)
     assert not result
     assert client_mock.add_result.call_count == 1
 
 
 def test_other_failure_raised(simple_app: App, app_connector):
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         raise ValueError("Value error occurred")
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
 
     assert not result
 
@@ -296,7 +296,7 @@ def test_save_artifact(simple_app: App, app_connector, mock_post_artifact):
     app_connector.csrf_token = "fake_csrf_token"
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {
             "name": "test artifact",
             "container_id": 1,
@@ -306,21 +306,22 @@ def test_save_artifact(simple_app: App, app_connector, mock_post_artifact):
             "run_automation": False,
             "source_data_identifier": None,
         }
-        client.save_artifact(artifact)
+        soar.save_artifact(artifact)
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
+    assert result
     assert mock_post_artifact.called
 
 
 def test_save_artifact_bad_json(simple_app: App, app_connector):
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {"name": "test", "data": {1, 2, 3}}
-        client.save_artifact(artifact)
+        soar.save_artifact(artifact)
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
     assert not result
 
 
@@ -331,17 +332,17 @@ def test_save_artifact_failed(simple_app: App, app_connector, mock_post_artifact
     )
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {
             "name": "test artifact",
             "container_id": 1,
             "run_automation": False,
             "source_data_identifier": None,
         }
-        client.save_artifact(artifact)
+        soar.save_artifact(artifact)
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
     assert not result
 
 
@@ -352,17 +353,17 @@ def test_save_artifact_exisiting_id(simple_app: App, app_connector, mock_post_ar
     )
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {
             "name": "test artifact",
             "container_id": 1,
             "run_automation": False,
             "source_data_identifier": None,
         }
-        client.save_artifact(artifact)
+        soar.save_artifact(artifact)
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
     assert result
 
 
@@ -370,17 +371,17 @@ def test_save_artifact_locally(simple_app: App, app_connector):
     app_connector.csrf_token = None
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {
             "name": "test artifact",
             "container_id": 1,
             "run_automation": False,
             "source_data_identifier": None,
         }
-        client.save_artifact(artifact)
+        soar.save_artifact(artifact)
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
     assert result
 
 
@@ -388,16 +389,16 @@ def test_save_artifact_locally_missing_container(simple_app: App, app_connector)
     app_connector.csrf_token = None
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {
             "name": "test artifact",
             "run_automation": False,
             "source_data_identifier": None,
         }
-        client.save_artifact(artifact)
+        soar.save_artifact(artifact)
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
     assert not result
 
 
@@ -405,11 +406,12 @@ def test_client_get(simple_app: App, app_connector, mock_get_any_soar_call):
     app_connector.csrf_token = "fake_csrf_token"
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
-        client.get("test")
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        soar.get("test")
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
+    assert result
     assert mock_get_any_soar_call.called
 
 
@@ -417,11 +419,12 @@ def test_client_put(simple_app: App, app_connector, mock_put_any_call):
     app_connector.csrf_token = "fake_csrf_token"
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
-        client.put("test")
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        soar.put("test")
+        assert result
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
     assert mock_put_any_call.called
 
 
@@ -430,15 +433,15 @@ def test_artifact_creation_failed(simple_app: App, app_connector, mock_post_arti
     mock_post_artifact.side_effect = RequestError("Failed to create artifact")
 
     @simple_app.action()
-    def action_function(params: Params, client: SOARClient) -> ActionOutput:
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {
             "name": "test artifact",
             "container_id": 1,
             "run_automation": False,
             "source_data_identifier": None,
         }
-        client.save_artifact(artifact)
+        soar.save_artifact(artifact)
         return ActionOutput()
 
-    result = action_function(Params(), client=app_connector)
+    result = action_function(Params(), soar=app_connector)
     assert not result
