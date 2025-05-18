@@ -139,19 +139,19 @@ def test_action_called_with_multiple_results_set(
     example_app: App, simple_action_input: InputSpecification
 ):
     # FIXME: this is phantom_lib integration check and should be moved from here
-    client = example_app.actions_provider.soar_client
+    soar = example_app.actions_provider.soar_client
 
     @example_app.action()
-    def test_action(params: Params, client: SOARClient) -> ActionOutput:
+    def test_action(params: Params, soar: SOARClient) -> ActionOutput:
         action_result1 = ActionResult(True, "Testing function run 1")
         action_result2 = ActionResult(True, "Testing function run 2")
-        client.add_result(action_result1)
-        client.add_result(action_result2)
+        soar.add_result(action_result1)
+        soar.add_result(action_result2)
         return True, "Multiple action results set"
 
     example_app.handle(simple_action_input.json())
 
-    assert len(client.get_action_results()) == 3
+    assert len(soar.get_action_results()) == 3
 
 
 def test_actions_provider_running_legacy_handler(example_provider, simple_action_input):
