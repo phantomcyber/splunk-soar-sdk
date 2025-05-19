@@ -1,4 +1,6 @@
 from typing import Any, TYPE_CHECKING, Union, Optional
+from collections.abc import Iterable, AsyncIterable
+from collections.abc import Mapping
 
 from pydantic import ValidationError
 import httpx
@@ -6,7 +8,7 @@ import httpx
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
-from soar_sdk.exceptions import ActionFailure
+from soar_sdk.exceptions import ActionFailure, SoarAPIError
 
 from .abstract import SOARClient
 
@@ -18,6 +20,8 @@ import json
 _INGEST_STATE_KEY = "ingestion_state"
 _AUTH_STATE_KEY = "auth_state"
 _CACHE_STATE_KEY = "asset_cache"
+
+JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
 
 class AppConnector(BaseConnector, SOARClient):
@@ -57,19 +61,16 @@ class AppConnector(BaseConnector, SOARClient):
         if session_id:
             self.__login()
         else:
-            if all(
-                env_var in input_data.environment_variables
-                for env_var in ["PHANTOM_USER", "PHANTOM_PASSWORD", "PHANTOM_BASE_URL"]
-            ):
+            if input_data.soar_auth:
                 self._client = httpx.Client(
-                    base_url=input_data.environment_variables["PHANTOM_BASE_URL"].value,
+                    base_url=input_data.soar_auth.phantom_url,
                     verify=False,  # noqa: S501
                 )
                 self.__login()
                 print("hereeeee")
                 session_id = self.get_session_id(
-                    input_data.environment_variables["PHANTOM_USER"].value,
-                    input_data.environment_variables["PHANTOM_PASSWORD"].value,
+                    input_data.soar_auth.username,
+                    input_data.soar_auth.password,
                 )
 
         if session_id:
@@ -99,32 +100,111 @@ class AppConnector(BaseConnector, SOARClient):
         session_id = self._client.cookies.get("sessionid")
         return session_id or ""
 
-    def get(self, endpoint: str, **kwargs: dict) -> httpx.Response:
+    def get(
+        self,
+        endpoint: str,
+        *,
+        params: Optional[Union[dict[str, Any], httpx.QueryParams]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        timeout: Optional[httpx.Timeout] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        follow_redirects: bool = False,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
         """
         Perform a GET request to the specfic endpoint using the soar client
         """
-        response = self._client.get(endpoint, **kwargs)
+        response = self._client.get(
+            endpoint,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
         response.raise_for_status()
         return response
 
-    def post(self, endpoint: str, **kwargs: dict) -> httpx.Response:
+    def post(
+        self,
+        endpoint: str,
+        *,
+        content: Optional[
+            Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+        ] = None,
+        data: Optional[Mapping[str, Any]] = None,
+        files: Optional[dict[str, Any]] = None,
+        json: Optional[JSONType] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        timeout: Optional[Union[float, httpx.Timeout]] = None,
+        follow_redirects: bool = True,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
         """
-        Perform a GET request to the specfic endpoint using the soar client
+        Perform a POST request to the specfic endpoint using the soar client
         """
-        headers = kwargs.pop("headers", {})
+        headers = headers or {}
         headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
-        response = self._client.post(endpoint, headers=headers, **filtered_kwargs)
+        response = self._client.post(
+            endpoint,
+            headers=headers,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            cookies=cookies,
+            auth=auth,  # type: ignore[arg-type]
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
         response.raise_for_status()
         return response
 
-    def put(self, endpoint: str, **kwargs: dict) -> httpx.Response:
+    def put(
+        self,
+        endpoint: str,
+        *,
+        content: Optional[
+            Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+        ] = None,
+        data: Optional[Mapping[str, Any]] = None,
+        files: Optional[dict[str, Any]] = None,
+        json: Optional[JSONType] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        timeout: Optional[Union[float, httpx.Timeout]] = None,
+        follow_redirects: bool = True,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
         """
-        Perform a GET request to the specfic endpoint using the soar client
+        Perform a PUT request to the specfic endpoint using the soar client
         """
-        filtered_kwargs = self.filter_keys(POST_VALID_KEYS, **kwargs)
-        headers = filtered_kwargs.pop("headers", {})
+        headers = headers or {}
         headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
-        response = self._client.put(endpoint, headers=headers, **filtered_kwargs)
+        response = self._client.put(
+            endpoint,
+            headers=headers,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            cookies=cookies,
+            auth=auth,  # type: ignore[arg-type]
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
         response.raise_for_status()
         return response
 
@@ -135,8 +215,9 @@ class AppConnector(BaseConnector, SOARClient):
         try:
             json.dumps(artifact)
         except TypeError as e:
-            exception = getattr(e, "message", str(e))
-            error_msg = f"json.dumps during Save artifact failed. Possibly a value in the artifact dictionary is not encoded properly. Exception: {exception}"
+            error_msg = (
+                f"Artifact could not be converted to a JSON string. Error: {e!s}"
+            )
             raise ActionFailure(error_msg) from e
 
         if self.csrf_token:
@@ -144,7 +225,7 @@ class AppConnector(BaseConnector, SOARClient):
                 response = self.post("rest/artifact", json=artifact)
             except Exception as e:
                 error_msg = f"Failed to add artifact: {e}"
-                raise ActionFailure(error_msg) from e
+                raise SoarAPIError(error_msg) from e
 
             resp_data = response.json()
 
@@ -160,7 +241,7 @@ class AppConnector(BaseConnector, SOARClient):
 
             msg_cause = resp_data.get("message", "NONE_GIVEN")
             message = f"artifact addition failed, reason from server: {msg_cause}"
-            raise ActionFailure(message)
+            raise SoarAPIError(message)
 
         else:
             next_artifact_id = self.__add_artifact_locally(artifact)
@@ -169,7 +250,7 @@ class AppConnector(BaseConnector, SOARClient):
     def __add_artifact_locally(self, artifact: dict) -> int:
         if "container_id" not in artifact:
             message = "Artifact addition failed, no container ID given"
-            raise ActionFailure(message)
+            raise SoarAPIError(message)
 
         next_artifact_id = (max(self.__artifacts.keys()) if self.__artifacts else 0) + 1
         self.__artifacts[next_artifact_id] = artifact
@@ -187,8 +268,9 @@ class AppConnector(BaseConnector, SOARClient):
         try:
             json.dumps(container)
         except TypeError as e:
-            exception = getattr(e, "message", str(e))
-            error_msg = f"json.dumps during Save artifact failed. Possibly a value in the artifact dictionary is not encoded properly. Exception: {exception}"
+            error_msg = (
+                f"Container could not be converted to a JSON string. Error: {e!s}"
+            )
             raise ActionFailure(error_msg) from e
 
         if self.csrf_token:
@@ -196,7 +278,7 @@ class AppConnector(BaseConnector, SOARClient):
                 response = self.post("rest/container", json=container)
             except Exception as e:
                 error_msg = f"Failed to add container: {e}"
-                raise ActionFailure(error_msg) from e
+                raise SoarAPIError(error_msg) from e
 
             resp_data = response.json()
             if "existing_container_id" in resp_data:
@@ -208,8 +290,8 @@ class AppConnector(BaseConnector, SOARClient):
 
             if resp_data.get("failed"):
                 msg_cause = resp_data.get("message", "NONE_GIVEN")
-                message = f"artifact addition failed, reason from server: {msg_cause}"
-                raise ActionFailure(message)
+                message = f"Container creation failed, reason from server: {msg_cause}"
+                raise SoarAPIError(message)
 
             artifact_resp_data = resp_data.get("artifacts", [])
             self._process_container_artifacts_response(artifact_resp_data)

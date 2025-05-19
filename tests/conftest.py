@@ -7,7 +7,7 @@ from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app import App
 from soar_sdk.asset import BaseAsset
 from soar_sdk.connector import AppConnector
-from soar_sdk.input_spec import AppConfig, InputSpecification, EnvironmentVariable
+from soar_sdk.input_spec import AppConfig, InputSpecification, SoarAuth
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
 from tests.stubs import SampleActionParams
@@ -221,15 +221,11 @@ def action_input_soar_auth() -> InputSpecification:
         config=AppConfig(
             app_version="1.0.0", directory=".", main_module="example_connector.py"
         ),
-        environment_variables={
-            "PHANTOM_BASE_URL": EnvironmentVariable(
-                type="string", value="https://10.34.5.6"
-            ),
-            "PHANTOM_USER": EnvironmentVariable(
-                type="string", value="soar_local_admin"
-            ),
-            "PHANTOM_PASSWORD": EnvironmentVariable(type="string", value="password"),
-        },
+        soar_auth=SoarAuth(
+            phantom_url="https://10.34.5.6",
+            username="soar_local_admin",
+            password="password",
+        ),
     )
 
 

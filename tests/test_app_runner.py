@@ -6,6 +6,7 @@ import pytest
 
 from soar_sdk.app import App
 from soar_sdk.app_cli_runner import AppCliRunner
+import os
 
 
 def test_app_cli(simple_app: App):
@@ -236,32 +237,45 @@ def test_with_soar_authentication(
     action = runner.app.actions_provider.get_action("test_action")
     assert action is not None
     action.params_class = None
+    os.environ["PHANTOM_PASSWORD"] = "password"
 
     args = runner.parse_args(
         [
             "--soar-url",
             "10.34.5.6",
-            "--username",
+            "--soar-user",
             "soar_local_admin",
-            "--password",
-            "password",
             "test_action",
         ]
     )
+    del os.environ["PHANTOM_PASSWORD"]
 
     assert args.soar_url == "10.34.5.6"
-    assert args.username == "soar_local_admin"
-    assert args.password == "password"
+    assert args.soar_user == "soar_local_admin"
+    assert args.soar_password == "password"
 
     input_data = json.loads(args.raw_input_data)
-    assert (
-        input_data["environment_variables"]["PHANTOM_BASE_URL"]["value"]
-        == "https://10.34.5.6"
-    )
-    assert (
-        input_data["environment_variables"]["PHANTOM_USER"]["value"]
-        == "soar_local_admin"
-    )
-    assert (
-        input_data["environment_variables"]["PHANTOM_PASSWORD"]["value"] == "password"
-    )
+    assert input_data["soar_auth"]["phantom_url"] == "https://10.34.5.6"
+    assert input_data["soar_auth"]["username"] == "soar_local_admin"
+    assert input_data["soar_auth"]["password"] == "password"
+
+
+def test_bas_soar_auth_params(app_with_action: App):
+    """Test parsing arguments for an action that requires both asset and parameters."""
+    runner = AppCliRunner(app_with_action)
+
+    # Get the real action from our fixture
+    action = runner.app.actions_provider.get_action("test_action")
+    assert action is not None
+    action.params_class = None
+
+    with pytest.raises(SystemExit):
+        runner.parse_args(
+            [
+                "--soar-url",
+                "10.34.5.6",
+                "--soar-user",
+                "soar_local_admin",
+                "test_action",
+            ]
+        )

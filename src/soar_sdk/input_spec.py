@@ -1,5 +1,5 @@
 from uuid import uuid4
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import Literal, Optional, Any
 import random
 
@@ -65,6 +65,22 @@ class ActionParameter(BaseModel):
         extra = "allow"
 
 
+class SoarAuth(BaseModel):
+    """Information to help authenticate with SOAR."""
+
+    phantom_url: str
+    username: str
+    password: str
+
+    @validator("phantom_url")
+    def validate_phantom_url(cls, value: str) -> str:
+        return (
+            f"https://{value}"
+            if not value.startswith(("http://", "https://"))
+            else value
+        )
+
+
 class InputSpecification(BaseModel):
     """Input specification for SOAR app _handle_action() method.
 
@@ -127,3 +143,4 @@ class InputSpecification(BaseModel):
     identifier: str
     parameters: list[ActionParameter] = Field(default_factory=lambda: [{}])
     user_session_token: str = ""
+    soar_auth: Optional[SoarAuth] = None

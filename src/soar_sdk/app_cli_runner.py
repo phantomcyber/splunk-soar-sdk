@@ -5,8 +5,10 @@ from pathlib import Path
 from pprint import pprint
 import typing
 from typing import Optional, Any
+import os
+from pydantic import ValidationError
 
-from soar_sdk.input_spec import ActionParameter, AppConfig, InputSpecification
+from soar_sdk.input_spec import ActionParameter, AppConfig, InputSpecification, SoarAuth
 from soar_sdk.types import Action
 
 if typing.TYPE_CHECKING:
@@ -24,12 +26,20 @@ class AppCliRunner:
 
     def parse_args(self, argv: Optional[list[str]] = None) -> argparse.Namespace:
         root_parser = argparse.ArgumentParser()
-        root_parser.add_argument("--soar-url", type=str, help="SOAR URL to connect to")
         root_parser.add_argument(
-            "--username", type=str, help="Username to connect to SOAR instance"
+            "--soar-url",
+            default=os.getenv("PHANTOM_BASE_URL"),
+            help="SOAR URL to connect to. Can be provided via PHANTOM_BASE_URL environment variable as well.",
         )
         root_parser.add_argument(
-            "--password", type=str, help="Password to connect to SOAR instance"
+            "--soar-user",
+            default=os.getenv("PHANTOM_USER"),
+            help="Username to connect to SOAR instance. Can be provided via PHANTOM_USER environment variable as well",
+        )
+        root_parser.add_argument(
+            "--soar-password",
+            default=os.getenv("PHANTOM_PASSWORD"),
+            help="Password to connect to SOAR instance. Can be provided via PHANTOM_PASSWORD environment variable as well",
         )
 
         subparsers = root_parser.add_subparsers(dest="action", title="Actions")
@@ -106,28 +116,17 @@ class AppCliRunner:
             parameters=parameter_list,
         )
 
-        if args.soar_url and args.username and args.password:
-            # This is an all or nothing. If any of these are missing, we don't set them.
-            soar_url = (
-                f"https://{args.soar_url}"
-                if not args.soar_url.startswith(("http://", "https://"))
-                else args.soar_url
-            )
-
-            input_data.environment_variables = {
-                "PHANTOM_BASE_URL": {
-                    "type": "string",
-                    "value": soar_url,
-                },
-                "PHANTOM_USER": {
-                    "type": "string",
-                    "value": args.username,
-                },
-                "PHANTOM_PASSWORD": {
-                    "type": "string",
-                    "value": args.password,
-                },
-            }
+        soar_args = (args.soar_url, args.soar_user, args.soar_password)
+        if any(soar_args):
+            try:
+                auth = SoarAuth(
+                    phantom_url=args.soar_url,
+                    username=args.soar_user,
+                    password=args.soar_password,
+                )
+                input_data.soar_auth = auth
+            except ValidationError as e:
+                root_parser.error(f"Provided soar auth arguments are invalid: {e}.")
 
         args.raw_input_data = input_data.json()
         return args
