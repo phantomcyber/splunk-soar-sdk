@@ -15,6 +15,7 @@ if TYPE_CHECKING or not _soar_is_available:
         APP_JSON_DESCRIPTION = "description"
         APP_JSON_RUN_AUTOMATION = "run_automation"
         APP_JSON_TYPE = "type"
+        APP_JSON_ASSET_ID = "asset_id"
 
     json_keys = JsonKeyShim()
 

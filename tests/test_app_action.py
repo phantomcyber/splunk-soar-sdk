@@ -368,7 +368,7 @@ def test_save_artifact_exisiting_id(simple_app: App, app_connector, mock_post_ar
 
 
 def test_save_artifact_locally(simple_app: App, app_connector):
-    app_connector.csrf_token = None
+    app_connector.csrf_token = ""
 
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
@@ -386,7 +386,7 @@ def test_save_artifact_locally(simple_app: App, app_connector):
 
 
 def test_save_artifact_locally_missing_container(simple_app: App, app_connector):
-    app_connector.csrf_token = None
+    app_connector.csrf_token = ""
 
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
@@ -428,7 +428,7 @@ def test_client_put(simple_app: App, app_connector, mock_put_any_call):
     assert mock_put_any_call.called
 
 
-def test_artifact_creation_failed(simple_app: App, app_connector, mock_post_artifact):
+def test_artifact_rest_call_failed(simple_app: App, app_connector, mock_post_artifact):
     app_connector.csrf_token = "fake_csrf_token"
     mock_post_artifact.side_effect = RequestError("Failed to create artifact")
 
@@ -441,6 +441,134 @@ def test_artifact_creation_failed(simple_app: App, app_connector, mock_post_arti
             "source_data_identifier": None,
         }
         soar.save_artifact(artifact)
+        return ActionOutput()
+
+    result = action_function(Params(), soar=app_connector)
+    assert not result
+
+
+def test_save_container_with_artifact(
+    simple_app: App, app_connector, mock_post_container
+):
+    app_connector.csrf_token = "fake_csrf_token"
+
+    @simple_app.action()
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        container = {
+            "name": "test container",
+            "description": "test description",
+            "label": "events",
+            "asset_id": "1",
+            "artifacts": [artifact],
+        }
+        soar.save_container(container)
+        return ActionOutput()
+
+    result = action_function(Params(), soar=app_connector)
+    assert result
+    assert mock_post_container.called
+
+
+def test_malformed_container(simple_app: App, app_connector):
+    @simple_app.action()
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        container = {
+            "name": "test container",
+            "description": "test description",
+            "label": "events",
+        }
+        soar.save_container(container)
+        return ActionOutput()
+
+    result = action_function(Params(), soar=app_connector)
+    assert not result
+
+    @simple_app.action()
+    def bad_json(params: Params, soar: SOARClient) -> ActionOutput:
+        container = {"name": "test", "data": {1, 2, 3}, "asset_id": "1"}
+        soar.save_container(container)
+        return ActionOutput()
+
+    result = bad_json(Params(), soar=app_connector)
+    assert not result
+
+
+def test_save_container_failed(simple_app: App, app_connector, mock_post_container):
+    app_connector.csrf_token = "fake_csrf_token"
+    mock_post_container.return_value = Response(
+        status_code=200, json={"failed": "something went wrong"}
+    )
+
+    container = {
+        "name": "test container",
+        "description": "test description",
+        "label": "events",
+        "asset_id": "1",
+    }
+
+    @simple_app.action()
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        soar.save_container(container)
+        return ActionOutput()
+
+    result = action_function(Params(), soar=app_connector)
+    assert not result
+
+    mock_post_container.return_value = Response(
+        status_code=201, json={"existing_container_id": "2"}
+    )
+
+    @simple_app.action()
+    def existing_id(params: Params, soar: SOARClient) -> ActionOutput:
+        soar.save_container(container)
+        return ActionOutput()
+
+    result = existing_id(Params(), soar=app_connector)
+    assert result
+
+
+def test_save_container_locally(simple_app: App, app_connector):
+    @simple_app.action()
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        artifact = {
+            "name": "test artifact",
+            "run_automation": False,
+            "source_data_identifier": None,
+        }
+        container = {
+            "name": "test container",
+            "description": "test description",
+            "label": "events",
+            "asset_id": "1",
+            "artifacts": [artifact],
+        }
+        soar.save_container(container)
+        return ActionOutput()
+
+    result = action_function(Params(), soar=app_connector)
+    assert result
+
+
+def test_container_rest_call_failed(
+    simple_app: App, app_connector, mock_post_container
+):
+    app_connector.csrf_token = "fake_csrf_token"
+    mock_post_container.side_effect = RequestError("Failed to create container")
+
+    @simple_app.action()
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        container = {
+            "name": "test container",
+            "description": "test description",
+            "label": "events",
+            "asset_id": "1",
+        }
+        soar.save_container(container)
         return ActionOutput()
 
     result = action_function(Params(), soar=app_connector)

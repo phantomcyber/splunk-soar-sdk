@@ -40,8 +40,9 @@ class AppConnector(BaseConnector, SOARClient):
             base_url=AppConnector.get_soar_base_url(),
             verify=False,  # noqa: S501
         )
-        self.csrf_token = None
-        self._artifacts = {}
+        self.csrf_token: str = ""
+        self.__artifacts: dict = {}
+        self.__containers: dict = {}
 
         self.ingestion_state: dict = {}
         self.auth_state: dict = {}
@@ -79,7 +80,7 @@ class AppConnector(BaseConnector, SOARClient):
     def __login(self) -> None:
         response = self._client.get("/login")
         response.raise_for_status()
-        self.csrf_token = response.cookies.get("csrftoken")
+        self.csrf_token = response.cookies.get("csrftoken") or ""
         self._client.cookies.update(response.cookies)
         self._client.headers.update({"X-CSRFToken": self.csrf_token})
         cookies = f"csrftoken={self.csrf_token}"
@@ -96,7 +97,7 @@ class AppConnector(BaseConnector, SOARClient):
             headers={"Referer": f"{self._client.base_url}/login"},
         )
         session_id = self._client.cookies.get("sessionid")
-        return session_id
+        return session_id or ""
 
     def get(self, endpoint: str, **kwargs: dict) -> httpx.Response:
         """
@@ -112,9 +113,7 @@ class AppConnector(BaseConnector, SOARClient):
         """
         headers = kwargs.pop("headers", {})
         headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
-
-        response = self._client.post(endpoint, headers=headers, **kwargs)
-
+        response = self._client.post(endpoint, headers=headers, **filtered_kwargs)
         response.raise_for_status()
         return response
 
@@ -122,7 +121,10 @@ class AppConnector(BaseConnector, SOARClient):
         """
         Perform a GET request to the specfic endpoint using the soar client
         """
-        response = self._client.put(endpoint, **kwargs)
+        filtered_kwargs = self.filter_keys(POST_VALID_KEYS, **kwargs)
+        headers = filtered_kwargs.pop("headers", {})
+        headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
+        response = self._client.put(endpoint, headers=headers, **filtered_kwargs)
         response.raise_for_status()
         return response
 
@@ -135,7 +137,6 @@ class AppConnector(BaseConnector, SOARClient):
         except TypeError as e:
             exception = getattr(e, "message", str(e))
             error_msg = f"json.dumps during Save artifact failed. Possibly a value in the artifact dictionary is not encoded properly. Exception: {exception}"
-            self.error_print(error_msg)
             raise ActionFailure(error_msg) from e
 
         if self.csrf_token:
@@ -162,15 +163,68 @@ class AppConnector(BaseConnector, SOARClient):
             raise ActionFailure(message)
 
         else:
-            if "container_id" not in artifact:
-                message = "Artifact addition failed, no container ID given"
+            next_artifact_id = self.__add_artifact_locally(artifact)
+            return (True, "Artifact added successfully", next_artifact_id)
+
+    def __add_artifact_locally(self, artifact: dict) -> int:
+        if "container_id" not in artifact:
+            message = "Artifact addition failed, no container ID given"
+            raise ActionFailure(message)
+
+        next_artifact_id = (max(self.__artifacts.keys()) if self.__artifacts else 0) + 1
+        self.__artifacts[next_artifact_id] = artifact
+        return next_artifact_id
+
+    def _save_container(
+        self, container: dict, fail_on_duplicate: bool = False
+    ) -> tuple[bool, str, Optional[int]]:
+        try:
+            self._prepare_container(container)
+        except Exception as e:
+            error_msg = f"Failed to prepare container: {e}"
+            raise ActionFailure(error_msg) from e
+
+        try:
+            json.dumps(container)
+        except TypeError as e:
+            exception = getattr(e, "message", str(e))
+            error_msg = f"json.dumps during Save artifact failed. Possibly a value in the artifact dictionary is not encoded properly. Exception: {exception}"
+            raise ActionFailure(error_msg) from e
+
+        if self.csrf_token:
+            try:
+                response = self.post("rest/container", json=container)
+            except Exception as e:
+                error_msg = f"Failed to add container: {e}"
+                raise ActionFailure(error_msg) from e
+
+            resp_data = response.json()
+            if "existing_container_id" in resp_data:
+                return (
+                    not fail_on_duplicate,
+                    "Container already exists",
+                    resp_data.get("existing_container_id"),
+                )
+
+            if resp_data.get("failed"):
+                msg_cause = resp_data.get("message", "NONE_GIVEN")
+                message = f"artifact addition failed, reason from server: {msg_cause}"
                 raise ActionFailure(message)
 
-            next_artifact_id = (
-                max(self._artifacts.keys()) if self._artifacts else 0
+            artifact_resp_data = resp_data.get("artifacts", [])
+            self._process_container_artifacts_response(artifact_resp_data)
+            return (True, "Container added successfully", resp_data.get("id"))
+        else:
+            artifacts = container.pop("artifacts", [])
+            next_container_id = (
+                max(self.__containers.keys()) if self.__containers else 0
             ) + 1
-            self._artifacts[next_artifact_id] = artifact
-            return (True, "Artifact added successfully", next_artifact_id)
+            for artifact in artifacts:
+                artifact["container_id"] = next_container_id
+                self._save_artifact(artifact)
+
+            self.__containers[next_container_id] = container
+            return (True, "Container added successfully", next_container_id)
 
     @classmethod
     def get_soar_base_url(cls) -> str:
