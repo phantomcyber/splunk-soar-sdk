@@ -67,7 +67,6 @@ class AppConnector(BaseConnector, SOARClient):
                     verify=False,  # noqa: S501
                 )
                 self.__login()
-                print("hereeeee")
                 session_id = self.get_session_id(
                     input_data.soar_auth.username,
                     input_data.soar_auth.password,
@@ -304,7 +303,6 @@ class AppConnector(BaseConnector, SOARClient):
             for artifact in artifacts:
                 artifact["container_id"] = next_container_id
                 self._save_artifact(artifact)
-
             self.__containers[next_container_id] = container
             return (True, "Container added successfully", next_container_id)
 
