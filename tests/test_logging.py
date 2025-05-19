@@ -26,8 +26,8 @@ def test_root_logger():
     import logging as python_logger
 
     logger = python_logger.getLogger()
-    logger.info("This is an info message from the test_logging module.")
-    ph_ipc.sendstatus.assert_called_once()
+    logger.warning("This is an info message from the test_logging module.")
+    ph_ipc.debugprint.assert_called_once()
 
 
 def test_logging():
@@ -151,6 +151,17 @@ def test_non_existant_log_level():
     logger.handler.handleError = mock.Mock()
     logger.log(999, "This is a test message with an invalid log level.")
     logger.handler.handleError.assert_called_once()
+
+
+def test_remove_handler_allowed():
+    import logging as python_logger
+
+    logger = getLogger()
+    handler = python_logger.StreamHandler()
+    logger.addHandler(handler)
+    assert handler in logger.handlers
+    logger.removeHandler(handler)
+    assert handler not in logger.handlers
 
 
 def test_remove_soar_handler_not_allowed():
