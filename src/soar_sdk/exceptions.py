@@ -34,4 +34,16 @@ class AssetMisconfiguration(ActionFailure):
         )
 
 
+class SoarAPIError(ActionFailure):
+    """Exception raised when there is an error with the SOAR REST API."""
+
+    def __str__(self) -> str:
+        """Return a formatted error message."""
+        return (
+            f"SOAR REST API error in {self.action_name}: {self.message}"
+            if self.action_name
+            else f"SOAR REST API error: {self.message}"
+        )
+
+
 __all__ = ["ActionFailure", "AssetMisconfiguration"]
