@@ -159,12 +159,12 @@ def test_authenticate_soar_client(
     mock_post_any_soar_call,
 ):
     simple_connector.authenticate_soar_client(action_input_soar_auth)
-    mock_get_any_soar_call.call_count == 1
+    assert mock_get_any_soar_call.call_count == 1
     request = mock_get_any_soar_call.calls[0].request
     assert request.url == "https://10.34.5.6/login"
     assert simple_connector.client.headers["X-CSRFToken"] == "mocked_csrf_token"
 
-    mock_post_any_soar_call.call_count == 1
+    assert mock_post_any_soar_call.call_count == 1
     post_request = mock_post_any_soar_call.calls[0].request
     assert post_request.url == "https://10.34.5.6/login"
 
@@ -180,4 +180,4 @@ def test_authenticate_soar_client_on_platform(
     mock_get_any_soar_call,
 ):
     simple_connector.authenticate_soar_client(action_input_soar_platform_auth)
-    mock_get_any_soar_call.call_count == 1
+    assert mock_get_any_soar_call.call_count == 1

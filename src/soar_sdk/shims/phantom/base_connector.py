@@ -156,7 +156,7 @@ if TYPE_CHECKING or not _soar_is_available:
         def _prepare_container(self, container: dict) -> None:
             if ph_jsons.APP_JSON_ASSET_ID not in container:
                 raise ValueError(
-                    f"Missing {ph_jsons.APP_JSON_ASSET_ID}, {ph_jsons.APP_JSON_INGEST_APP_ID} keys in container"
+                    f"Missing {ph_jsons.APP_JSON_ASSET_ID} keys in container"
                 )
 
             container.update(
@@ -174,7 +174,7 @@ if TYPE_CHECKING or not _soar_is_available:
                     artifact.update(
                         {
                             k: v
-                            for k, v in self.__artifact_common.items()
+                            for k, v in self._artifact_common.items()
                             if (not artifact.get(k))
                         }
                     )
