@@ -6,6 +6,7 @@ from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.action_results import ActionResult
 
 from .abstract import SOARClient
+import httpx
 
 
 class LegacyConnectorAdapter(SOARClient):
@@ -25,11 +26,13 @@ class LegacyConnectorAdapter(SOARClient):
         self.connector.handle_action(param)
 
     @property
-    def client(self) -> Any:
+    def client(self) -> httpx.Client:
         """
         Returns the client object.
         """
-        return self.connector.client
+        raise NotImplementedError(
+            "The soar client is not supported in legacy connectors."
+        )
 
     def authenticate_soar_client(self, input_data: InputSpecification) -> None:
         """

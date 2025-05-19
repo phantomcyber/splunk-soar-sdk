@@ -2,6 +2,7 @@ from unittest import mock
 
 from soar_sdk.adapters import LegacyConnectorAdapter
 from tests.stubs import BaseConnectorMock
+import pytest
 
 
 def test_legacy_connector_adapter_delegates_method_calls():
@@ -21,7 +22,8 @@ def test_legacy_connector_adapter_delegates_method_calls():
     adapter.error(mock.Mock())
     adapter.add_exception(mock.Mock())
     adapter.authenticate_soar_client(mock.Mock())
-    assert adapter.client is not None
+    with pytest.raises(NotImplementedError):
+        _ = adapter.client
 
     for method_name in adapter.connector.mocked_methods:
         mocked_method = getattr(adapter.connector, method_name)

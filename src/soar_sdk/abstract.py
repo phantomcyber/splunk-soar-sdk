@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.action_results import ActionResult
+import httpx
 
 
 class SOARClient(ABC):
@@ -17,9 +18,10 @@ class SOARClient(ABC):
     ingestion_state: dict
     auth_state: dict
     asset_cache: dict
+
     @property
     @abstractmethod
-    def client(self) -> Any:
+    def client(self) -> httpx.Client:
         """
         Subclasses must define the client property.
         """

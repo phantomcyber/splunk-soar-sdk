@@ -288,3 +288,14 @@ def mock_post_any_soar_call(respx_mock):
         )
     )
     return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_post_container(respx_mock):
+    mock_route = respx_mock.post(re.compile(r".*/rest/container/?$")).mock(
+        return_value=Response(
+            201, json={"message": "Mocked container created", "id": 1}
+        )
+    )
+    return mock_route
