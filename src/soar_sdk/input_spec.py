@@ -58,7 +58,7 @@ class ActionParameter(BaseModel):
     'context' field containing metadata.
     """
 
-    context: Optional[ParameterContext] = None
+    context: Optional[ParameterContext]
 
     # Additional keys are action-specific and not predictable here.
     class Config:
