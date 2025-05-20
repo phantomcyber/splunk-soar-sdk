@@ -4,6 +4,7 @@ from typing import Any, Optional, Union
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.action_results import ActionResult
+from soar_sdk.vault import Vault
 import httpx
 
 
@@ -27,12 +28,23 @@ class SOARClient(ABC):
         """
         pass
 
+    @property
+    @abstractmethod
+    def vault(self) -> Vault:
+        """
+        Subclasses must define the vault property.
+        """
+        pass
+
     @abstractmethod
     def get_soar_base_url(self) -> str:
         pass
 
     @abstractmethod
-    def authenticate_soar_client(self, input_data: InputSpecification) -> None:
+    def update_client(self, input_data: InputSpecification) -> None:
+        """
+        Updates the client before an acton run with the input data. An example of what this function might do is authenticate the api client.
+        """
         pass
 
     @abstractmethod
