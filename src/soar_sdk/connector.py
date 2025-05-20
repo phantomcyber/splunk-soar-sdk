@@ -9,6 +9,7 @@ from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.exceptions import ActionFailure, SoarAPIError
+from soar_sdk.apis.vault import Vault
 
 from .abstract import SOARClient
 
@@ -22,6 +23,24 @@ _AUTH_STATE_KEY = "auth_state"
 _CACHE_STATE_KEY = "asset_cache"
 
 JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
+
+
+class ApiManager:
+    def __init__(self, client: SOARClient) -> None:
+        self.soar_client = client
+        self.__asset_executing_action = ""
+
+    def get_client(self) -> httpx.Client:
+        return self.soar_client.client
+
+    def is_authenticated(self) -> bool:
+        return self.soar_client.csrf_token is not None
+
+    def set_executing_asset(self, asset_id: str) -> None:
+        self.__asset_executing_action = asset_id
+
+    def get_executing_asset(self) -> str:
+        return self.__asset_executing_action
 
 
 class AppConnector(BaseConnector, SOARClient):
@@ -51,10 +70,16 @@ class AppConnector(BaseConnector, SOARClient):
         self.ingestion_state: dict = {}
         self.auth_state: dict = {}
         self.asset_cache: dict = {}
+        self.__api_manager = ApiManager(client=self)
+        self.vault = Vault(client=self._client)
 
     @property
     def client(self) -> httpx.Client:
         return self._client
+
+    def update_client(self, input_data: InputSpecification) -> None:
+        self.authenticate_soar_client(input_data)
+        self.__api_manager.set_executing_asset(input_data.asset_id)
 
     def authenticate_soar_client(self, input_data: InputSpecification) -> None:
         session_id = input_data.user_session_token
