@@ -12,30 +12,33 @@
     "logo": "logo.svg",
     "logo_dark": "logo_dark.svg",
     "product_name": "Example App",
-    "python_version": ["3.9", "3.13"],
+    "python_version": [
+        "3.9",
+        "3.13"
+    ],
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-04-17T12:00:00.000000Z",
+    "utctime_updated": "2025-05-20T07:27:07.854846Z",
     "fips_compliant": false,
     "configuration": {
         "base_url": {
-            "order": 0,
             "data_type": "string",
+            "required": true,
             "description": "Base Url",
-            "required": true
+            "order": 0
         },
         "api_key": {
-            "order": 1,
             "data_type": "password",
+            "required": true,
             "description": "API key for authentication",
-            "required": true
+            "order": 1
         },
         "key_header": {
             "data_type": "string",
-            "default": "Authorization",
+            "required": true,
             "description": "Header for API key authentication",
             "order": 2,
-            "required": true,
+            "default": "Authorization",
             "value_list": [
                 "Authorization",
                 "X-API-Key"
@@ -108,6 +111,63 @@
                     "data_type": "string"
                 }
             ]
+        },
+        {
+            "action": "on poll",
+            "identifier": "on_poll",
+            "description": "on poll",
+            "verbose": "Callback action for the on_poll ingest functionality",
+            "type": "ingest",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "parameters": {
+                "start_time": {
+                    "order": 0,
+                    "name": "start_time",
+                    "description": "Start of time range, in epoch time (milliseconds).",
+                    "data_type": "numeric",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "end_time": {
+                    "order": 1,
+                    "name": "end_time",
+                    "description": "End of time range, in epoch time (milliseconds).",
+                    "data_type": "numeric",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "container_count": {
+                    "order": 2,
+                    "name": "container_count",
+                    "description": "Maximum number of container records to query for.",
+                    "data_type": "numeric",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "artifact_count": {
+                    "order": 3,
+                    "name": "artifact_count",
+                    "description": "Maximum number of artifact records to query for.",
+                    "data_type": "numeric",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "container_id": {
+                    "order": 4,
+                    "name": "container_id",
+                    "description": "Container IDs to limit the ingestion to.",
+                    "data_type": "string",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": true
+                }
+            },
+            "output": []
         }
     ],
     "pip39_dependencies": {
@@ -116,16 +176,6 @@
                 "module": "anyio",
                 "input_file": "wheels/shared/anyio-4.9.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/anyio-4.9.0-py3-none-any.whl"
-            },
-            {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.38.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.38.5-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.38.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.38.5-py3-none-any.whl"
             },
             {
                 "module": "exceptiongroup",
@@ -163,11 +213,6 @@
                 "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
             },
             {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
-            },
-            {
                 "module": "multidict",
                 "input_file": "wheels/python39/multidict-6.4.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python39/multidict-6.4.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
@@ -176,16 +221,6 @@
                 "module": "propcache",
                 "input_file": "wheels/python39/propcache-0.3.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python39/propcache-0.3.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl"
             },
             {
                 "module": "sniffio",
@@ -212,16 +247,6 @@
                 "input_file_aarch64": "wheels/shared/anyio-4.9.0-py3-none-any.whl"
             },
             {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.38.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.38.5-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.38.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.38.5-py3-none-any.whl"
-            },
-            {
                 "module": "exceptiongroup",
                 "input_file": "wheels/shared/exceptiongroup-1.2.2-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/exceptiongroup-1.2.2-py3-none-any.whl"
@@ -257,11 +282,6 @@
                 "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
             },
             {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
-            },
-            {
                 "module": "multidict",
                 "input_file": "wheels/python313/multidict-6.4.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python313/multidict-6.4.3-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
@@ -270,16 +290,6 @@
                 "module": "propcache",
                 "input_file": "wheels/python313/propcache-0.3.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python313/propcache-0.3.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl"
             },
             {
                 "module": "sniffio",

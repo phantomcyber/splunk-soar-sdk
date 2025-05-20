@@ -10,7 +10,6 @@ authors = [
     { name = "John Smith", email = "jsmith@example.com" }
 ]
 dependencies = [
-    "boto3>=1.38.3",
     "httpx[http2]>=0.28.1",
     "requests>=2.32.3",
     "splunk-soar-sdk",

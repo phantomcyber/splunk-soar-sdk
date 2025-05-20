@@ -136,25 +136,32 @@ class Params(BaseModel):
 
 class OnPollParams(Params):
     """
-    Parameters for on_poll action that receives parameters for polling time, 
-    number of events, etc. which the handler is expected to respect.
+    Parameters for on_poll.
+
+    Used to define the specific parameters for the on_poll function.
     """
-    start_time: int = Param(
-        description="Start time for polling (epoch time)",
+    start_time: Optional[int] = Param(
+        description="Start of time range, in epoch time (milliseconds).",
+        required=False,
     )
     
-    end_time: int = Param(
-        description="End time for polling (epoch time)",
+    end_time: Optional[int] = Param(
+        description="End of time range, in epoch time (milliseconds).",
+        required=False,
     )
     
-    container_count: int = Param(
-        description="Parameter ignored for schedule/interval polling only",
+    container_count: Optional[int] = Param(
+        description="Maximum number of container records to query for.",
+        required=False,
     )
     
-    artifact_count: int = Param(
-        description="Maximum number of artifacts to ingest", 
+    artifact_count: Optional[int] = Param(
+        description="Maximum number of artifact records to query for.",
+        required=False,
     )
     
-    container_id: int = Param(
-        description="ID of the container for artifacts",
+    container_id: Optional[str] = Param(
+        description="Container IDs to limit the ingestion to.",
+        required=False,
+        allow_list=True,
     )
