@@ -24,7 +24,7 @@ def test_handle(example_app: App, simple_action_input: InputSpecification):
 def test_get_actions(example_app: App):
     @example_app.action()
     def action_handler(params: Params) -> ActionOutput:
-        pass
+        return ActionOutput()
 
     actions = example_app.get_actions()
     assert len(actions) == 1
@@ -72,3 +72,18 @@ def test_appid_not_uuid():
             product_name="Example App",
             publisher="Splunk Inc.",
         )
+
+
+def test_enable_webhooks(app_with_simple_asset: App):
+    app_with_simple_asset.enable_webhooks(
+        default_allowed_headers=["Authorization", "X-Forwarded-For"],
+        default_requires_auth=False,
+        default_ip_allowlist=["10.0.0.0/24"],
+    )
+
+    assert app_with_simple_asset.webhook_meta.dict() == {
+        "handler": None,
+        "requires_auth": False,
+        "allowed_headers": ["Authorization", "X-Forwarded-For"],
+        "ip_allowlist": ["10.0.0.0/24"],
+    }

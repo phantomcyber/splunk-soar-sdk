@@ -48,19 +48,18 @@ def test_get_module_dot_path(main_module, dot_path):
     assert ManifestProcessor.get_module_dot_path(main_module) == dot_path
 
 
-def test_build_manifest():
+def test_build_manifests():
     class mock_datetime(datetime):
         @classmethod
         def now(cls, tz: "_TzInfo | None" = timezone.utc) -> datetime:
             return datetime(year=2025, month=4, day=17, hour=12, tzinfo=tz)
 
-    with mock.patch("soar_sdk.cli.manifests.processors.datetime", mock_datetime):
-        processor = ManifestProcessor(
-            "example_app.json", project_context="./tests/example_app"
-        )
-        app_meta = processor.build().dict()
+    for test_app in ["tests/example_app", "tests/example_app_with_webhook"]:
+        with mock.patch("soar_sdk.cli.manifests.processors.datetime", mock_datetime):
+            processor = ManifestProcessor("example_app.json", project_context=test_app)
+            app_meta = processor.build().dict(exclude_none=True)
 
-    with open("tests/example_app/app.json") as expected_json:
-        expected_meta = json.load(expected_json)
+        with open(f"{test_app}/app.json") as expected_json:
+            expected_meta = json.load(expected_json)
 
-    assert app_meta == expected_meta
+        assert app_meta == expected_meta

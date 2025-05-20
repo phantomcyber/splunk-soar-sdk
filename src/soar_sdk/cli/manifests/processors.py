@@ -38,6 +38,10 @@ class ManifestProcessor:
             uv_lock.resolve_dependencies(dependencies)
         )
 
+        if app.webhook_meta is not None:
+            app_meta.webhook = app.webhook_meta
+            app_meta.webhook.handler = f"{app_meta.main_module}.handle_webhook"
+
         return app_meta
 
     def create(self) -> None:
@@ -46,7 +50,7 @@ class ManifestProcessor:
         and save it back to the manifest file.
         """
         app_meta = self.build()
-        pprint(app_meta.dict())
+        pprint(app_meta.dict(exclude_none=True))
 
         self.save_json_manifest(app_meta)
 
@@ -62,7 +66,7 @@ class ManifestProcessor:
 
     def save_json_manifest(self, app_meta: AppMeta) -> None:
         with open(self.manifest_path, "w") as f:
-            json.dump(app_meta.dict(), f, indent=4)
+            json.dump(app_meta.dict(exclude_none=True), f, indent=4)
 
     @staticmethod
     def get_module_dot_path(main_module: str) -> str:

@@ -1,7 +1,9 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 from .actions import ActionMeta
 from .dependencies import DependencyList
+from .webhooks import WebhookMeta
 
 
 class AppMeta(BaseModel):
@@ -30,3 +32,5 @@ class AppMeta(BaseModel):
 
     pip39_dependencies: DependencyList = Field(default_factory=DependencyList)
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
+
+    webhook: Optional[WebhookMeta]
