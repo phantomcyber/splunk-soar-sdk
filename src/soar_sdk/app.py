@@ -16,6 +16,8 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 from soar_sdk.params import OnPollParams
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.container import Container
+from soar_sdk.artifact import Artifact
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure, AssetMisconfiguration
@@ -301,8 +303,9 @@ class App:
         """
         Decorator for the on_poll action.
         
-        The decorated function must be a generator (using yield) or return an Iterator that yields artifacts. Only one on_poll action is allowed per app.
+        The decorated function must be a generator (using yield) or return an Iterator that yields Container and/or Artifact objects. Only one on_poll action is allowed per app.
         """
+        
         def on_poll_decorator(function: Callable) -> Action:
             if self.actions_provider.get_action("on_poll"):
                 raise TypeError("The 'on_poll' decorator can only be used once per App instance.")
@@ -324,7 +327,7 @@ class App:
             action_identifier = "on_poll"
             action_name = "on poll"
             
-            # Use OnPollParams for on_poll actions (constant set params for on_poll)
+            # Use OnPollParams for on_poll actions
             validated_params_class = OnPollParams
 
             @action_protocol
@@ -353,24 +356,60 @@ class App:
                     
                     result = function(params, *args, **kwargs)
                     
-                    # Process each artifact
-                    for artifact in result:
-                        # TODO: Add shim
-                        # self.asset.save_artifacts([artifact])
-                        client.save_progress(f"Yielded artifact: {artifact}")
+                    # Check if container_id is provided in params
+                    container_id = getattr(params, "container_id", None)
+                    container_created = False
+                    
+                    for item in result:
+                        # Check if the item is a Container
+                        if isinstance(item, Container):
+                            container = item.to_dict() # Convert for saving
+                            ret_val, message, cid = client.save_container(container)
+                            client.save_progress(f"Creating container: {container['name']}")
+                            
+                            if ret_val:
+                                container_id = cid
+                                container_created = True
+                                item.container_id = container_id  # Store the container_id for reference
+                            elif "duplicate container found" in message.lower():
+                                client.save_progress("Duplicate container found, reusing existing container")
+                                container_id = cid
+                                container_created = True
+                                item.container_id = container_id
+                            continue
+                        
+                        # Check for Artifact
+                        if not isinstance(item, Artifact):
+                            client.save_progress(f"Warning: Item is not a Container or Artifact, skipping: {item}")
+                            continue
+                            
+                        artifact_dict = item.to_dict() # Convert for saving
+                        
+                        if not container_id and not container_created and "container_id" not in artifact_dict:
+                            # No container for this artifact
+                            client.save_progress(f"Warning: Artifact has no container, skipping: {item}")
+                            continue
+                        
+                        if container_id and "container_id" not in artifact_dict:
+                            # Set the container_id
+                            artifact_dict["container_id"] = container_id
+                            item.container_id = container_id
+                            
+                        client.save_artifacts([artifact_dict])
+                        client.save_progress(f"Added artifact: {artifact_dict.get('name', 'Unnamed artifact')}")
                     
                     return self._adapt_action_result(ActionResult(status=True, message="Polling complete"), client)
                 except Exception as e:
+                    client.save_progress(f"Error during polling: {str(e)}")
                     return self._adapt_action_result(ActionResult(status=False, message=str(e)), client)
 
             inner.params_class = validated_params_class
-            # Create a custom ActionMeta class for on_poll to force empty outputs
-            from soar_sdk.meta.actions import ActionMeta as BaseActionMeta
-            
-            class OnPollActionMeta(BaseActionMeta):
+
+            # Custom ActionMeta class for on_poll (has no output)        
+            class OnPollActionMeta(ActionMeta):
                 def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
                     data = super().dict(*args, **kwargs)
-                    # Override the outputs with an empty list
+                    # Poll actions have no output
                     data["output"] = []
                     return data
             
@@ -382,8 +421,7 @@ class App:
                 type="ingest",
                 read_only=True,
                 parameters=validated_params_class,
-                versions="EQ(*)",
-                output=ActionOutput
+                versions="EQ(*)"
             )
 
             self.actions_provider.set_action(action_identifier, inner)
