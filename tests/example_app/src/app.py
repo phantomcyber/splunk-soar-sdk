@@ -7,8 +7,8 @@ from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import Params, OnPollParams
 from soar_sdk.action_results import ActionOutput
-from soar_sdk.container import Container
-from soar_sdk.artifact import Artifact
+from soar_sdk.models.container import Container
+from soar_sdk.models.artifact import Artifact
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
@@ -71,19 +71,20 @@ def on_poll(
     )
 
     # Simulate collecting 2 network artifacts that will be put in the network alerts container
-    for i in range(2):
-        client.save_progress(f"Processing network artifact {i}")
+    for i in range(1, 3):
+        logger.info(f"Processing network artifact {i}")
 
+        alert_id = f"testalert-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{i}"
         artifact = Artifact(
-            name=f"Network Alert {i + 1}",
+            name=f"Network Alert {i}",
             label="alert",
             severity="medium",
-            source_data_identifier=asset.base_url,
+            source_data_identifier=alert_id,
             type="network",
-            description=f"Example network alert {i + 1} from polling operation",
+            description=f"Example network alert {i} from polling operation",
             data={
-                "alert_id": f"testalert-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{i + 1}",
-                "source_ip": f"10.0.0.{i + 1}",
+                "alert_id": alert_id,
+                "source_ip": f"10.0.0.{i}",
                 "destination_ip": "192.168.0.1",
                 "protocol": "TCP",
             },

@@ -17,8 +17,8 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 from soar_sdk.params import OnPollParams
 from soar_sdk.action_results import ActionOutput
-from soar_sdk.container import Container
-from soar_sdk.artifact import Artifact
+from soar_sdk.models.container import Container
+from soar_sdk.models.artifact import Artifact
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure, AssetMisconfiguration
@@ -431,7 +431,13 @@ class App:
                     return self._adapt_action_result(
                         ActionResult(status=True, message="Polling complete"), client
                     )
+                except (ActionFailure, AssetMisconfiguration) as e:
+                    e.set_action_name(action_name)
+                    return self._adapt_action_result(
+                        ActionResult(status=False, message=str(e)), client
+                    )
                 except Exception as e:
+                    client.add_exception(e)
                     client.save_progress(f"Error during polling: {e!s}")
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)), client
