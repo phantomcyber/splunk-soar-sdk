@@ -5,7 +5,6 @@ from functools import wraps
 from typing import Any, Optional, Union, Callable
 from collections.abc import Iterator
 
-
 from soar_sdk.asset import BaseAsset
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.base_connector import BaseConnector
@@ -14,6 +13,7 @@ from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app_cli_runner import AppCliRunner
 from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.meta.webhooks import WebhookMeta
 from soar_sdk.params import Params
 from soar_sdk.params import OnPollParams
 from soar_sdk.action_results import ActionOutput
@@ -574,3 +574,25 @@ class App:
             import pytest
 
             pytest.mark.skip(inner)
+
+    webhook_meta: Optional[WebhookMeta] = None
+
+    def enable_webhooks(
+        self,
+        default_requires_auth: bool = True,
+        default_allowed_headers: Optional[list[str]] = None,
+        default_ip_allowlist: Optional[list[str]] = None,
+    ) -> "App":
+        if default_allowed_headers is None:
+            default_allowed_headers = []
+        if default_ip_allowlist is None:
+            default_ip_allowlist = ["0.0.0.0/0", "::/0"]
+
+        self.webhook_meta = WebhookMeta(
+            handler=None,  # The handler is set by the ManifestProcessor when generating the final manifest
+            requires_auth=default_requires_auth,
+            allowed_headers=default_allowed_headers,
+            ip_allowlist=default_ip_allowlist,
+        )
+
+        return self
