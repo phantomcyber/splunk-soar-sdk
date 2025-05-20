@@ -1,48 +1,48 @@
 #!/usr/bin/env python
-from typing import Optional, Dict, Any, Union, List
-from datetime import datetime
+from typing import Optional, Any, Union
+
 
 class Container:
     """
     Represents a container to be created during on_poll.
-    
+
     This class allows users to specify container properties when yielding from an on_poll function.
     """
-    
-    def __init__(self, 
-                 name: str, 
-                 label: str,
-                 description: Optional[str] = None, 
-                 source_data_identifier: Optional[str] = None,
-                 severity: Optional[str] = None,
-                 status: Optional[str] = None,
-                 tags: Optional[Union[List[str], str]] = None,
-                 owner_id: Optional[Union[int, str]] = None,
-                 sensitivity: Optional[str] = None,
-                 artifacts: Optional[List[Dict[str, Any]]] = None,
-                 asset_id: Optional[int] = None,
-                 close_time: Optional[str] = None,
-                 custom_fields: Optional[Dict[str, Any]] = None,
-                 data: Optional[Dict[str, Any]] = None,
-                 due_time: Optional[str] = None,
-                 end_time: Optional[str] = None,
-                 ingest_app_id: Optional[int] = None,
-                 kill_chain: Optional[str] = None,
-                 role_id: Optional[Union[int, str]] = None,
-                 run_automation: bool = False,
-                 start_time: Optional[str] = None,
-                 open_time: Optional[str] = None,
-                 tenant_id: Optional[Union[int, str]] = None,
-                 container_type: Optional[str] = None,
-                 template_id: Optional[int] = None,
-                 authorized_users: Optional[List[int]] = None,
-                 artifact_count: Optional[int] = None) -> None:
 
-        self.container = {
-            "name": name,
-            "label": label
-        }
-        
+    def __init__(
+        self,
+        name: str,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        source_data_identifier: Optional[str] = None,
+        severity: Optional[str] = None,
+        status: Optional[str] = None,
+        tags: Optional[Union[list[str], str]] = None,
+        owner_id: Optional[Union[int, str]] = None,
+        sensitivity: Optional[str] = None,
+        artifacts: Optional[list[dict[str, Any]]] = None,
+        asset_id: Optional[int] = None,
+        close_time: Optional[str] = None,
+        custom_fields: Optional[dict[str, Any]] = None,
+        data: Optional[dict[str, Any]] = None,
+        due_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        ingest_app_id: Optional[int] = None,
+        kill_chain: Optional[str] = None,
+        role_id: Optional[Union[int, str]] = None,
+        run_automation: bool = False,
+        start_time: Optional[str] = None,
+        open_time: Optional[str] = None,
+        tenant_id: Optional[Union[int, str]] = None,
+        container_type: Optional[str] = None,
+        template_id: Optional[int] = None,
+        authorized_users: Optional[list[int]] = None,
+        artifact_count: Optional[int] = None,
+    ) -> None:
+        self.container: dict[str, Any] = {"name": name}
+
+        if label is not None:
+            self.container["label"] = label
         if description is not None:
             self.container["description"] = description
         if source_data_identifier is not None:
@@ -93,21 +93,23 @@ class Container:
             self.container["authorized_users"] = authorized_users
         if artifact_count is not None:
             self.container["artifact_count"] = artifact_count
-                    
+
         self.container_id: Optional[str] = None
-    
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the container to a dictionary (needed for save_container).
         """
         return self.container
-        
-    def __getattr__(self, name: str) -> Any:
+
+    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
         if name in self.container:
             return self.container[name]
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-    
-    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
+
+    def __setattr__(self, name: str, value: Any) -> None:  # noqa: ANN401
         if name == "container" or name == "container_id":
             super().__setattr__(name, value)
         else:

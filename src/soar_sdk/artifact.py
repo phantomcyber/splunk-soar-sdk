@@ -1,34 +1,36 @@
 #!/usr/bin/env python
-from typing import Optional, Dict, Any, Union, List
+from typing import Optional, Any, Union
+
 
 class Artifact:
     """
     Represents an artifact to be created during on_poll.
-    
+
     This class allows users to create and configure artifacts when yielding from an on_poll function.
     """
-    
-    def __init__(self, 
-                 name: Optional[str] = None,
-                 label: Optional[str] = None,
-                 description: Optional[str] = None,
-                 type: Optional[str] = None,
-                 severity: Optional[str] = None,
-                 source_data_identifier: Optional[str] = None,
-                 container_id: Optional[int] = None,
-                 data: Optional[Dict[str, Any]] = None,
-                 run_automation: bool = False,
-                 owner_id: Optional[Union[int, str]] = None,
-                 cef: Optional[Dict[str, Any]] = None,
-                 cef_types: Optional[Dict[str, List[str]]] = None,
-                 ingest_app_id: Optional[Union[int, str]] = None,
-                 tags: Optional[Union[List[str], str]] = None,
-                 start_time: Optional[str] = None,
-                 end_time: Optional[str] = None,
-                 kill_chain: Optional[str] = None) -> None:
-        
-        self.artifact = {}
-        
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        label: Optional[str] = None,
+        description: Optional[str] = None,
+        type: Optional[str] = None,  # noqa: A002
+        severity: Optional[str] = None,
+        source_data_identifier: Optional[str] = None,
+        container_id: Optional[int] = None,
+        data: Optional[dict[str, Any]] = None,
+        run_automation: bool = False,
+        owner_id: Optional[Union[int, str]] = None,
+        cef: Optional[dict[str, Any]] = None,
+        cef_types: Optional[dict[str, list[str]]] = None,
+        ingest_app_id: Optional[Union[int, str]] = None,
+        tags: Optional[Union[list[str], str]] = None,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        kill_chain: Optional[str] = None,
+    ) -> None:
+        self.artifact: dict[str, Any] = {}
+
         if name is not None:
             self.artifact["name"] = name
         if label is not None:
@@ -63,19 +65,21 @@ class Artifact:
             self.artifact["end_time"] = end_time
         if kill_chain is not None:
             self.artifact["kill_chain"] = kill_chain
-                
-    def to_dict(self) -> Dict[str, Any]:
+
+    def to_dict(self) -> dict[str, Any]:
         """
         Convert the artifact to a dictionary (needed for save_artifact).
         """
         return self.artifact
-        
-    def __getattr__(self, name: str) -> Any:
+
+    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
         if name in self.artifact:
             return self.artifact[name]
-        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
-    
-    def __setattr__(self, name: str, value: Any) -> None:
+        raise AttributeError(
+            f"'{self.__class__.__name__}' object has no attribute '{name}'"
+        )
+
+    def __setattr__(self, name: str, value: Any) -> None:  # noqa: ANN401
         if name == "artifact":
             super().__setattr__(name, value)
         else:

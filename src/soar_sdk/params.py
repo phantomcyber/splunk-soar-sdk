@@ -138,29 +138,30 @@ class OnPollParams(Params):
     """
     Parameters for on_poll.
 
-    Used to define the specific parameters for the on_poll function.
+    Used to define the specific parameters for the on_poll action.
     """
-    start_time: Optional[int] = Param(
+
+    start_time: int = Param(
         description="Start of time range, in epoch time (milliseconds).",
         required=False,
     )
-    
-    end_time: Optional[int] = Param(
+
+    end_time: int = Param(
         description="End of time range, in epoch time (milliseconds).",
         required=False,
     )
-    
-    container_count: Optional[int] = Param(
+
+    container_count: int = Param(
         description="Maximum number of container records to query for.",
         required=False,
     )
-    
-    artifact_count: Optional[int] = Param(
+
+    artifact_count: int = Param(
         description="Maximum number of artifact records to query for.",
         required=False,
     )
-    
-    container_id: Optional[str] = Param(
+
+    container_id: str = Param(
         description="Container IDs to limit the ingestion to.",
         required=False,
         allow_list=True,

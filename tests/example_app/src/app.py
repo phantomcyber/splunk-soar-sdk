@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-from typing import Iterator, Union
-from datetime import datetime, timedelta
+from typing import Union
+from collections.abc import Iterator
+from datetime import datetime, timezone
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
@@ -54,38 +55,40 @@ class ReverseStringOutput(ActionOutput):
 def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStringOutput:
     logger.debug("params: %s", param)
     reversed_string = param.input_string[::-1]
-    client.debug("reversed_string", reversed_string)
+    logger.debug("reversed_string %s", reversed_string)
     return ReverseStringOutput(reversed_string=reversed_string)
 
 
 @app.on_poll()
-def on_poll(params: OnPollParams, client: SOARClient, asset: Asset) -> Iterator[Union[Container, Artifact]]:
+def on_poll(
+    params: OnPollParams, client: SOARClient, asset: Asset
+) -> Iterator[Union[Container, Artifact]]:
     # Create container first for artifacts
     yield Container(
         name="Network Alerts",
         description="Some network-related alerts",
-        severity="medium"
+        severity="medium",
     )
-    
+
     # Simulate collecting 2 network artifacts that will be put in the network alerts container
     for i in range(2):
         client.save_progress(f"Processing network artifact {i}")
-        
+
         artifact = Artifact(
-            name=f"Network Alert {i+1}",
+            name=f"Network Alert {i + 1}",
             label="alert",
             severity="medium",
             source_data_identifier=asset.base_url,
             type="network",
-            description=f"Example network alert {i+1} from polling operation",
+            description=f"Example network alert {i + 1} from polling operation",
             data={
-                "alert_id": f"testalert-{datetime.now().strftime('%Y%m%d')}-{i+1}",
-                "source_ip": f"10.0.0.{i+1}",
+                "alert_id": f"testalert-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{i + 1}",
+                "source_ip": f"10.0.0.{i + 1}",
                 "destination_ip": "192.168.0.1",
-                "protocol": "TCP"
-            }
+                "protocol": "TCP",
+            },
         )
-        
+
         yield artifact
 
 
