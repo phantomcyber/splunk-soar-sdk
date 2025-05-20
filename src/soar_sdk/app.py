@@ -2,7 +2,8 @@ import inspect
 import json
 import sys
 from functools import wraps
-from typing import Any, Optional, Union, Callable, Iterator
+from typing import Any, Optional, Union, Callable
+from collections.abc import Iterator
 
 
 from soar_sdk.asset import BaseAsset
@@ -302,42 +303,51 @@ class App:
     def on_poll(self) -> Callable[[Callable], Action]:
         """
         Decorator for the on_poll action.
-        
+
         The decorated function must be a generator (using yield) or return an Iterator that yields Container and/or Artifact objects. Only one on_poll action is allowed per app.
+
+        Usage:
+        If a Container is yielded first, all subsequent Artifacts will be added to that container unless they already have a `container_id`.
+        If an `Artifact` is yielded without a container and no `container_id` is set, it will be skipped.
         """
-        
+
         def on_poll_decorator(function: Callable) -> Action:
             if self.actions_provider.get_action("on_poll"):
-                raise TypeError("The 'on_poll' decorator can only be used once per App instance.")
+                raise TypeError(
+                    "The 'on_poll' decorator can only be used once per App instance."
+                )
 
             # Check if function is generator function or has a return type annotation of iterator
             is_generator = inspect.isgeneratorfunction(function)
             signature = inspect.signature(function)
             has_iterator_return = False
-            
-            if signature.return_annotation != inspect.Signature.empty:
-                # Check if the return annotation is an Iterator type
-                if hasattr(signature.return_annotation, "__origin__"):
-                    if signature.return_annotation.__origin__ is Iterator:
-                        has_iterator_return = True
-            
+
+            # Check if the return annotation is an Iterator type
+            if (
+                signature.return_annotation != inspect.Signature.empty
+                and hasattr(signature.return_annotation, "__origin__")
+                and signature.return_annotation.__origin__ is Iterator
+            ):
+                has_iterator_return = True
+
             if not (is_generator or has_iterator_return):
-                raise TypeError("The on_poll function must be a generator (use 'yield') or return an Iterator.")
+                raise TypeError(
+                    "The on_poll function must be a generator (use 'yield') or return an Iterator."
+                )
 
             action_identifier = "on_poll"
             action_name = "on poll"
-            
+
             # Use OnPollParams for on_poll actions
             validated_params_class = OnPollParams
 
             @action_protocol
             @wraps(function)
             def inner(
-                params,
+                params: OnPollParams,
                 client: SOARClient = self.actions_provider.soar_client,
-                asset=None,
-                *args,
-                **kwargs
+                *args: Any,  # noqa: ANN401
+                **kwargs: Any,  # noqa: ANN401
             ) -> bool:
                 try:
                     # Validate poll params
@@ -345,74 +355,98 @@ class App:
                         try:
                             action_params = validated_params_class.parse_obj(params)
                         except Exception as e:
-                            client.save_progress(f"Parameter validation error: {str(e)}")
+                            client.save_progress(f"Parameter validation error: {e!s}")
                             return self._adapt_action_result(
-                                ActionResult(status=False, message=f"Invalid parameters: {str(e)}"), 
-                                client
+                                ActionResult(
+                                    status=False, message=f"Invalid parameters: {e!s}"
+                                ),
+                                client,
                             )
                         params = action_params
-                    
-                    kwargs = self._build_magic_args(function, client=client, asset=asset, **kwargs)
-                    
+
+                    kwargs = self._build_magic_args(function, client=client, **kwargs)
+
                     result = function(params, *args, **kwargs)
-                    
+
                     # Check if container_id is provided in params
                     container_id = getattr(params, "container_id", None)
                     container_created = False
-                    
+
                     for item in result:
                         # Check if the item is a Container
                         if isinstance(item, Container):
-                            container = item.to_dict() # Convert for saving
-                            ret_val, message, cid = client.save_container(container)
-                            client.save_progress(f"Creating container: {container['name']}")
-                            
+                            # TODO: Remove ignores
+                            container = item.to_dict()  # Convert for saving
+                            ret_val, message, cid = client.save_container(container)  # type: ignore[attr-defined]
+                            client.save_progress(
+                                f"Creating container: {container['name']}"
+                            )
+
                             if ret_val:
                                 container_id = cid
                                 container_created = True
-                                item.container_id = container_id  # Store the container_id for reference
+                                item.container_id = (
+                                    container_id  # Store the container_id for reference
+                                )
                             elif "duplicate container found" in message.lower():
-                                client.save_progress("Duplicate container found, reusing existing container")
+                                client.save_progress(
+                                    "Duplicate container found, reusing existing container"
+                                )
                                 container_id = cid
                                 container_created = True
                                 item.container_id = container_id
                             continue
-                        
+
                         # Check for Artifact
                         if not isinstance(item, Artifact):
-                            client.save_progress(f"Warning: Item is not a Container or Artifact, skipping: {item}")
+                            client.save_progress(
+                                f"Warning: Item is not a Container or Artifact, skipping: {item}"
+                            )
                             continue
-                            
-                        artifact_dict = item.to_dict() # Convert for saving
-                        
-                        if not container_id and not container_created and "container_id" not in artifact_dict:
+
+                        artifact_dict = item.to_dict()  # Convert for saving
+
+                        if (
+                            not container_id
+                            and not container_created
+                            and "container_id" not in artifact_dict
+                        ):
                             # No container for this artifact
-                            client.save_progress(f"Warning: Artifact has no container, skipping: {item}")
+                            client.save_progress(
+                                f"Warning: Artifact has no container, skipping: {item}"
+                            )
                             continue
-                        
+
                         if container_id and "container_id" not in artifact_dict:
                             # Set the container_id
                             artifact_dict["container_id"] = container_id
                             item.container_id = container_id
-                            
-                        client.save_artifacts([artifact_dict])
-                        client.save_progress(f"Added artifact: {artifact_dict.get('name', 'Unnamed artifact')}")
-                    
-                    return self._adapt_action_result(ActionResult(status=True, message="Polling complete"), client)
+
+                        # TODO: Remove ignores
+                        client.save_artifacts([artifact_dict])  # type: ignore[attr-defined]
+                        client.save_progress(
+                            f"Added artifact: {artifact_dict.get('name', 'Unnamed artifact')}"
+                        )
+
+                    return self._adapt_action_result(
+                        ActionResult(status=True, message="Polling complete"), client
+                    )
                 except Exception as e:
-                    client.save_progress(f"Error during polling: {str(e)}")
-                    return self._adapt_action_result(ActionResult(status=False, message=str(e)), client)
+                    client.save_progress(f"Error during polling: {e!s}")
+                    return self._adapt_action_result(
+                        ActionResult(status=False, message=str(e)), client
+                    )
 
             inner.params_class = validated_params_class
 
-            # Custom ActionMeta class for on_poll (has no output)        
+            # Custom ActionMeta class for on_poll (has no output)
             class OnPollActionMeta(ActionMeta):
-                def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:
+                def dict(self, *args: object, **kwargs: object) -> dict[str, Any]:
                     data = super().dict(*args, **kwargs)
                     # Poll actions have no output
                     data["output"] = []
                     return data
-            
+
             inner.meta = OnPollActionMeta(
                 action=action_name,
                 identifier=action_identifier,
@@ -421,7 +455,7 @@ class App:
                 type="ingest",
                 read_only=True,
                 parameters=validated_params_class,
-                versions="EQ(*)"
+                versions="EQ(*)",
             )
 
             self.actions_provider.set_action(action_identifier, inner)

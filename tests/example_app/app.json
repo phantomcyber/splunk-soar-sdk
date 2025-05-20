@@ -178,6 +178,16 @@
                 "input_file_aarch64": "wheels/shared/anyio-4.9.0-py3-none-any.whl"
             },
             {
+                "module": "boto3",
+                "input_file": "wheels/shared/boto3-1.38.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/boto3-1.38.5-py3-none-any.whl"
+            },
+            {
+                "module": "botocore",
+                "input_file": "wheels/shared/botocore-1.38.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/botocore-1.38.5-py3-none-any.whl"
+            },
+            {
                 "module": "exceptiongroup",
                 "input_file": "wheels/shared/exceptiongroup-1.2.2-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/exceptiongroup-1.2.2-py3-none-any.whl"
@@ -213,6 +223,11 @@
                 "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
             },
             {
+                "module": "jmespath",
+                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
+            },
+            {
                 "module": "multidict",
                 "input_file": "wheels/python39/multidict-6.4.3-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python39/multidict-6.4.3-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
@@ -221,6 +236,16 @@
                 "module": "propcache",
                 "input_file": "wheels/python39/propcache-0.3.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python39/propcache-0.3.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+            },
+            {
+                "module": "python-dateutil",
+                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+            },
+            {
+                "module": "s3transfer",
+                "input_file": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl"
             },
             {
                 "module": "sniffio",
@@ -247,6 +272,16 @@
                 "input_file_aarch64": "wheels/shared/anyio-4.9.0-py3-none-any.whl"
             },
             {
+                "module": "boto3",
+                "input_file": "wheels/shared/boto3-1.38.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/boto3-1.38.5-py3-none-any.whl"
+            },
+            {
+                "module": "botocore",
+                "input_file": "wheels/shared/botocore-1.38.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/botocore-1.38.5-py3-none-any.whl"
+            },
+            {
                 "module": "exceptiongroup",
                 "input_file": "wheels/shared/exceptiongroup-1.2.2-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/exceptiongroup-1.2.2-py3-none-any.whl"
@@ -282,6 +317,11 @@
                 "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
             },
             {
+                "module": "jmespath",
+                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
+            },
+            {
                 "module": "multidict",
                 "input_file": "wheels/python313/multidict-6.4.3-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python313/multidict-6.4.3-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
@@ -290,6 +330,16 @@
                 "module": "propcache",
                 "input_file": "wheels/python313/propcache-0.3.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                 "input_file_aarch64": "wheels/python313/propcache-0.3.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+            },
+            {
+                "module": "python-dateutil",
+                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+            },
+            {
+                "module": "s3transfer",
+                "input_file": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/s3transfer-0.12.0-py3-none-any.whl"
             },
             {
                 "module": "sniffio",
