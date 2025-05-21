@@ -21,7 +21,8 @@ authors = [
     { name = "Tapish Jain", email = "tapishj@splunk.com" },
     { name = "Janusz Kamieński", email = "jkamienski@splunk.com" },
     { name = "Scott Odle", email = "sodle@splunk.com" },
-    { name = "Michał Posłuszny", email = "mposluszny@splunk.com" }
+    { name = "Michał Posłuszny", email = "mposluszny@splunk.com" },
+    { name = "Michael Nordby", email = "mnordby@splunk.com" }
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
