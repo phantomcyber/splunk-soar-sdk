@@ -351,22 +351,20 @@ class App:
             ) -> bool:
                 try:
                     # Validate poll params
-                    if validated_params_class is not None:
-                        try:
-                            action_params = validated_params_class.parse_obj(params)
-                        except Exception as e:
-                            client.save_progress(f"Parameter validation error: {e!s}")
-                            return self._adapt_action_result(
-                                ActionResult(
-                                    status=False, message=f"Invalid parameters: {e!s}"
-                                ),
-                                client,
-                            )
-                        params = action_params
+                    try:
+                        action_params = validated_params_class.parse_obj(params)
+                    except Exception as e:
+                        client.save_progress(f"Parameter validation error: {e!s}")
+                        return self._adapt_action_result(
+                            ActionResult(
+                                status=False, message=f"Invalid parameters: {e!s}"
+                            ),
+                            client,
+                        )
 
                     kwargs = self._build_magic_args(function, client=client, **kwargs)
 
-                    result = function(params, *args, **kwargs)
+                    result = function(action_params, *args, **kwargs)
 
                     # Check if container_id is provided in params
                     container_id = getattr(params, "container_id", None)
@@ -385,16 +383,15 @@ class App:
                             if ret_val:
                                 container_id = cid
                                 container_created = True
-                                item.container_id = (
-                                    container_id  # Store the container_id for reference
-                                )
-                            elif "duplicate container found" in message.lower():
-                                client.save_progress(
+                                item.container_id = container_id
+
+                            if (
+                                "duplicate container found" in message.lower()
+                            ):  # pragma: no cover
+                                client.save_progress(  # pragma: no cover
                                     "Duplicate container found, reusing existing container"
                                 )
-                                container_id = cid
-                                container_created = True
-                                item.container_id = container_id
+
                             continue
 
                         # Check for Artifact

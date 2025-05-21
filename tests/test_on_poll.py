@@ -5,6 +5,9 @@ from unittest import mock
 
 from soar_sdk.app import App
 from soar_sdk.params import OnPollParams
+from soar_sdk.models.container import Container
+from soar_sdk.models.artifact import Artifact
+from soar_sdk.exceptions import ActionFailure
 
 
 def test_on_poll_decoration_fails_when_used_more_than_once(simple_app: App):
@@ -56,6 +59,24 @@ def test_on_poll_function_called_with_params(simple_app: App):
 
     poll_fn.assert_called_once_with(params)
     assert result is True
+
+
+def test_on_poll_param_validation_error(simple_app: App):
+    """Test on_poll handles parameter validation errors and returns False."""
+    client_mock = mock.Mock()
+    client_mock.save_progress = mock.Mock()
+
+    @simple_app.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield Artifact(name="a1")
+
+    invalid_params = "invalid"
+    result = on_poll_function(invalid_params, client=client_mock)
+    assert result is False
+    client_mock.save_progress.assert_called()
+    assert "Parameter validation error" in str(
+        client_mock.save_progress.call_args[0][0]
+    )
 
 
 def test_on_poll_works_with_iterator_functions(simple_app: App):
@@ -146,6 +167,133 @@ def test_on_poll_multiple_yields(simple_app: App):
     assert yielded == [0, 1, 2]
 
 
+def test_on_poll_yields_container_success(simple_app: App):
+    """Test on_poll yields a Container and successfully."""
+    client_mock = mock.Mock()
+    client_mock.save_container.return_value = (True, "Created", 42)
+    client_mock.save_artifacts.return_value = None
+    client_mock.save_progress.return_value = None
+
+    @simple_app.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield Container(name="c1")
+        yield Artifact(name="a1")
+
+    params = OnPollParams(start_time=0, end_time=1)
+    result = on_poll_function(params, client=client_mock)
+    assert result is True
+    assert client_mock.save_container.call_count == 1
+    client_mock.save_artifacts.assert_called()
+
+
+def test_on_poll_yields_container_duplicate(simple_app: App):
+    """Test on_poll yields a Container and handles duplicate container correctly."""
+    client_mock = mock.Mock()
+    client_mock.save_container.return_value = (True, "Duplicate container found", 99)
+    client_mock.save_artifacts.return_value = None
+    client_mock.save_progress.return_value = None
+
+    @simple_app.on_poll()
+    def on_poll_function_dup(params: OnPollParams):
+        yield Container(name="c2")
+        yield Artifact(name="a2")
+
+    params = OnPollParams(start_time=0, end_time=1)
+    result = on_poll_function_dup(params, client=client_mock)
+    assert result is True
+    assert client_mock.save_container.call_count == 1
+    client_mock.save_artifacts.assert_called()
+
+
+def test_on_poll_yields_container_creation_failure(simple_app: App):
+    """Test on_poll handles container creation failure correctly."""
+    client_mock = mock.Mock()
+    client_mock.save_container.return_value = (False, "Error creating container", None)
+    client_mock.save_artifacts.return_value = None
+    client_mock.save_progress.return_value = None
+
+    @simple_app.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield Container(name="c3")
+        yield Artifact(name="a3")  # Should be skipped because no container
+
+    params = OnPollParams(start_time=0, end_time=1)
+    result = on_poll_function(params, client=client_mock)
+    assert result is True
+    assert client_mock.save_container.call_count == 1
+    client_mock.save_artifacts.assert_not_called()
+    assert client_mock.save_progress.call_count >= 2
+
+
+def test_on_poll_yields_non_container_artifact(simple_app: App):
+    """Test on_poll correctly handles object that is neither Container nor Artifact."""
+    client_mock = mock.Mock()
+    client_mock.save_progress = mock.Mock()
+
+    @simple_app.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield 123  # Should be skipped
+        yield "string"
+
+    params = OnPollParams(start_time=0, end_time=1)
+    result = on_poll_function(params, client=client_mock)
+    assert result is True
+    # Should log warning for both
+    assert client_mock.save_progress.call_count == 2
+    assert any(
+        "skipping" in str(call.args[0])
+        for call in client_mock.save_progress.call_args_list
+    )
+
+
+def test_on_poll_artifact_no_container(simple_app: App):
+    """Test on_poll yields an Artifact with no container and no container_id."""
+    client_mock = mock.Mock()
+    client_mock.save_progress = mock.Mock()
+
+    @simple_app.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield Artifact(name="a1")
+
+    params = OnPollParams(start_time=0, end_time=1)
+    result = on_poll_function(params, client=client_mock)
+    assert result is True
+    client_mock.save_progress.assert_called()
+    assert "no container" in str(client_mock.save_progress.call_args[0][0])
+
+
+def test_on_poll_sets_container_id_on_artifact(simple_app: App):
+    """Test that on_poll sets container_id on artifact if not present and container_id is available."""
+    client_mock = mock.Mock()
+
+    @simple_app.on_poll()
+    def on_poll_function(params: OnPollParams):
+        artifact2 = Artifact(name="a2", container_id=999)
+        yield artifact2
+
+    params = OnPollParams(start_time=0, end_time=1)
+    on_poll_function(params, client=client_mock)
+    called_artifacts = client_mock.save_artifacts.call_args_list
+    saved_artifact = called_artifacts[0][0][0][0]
+    assert saved_artifact["container_id"] == 999
+
+
+def test_on_poll_failure(simple_app: App):
+    """Test on_poll handles ActionFailure correctly."""
+    client_mock = mock.Mock()
+    client_mock.save_progress = mock.Mock()
+
+    # ActionFailure
+    @simple_app.on_poll()
+    def on_poll_actionfailure(params: OnPollParams):
+        raise ActionFailure("failmsg")
+        yield  # pragma: no cover
+
+    params = OnPollParams(start_time=0, end_time=1)
+    result = on_poll_actionfailure(params, client=client_mock)
+    assert result is False
+
+
 def test_on_poll_decoration_with_meta(simple_app: App):
     """Test that the on_poll decorator properly sets up metadata."""
 
@@ -157,3 +305,16 @@ def test_on_poll_decoration_with_meta(simple_app: App):
     assert action is not None
     assert action.meta.action == "on poll"
     assert action == on_poll_function
+
+
+def test_on_poll_actionmeta_dict_output_empty(simple_app: App):
+    """Test that OnPollActionMeta.dict returns output as an empty list."""
+
+    @simple_app.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield Artifact(name="a1")
+
+    action = simple_app.actions_provider.get_action("on_poll")
+    meta_dict = action.meta.dict()
+    assert "output" in meta_dict
+    assert meta_dict["output"] == []

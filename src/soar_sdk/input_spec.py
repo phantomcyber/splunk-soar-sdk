@@ -58,7 +58,9 @@ class ActionParameter(BaseModel):
     'context' field containing metadata.
     """
 
-    context: Optional[ParameterContext]
+    # Removed to prevent from appearing in parameters unless explicitly provided as an extra field
+    # Was causing issues with the platform during check on context (which was None from here)
+    # context: Optional[ParameterContext] = None # noqa: ERA001
 
     # Additional keys are action-specific and not predictable here.
     class Config:
