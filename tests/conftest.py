@@ -147,7 +147,9 @@ def simple_connector(simple_app) -> AppConnector:
 
 @pytest.fixture
 def app_connector(simple_app) -> AppConnector:
-    return AppConnector(simple_app.actions_provider)
+    connector = AppConnector(simple_app.actions_provider)
+    connector.client.headers.update({"X-CSRFToken": "fake-token"})
+    return connector
 
 
 @pytest.fixture

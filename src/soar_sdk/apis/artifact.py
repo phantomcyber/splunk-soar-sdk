@@ -1,13 +1,22 @@
 import json
-from soar_sdk.connector import ApiManager
+from typing import TYPE_CHECKING
+
 from soar_sdk.exceptions import ActionFailure, SoarAPIError
 from soar_sdk.shims.phantom.json_keys import json_keys as ph_jsons
 from soar_sdk.shims.phantom.consts import consts as ph_consts
+from soar_sdk.apis.utils import is_client_authenticated
+
+if TYPE_CHECKING:
+    from soar_sdk.abstract import SOARClient
 
 
 class Artifact:
-    def __init__(self, api_manager: ApiManager):
-        self.api_manager: ApiManager = api_manager
+    """
+    API interface for artifacts.
+    """
+
+    def __init__(self, soar_client: "SOARClient"):
+        self.soar_client: SOARClient = soar_client
         self._artifact_common = {
             ph_jsons.APP_JSON_LABEL: ph_consts.APP_DEFAULT_ARTIFACT_LABEL,
             ph_jsons.APP_JSON_TYPE: ph_consts.APP_DEFAULT_ARTIFACT_TYPE,
@@ -15,11 +24,11 @@ class Artifact:
             ph_jsons.APP_JSON_RUN_AUTOMATION: False,  # Don't run any playbooks, when this artifact is added
         }
         self.__artifacts = {}
-    
+
     def create(self, artifact: dict) -> None:
         """
         Create a new artifact.
-        
+
         :param artifact: The artifact data to create.
         """
         artifact.update(
@@ -33,10 +42,12 @@ class Artifact:
             )
             raise ActionFailure(error_msg) from e
 
-        if self.api_manager.is_authenticated():
-            client = self.api_manager.get_client()
+        if is_client_authenticated(self.soar_client.client):
+            client = self.soar_client.client
+            endpoint = "rest/artifact"
+            headers = {"Referer": f"{client.base_url}/{endpoint}"}
             try:
-                response = client.post("rest/artifact", json=artifact)
+                response = client.post(endpoint, headers=headers, json=artifact)
             except Exception as e:
                 error_msg = f"Failed to add artifact: {e}"
                 raise SoarAPIError(error_msg) from e
@@ -69,4 +80,3 @@ class Artifact:
         next_artifact_id = (max(self.__artifacts.keys()) if self.__artifacts else 0) + 1
         self.__artifacts[next_artifact_id] = artifact
         return next_artifact_id
-        

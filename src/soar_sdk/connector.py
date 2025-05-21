@@ -8,14 +8,14 @@ import httpx
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
-from soar_sdk.exceptions import ActionFailure, SoarAPIError
+from soar_sdk.apis.artifact import Artifact
+from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
 
 from .abstract import SOARClient
 
 if TYPE_CHECKING:
     from .actions_provider import ActionsProvider
-import json
 
 
 _INGEST_STATE_KEY = "ingestion_state"
@@ -23,24 +23,6 @@ _AUTH_STATE_KEY = "auth_state"
 _CACHE_STATE_KEY = "asset_cache"
 
 JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
-
-
-class ApiManager:
-    def __init__(self, client: SOARClient) -> None:
-        self.soar_client = client
-        self.__asset_executing_action = ""
-
-    def get_client(self) -> httpx.Client:
-        return self.soar_client.client
-
-    def is_authenticated(self) -> bool:
-        return self.soar_client.csrf_token is not None
-
-    def set_executing_asset(self, asset_id: str) -> None:
-        self.__asset_executing_action = asset_id
-
-    def get_executing_asset(self) -> str:
-        return self.__asset_executing_action
 
 
 class AppConnector(BaseConnector, SOARClient):
@@ -64,22 +46,33 @@ class AppConnector(BaseConnector, SOARClient):
             verify=False,  # noqa: S501
         )
         self.csrf_token: str = ""
-        self.__artifacts: dict = {}
-        self.__containers: dict = {}
 
         self.ingestion_state: dict = {}
         self.auth_state: dict = {}
         self.asset_cache: dict = {}
-        self.__api_manager = ApiManager(client=self)
-        self.vault = Vault(client=self._client)
+        self._artifacts_api = Artifact(soar_client=self)
+        self._containers_api = Container(soar_client=self)
+        self._vault_api = Vault(soar_client=self)
 
     @property
     def client(self) -> httpx.Client:
         return self._client
 
+    @property
+    def artifact(self) -> Artifact:
+        return self._artifacts_api
+
+    @property
+    def container(self) -> Container:
+        return self._containers_api
+
+    @property
+    def vault(self) -> Vault:
+        return self._vault_api
+
     def update_client(self, input_data: InputSpecification) -> None:
         self.authenticate_soar_client(input_data)
-        self.__api_manager.set_executing_asset(input_data.asset_id)
+        self._containers_api.set_executing_asset(input_data.asset_id)
 
     def authenticate_soar_client(self, input_data: InputSpecification) -> None:
         session_id = input_data.user_session_token
@@ -231,105 +224,6 @@ class AppConnector(BaseConnector, SOARClient):
         )
         response.raise_for_status()
         return response
-
-    def _save_artifact(self, artifact: dict) -> tuple[bool, str, Optional[int]]:
-        artifact.update(
-            {k: v for k, v in self._artifact_common.items() if (not artifact.get(k))}
-        )
-        try:
-            json.dumps(artifact)
-        except TypeError as e:
-            error_msg = (
-                f"Artifact could not be converted to a JSON string. Error: {e!s}"
-            )
-            raise ActionFailure(error_msg) from e
-
-        if self.csrf_token:
-            try:
-                response = self.post("rest/artifact", json=artifact)
-            except Exception as e:
-                error_msg = f"Failed to add artifact: {e}"
-                raise SoarAPIError(error_msg) from e
-
-            resp_data = response.json()
-
-            if "id" in resp_data:
-                return (True, "Artifact added successfully", resp_data["id"])
-
-            if "existing_artifact_id" in resp_data:
-                return (
-                    True,
-                    "Artifact already exists",
-                    resp_data["existing_artifact_id"],
-                )
-
-            msg_cause = resp_data.get("message", "NONE_GIVEN")
-            message = f"artifact addition failed, reason from server: {msg_cause}"
-            raise SoarAPIError(message)
-
-        else:
-            next_artifact_id = self.__add_artifact_locally(artifact)
-            return (True, "Artifact added successfully", next_artifact_id)
-
-    def __add_artifact_locally(self, artifact: dict) -> int:
-        if "container_id" not in artifact:
-            message = "Artifact addition failed, no container ID given"
-            raise SoarAPIError(message)
-
-        next_artifact_id = (max(self.__artifacts.keys()) if self.__artifacts else 0) + 1
-        self.__artifacts[next_artifact_id] = artifact
-        return next_artifact_id
-
-    def _save_container(
-        self, container: dict, fail_on_duplicate: bool = False
-    ) -> tuple[bool, str, Optional[int]]:
-        try:
-            self._prepare_container(container)
-        except Exception as e:
-            error_msg = f"Failed to prepare container: {e}"
-            raise ActionFailure(error_msg) from e
-
-        try:
-            json.dumps(container)
-        except TypeError as e:
-            error_msg = (
-                f"Container could not be converted to a JSON string. Error: {e!s}"
-            )
-            raise ActionFailure(error_msg) from e
-
-        if self.csrf_token:
-            try:
-                response = self.post("rest/container", json=container)
-            except Exception as e:
-                error_msg = f"Failed to add container: {e}"
-                raise SoarAPIError(error_msg) from e
-
-            resp_data = response.json()
-            if "existing_container_id" in resp_data:
-                return (
-                    not fail_on_duplicate,
-                    "Container already exists",
-                    resp_data.get("existing_container_id"),
-                )
-
-            if resp_data.get("failed"):
-                msg_cause = resp_data.get("message", "NONE_GIVEN")
-                message = f"Container creation failed, reason from server: {msg_cause}"
-                raise SoarAPIError(message)
-
-            artifact_resp_data = resp_data.get("artifacts", [])
-            self._process_container_artifacts_response(artifact_resp_data)
-            return (True, "Container added successfully", resp_data.get("id"))
-        else:
-            artifacts = container.pop("artifacts", [])
-            next_container_id = (
-                max(self.__containers.keys()) if self.__containers else 0
-            ) + 1
-            for artifact in artifacts:
-                artifact["container_id"] = next_container_id
-                self._save_artifact(artifact)
-            self.__containers[next_container_id] = container
-            return (True, "Container added successfully", next_container_id)
 
     @classmethod
     def get_soar_base_url(cls) -> str:
