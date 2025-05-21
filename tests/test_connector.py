@@ -152,13 +152,13 @@ def test_app_connector_finalize_saves_state(simple_connector: AppConnector):
     )
 
 
-def test_authenticate_soar_client(
+def test_update_client(
     simple_connector: AppConnector,
     action_input_soar_auth: InputSpecification,
     mock_get_any_soar_call,
     mock_post_any_soar_call,
 ):
-    simple_connector.authenticate_soar_client(action_input_soar_auth)
+    simple_connector.update_client(action_input_soar_auth)
     assert mock_get_any_soar_call.call_count == 1
     request = mock_get_any_soar_call.calls[0].request
     assert request.url == "https://10.34.5.6/login"

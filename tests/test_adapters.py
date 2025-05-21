@@ -21,9 +21,12 @@ def test_legacy_connector_adapter_delegates_method_calls():
     adapter.debug(mock.Mock())
     adapter.error(mock.Mock())
     adapter.add_exception(mock.Mock())
-    adapter.authenticate_soar_client(mock.Mock())
+    adapter.update_client(mock.Mock())
     with pytest.raises(NotImplementedError):
         _ = adapter.client
+        _ = adapter.container
+        _ = adapter.artifact
+        _ = adapter.vault
 
     for method_name in adapter.connector.mocked_methods:
         mocked_method = getattr(adapter.connector, method_name)

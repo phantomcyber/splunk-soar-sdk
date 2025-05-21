@@ -1,14 +1,22 @@
 import json
+from typing import TYPE_CHECKING
 
-from soar_sdk.connector import ApiManager
 from soar_sdk.shims.phantom.json_keys import json_keys as ph_jsons
 from soar_sdk.exceptions import ActionFailure, SoarAPIError
 from soar_sdk.logging import getLogger
+from soar_sdk.apis.utils import is_client_authenticated
+
+if TYPE_CHECKING:
+    from soar_sdk.abstract import SOARClient
 
 
 class Container:
-    def __init__(self, api_manager: ApiManager):
-        self.api_manager: ApiManager = api_manager
+    """
+    API interface for containers.
+    """
+
+    def __init__(self, soar_client: "SOARClient"):
+        self.soar_client: SOARClient = soar_client
         self.__container_common = {
             ph_jsons.APP_JSON_DESCRIPTION: "Container added by sdk app",
             ph_jsons.APP_JSON_RUN_AUTOMATION: False,  # Don't run any playbooks, when this container is added
@@ -16,7 +24,13 @@ class Container:
         self.__containers = {}
         self.logger = getLogger()
 
-    def create(self, container: dict, fail_on_duplicate: bool) -> None:
+    def set_executing_asset(self, asset_id: str) -> None:
+        """
+        Set the executing asset for the container.
+        """
+        self.__container_common[ph_jsons.APP_JSON_ASSET_ID] = asset_id
+
+    def create(self, container: dict, fail_on_duplicate: bool = False) -> None:
         try:
             self._prepare_container(container)
         except Exception as e:
@@ -31,10 +45,14 @@ class Container:
             )
             raise ActionFailure(error_msg) from e
 
-        if self.api_manager.is_authenticated():
-            client = self.api_manager.get_client()
+        if is_client_authenticated(self.soar_client.client):
+            client = self.soar_client.client
+            endpoint = "rest/container"
+            headers = {"Referer": f"{client.base_url}/{endpoint}"}
             try:
-                response = client.post("rest/container", json=container)
+                response = client.post(
+                    "rest/container", headers=headers, json=container
+                )
             except Exception as e:
                 error_msg = f"Failed to add container: {e}"
                 raise SoarAPIError(error_msg) from e
@@ -56,38 +74,23 @@ class Container:
             self._process_container_artifacts_response(artifact_resp_data)
         else:
             artifacts = container.pop("artifacts", [])
+            if artifacts and "run_automation" not in artifacts[-1]:
+                artifacts[-1]["run_automation"] = True
             next_container_id = (
                 max(self.__containers.keys()) if self.__containers else 0
             ) + 1
             for artifact in artifacts:
                 artifact["container_id"] = next_container_id
-                self._save_artifact(artifact)
+                self.soar_client.artifact.create(artifact)
             self.__containers[next_container_id] = container
 
     def _prepare_container(self, container: dict) -> None:
-        if ph_jsons.APP_JSON_ASSET_ID not in container:
-            asset_id = container.get(ph_jsons.APP_JSON_INGEST_APP_ID)
-            if not asset_id:
-                raise ValueError(
-                    f"Missing {ph_jsons.APP_JSON_ASSET_ID} key in container"
-                )
-            self.__container_common[ph_jsons.APP_JSON_ASSET_ID] = asset_id
-
         container.update(
             {k: v for k, v in self.__container_common.items() if (not container.get(k))}
         )
 
-        if "artifacts" in container and len(container["artifacts"]) > 0:
-            if "run_automation" not in container["artifacts"][-1]:
-                container["artifacts"][-1]["run_automation"] = True
-            for artifact in container["artifacts"]:
-                artifact.update(
-                    {
-                        k: v
-                        for k, v in self._artifact_common.items()
-                        if (not artifact.get(k))
-                    }
-                )
+        if ph_jsons.APP_JSON_ASSET_ID not in container:
+            raise ValueError(f"Missing {ph_jsons.APP_JSON_ASSET_ID} key in container")
 
     def _process_container_artifacts_response(
         self, artifact_resp_data: list[dict]

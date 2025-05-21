@@ -4,6 +4,9 @@ from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.action_results import ActionResult
+from soar_sdk.apis.container import Container
+from soar_sdk.apis.artifact import Artifact
+from soar_sdk.apis.vault import Vault
 
 from .abstract import SOARClient
 import httpx
@@ -34,7 +37,25 @@ class LegacyConnectorAdapter(SOARClient):
             "The soar client is not supported in legacy connectors."
         )
 
-    def authenticate_soar_client(self, input_data: InputSpecification) -> None:
+    @property
+    def container(self) -> Container:
+        raise NotImplementedError(
+            "The container interface is not supported in legacy connectors."
+        )
+
+    @property
+    def artifact(self) -> Artifact:
+        raise NotImplementedError(
+            "The artifact interface is not supported in legacy connectors."
+        )
+
+    @property
+    def vault(self) -> Vault:
+        raise NotImplementedError(
+            "The vault interface is not supported in legacy connectors."
+        )
+
+    def update_client(self, input_data: InputSpecification) -> None:
         """
         Not implemented in the legacy connector.
         """

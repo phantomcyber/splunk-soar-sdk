@@ -4,7 +4,9 @@ from typing import Any, Optional, Union
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.action_results import ActionResult
-from soar_sdk.vault import Vault
+from soar_sdk.apis.vault import Vault
+from soar_sdk.apis.artifact import Artifact
+from soar_sdk.apis.container import Container
 import httpx
 
 
@@ -35,6 +37,21 @@ class SOARClient(ABC):
         Subclasses must define the vault property.
         """
         pass
+
+    @property
+    @abstractmethod
+    def artifact(self) -> Artifact:
+        """
+        Api interface to manage SOAR artifacts.
+        """
+        pass
+
+    @property
+    @abstractmethod
+    def container(self) -> Container:
+        """
+        Api interface to manage SOAR containers.
+        """
 
     @abstractmethod
     def get_soar_base_url(self) -> str:
