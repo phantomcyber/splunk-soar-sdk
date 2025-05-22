@@ -297,3 +297,40 @@ def mock_post_container(respx_mock):
         )
     )
     return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_post_vault(respx_mock):
+    mock_route = respx_mock.post(re.compile(r".*/rest/container_attachment/?$")).mock(
+        return_value=Response(201, json={"message": "Attachment added", "id": 1})
+    )
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_get_vault(respx_mock):
+    mock_route = respx_mock.get(re.compile(r".*/rest/container_attachment.*")).mock(
+        return_value=Response(
+            201,
+            json={
+                "message": "Retrieved attachment",
+                "id": 1,
+                "num_pages": 1,
+                "data": [{"id": 1, "name": "test.txt", "container_id": 1}],
+            },
+        )
+    )
+
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_delete_vault(respx_mock):
+    mock_route = respx_mock.delete(re.compile(r".*/rest/container_attachment/?$")).mock(
+        return_value=Response(201, json={"message": "Attachment deleted", "id": 1})
+    )
+
+    return mock_route
