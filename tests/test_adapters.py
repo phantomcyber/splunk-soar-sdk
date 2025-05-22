@@ -24,8 +24,11 @@ def test_legacy_connector_adapter_delegates_method_calls():
     adapter.update_client(mock.Mock())
     with pytest.raises(NotImplementedError):
         _ = adapter.client
+    with pytest.raises(NotImplementedError):
         _ = adapter.container
+    with pytest.raises(NotImplementedError):
         _ = adapter.artifact
+    with pytest.raises(NotImplementedError):
         _ = adapter.vault
 
     for method_name in adapter.connector.mocked_methods:

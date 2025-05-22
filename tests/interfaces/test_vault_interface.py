@@ -124,6 +124,46 @@ def test_vault_delete_attachment(app_connector):
     assert deleted_files == ["test.txt"]
 
 
+def test_vault_delete_attachment_authenticated_client(app_connector, mock_get_vault):
+    from soar_sdk.logging import PhantomLogger
+
+    PhantomLogger.warning = mock.Mock()
+
+    deleted_files = app_connector.vault.delete_attachment(
+        vault_id="1",
+    )
+
+    PhantomLogger.warning.assert_called_once_with(
+        "SOAR client is authenticated, but deleting files via the cli is only supported via basic auth. As a result, the attachment will not be deleted."
+    )
+    assert deleted_files == ["test.txt"]
+
+
+def test_vault_multiple_attachments_to_delete(app_connector):
+    app_connector.client.headers.pop("X-CSRFToken")
+    app_connector.vault.create_attachment(
+        container_id=1,
+        file_content="test content",
+        file_name="test.txt",
+        metadata={},
+    )
+    app_connector.vault.create_attachment(
+        container_id=1,
+        file_content="test content",
+        file_name="test2.txt",
+        metadata={},
+    )
+    items = app_connector.vault.get_attachment(container_id=1)
+    assert len(items) == 2
+    with pytest.raises(
+        SoarAPIError,
+        match="More than one document found with the information provided and remove_all is set to False, no vault items were deleted.",
+    ):
+        app_connector.vault.delete_attachment(
+            container_id=1,
+        )
+
+
 def test_get_iter_pages(app_connector, mock_get_vault):
     for res in get_request_iter_pages(
         app_connector.client, "rest/container_attachment", params={"container_id": 1}

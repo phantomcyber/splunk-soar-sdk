@@ -1,5 +1,5 @@
 from typing import TYPE_CHECKING, Optional, Any, Union
-from soar_sdk.shims.phantom.vault import PhantomVault
+from soar_sdk.shims.phantom.vault import PhantomVault, VaultBase
 
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
@@ -7,7 +7,7 @@ if TYPE_CHECKING:
 
 class Vault:
     def __init__(self, soar_client: "SOARClient") -> None:
-        self.phantom_vault: PhantomVault = PhantomVault(soar_client)
+        self.phantom_vault: VaultBase = PhantomVault(soar_client)
 
     def get_vault_tmp_dir(self) -> str:
         """
@@ -49,7 +49,7 @@ class Vault:
         file_name: Optional[str] = None,
         container_id: Optional[int] = None,
         download_file: bool = True,
-    ) -> dict[str, Any]:
+    ) -> list[dict[str, Any]]:
         """
         Get an attachment from vault.
         """
@@ -62,5 +62,8 @@ class Vault:
         vault_id: Optional[str] = None,
         file_name: Optional[str] = None,
         container_id: Optional[int] = None,
+        remove_all: bool = False,
     ) -> list[str]:
-        return self.phantom_vault.delete_attachment(vault_id, file_name, container_id)
+        return self.phantom_vault.delete_attachment(
+            vault_id, file_name, container_id, remove_all
+        )

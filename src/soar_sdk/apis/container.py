@@ -15,13 +15,13 @@ class Container:
     API interface for containers.
     """
 
-    def __init__(self, soar_client: "SOARClient"):
+    def __init__(self, soar_client: "SOARClient") -> None:
         self.soar_client: SOARClient = soar_client
         self.__container_common = {
             ph_jsons.APP_JSON_DESCRIPTION: "Container added by sdk app",
             ph_jsons.APP_JSON_RUN_AUTOMATION: False,  # Don't run any playbooks, when this container is added
         }
-        self.__containers = {}
+        self.__containers: dict[int, dict] = {}
         self.logger = getLogger()
 
     def set_executing_asset(self, asset_id: str) -> None:
@@ -30,7 +30,7 @@ class Container:
         """
         self.__container_common[ph_jsons.APP_JSON_ASSET_ID] = asset_id
 
-    def create(self, container: dict, fail_on_duplicate: bool = False) -> None:
+    def create(self, container: dict, fail_on_duplicate: bool = False) -> int:
         try:
             self._prepare_container(container)
         except Exception as e:
@@ -53,25 +53,28 @@ class Container:
                 response = client.post(
                     "rest/container", headers=headers, json=container
                 )
+                resp_data = response.json()
             except Exception as e:
                 error_msg = f"Failed to add container: {e}"
                 raise SoarAPIError(error_msg) from e
 
-            resp_data = response.json()
-            if "existing_container_id" in resp_data:
-                return (
-                    not fail_on_duplicate,
-                    "Container already exists",
-                    resp_data.get("existing_container_id"),
-                )
-
-            if resp_data.get("failed"):
-                msg_cause = resp_data.get("message", "NONE_GIVEN")
-                message = f"Container creation failed, reason from server: {msg_cause}"
-                raise SoarAPIError(message)
-
             artifact_resp_data = resp_data.get("artifacts", [])
-            self._process_container_artifacts_response(artifact_resp_data)
+
+            if "existing_container_id" in resp_data:
+                if not fail_on_duplicate:
+                    self.logger.info("Container already exists")
+                    self._process_container_artifacts_response(artifact_resp_data)
+                    return resp_data["existing_container_id"]
+                else:
+                    raise SoarAPIError("Container already exists")
+
+            if "id" in resp_data:
+                self._process_container_artifacts_response(artifact_resp_data)
+                return resp_data["id"]
+
+            msg_cause = resp_data.get("message", "NONE_GIVEN")
+            message = f"Container creation failed, reason from server: {msg_cause}"
+            raise SoarAPIError(message)
         else:
             artifacts = container.pop("artifacts", [])
             if artifacts and "run_automation" not in artifacts[-1]:
@@ -83,6 +86,7 @@ class Container:
                 artifact["container_id"] = next_container_id
                 self.soar_client.artifact.create(artifact)
             self.__containers[next_container_id] = container
+            return next_container_id
 
     def _prepare_container(self, container: dict) -> None:
         container.update(

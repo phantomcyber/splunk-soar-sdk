@@ -4,6 +4,7 @@ from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 from httpx import Response, RequestError
 import pytest
+from soar_sdk.exceptions import SoarAPIError, ActionFailure
 
 
 @pytest.mark.parametrize(
@@ -41,60 +42,52 @@ import pytest
                 "artifacts": [{"random_failure": "error"}],
             },
         ),
+        Response(
+            201,
+            json={
+                "message": "Mocked container created",
+                "existing_container_id": 1,
+                "artifacts": [{"random_failure": "error"}],
+            },
+        ),
     ],
 )
 def test_create_container_with_artifact(
-    simple_app: App, app_connector, mock_post_container, mock_response
+    app_connector, mock_post_container, mock_response
 ):
     mock_post_container.return_value = mock_response
 
-    @simple_app.action()
-    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
-        artifact = {
-            "name": "test artifact",
-            "run_automation": False,
-            "source_data_identifier": None,
-        }
-        soar.container.set_executing_asset("1")
-        container = {
-            "name": "test container",
-            "description": "test description",
-            "label": "events",
-            "artifacts": [artifact],
-        }
-        soar.container.create(container)
-        return ActionOutput()
-
-    result = action_function(Params(), soar=app_connector)
-    assert result
+    artifact = {
+        "name": "test artifact",
+        "run_automation": False,
+        "source_data_identifier": None,
+    }
+    app_connector.container.set_executing_asset("1")
+    container = {
+        "name": "test container",
+        "description": "test description",
+        "label": "events",
+        "artifacts": [artifact],
+    }
+    assert app_connector.container.create(container) == 1
     assert mock_post_container.called
 
 
-def test_malformed_container(simple_app: App, app_connector):
-    @simple_app.action()
-    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
-        container = {
-            "name": "test container",
-            "description": "test description",
-            "label": "events",
-        }
-        soar.container.create(container)
-        return ActionOutput()
+def test_malformed_container(app_connector):
+    container = {
+        "name": "test container",
+        "description": "test description",
+        "label": "events",
+    }
+    with pytest.raises(ActionFailure):
+        app_connector.container.create(container)
 
-    result = action_function(Params(), soar=app_connector)
-    assert not result
-
-    @simple_app.action()
-    def bad_json(params: Params, soar: SOARClient) -> ActionOutput:
-        container = {"name": "test", "data": {1, 2, 3}, "asset_id": "1"}
-        soar.container.create(container)
-        return ActionOutput()
-
-    result = bad_json(Params(), soar=app_connector)
-    assert not result
+    container = {"name": "test", "data": {1, 2, 3}, "asset_id": "1"}
+    with pytest.raises(ActionFailure):
+        app_connector.container.create(container)
 
 
-def test_create_container_failed(simple_app: App, app_connector, mock_post_container):
+def test_create_container_failed(app_connector, mock_post_container):
     mock_post_container.return_value = Response(
         status_code=200, json={"failed": "something went wrong"}
     )
@@ -106,25 +99,15 @@ def test_create_container_failed(simple_app: App, app_connector, mock_post_conta
         "asset_id": "1",
     }
 
-    @simple_app.action()
-    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
-        soar.container.create(container)
-        return ActionOutput()
-
-    result = action_function(Params(), soar=app_connector)
-    assert not result
+    with pytest.raises(SoarAPIError):
+        app_connector.container.create(container)
 
     mock_post_container.return_value = Response(
         status_code=201, json={"existing_container_id": "2"}
     )
 
-    @simple_app.action()
-    def existing_id(params: Params, soar: SOARClient) -> ActionOutput:
-        soar.container.create(container)
-        return ActionOutput()
-
-    result = existing_id(Params(), soar=app_connector)
-    assert result
+    with pytest.raises(SoarAPIError):
+        app_connector.container.create(container, fail_on_duplicate=True)
 
 
 def test_create_container_locally(simple_app: App, app_connector):
@@ -157,21 +140,14 @@ def test_create_container_locally(simple_app: App, app_connector):
     assert result
 
 
-def test_container_rest_call_failed(
-    simple_app: App, app_connector, mock_post_container
-):
+def test_container_rest_call_failed(app_connector, mock_post_container):
     mock_post_container.side_effect = RequestError("Failed to create container")
 
-    @simple_app.action()
-    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
-        container = {
-            "name": "test container",
-            "description": "test description",
-            "label": "events",
-            "asset_id": "1",
-        }
-        soar.container.create(container)
-        return ActionOutput()
-
-    result = action_function(Params(), soar=app_connector)
-    assert not result
+    container = {
+        "name": "test container",
+        "description": "test description",
+        "label": "events",
+        "asset_id": "1",
+    }
+    with pytest.raises(SoarAPIError):
+        app_connector.container.create(container)
