@@ -8,26 +8,10 @@ class Encryption:
 
     @staticmethod
     def encrypt(plain: str) -> str:
-        """
-        Encrypts the given plain text
-
-        Args:
-            plain (str): The plain text to encrypt.
-
-        Returns:
-            str: The encrypted text.
-        """
+        # Encrypts the given plain text
         return encryption_helper.encrypt(plain, "")
 
     @staticmethod
     def decrypt(cipher: str) -> str:
-        """
-        Decrypts the given cipher text
-
-        Args:
-            cipher (str): The cipher text to decrypt.
-
-        Returns:
-            str: The decrypted text.
-        """
+        # Decrypts the given cipher text
         return encryption_helper.decrypt(cipher, "")
