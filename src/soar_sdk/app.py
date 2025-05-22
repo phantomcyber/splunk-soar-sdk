@@ -8,6 +8,7 @@ from collections.abc import Iterator
 from soar_sdk.asset import BaseAsset
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.base_connector import BaseConnector
+from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_provider import ActionsProvider
@@ -22,6 +23,8 @@ from soar_sdk.models.artifact import Artifact
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.webhooks.routing import Router
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 import traceback
 import uuid
 
@@ -576,6 +579,7 @@ class App:
             pytest.mark.skip(inner)
 
     webhook_meta: Optional[WebhookMeta] = None
+    webhook_router: Optional[Router] = None
 
     def enable_webhooks(
         self,
@@ -595,4 +599,63 @@ class App:
             ip_allowlist=default_ip_allowlist,
         )
 
+        self.webhook_router = Router()
+
         return self
+
+    def webhook(
+        self, url_pattern: str, allowed_methods: Optional[list[str]] = None
+    ) -> Callable[[Callable], None]:
+        """
+        Decorator for registering a webhook handler.
+        """
+
+        def decorator(function: Callable) -> None:
+            """
+            Decorator for the webhook handler function. Adds the specific meta
+            information to the action passed to the generator. Validates types used on
+            the action arguments and adapts output for fast and seamless development.
+            """
+            if self.webhook_router is None:
+                raise RuntimeError("Webhooks are not enabled for this app.")
+
+            self.webhook_router.add_route(
+                url_pattern,
+                function,
+                methods=allowed_methods,
+            )
+
+        return decorator
+
+    def handle_webhook(
+        self,
+        method: str,
+        headers: dict[str, str],
+        path_parts: list[str],
+        query: dict[str, str],
+        body: Optional[str],
+        asset_id: int,
+        asset: dict,
+        soar_client: SoarRestClient,
+    ) -> WebhookResponse:
+        """
+        Handles the incoming webhook request.
+        """
+        if self.webhook_router is None:
+            raise RuntimeError("Webhooks are not enabled for this app.")
+
+        self._raw_asset_config = asset
+        _, session_token = soar_client.session.headers.get("Cookie", "").split("=")
+
+        request = WebhookRequest(
+            method=method,
+            headers=headers,
+            path_parts=path_parts,
+            query=query,
+            body=body,
+            asset_id=asset_id,
+            asset=self.asset,
+            soar_api_token=session_token,
+        )
+
+        return self.webhook_router.handle_request(request)
