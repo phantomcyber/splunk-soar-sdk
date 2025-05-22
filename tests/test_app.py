@@ -6,6 +6,9 @@ from soar_sdk.input_spec import InputSpecification
 from soar_sdk.params import Params
 import pytest
 
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
+
 
 def test_app_run(example_app):
     with mock.patch("soar_sdk.app_cli_runner.AppCliRunner.run") as run_mock:
@@ -87,3 +90,54 @@ def test_enable_webhooks(app_with_simple_asset: App):
         "allowed_headers": ["Authorization", "X-Forwarded-For"],
         "ip_allowlist": ["10.0.0.0/24"],
     }
+
+
+def test_register_webhook_without_enabling_webhooks_raises(app_with_simple_asset: App):
+    with pytest.raises(
+        RuntimeError,
+        match="Webhooks are not enabled for this app",
+    ):
+
+        @app_with_simple_asset.webhook("example_webhook")
+        def webhook_handler(request: WebhookRequest) -> WebhookResponse:
+            return WebhookResponse.text_response("Hello, world!")
+
+
+def test_handle_webhook(app_with_simple_asset: App):
+    app_with_simple_asset.enable_webhooks()
+
+    @app_with_simple_asset.webhook("example_webhook")
+    def webhook_handler(request: WebhookRequest) -> WebhookResponse:
+        return WebhookResponse.text_response("Hello, world!")
+
+    response = app_with_simple_asset.handle_webhook(
+        method="GET",
+        headers={},
+        path_parts=["example_webhook"],
+        query={},
+        body=None,
+        asset={"base_url": "https://example.com"},
+        asset_id=1,
+        soar_client=SoarRestClient(token="test_token", asset_id=1),
+    )
+    assert response.status_code == 200
+    assert response.content == "Hello, world!"
+
+
+def test_handle_webhook_without_enabling_webhooks_raises(
+    app_with_simple_asset: App,
+):
+    with pytest.raises(
+        RuntimeError,
+        match="Webhooks are not enabled for this app",
+    ):
+        app_with_simple_asset.handle_webhook(
+            method="GET",
+            headers={},
+            path_parts=["example_webhook"],
+            query={},
+            body=None,
+            asset={"base_url": "https://example.com"},
+            asset_id=1,
+            soar_client=SoarRestClient(token="test_token", asset_id=1),
+        )

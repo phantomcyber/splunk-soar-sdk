@@ -5,6 +5,7 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.logging import getLogger
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 logger = getLogger()
 
@@ -54,6 +55,28 @@ def reverse_string(
     reversed_string = param.input_string[::-1]
     logger.debug("reversed_string %s", reversed_string)
     return ReverseStringOutput(reversed_string=reversed_string)
+
+
+@app.webhook("test_webhook")
+def test_webhook(request: WebhookRequest[Asset]) -> WebhookResponse:
+    logger.debug("Webhook request: %s", request)
+    response = WebhookResponse.text_response(
+        content="Webhook received",
+        status_code=200,
+        extra_headers={"X-Custom-Header": "CustomValue"},
+    )
+    return response
+
+
+@app.webhook("test_webhook/<asset_id>", allowed_methods=["GET", "POST", "DELETE"])
+def test_webhook_with_asset_id(request: WebhookRequest[Asset]) -> WebhookResponse:
+    logger.debug("Webhook with asset ID request: %s", request)
+    response = WebhookResponse.text_response(
+        content=f"Webhook received with asset ID: {request.asset_id}",
+        status_code=200,
+        extra_headers={"X-Custom-Header": "CustomValue"},
+    )
+    return response
 
 
 if __name__ == "__main__":
