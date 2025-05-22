@@ -5,9 +5,6 @@ on:
       - main
       - beta
   pull_request:
-    branches:
-      - main
-      - beta
 
 jobs:
   Precommit:

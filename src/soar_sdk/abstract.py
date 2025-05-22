@@ -60,7 +60,7 @@ class SOARClient(ABC):
     @abstractmethod
     def update_client(self, input_data: InputSpecification) -> None:
         """
-        Updates the client before an acton run with the input data. An example of what this function might do is authenticate the api client.
+        Updates the client before an action run with the input data. An example of what this function might do is authenticate the api client.
         """
         pass
 

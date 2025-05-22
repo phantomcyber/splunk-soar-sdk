@@ -5,9 +5,12 @@ from soar_sdk.exceptions import ActionFailure, SoarAPIError
 from soar_sdk.shims.phantom.json_keys import json_keys as ph_jsons
 from soar_sdk.shims.phantom.consts import consts as ph_consts
 from soar_sdk.apis.utils import is_client_authenticated
+from soar_sdk.logging import getLogger
 
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
+
+logger = getLogger()
 
 
 class Artifact:
@@ -15,7 +18,7 @@ class Artifact:
     API interface for artifacts.
     """
 
-    def __init__(self, soar_client: "SOARClient"):
+    def __init__(self, soar_client: "SOARClient") -> None:
         self.soar_client: SOARClient = soar_client
         self._artifact_common = {
             ph_jsons.APP_JSON_LABEL: ph_consts.APP_DEFAULT_ARTIFACT_LABEL,
@@ -23,9 +26,9 @@ class Artifact:
             ph_jsons.APP_JSON_DESCRIPTION: "Artifact added by sdk app",
             ph_jsons.APP_JSON_RUN_AUTOMATION: False,  # Don't run any playbooks, when this artifact is added
         }
-        self.__artifacts = {}
+        self.__artifacts: dict[int, dict] = {}
 
-    def create(self, artifact: dict) -> None:
+    def create(self, artifact: dict) -> int:
         """
         Create a new artifact.
 
@@ -54,29 +57,22 @@ class Artifact:
 
             resp_data = response.json()
 
-            if "id" in resp_data:
-                return (True, "Artifact added successfully", resp_data["id"])
-
             if "existing_artifact_id" in resp_data:
-                return (
-                    True,
-                    "Artifact already exists",
-                    resp_data["existing_artifact_id"],
-                )
+                logger.info("Artifact already exists")
+                return resp_data["existing_artifact_id"]
+
+            if "id" in resp_data:
+                return resp_data["id"]
 
             msg_cause = resp_data.get("message", "NONE_GIVEN")
-            message = f"artifact addition failed, reason from server: {msg_cause}"
+            message = f"Artifact addition failed, reason from server: {msg_cause}"
             raise SoarAPIError(message)
-
         else:
-            next_artifact_id = self.__add_artifact_locally(artifact)
-            return (True, "Artifact added successfully", next_artifact_id)
-
-    def __add_artifact_locally(self, artifact: dict) -> int:
-        if "container_id" not in artifact:
-            message = "Artifact addition failed, no container ID given"
-            raise SoarAPIError(message)
-
-        next_artifact_id = (max(self.__artifacts.keys()) if self.__artifacts else 0) + 1
-        self.__artifacts[next_artifact_id] = artifact
-        return next_artifact_id
+            if "container_id" not in artifact:
+                message = "Artifact addition failed, no container ID given"
+                raise SoarAPIError(message)
+            next_artifact_id = (
+                max(self.__artifacts.keys()) if self.__artifacts else 0
+            ) + 1
+            self.__artifacts[next_artifact_id] = artifact
+            return next_artifact_id
