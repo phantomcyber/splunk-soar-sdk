@@ -95,7 +95,6 @@ def test_malformed_container(simple_app: App, app_connector):
 
 
 def test_create_container_failed(simple_app: App, app_connector, mock_post_container):
-    app_connector.csrf_token = "fake_csrf_token"
     mock_post_container.return_value = Response(
         status_code=200, json={"failed": "something went wrong"}
     )
