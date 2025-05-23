@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
 

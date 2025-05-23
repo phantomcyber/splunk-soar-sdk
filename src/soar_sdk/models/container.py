@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from pydantic import BaseModel
 from typing import Optional, Any, Union
 

@@ -162,7 +162,7 @@ class OnPollParams(Params):
     )
 
     container_id: str = Param(
-        description="Container IDs to limit the ingestion to.",
+        description="Comma-separated list of container IDs to limit the ingestion to.",
         required=False,
         allow_list=True,
     )
