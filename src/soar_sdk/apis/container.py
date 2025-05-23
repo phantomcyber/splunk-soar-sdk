@@ -46,13 +46,9 @@ class Container:
             raise ActionFailure(error_msg) from e
 
         if is_client_authenticated(self.soar_client.client):
-            client = self.soar_client.client
             endpoint = "rest/container"
-            headers = {"Referer": f"{client.base_url}/{endpoint}"}
             try:
-                response = client.post(
-                    "rest/container", headers=headers, json=container
-                )
+                response = self.soar_client.post(endpoint, json=container)
                 resp_data = response.json()
             except Exception as e:
                 error_msg = f"Failed to add container: {e}"

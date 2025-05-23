@@ -46,11 +46,9 @@ class Artifact:
             raise ActionFailure(error_msg) from e
 
         if is_client_authenticated(self.soar_client.client):
-            client = self.soar_client.client
             endpoint = "rest/artifact"
-            headers = {"Referer": f"{client.base_url}/{endpoint}"}
             try:
-                response = client.post(endpoint, headers=headers, json=artifact)
+                response = self.soar_client.post(endpoint, json=artifact)
             except Exception as e:
                 error_msg = f"Failed to add artifact: {e}"
                 raise SoarAPIError(error_msg) from e

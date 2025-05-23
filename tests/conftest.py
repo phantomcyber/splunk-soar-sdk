@@ -329,8 +329,8 @@ def mock_get_vault(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_delete_vault(respx_mock):
-    mock_route = respx_mock.delete(re.compile(r".*/rest/container_attachment/?$")).mock(
-        return_value=Response(201, json={"message": "Attachment deleted", "id": 1})
+    mock_route = respx_mock.delete(re.compile(r".*/rest/container_attachment.*")).mock(
+        return_value=Response(200, json={"message": "Attachment deleted", "id": 1})
     )
 
     return mock_route

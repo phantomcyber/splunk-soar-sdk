@@ -23,6 +23,14 @@ def test_legacy_connector_adapter_delegates_method_calls():
     adapter.add_exception(mock.Mock())
     adapter.update_client(mock.Mock())
     with pytest.raises(NotImplementedError):
+        adapter.get(mock.Mock())
+    with pytest.raises(NotImplementedError):
+        adapter.post(mock.Mock())
+    with pytest.raises(NotImplementedError):
+        adapter.put(mock.Mock())
+    with pytest.raises(NotImplementedError):
+        adapter.delete(mock.Mock())
+    with pytest.raises(NotImplementedError):
         _ = adapter.client
     with pytest.raises(NotImplementedError):
         _ = adapter.container
