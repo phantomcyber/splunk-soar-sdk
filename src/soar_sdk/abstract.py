@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Union
+from collections.abc import Mapping, Iterable, AsyncIterable
 
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
@@ -8,6 +9,8 @@ from soar_sdk.apis.vault import Vault
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 import httpx
+
+JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
 
 class SOARClient(ABC):
@@ -54,13 +57,97 @@ class SOARClient(ABC):
         """
 
     @abstractmethod
+    def get(
+        self,
+        endpoint: str,
+        *,
+        params: Optional[Union[dict[str, Any], httpx.QueryParams]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        timeout: Optional[httpx.Timeout] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        follow_redirects: bool = False,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
+        """
+        Perform a GET request to the specfic endpoint using the soar client
+        """
+        pass
+
+    @abstractmethod
+    def post(
+        self,
+        endpoint: str,
+        *,
+        content: Optional[
+            Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+        ] = None,
+        data: Optional[Mapping[str, Any]] = None,
+        files: Optional[dict[str, Any]] = None,
+        json: Optional[JSONType] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        timeout: Optional[Union[float, httpx.Timeout]] = None,
+        follow_redirects: bool = True,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
+        """
+        Perform a POST request to the specfic endpoint using the soar client
+        """
+        pass
+
+    @abstractmethod
+    def put(
+        self,
+        endpoint: str,
+        *,
+        content: Optional[
+            Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
+        ] = None,
+        data: Optional[Mapping[str, Any]] = None,
+        files: Optional[dict[str, Any]] = None,
+        json: Optional[JSONType] = None,
+        params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        timeout: Optional[Union[float, httpx.Timeout]] = None,
+        follow_redirects: bool = True,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
+        """
+        Perform a PUT request to the specfic endpoint using the soar client
+        """
+        pass
+
+    @abstractmethod
+    def delete(
+        self,
+        endpoint: str,
+        *,
+        params: Optional[Union[dict[str, Any], httpx.QueryParams]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        timeout: Optional[httpx.Timeout] = None,
+        follow_redirects: bool = False,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
+        """
+        Perform a DELETE request to the specfic endpoint using the soar client
+        """
+        pass
+
+    @abstractmethod
     def get_soar_base_url(self) -> str:
         pass
 
     @abstractmethod
     def update_client(self, input_data: InputSpecification) -> None:
         """
-        Updates the client before an action run with the input data. An example of what this function might do is authenticate the api client.
+        Updates the client before an actions run with the input data. An example of what this function might do is authenticate the api client.
         """
         pass
 

@@ -55,6 +55,26 @@ class LegacyConnectorAdapter(SOARClient):
             "The vault interface is not supported in legacy connectors."
         )
 
+    def get(self, endpoint: str, **kwargs: object) -> httpx.Response:
+        raise NotImplementedError(
+            "The vault interface is not supported in legacy connectors."
+        )
+
+    def post(self, endpoint: str, **kwargs: object) -> httpx.Response:
+        raise NotImplementedError(
+            "The vault interface is not supported in legacy connectors."
+        )
+
+    def put(self, endpoint: str, **kwargs: object) -> httpx.Response:
+        raise NotImplementedError(
+            "The vault interface is not supported in legacy connectors."
+        )
+
+    def delete(self, endpoint: str, **kwargs: object) -> httpx.Response:
+        raise NotImplementedError(
+            "The vault interface is not supported in legacy connectors."
+        )
+
     def update_client(self, input_data: InputSpecification) -> None:
         """
         Not implemented in the legacy connector.

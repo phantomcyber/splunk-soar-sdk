@@ -185,13 +185,9 @@ else:
                     "file_name": file_name,
                     "metadata": metadata or {},
                 }
-                headers = {
-                    "Referer": f"{self.soar_client.client.base_url}/{VAULT_ENDPOINT}"
-                }
+
                 try:
-                    response = self.soar_client.client.post(
-                        VAULT_ENDPOINT, headers=headers, json=data
-                    )
+                    response = self.soar_client.post(VAULT_ENDPOINT, json=data)
                     resp_json = response.json()
                 except Exception as e:
                     error_msg = f"Failed to add attachment to the Vault: {e}"
@@ -243,13 +239,8 @@ else:
                     "metadata": metadata,
                 }
 
-                headers = {
-                    "Referer": f"{self.soar_client.client.base_url}/{VAULT_ENDPOINT}"
-                }
                 try:
-                    response = self.soar_client.client.post(
-                        VAULT_ENDPOINT, headers=headers, json=data
-                    )
+                    response = self.soar_client.post(VAULT_ENDPOINT, json=data)
                     resp_json = response.json()
                 except Exception as e:
                     error_msg = f"Failed to add attachment to the Vault: {e}"
@@ -338,9 +329,16 @@ else:
                 attachment_id = attachment["id"]
                 attachment_name = attachment["name"]
                 if is_authenticated:
-                    logger.warning(
-                        "SOAR client is authenticated, but deleting files via the cli is only supported via basic auth. As a result, the attachment will not be deleted."
-                    )
+                    endpoint = f"{VAULT_ENDPOINT}/{attachment_id}"
+                    try:
+                        response = self.soar_client.delete(endpoint)
+                    except Exception as e:
+                        error_msg = f"Failed to delete attachment from the Vault: {e}"
+                        raise SoarAPIError(error_msg) from e
+
+                    if response.status_code != 200:
+                        error_msg = f"Failed to delete attachment from the Vault: {response.text}"
+                        raise SoarAPIError(error_msg)
                 else:
                     self.__storage.pop(attachment_id)
 

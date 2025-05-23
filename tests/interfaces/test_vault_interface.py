@@ -1,5 +1,6 @@
 from httpx import Response, RequestError
 from soar_sdk.exceptions import SoarAPIError
+from soar_sdk.connector import BasicAuth
 import pytest
 from soar_sdk.apis.utils import get_request_iter_pages
 
@@ -124,19 +125,46 @@ def test_vault_delete_attachment(app_connector):
     assert deleted_files == ["test.txt"]
 
 
-def test_vault_delete_attachment_authenticated_client(app_connector, mock_get_vault):
-    from soar_sdk.logging import PhantomLogger
-
-    PhantomLogger.warning = mock.Mock()
-
+def test_vault_delete_attachment_authenticated_client(
+    app_connector, mock_get_vault, mock_delete_vault
+):
+    app_connector._AppConnector__basic_auth = BasicAuth(
+        username="username", password="password"
+    )
     deleted_files = app_connector.vault.delete_attachment(
         vault_id="1",
     )
 
-    PhantomLogger.warning.assert_called_once_with(
-        "SOAR client is authenticated, but deleting files via the cli is only supported via basic auth. As a result, the attachment will not be deleted."
-    )
     assert deleted_files == ["test.txt"]
+    assert mock_get_vault.called
+    assert mock_delete_vault.called
+    app_connector._AppConnector__basic_auth = None
+
+
+def test_vault_delete_attachment_authenticated_client_error(
+    app_connector, mock_get_vault, mock_delete_vault
+):
+    mock_delete_vault.side_effect = RequestError("Authentication error")
+    with pytest.raises(SoarAPIError):
+        app_connector.vault.delete_attachment(
+            vault_id="1",
+        )
+
+    assert mock_get_vault.called
+
+
+def test_vault_delete_attachment_authenticated_client_failed(
+    app_connector, mock_get_vault, mock_delete_vault
+):
+    mock_delete_vault.return_value = Response(
+        401, json={"failed": "something went wrong", "message": "Authentication error"}
+    )
+    with pytest.raises(SoarAPIError):
+        app_connector.vault.delete_attachment(
+            vault_id="1",
+        )
+
+    assert mock_get_vault.called
 
 
 def test_vault_multiple_attachments_to_delete(app_connector):

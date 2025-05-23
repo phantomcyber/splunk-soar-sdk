@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import Any, TYPE_CHECKING, Union, Optional
 from collections.abc import Iterable, AsyncIterable
 from collections.abc import Mapping
@@ -12,7 +13,7 @@ from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
 
-from .abstract import SOARClient
+from .abstract import SOARClient, JSONType
 
 if TYPE_CHECKING:
     from .actions_provider import ActionsProvider
@@ -22,7 +23,11 @@ _INGEST_STATE_KEY = "ingestion_state"
 _AUTH_STATE_KEY = "auth_state"
 _CACHE_STATE_KEY = "asset_cache"
 
-JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
+
+@dataclass
+class BasicAuth:
+    username: str
+    password: str
 
 
 class AppConnector(BaseConnector, SOARClient):
@@ -53,6 +58,7 @@ class AppConnector(BaseConnector, SOARClient):
         self._artifacts_api = Artifact(soar_client=self)
         self._containers_api = Container(soar_client=self)
         self._vault_api = Vault(soar_client=self)
+        self.basic_auth: Optional[BasicAuth] = None
 
     @property
     def client(self) -> httpx.Client:
@@ -85,10 +91,10 @@ class AppConnector(BaseConnector, SOARClient):
                     verify=False,  # noqa: S501
                 )
                 self.__login()
-                session_id = self.get_session_id(
-                    input_data.soar_auth.username,
-                    input_data.soar_auth.password,
+                self.__basic_auth = BasicAuth(
+                    input_data.soar_auth.username, input_data.soar_auth.password
                 )
+                session_id = self.get_session_id()
 
         if session_id:
             current_cookies = self._client.headers.get("Cookie", "")
@@ -104,12 +110,12 @@ class AppConnector(BaseConnector, SOARClient):
         cookies = f"csrftoken={self.csrf_token}"
         self._client.headers.update({"Cookie": cookies})
 
-    def get_session_id(self, username: str, password: str) -> str:
+    def get_session_id(self) -> str:
         self._client.post(
             "/login",
             data={
-                "username": username,
-                "password": password,
+                "username": self.__basic_auth.username,
+                "password": self.__basic_auth.password,
                 "csrfmiddlewaretoken": self.csrf_token,
             },
             headers={"Referer": f"{self._client.base_url}/login"},
@@ -218,6 +224,40 @@ class AppConnector(BaseConnector, SOARClient):
             params=params,
             cookies=cookies,
             auth=auth,  # type: ignore[arg-type]
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
+
+    def delete(
+        self,
+        endpoint: str,
+        *,
+        params: Optional[Union[dict[str, Any], httpx.QueryParams]] = None,
+        headers: Optional[dict[str, str]] = None,
+        cookies: Optional[dict[str, str]] = None,
+        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        timeout: Optional[httpx.Timeout] = None,
+        follow_redirects: bool = False,
+        extensions: Optional[Mapping[str, Any]] = None,
+    ) -> httpx.Response:
+        """
+        Perform a DELETE request to the specfic endpoint using the soar client
+        """
+
+        headers = headers or {}
+        headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
+        response = self._client.delete(
+            endpoint,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth
+            or httpx.BasicAuth(self.__basic_auth.username, self.__basic_auth.password)
+            if self.basic_auth
+            else None,  # type: ignore[arg-type]
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
