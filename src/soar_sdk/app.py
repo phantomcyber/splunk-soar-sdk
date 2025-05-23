@@ -21,7 +21,7 @@ from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
-from soar_sdk.exceptions import ActionFailure, AssetMisconfiguration
+from soar_sdk.exceptions import ActionFailure
 import traceback
 import uuid
 
@@ -184,7 +184,7 @@ class App:
 
                 try:
                     result = function(action_params, *args, **kwargs)
-                except (ActionFailure, AssetMisconfiguration) as e:
+                except ActionFailure as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)), soar
@@ -264,7 +264,7 @@ class App:
                         raise RuntimeError(
                             "Test connectivity function must not return any value (return type should be None)."
                         )
-                except (ActionFailure, AssetMisconfiguration) as e:
+                except ActionFailure as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)), soar
@@ -340,6 +340,7 @@ class App:
 
             # Use OnPollParams for on_poll actions
             validated_params_class = OnPollParams
+            logger = self.__logger
 
             @action_protocol
             @wraps(function)
@@ -354,7 +355,7 @@ class App:
                     try:
                         action_params = validated_params_class.parse_obj(params)
                     except Exception as e:
-                        client.save_progress(f"Parameter validation error: {e!s}")
+                        logger.info(f"Parameter validation error: {e!s}")
                         return self._adapt_action_result(
                             ActionResult(
                                 status=False, message=f"Invalid parameters: {e!s}"
@@ -373,22 +374,21 @@ class App:
                     for item in result:
                         # Check if the item is a Container
                         if isinstance(item, Container):
-                            # TODO: Remove ignores
+                            # TODO: Change save_container for incorporation with container.create()
                             container = item.to_dict()  # Convert for saving
                             ret_val, message, cid = client.save_container(container)  # type: ignore[attr-defined]
-                            client.save_progress(
-                                f"Creating container: {container['name']}"
-                            )
+                            logger.info(f"Creating container: {container['name']}")
 
                             if ret_val:
                                 container_id = cid
                                 container_created = True
                                 item.container_id = container_id
 
+                            # Covered by test_on_poll::test_on_poll_yields_container_duplicate, but branch coverage detection on generator functions is wonky
                             if (
                                 "duplicate container found" in message.lower()
                             ):  # pragma: no cover
-                                client.save_progress(  # pragma: no cover
+                                logger.info(
                                     "Duplicate container found, reusing existing container"
                                 )
 
@@ -396,7 +396,7 @@ class App:
 
                         # Check for Artifact
                         if not isinstance(item, Artifact):
-                            client.save_progress(
+                            logger.info(
                                 f"Warning: Item is not a Container or Artifact, skipping: {item}"
                             )
                             continue
@@ -409,7 +409,7 @@ class App:
                             and "container_id" not in artifact_dict
                         ):
                             # No container for this artifact
-                            client.save_progress(
+                            logger.info(
                                 f"Warning: Artifact has no container, skipping: {item}"
                             )
                             continue
@@ -419,23 +419,23 @@ class App:
                             artifact_dict["container_id"] = container_id
                             item.container_id = container_id
 
-                        # TODO: Remove ignores
+                        # TODO: Change save_artifact for incorporation with artifact.create()
                         client.save_artifacts([artifact_dict])  # type: ignore[attr-defined]
-                        client.save_progress(
+                        logger.info(
                             f"Added artifact: {artifact_dict.get('name', 'Unnamed artifact')}"
                         )
 
                     return self._adapt_action_result(
                         ActionResult(status=True, message="Polling complete"), client
                     )
-                except (ActionFailure, AssetMisconfiguration) as e:
+                except ActionFailure as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)), client
                     )
                 except Exception as e:
                     client.add_exception(e)
-                    client.save_progress(f"Error during polling: {e!s}")
+                    logger.info(f"Error during polling: {e!s}")
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)), client
                     )

@@ -160,7 +160,7 @@
                 "container_id": {
                     "order": 4,
                     "name": "container_id",
-                    "description": "Container IDs to limit the ingestion to.",
+                    "description": "Comma-separated list of container IDs to limit the ingestion to.",
                     "data_type": "string",
                     "required": false,
                     "primary": false,
