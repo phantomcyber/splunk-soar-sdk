@@ -40,7 +40,9 @@ class ManifestProcessor:
 
         if app.webhook_meta is not None:
             app_meta.webhook = app.webhook_meta
-            app_meta.webhook.handler = f"{app_meta.main_module}.handle_webhook"
+            app_meta.webhook.handler = (
+                f"{app_meta.main_module.replace(':', '.')}.handle_webhook"
+            )
 
         return app_meta
 

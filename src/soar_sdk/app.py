@@ -634,10 +634,9 @@ class App:
         path_parts: list[str],
         query: dict[str, str],
         body: Optional[str],
-        asset_id: int,
         asset: dict,
-        soar_client: SoarRestClient,
-    ) -> WebhookResponse:
+        soar_rest_client: SoarRestClient,
+    ) -> dict:
         """
         Handles the incoming webhook request.
         """
@@ -645,7 +644,7 @@ class App:
             raise RuntimeError("Webhooks are not enabled for this app.")
 
         self._raw_asset_config = asset
-        _, session_token = soar_client.session.headers.get("Cookie", "").split("=")
+        _, session_token = soar_rest_client.session.headers.get("Cookie", "").split("=")
 
         request = WebhookRequest(
             method=method,
@@ -653,9 +652,13 @@ class App:
             path_parts=path_parts,
             query=query,
             body=body,
-            asset_id=asset_id,
             asset=self.asset,
             soar_api_token=session_token,
         )
 
-        return self.webhook_router.handle_request(request)
+        response = self.webhook_router.handle_request(request)
+        if not isinstance(response, WebhookResponse):
+            raise TypeError(
+                f"Webhook handler must return a WebhookResponse, got {type(response)}"
+            )
+        return response.dict()
