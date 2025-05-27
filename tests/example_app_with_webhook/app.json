@@ -18,7 +18,7 @@
     "utctime_updated": "2025-04-17T12:00:00.000000Z",
     "fips_compliant": false,
     "webhook": {
-        "handler": "src.app:app.handle_webhook",
+        "handler": "src.app.app.handle_webhook",
         "requires_auth": true,
         "allowed_headers": [],
         "ip_allowlist": [

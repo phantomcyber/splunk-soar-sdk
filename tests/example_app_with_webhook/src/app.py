@@ -35,7 +35,7 @@ app = App(
 
 
 @app.test_connectivity()
-def test_connectivity(client: SOARClient, asset: Asset) -> None:
+def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.info(f"testing connectivity against {asset.base_url}")
 
 
@@ -69,10 +69,12 @@ def test_webhook(request: WebhookRequest[Asset]) -> WebhookResponse:
 
 
 @app.webhook("test_webhook/<asset_id>", allowed_methods=["GET", "POST", "DELETE"])
-def test_webhook_with_asset_id(request: WebhookRequest[Asset]) -> WebhookResponse:
+def test_webhook_with_asset_id(
+    request: WebhookRequest[Asset], asset_id: str
+) -> WebhookResponse:
     logger.debug("Webhook with asset ID request: %s", request)
     response = WebhookResponse.text_response(
-        content=f"Webhook received with asset ID: {request.asset_id}",
+        content=f"Webhook received with asset ID: {asset_id}",
         status_code=200,
         extra_headers={"X-Custom-Header": "CustomValue"},
     )
