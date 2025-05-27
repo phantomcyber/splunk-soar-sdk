@@ -1,6 +1,6 @@
 import base64
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
-from soar_sdk.crypto import Encryption
+from soar_sdk import crypto
 
 
 def test_encryption_helper_not_available():
@@ -18,9 +18,9 @@ def test_encryption_helper_not_available():
 
 def test_crypto():
     # Test encryption
-    encrypted_text = Encryption.encrypt("test_string")
+    encrypted_text = crypto.encrypt("test_string")
     assert encrypted_text == base64.b64encode(b"test_string").decode("utf-8")
 
     # Test decryption
-    decrypted_text = Encryption.decrypt(encrypted_text)
+    decrypted_text = crypto.decrypt(encrypted_text)
     assert decrypted_text == "test_string"
