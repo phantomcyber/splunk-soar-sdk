@@ -81,5 +81,20 @@ def test_webhook_with_asset_id(
     return response
 
 
+@app.webhook("test_client_webhook")
+def test_client_webhook(request: WebhookRequest[Asset]) -> WebhookResponse:
+    logger.debug("Client webhook request: %s", request)
+
+    return WebhookResponse.json_response(
+        {
+            "message": "webhook received",
+            "is_authenticated": len(request.soar_auth_token) > 0,
+            "asset_id": request.asset_id,
+            "soar_base_url": request.soar_base_url,
+        },
+        status_code=200,
+    )
+
+
 if __name__ == "__main__":
     app.cli()

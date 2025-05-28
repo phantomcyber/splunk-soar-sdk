@@ -605,12 +605,12 @@ class App:
 
     def webhook(
         self, url_pattern: str, allowed_methods: Optional[list[str]] = None
-    ) -> Callable[[Callable], None]:
+    ) -> Callable[[Callable[[WebhookRequest], WebhookResponse]], None]:
         """
         Decorator for registering a webhook handler.
         """
 
-        def decorator(function: Callable) -> None:
+        def decorator(function: Callable[[WebhookRequest], WebhookResponse]) -> None:
             """
             Decorator for the webhook handler function. Adds the specific meta
             information to the action passed to the generator. Validates types used on
@@ -644,7 +644,11 @@ class App:
             raise RuntimeError("Webhooks are not enabled for this app.")
 
         self._raw_asset_config = asset
-        _, session_token = soar_rest_client.session.headers.get("Cookie", "").split("=")
+
+        _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
+        asset_id = soar_rest_client.asset_id
+        soar_base_url = soar_rest_client.base_url
+        soar_rest_client = SoarRestClient(soar_auth_token, asset_id)
 
         request = WebhookRequest(
             method=method,
@@ -653,7 +657,9 @@ class App:
             query=query,
             body=body,
             asset=self.asset,
-            soar_api_token=session_token,
+            soar_auth_token=soar_auth_token,
+            soar_base_url=soar_base_url,
+            asset_id=asset_id,
         )
 
         response = self.webhook_router.handle_request(request)
