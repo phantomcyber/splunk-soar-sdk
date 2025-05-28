@@ -110,10 +110,10 @@ def test_create_container_failed(app_connector, mock_post_container):
         app_connector.container.create(container, fail_on_duplicate=True)
 
 
-def test_create_container_locally(simple_app: App, app_connector):
+def test_create_container_locally(app_with_action: App, app_connector):
     app_connector.client.headers.pop("X-CSRFToken")
 
-    @simple_app.action()
+    @app_with_action.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         artifact = {
             "name": "test artifact",
