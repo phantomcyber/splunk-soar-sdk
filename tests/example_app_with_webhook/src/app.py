@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from io import BytesIO
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
@@ -81,18 +82,15 @@ def test_webhook_with_asset_id(
     return response
 
 
-@app.webhook("test_client_webhook")
-def test_client_webhook(request: WebhookRequest[Asset]) -> WebhookResponse:
-    logger.debug("Client webhook request: %s", request)
+@app.webhook("test_webhook_file")
+def test_webhook_file(request: WebhookRequest[Asset]) -> WebhookResponse:
+    logger.debug("Webhook file request: %s", request)
 
-    return WebhookResponse.json_response(
-        {
-            "message": "webhook received",
-            "is_authenticated": len(request.soar_auth_token) > 0,
-            "asset_id": request.asset_id,
-            "soar_base_url": request.soar_base_url,
-        },
+    return WebhookResponse.file_response(
+        fd=BytesIO(b"Hello, this is a test file content."),
+        filename="test_file.txt",
         status_code=200,
+        extra_headers={"Content-Disposition": 'attachment; filename="test_file.txt"'},
     )
 
 

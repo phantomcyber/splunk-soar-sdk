@@ -6,12 +6,12 @@ from tests.mocks.dynamic_mocks import ArgReturnMock
 from tests.stubs import SampleActionParams, SampleOutput, SampleNestedOutput
 
 
-def test_app_action_called_with_legacy_result_set_returns_this_result(simple_app):
+def test_app_action_called_with_legacy_result_set_returns_this_result(app_with_action):
     action_result = ActionOutput()
     client_mock = mock.Mock()
     client_mock.add_result = mock.Mock(return_value=action_result)
 
-    @simple_app.action()
+    @app_with_action.action()
     def action_returning_action_result(
         params: SampleActionParams, soar: SOARClient
     ) -> ActionOutput:
@@ -26,11 +26,11 @@ def test_app_action_called_with_legacy_result_set_returns_this_result(simple_app
     assert client_mock.add_result.call_args[0][0].get_param() == {}
 
 
-def test_app_action_called_with_simple_result_creates_the_result(simple_app):
+def test_app_action_called_with_simple_result_creates_the_result(app_with_action):
     client_mock = mock.Mock()
     client_mock.add_result = ArgReturnMock()
 
-    @simple_app.action()
+    @app_with_action.action()
     def action_returning_simple_result(
         params: SampleActionParams, soar: SOARClient
     ) -> ActionOutput:
@@ -45,7 +45,7 @@ def test_app_action_called_with_simple_result_creates_the_result(simple_app):
     assert client_mock.add_result.call_args[0][0].get_param() == {}
 
 
-def test_app_action_called_with_more_complex_result_creates_the_result(simple_app):
+def test_app_action_called_with_more_complex_result_creates_the_result(app_with_action):
     client_mock = mock.Mock()
     client_mock.add_result = ArgReturnMock()
 
@@ -57,7 +57,7 @@ def test_app_action_called_with_more_complex_result_creates_the_result(simple_ap
         nested_value=SampleNestedOutput(bool_value=True),
     )
 
-    @simple_app.action()
+    @app_with_action.action()
     def action_returning_complex_result(
         params: SampleActionParams, soar: SOARClient
     ) -> SampleOutput:

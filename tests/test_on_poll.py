@@ -9,21 +9,21 @@ from soar_sdk.models.artifact import Artifact
 from soar_sdk.exceptions import ActionFailure
 
 
-def test_on_poll_decoration_fails_when_used_more_than_once(simple_app: App):
+def test_on_poll_decoration_fails_when_used_more_than_once(app_with_action: App):
     """Test that the on_poll decorator can only be used once per app."""
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         yield {"data": "test"}
 
     with pytest.raises(TypeError, match=r"on_poll.+once per"):
 
-        @simple_app.on_poll()
+        @app_with_action.on_poll()
         def second_on_poll(params: OnPollParams, client=None) -> Iterator[dict]:
             yield {"data": "another test"}
 
 
-def test_on_poll_decoration_fails_when_not_generator(simple_app: App):
+def test_on_poll_decoration_fails_when_not_generator(app_with_action: App):
     """Test that the on_poll decorator requires a generator function."""
 
     with pytest.raises(
@@ -31,16 +31,16 @@ def test_on_poll_decoration_fails_when_not_generator(simple_app: App):
         match=r"The on_poll function must be a generator \(use 'yield'\) or return an Iterator.",
     ):
 
-        @simple_app.on_poll()
+        @app_with_action.on_poll()
         def on_poll_function(params: OnPollParams, client=None):
             return {"data": "test"}  # Not yielding
 
 
-def test_on_poll_function_called_with_params(simple_app: App):
+def test_on_poll_function_called_with_params(app_with_action: App):
     """Test that the on_poll function is called with parameters."""
     poll_fn = mock.Mock(return_value=iter([{"data": "test"}]))
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         poll_fn(params)
         yield {"data": "test"}
@@ -60,11 +60,11 @@ def test_on_poll_function_called_with_params(simple_app: App):
     assert result is True
 
 
-def test_on_poll_param_validation_error(simple_app: App):
+def test_on_poll_param_validation_error(app_with_action: App):
     """Test on_poll handles parameter validation errors and returns False."""
     client_mock = mock.Mock()
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams):
         yield Artifact(name="a1")
 
@@ -73,10 +73,10 @@ def test_on_poll_param_validation_error(simple_app: App):
     assert result is False
 
 
-def test_on_poll_works_with_iterator_functions(simple_app: App):
+def test_on_poll_works_with_iterator_functions(app_with_action: App):
     """Test that the on_poll decorator works with functions that return iterators."""
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         # Creating and returning an iterator
         return iter([{"data": "test artifact 1"}, {"data": "test artifact 2"}])
@@ -94,10 +94,10 @@ def test_on_poll_works_with_iterator_functions(simple_app: App):
     assert result is True
 
 
-def test_on_poll_empty_iterator(simple_app: App):
+def test_on_poll_empty_iterator(app_with_action: App):
     """Test that the on_poll function works with empty iterators."""
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         # Empty iterator - no artifacts to yield
         return iter([])
@@ -114,10 +114,10 @@ def test_on_poll_empty_iterator(simple_app: App):
     assert result is True
 
 
-def test_on_poll_raises_exception_propagates(simple_app: App):
+def test_on_poll_raises_exception_propagates(app_with_action: App):
     """Test that exceptions raised in the on_poll function are handled and return False."""
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         raise ValueError("poll error")
         yield  # pragma: no cover
@@ -135,11 +135,11 @@ def test_on_poll_raises_exception_propagates(simple_app: App):
     assert result is False
 
 
-def test_on_poll_multiple_yields(simple_app: App):
+def test_on_poll_multiple_yields(app_with_action: App):
     """Test that multiple yielded items are processed by on_poll."""
     yielded = []
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         for i in range(3):
             yielded.append(i)
@@ -159,13 +159,13 @@ def test_on_poll_multiple_yields(simple_app: App):
     assert yielded == [0, 1, 2]
 
 
-def test_on_poll_yields_container_success(simple_app: App):
+def test_on_poll_yields_container_success(app_with_action: App):
     """Test on_poll yields a Container and successfully."""
     client_mock = mock.Mock()
     client_mock.save_container.return_value = (True, "Created", 42)
     client_mock.save_artifacts.return_value = None
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
         yield Container(name="c1")
         yield Artifact(name="a1")
@@ -177,13 +177,13 @@ def test_on_poll_yields_container_success(simple_app: App):
     client_mock.save_artifacts.assert_called()
 
 
-def test_on_poll_yields_container_duplicate(simple_app: App):
+def test_on_poll_yields_container_duplicate(app_with_action: App):
     """Test on_poll yields a Container and handles duplicate container correctly."""
     client_mock = mock.Mock()
     client_mock.save_container.return_value = (True, "Duplicate container found", 99)
     client_mock.save_artifacts.return_value = None
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function_dup(params: OnPollParams, client=None):
         yield Container(name="c2")
         yield Artifact(name="a2")
@@ -195,13 +195,13 @@ def test_on_poll_yields_container_duplicate(simple_app: App):
     client_mock.save_artifacts.assert_called()
 
 
-def test_on_poll_yields_container_creation_failure(simple_app: App):
+def test_on_poll_yields_container_creation_failure(app_with_action: App):
     """Test on_poll handles container creation failure correctly."""
     client_mock = mock.Mock()
     client_mock.save_container.return_value = (False, "Error creating container", None)
     client_mock.save_artifacts.return_value = None
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
         yield Container(name="c3")
         yield Artifact(name="a3")  # Should be skipped because no container
@@ -213,11 +213,11 @@ def test_on_poll_yields_container_creation_failure(simple_app: App):
     client_mock.save_artifacts.assert_not_called()
 
 
-def test_on_poll_yields_non_container_artifact(simple_app: App):
+def test_on_poll_yields_non_container_artifact(app_with_action: App):
     """Test on_poll correctly handles object that is neither Container nor Artifact."""
     client_mock = mock.Mock()
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
         yield 123  # Should be skipped
         yield "string"
@@ -227,11 +227,11 @@ def test_on_poll_yields_non_container_artifact(simple_app: App):
     assert result is True
 
 
-def test_on_poll_artifact_no_container(simple_app: App):
+def test_on_poll_artifact_no_container(app_with_action: App):
     """Test on_poll yields an Artifact with no container and no container_id."""
     client_mock = mock.Mock()
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
         yield Artifact(name="a1")
 
@@ -240,11 +240,11 @@ def test_on_poll_artifact_no_container(simple_app: App):
     assert result is True
 
 
-def test_on_poll_sets_container_id_on_artifact(simple_app: App):
+def test_on_poll_sets_container_id_on_artifact(app_with_action: App):
     """Test that on_poll sets container_id on artifact if not present and container_id is available."""
     client_mock = mock.Mock()
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
         artifact2 = Artifact(name="a2", container_id=999)
         yield artifact2
@@ -256,12 +256,12 @@ def test_on_poll_sets_container_id_on_artifact(simple_app: App):
     assert saved_artifact["container_id"] == 999
 
 
-def test_on_poll_failure(simple_app: App):
+def test_on_poll_failure(app_with_action: App):
     """Test on_poll handles ActionFailure correctly."""
     client_mock = mock.Mock()
 
     # ActionFailure
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_actionfailure(params: OnPollParams, client=None):
         raise ActionFailure("failmsg")
         yield  # pragma: no cover
@@ -271,27 +271,27 @@ def test_on_poll_failure(simple_app: App):
     assert result is False
 
 
-def test_on_poll_decoration_with_meta(simple_app: App):
+def test_on_poll_decoration_with_meta(app_with_action: App):
     """Test that the on_poll decorator properly sets up metadata."""
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         yield {"data": "test"}
 
-    action = simple_app.actions_provider.get_action("on_poll")
+    action = app_with_action.actions_provider.get_action("on_poll")
     assert action is not None
     assert action.meta.action == "on poll"
     assert action == on_poll_function
 
 
-def test_on_poll_actionmeta_dict_output_empty(simple_app: App):
+def test_on_poll_actionmeta_dict_output_empty(app_with_action: App):
     """Test that OnPollActionMeta.dict returns output as an empty list."""
 
-    @simple_app.on_poll()
+    @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
         yield Artifact(name="a1")
 
-    action = simple_app.actions_provider.get_action("on_poll")
+    action = app_with_action.actions_provider.get_action("on_poll")
     meta_dict = action.meta.dict()
     assert "output" in meta_dict
     assert meta_dict["output"] == []

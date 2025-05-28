@@ -7,9 +7,11 @@ import typing
 from typing import Optional, Any
 import os
 from pydantic import ValidationError
+from urllib.parse import urlparse, parse_qs
 
 from soar_sdk.input_spec import ActionParameter, AppConfig, InputSpecification, SoarAuth
 from soar_sdk.types import Action
+from soar_sdk.webhooks.models import WebhookRequest
 
 if typing.TYPE_CHECKING:
     from .app import App
@@ -42,10 +44,16 @@ class AppCliRunner:
             help="Password to connect to SOAR instance. Can be provided via PHANTOM_PASSWORD environment variable as well",
         )
 
-        subparsers = root_parser.add_subparsers(dest="action", title="Actions")
+        subparsers = root_parser.add_subparsers()
         subparsers.required = True
+
+        actions_parser = subparsers.add_parser("action", help="Run an action")
+        action_subparsers = actions_parser.add_subparsers(
+            dest="action", title="Actions"
+        )
+        action_subparsers.required = True
         for name, action in self.app.actions_provider.get_actions().items():
-            parser = subparsers.add_parser(
+            parser = action_subparsers.add_parser(
                 name,
                 aliases=(action.meta.action.replace(" ", "-"),),
                 help=action.meta.verbose,
@@ -69,6 +77,40 @@ class AppCliRunner:
                     "-p", "--param-file", help="Input parameter JSON file", type=Path
                 )
 
+        webhooks_parser = subparsers.add_parser(
+            "webhook", help="Invoke a webhook handler"
+        )
+        webhooks_parser.add_argument("url", help="Webhook URL to invoke")
+        webhooks_parser.set_defaults(needs_asset=True)
+        webhooks_parser.add_argument(
+            "-a",
+            "--asset-file",
+            help="Path to the asset file",
+            type=Path,
+            required=True,
+        )
+        webhooks_parser.add_argument(
+            "-X",
+            "--method",
+            "--request",
+            choices=["GET", "POST", "PUT", "DELETE", "PATCH"],
+            default="GET",
+            help="HTTP method to use for the webhook request",
+        )
+        webhooks_parser.add_argument(
+            "-H",
+            "--header",
+            action="append",
+            help="HTTP header to include in the request. Can be specified multiple times.",
+            metavar="HEADER=VALUE",
+        )
+        webhooks_parser.add_argument(
+            "-d",
+            "--data",
+            help="Data to include in the request body. If not provided, the request will be empty.",
+            type=Path,
+        )
+
         # By default, argv will be None and we'll fall back to sys.argv,
         # but making it possible to provide args makes this method unit testable.
         args = root_parser.parse_args(argv)
@@ -82,7 +124,21 @@ class AppCliRunner:
                     f"Unable to read asset JSON file {args.asset_file}: {e}"
                 )
 
-        chosen_action: Action = args.action
+        if chosen_action := getattr(args, "action", None):
+            self._parse_action_args(chosen_action, args, root_parser, asset_json)
+
+        if webhook_url := getattr(args, "url", None):
+            self._parse_webhook_args(webhook_url, args, asset_json)
+
+        return args
+
+    def _parse_action_args(
+        self,
+        chosen_action: Action,
+        args: argparse.Namespace,
+        root_parser: argparse.ArgumentParser,
+        asset_json: dict[str, Any],
+    ) -> None:
         parameter_list: list[ActionParameter] = []
 
         if chosen_action.params_class is not None:
@@ -129,15 +185,73 @@ class AppCliRunner:
                 root_parser.error(f"Provided soar auth arguments are invalid: {e}.")
 
         args.raw_input_data = input_data.json()
-        return args
+
+    def _parse_webhook_args(
+        self,
+        webhook_url: str,
+        args: argparse.Namespace,
+        asset_json: dict[str, Any],
+    ) -> None:
+        parsed = urlparse(webhook_url)
+
+        path = parsed.path
+        query = parse_qs(parsed.query)
+
+        # Emulate some broken behavior in core, which flattens query parameters to the last value per key
+        flattened_query = {}
+        for key, value in query.items():
+            flattened_query[key] = value[-1]
+
+        path_parts = path.strip("/").split("/")
+        headers = {
+            key: value
+            for key, value in (header.split("=", 1) for header in args.header or [])
+        }
+
+        # TODO: Once we have a stable SOARClient for webhooks, we should accept real values here and use them to create a session
+        soar_base_url = getattr(
+            self.app.actions_provider.soar_client, "base_url", "https://example.com"
+        )
+        soar_auth_token = "PLACEHOLDER"  # noqa: S105
+        asset_id = 1
+
+        args.webhook_request = WebhookRequest(
+            method=args.method,
+            headers=headers,
+            path_parts=path_parts,
+            query=flattened_query,
+            body=args.data,
+            asset=asset_json,
+            soar_base_url=soar_base_url,
+            soar_auth_token=soar_auth_token,
+            asset_id=asset_id,
+        )
 
     def run(self) -> None:
         args = self.parse_args()
-        self.app.handle(args.raw_input_data)
-        # FIXME: ActionResult mock isn't quite right. Choosing not to unit test this section
-        # yet, because the test will need to be rewritten. We shouldn't be posting our results
-        # into ActionResult.param...
-        for result in (
-            self.app.actions_provider.soar_client.get_action_results()
-        ):  # pragma: no cover
-            pprint(result.param)
+
+        if input_data := getattr(args, "raw_input_data", None):
+            self.app.handle(input_data)
+            # FIXME: ActionResult mock isn't quite right. Choosing not to unit test this section
+            # yet, because the test will need to be rewritten. We shouldn't be posting our results
+            # into ActionResult.param...
+            for result in (
+                self.app.actions_provider.soar_client.get_action_results()
+            ):  # pragma: no cover
+                pprint(result.param)
+
+        if (webhook_request := getattr(args, "webhook_request", None)) and (
+            router := self.app.webhook_router
+        ):
+            response = router.handle_request(webhook_request)
+            print(f"Response status code: {response.status_code}\n")
+            print("Response headers:")
+            for name, value in response.headers:
+                print(f"{name}: {value}")
+            print("")
+
+            if response.is_base64_encoded:
+                print("Response content (base64-encoded):")
+            else:
+                print("Response content:")
+            print(response.content)
