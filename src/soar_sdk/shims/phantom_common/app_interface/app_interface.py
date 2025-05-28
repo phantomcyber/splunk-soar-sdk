@@ -1,5 +1,5 @@
 try:
-    from phantom_common.app_interface import SoarRestClient
+    from phantom_common.app_interface.app_interface import SoarRestClient
 
     _soar_is_available = True
 except ImportError:

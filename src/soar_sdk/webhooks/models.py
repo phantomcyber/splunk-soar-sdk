@@ -17,7 +17,9 @@ class WebhookRequest(BaseModel, Generic[Asset]):
     query: dict[str, str]
     body: Optional[str]
     asset: Asset
-    soar_api_token: Optional[str]
+    soar_base_url: str
+    soar_auth_token: str
+    asset_id: int
 
     @property
     def path(self) -> str:

@@ -16,10 +16,10 @@ class RouteConflictError(Exception):
     """Raised when a route conflicts with a previously registered route."""
 
 
-T = TypeVar("T", bound=BaseAsset)
+AssetType = TypeVar("AssetType", bound=BaseAsset)
 
 
-class Router(Generic[T]):
+class Router(Generic[AssetType]):
     """
     A router for mapping URL patterns to handler functions.
 
@@ -36,7 +36,7 @@ class Router(Generic[T]):
     def add_route(
         self,
         pattern: str,
-        handler: Callable[..., WebhookResponse],
+        handler: Callable[[WebhookRequest], WebhookResponse],
         methods: Optional[Sequence[str]] = None,
     ) -> None:
         """
@@ -72,7 +72,7 @@ class Router(Generic[T]):
             (pattern, regex_pattern, methods_upper, handler, param_indices)
         )
 
-    def handle_request(self, request: WebhookRequest[T]) -> WebhookResponse:
+    def handle_request(self, request: WebhookRequest[AssetType]) -> WebhookResponse:
         """
         Find a matching route for the request and invoke its handler.
 

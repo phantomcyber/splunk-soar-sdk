@@ -49,6 +49,9 @@ def test_handle_route() -> None:
     router = Router()
 
     def test_handler(request: WebhookRequest, param: str) -> WebhookResponse:
+        assert request.soar_auth_token == "test_token"
+        assert request.soar_base_url == "https://localhost:9999"
+        assert request.asset_id == 1
         return WebhookResponse.text_response(
             content=f"Handled {param}",
             status_code=200,
@@ -63,9 +66,10 @@ def test_handle_route() -> None:
             path_parts=["test", "123"],
             query={},
             body=None,
-            asset_id=1,
             asset=BaseAsset(),
-            soar_api_token=None,
+            asset_id=1,
+            soar_auth_token="test_token",
+            soar_base_url="https://localhost:9999",
         )
     )
     assert response.status_code == 200
@@ -94,9 +98,10 @@ def test_handle_route_404() -> None:
             path_parts=["nonexistent", "123"],
             query={},
             body=None,
-            asset_id=1,
             asset=BaseAsset(),
-            soar_api_token=None,
+            asset_id=1,
+            soar_auth_token="test_token",
+            soar_base_url="https://localhost:9999",
         )
     )
     assert response.status_code == 404
@@ -123,9 +128,10 @@ def test_handle_route_405() -> None:
             path_parts=["test", "123"],
             query={},
             body=None,
-            asset_id=1,
             asset=BaseAsset(),
-            soar_api_token=None,
+            asset_id=1,
+            soar_auth_token="test_token",
+            soar_base_url="https://localhost:9999",
         )
     )
     assert response.status_code == 405
