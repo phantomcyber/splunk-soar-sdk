@@ -41,6 +41,7 @@ class ManifestProcessor:
         if app.webhook_meta is not None:
             app_meta.webhook = app.webhook_meta
             app_meta.webhook.handler = (
+                # TODO: remove `replace` call once Borg is n-2
                 f"{app_meta.main_module.replace(':', '.')}.handle_webhook"
             )
 
