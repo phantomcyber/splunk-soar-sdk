@@ -2,7 +2,6 @@ import argparse
 import inspect
 import json
 from pathlib import Path
-from pprint import pprint
 import typing
 from typing import Optional, Any
 import os
@@ -12,6 +11,7 @@ from urllib.parse import urlparse, parse_qs
 from soar_sdk.input_spec import ActionParameter, AppConfig, InputSpecification, SoarAuth
 from soar_sdk.types import Action
 from soar_sdk.webhooks.models import WebhookRequest
+from soar_sdk.logging import PhantomLogger
 
 if typing.TYPE_CHECKING:
     from .app import App
@@ -234,6 +234,8 @@ class AppCliRunner:
     def run(self) -> None:
         args = self.parse_args()
 
+        logger = PhantomLogger()
+
         if input_data := getattr(args, "raw_input_data", None):
             self.app.handle(input_data)
             # FIXME: ActionResult mock isn't quite right. Choosing not to unit test this section
@@ -242,20 +244,22 @@ class AppCliRunner:
             for result in (
                 self.app.actions_provider.soar_client.get_action_results()
             ):  # pragma: no cover
-                pprint(result.param)
+                pretty = json.dumps(result.param, indent=2, ensure_ascii=False)
+                logger.info(pretty)
 
         if (webhook_request := getattr(args, "webhook_request", None)) and (
             router := self.app.webhook_router
         ):
             response = router.handle_request(webhook_request)
-            print(f"Response status code: {response.status_code}\n")
-            print("Response headers:")
+            logger.info(f"Response status code: {response.status_code}\n")
+
+            logger.info("Response headers:")
             for name, value in response.headers:
-                print(f"{name}: {value}")
-            print("")
+                logger.info(f"{name}: {value}")
+            logger.info("")
 
             if response.is_base64_encoded:
-                print("Response content (base64-encoded):")
+                logger.info("Response content (base64-encoded):")
             else:
-                print("Response content:")
-            print(response.content)
+                logger.info("Response content:")
+            logger.info(response.content)
