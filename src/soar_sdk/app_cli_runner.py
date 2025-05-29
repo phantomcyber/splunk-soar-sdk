@@ -128,7 +128,7 @@ class AppCliRunner:
             self._parse_action_args(chosen_action, args, root_parser, asset_json)
 
         if webhook_url := getattr(args, "url", None):
-            self._parse_webhook_args(webhook_url, args, asset_json)
+            self._parse_webhook_args(webhook_url, args, root_parser, asset_json)
 
         return args
 
@@ -190,6 +190,7 @@ class AppCliRunner:
         self,
         webhook_url: str,
         args: argparse.Namespace,
+        root_parser: argparse.ArgumentParser,
         asset_json: dict[str, Any],
     ) -> None:
         parsed = urlparse(webhook_url)
@@ -199,14 +200,19 @@ class AppCliRunner:
 
         # Emulate some broken behavior in core, which flattens query parameters to the last value per key
         flattened_query = {}
-        for key, value in query.items():
-            flattened_query[key] = value[-1]
+        for q_key, q_value in query.items():
+            flattened_query[q_key] = q_value[-1]
 
         path_parts = path.strip("/").split("/")
-        headers = {
-            key: value
-            for key, value in (header.split("=", 1) for header in args.header or [])
-        }
+
+        headers: dict[str, str] = {}
+        for header in args.header or []:
+            if "=" not in header:
+                root_parser.error(
+                    f"Invalid header format: {header}. Expected format is HEADER=VALUE."
+                )
+            h_key, h_value = header.split("=", 1)
+            headers[h_key] = h_value
 
         # TODO: Once we have a stable SOARClient for webhooks, we should accept real values here and use them to create a session
         soar_base_url = getattr(
