@@ -648,7 +648,6 @@ class App:
         _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
         asset_id = soar_rest_client.asset_id
         soar_base_url = soar_rest_client.base_url
-        soar_rest_client = SoarRestClient(soar_auth_token, asset_id)
 
         request = WebhookRequest(
             method=method,
