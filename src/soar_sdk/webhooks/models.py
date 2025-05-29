@@ -60,9 +60,9 @@ class WebhookResponse(BaseModel):
             headers=[("Content-Type", "text/plain")],
         )
 
-        if extra_headers is not None:
-            for name, value in extra_headers.items():
-                response.set_header(name, value)
+        extra_headers = extra_headers or {}
+        for name, value in extra_headers.items():
+            response.set_header(name, value)
 
         return response
 
@@ -78,9 +78,9 @@ class WebhookResponse(BaseModel):
             headers=[("Content-Type", "application/json")],
         )
 
-        if extra_headers is not None:
-            for name, value in extra_headers.items():
-                response.set_header(name, value)
+        extra_headers = extra_headers or {}
+        for name, value in extra_headers.items():
+            response.set_header(name, value)
 
         return response
 
