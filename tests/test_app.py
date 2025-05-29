@@ -103,24 +103,18 @@ def test_register_webhook_without_enabling_webhooks_raises(app_with_simple_asset
             return WebhookResponse.text_response("Hello, world!")
 
 
-def test_handle_webhook(app_with_simple_asset: App):
-    app_with_simple_asset.enable_webhooks()
-
-    @app_with_simple_asset.webhook("example_webhook")
-    def webhook_handler(request: WebhookRequest) -> WebhookResponse:
-        return WebhookResponse.text_response("Hello, world!")
-
-    response = app_with_simple_asset.handle_webhook(
+def test_handle_webhook(app_with_asset_webhook: App):
+    response = app_with_asset_webhook.handle_webhook(
         method="GET",
         headers={},
-        path_parts=["example_webhook"],
+        path_parts=["test_webhook"],
         query={},
         body=None,
         asset={"base_url": "https://example.com"},
         soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
     )
     assert response["status_code"] == 200
-    assert response["content"] == "Hello, world!"
+    assert response["content"] == "Webhook received!"
 
 
 def test_handle_webhook_without_enabling_webhooks_raises(
@@ -142,11 +136,9 @@ def test_handle_webhook_without_enabling_webhooks_raises(
 
 
 def test_handle_webhook_invalid_return_type_raises(
-    app_with_simple_asset: App,
+    app_with_asset_webhook: App,
 ):
-    app_with_simple_asset.enable_webhooks()
-
-    @app_with_simple_asset.webhook("example_webhook")
+    @app_with_asset_webhook.webhook("example_webhook")
     def webhook_handler(request: WebhookRequest) -> str:
         return "This is not a valid response type"
 
@@ -154,7 +146,7 @@ def test_handle_webhook_invalid_return_type_raises(
         TypeError,
         match="must return a WebhookResponse",
     ):
-        app_with_simple_asset.handle_webhook(
+        app_with_asset_webhook.handle_webhook(
             method="GET",
             headers={},
             path_parts=["example_webhook"],

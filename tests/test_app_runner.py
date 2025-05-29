@@ -283,19 +283,9 @@ def test_bas_soar_auth_params(app_with_action: App):
         )
 
 
-def test_parse_args_webhook(simple_app: App):
+def test_parse_args_webhook(app_with_asset_webhook: App):
     """Test parsing arguments for a webhook."""
-    simple_app.enable_webhooks()
-
-    @simple_app.webhook("test_webhook")
-    def test_webhook(request: WebhookRequest) -> WebhookResponse:
-        return WebhookResponse.text_response(
-            content="Webhook received",
-            status_code=200,
-            extra_headers={"X-Custom-Header": "CustomValue"},
-        )
-
-    runner = AppCliRunner(simple_app)
+    runner = AppCliRunner(app_with_asset_webhook)
 
     with (
         tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file,
@@ -326,19 +316,9 @@ def test_parse_args_webhook(simple_app: App):
         )
 
 
-def test_parse_args_webhook_headers(simple_app: App):
+def test_parse_args_webhook_headers(app_with_asset_webhook: App):
     """Test parsing arguments for a webhook with request headers."""
-    simple_app.enable_webhooks()
-
-    @simple_app.webhook("test_webhook")
-    def test_webhook(request: WebhookRequest) -> WebhookResponse:
-        return WebhookResponse.text_response(
-            content="Webhook received",
-            status_code=200,
-            extra_headers={"X-Custom-Header": "CustomValue"},
-        )
-
-    runner = AppCliRunner(simple_app)
+    runner = AppCliRunner(app_with_asset_webhook)
 
     # Parsing args with an invalid header should raise SystemExit
     with tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file:
@@ -370,19 +350,9 @@ def test_parse_args_webhook_headers(simple_app: App):
         )
 
 
-def test_parse_args_webhook_invalid_header(simple_app: App):
+def test_parse_args_webhook_invalid_header(app_with_asset_webhook: App):
     """Test parsing arguments for a webhook with an invalid header."""
-    simple_app.enable_webhooks()
-
-    @simple_app.webhook("test_webhook")
-    def test_webhook(request: WebhookRequest) -> WebhookResponse:
-        return WebhookResponse.text_response(
-            content="Webhook received",
-            status_code=200,
-            extra_headers={"X-Custom-Header": "CustomValue"},
-        )
-
-    runner = AppCliRunner(simple_app)
+    runner = AppCliRunner(app_with_asset_webhook)
 
     # Parsing args with an invalid header should raise SystemExit
     with tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file:
@@ -405,19 +375,9 @@ def test_parse_args_webhook_invalid_header(simple_app: App):
             )
 
 
-def test_parse_args_webhook_flattens_params(simple_app: App):
+def test_parse_args_webhook_flattens_params(app_with_asset_webhook: App):
     """Test parsing arguments for a webhook."""
-    simple_app.enable_webhooks()
-
-    @simple_app.webhook("test_webhook")
-    def test_webhook(request: WebhookRequest) -> WebhookResponse:
-        return WebhookResponse.text_response(
-            content="Webhook received",
-            status_code=200,
-            extra_headers={"X-Custom-Header": "CustomValue"},
-        )
-
-    runner = AppCliRunner(simple_app)
+    runner = AppCliRunner(app_with_asset_webhook)
 
     with (
         tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file,
@@ -472,19 +432,9 @@ def test_run_action_cli(app_with_action: App):
     app_with_action.handle.assert_called_once_with(args.raw_input_data)
 
 
-def test_run_webhook_cli(simple_app: App):
+def test_run_webhook_cli(app_with_asset_webhook: App):
     """Test running a webhook via CLI."""
-    simple_app.enable_webhooks()
-
-    @simple_app.webhook("test_webhook")
-    def test_webhook(request: WebhookRequest) -> WebhookResponse:
-        return WebhookResponse.text_response(
-            content="Webhook received",
-            status_code=200,
-            extra_headers={"X-Custom-Header": "CustomValue"},
-        )
-
-    runner = AppCliRunner(simple_app)
+    runner = AppCliRunner(app_with_asset_webhook)
 
     with (
         tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file,
@@ -500,12 +450,11 @@ def test_run_webhook_cli(simple_app: App):
         runner.run()
 
 
-def test_run_webhook_cli_base64(simple_app: App):
+def test_run_webhook_cli_base64(app_with_asset_webhook: App):
     """Test running a webhook via CLI."""
-    simple_app.enable_webhooks()
 
-    @simple_app.webhook("test_webhook")
-    def test_webhook(request: WebhookRequest) -> WebhookResponse:
+    @app_with_asset_webhook.webhook("test_binary_webhook")
+    def test_binary_webhook(request: WebhookRequest) -> WebhookResponse:
         return WebhookResponse.file_response(
             fd=BytesIO(b"Test content"),
             filename="test_file.txt",
@@ -513,7 +462,7 @@ def test_run_webhook_cli_base64(simple_app: App):
             extra_headers={"X-Custom-Header": "CustomValue"},
         )
 
-    runner = AppCliRunner(simple_app)
+    runner = AppCliRunner(app_with_asset_webhook)
 
     with (
         tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file,
@@ -522,7 +471,9 @@ def test_run_webhook_cli_base64(simple_app: App):
         json.dump(asset_json, asset_file)
         asset_file.flush()
 
-        args = runner.parse_args(["webhook", "test_webhook", "-a", asset_file.name])
+        args = runner.parse_args(
+            ["webhook", "test_binary_webhook", "-a", asset_file.name]
+        )
         runner.parse_args = mock.Mock(return_value=args)
 
         # Run the webhook
