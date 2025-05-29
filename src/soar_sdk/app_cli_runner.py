@@ -215,9 +215,7 @@ class AppCliRunner:
             headers[h_key] = h_value
 
         # TODO: Once we have a stable SOARClient for webhooks, we should accept real values here and use them to create a session
-        soar_base_url = getattr(
-            self.app.actions_provider.soar_client, "base_url", "https://example.com"
-        )
+        soar_base_url = args.soar_url or "https://example.com"
         soar_auth_token = "PLACEHOLDER"  # noqa: S105
         asset_id = 1
 
