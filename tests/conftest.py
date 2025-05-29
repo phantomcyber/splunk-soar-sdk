@@ -10,6 +10,7 @@ from soar_sdk.connector import AppConnector
 from soar_sdk.input_spec import AppConfig, InputSpecification, SoarAuth
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from tests.stubs import SampleActionParams
 from pathlib import Path
 from httpx import Response
@@ -133,6 +134,33 @@ def app_with_simple_asset() -> App:
         product_name="Example App",
         publisher="Splunk",
     )
+
+
+@pytest.fixture
+def app_with_asset_webhook() -> App:
+    """Create an app with a pre-configured action that requires an asset and webhook."""
+
+    class Asset(BaseAsset):
+        base_url: str
+
+    app = App(
+        asset_cls=Asset,
+        name="test_app_with_asset_webhook",
+        appid=APP_ID,
+        app_type="sandbox",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_vendor="Splunk",
+        product_name="Example App",
+        publisher="Splunk",
+    ).enable_webhooks()
+
+    @app.webhook("test_webhook")
+    def test_webhook_handler(request: WebhookRequest) -> WebhookResponse:
+        """Test webhook handler."""
+        return WebhookResponse.text_response("Webhook received!")
+
+    return app
 
 
 @pytest.fixture
