@@ -326,6 +326,85 @@ def test_parse_args_webhook(simple_app: App):
         )
 
 
+def test_parse_args_webhook_headers(simple_app: App):
+    """Test parsing arguments for a webhook with request headers."""
+    simple_app.enable_webhooks()
+
+    @simple_app.webhook("test_webhook")
+    def test_webhook(request: WebhookRequest) -> WebhookResponse:
+        return WebhookResponse.text_response(
+            content="Webhook received",
+            status_code=200,
+            extra_headers={"X-Custom-Header": "CustomValue"},
+        )
+
+    runner = AppCliRunner(simple_app)
+
+    # Parsing args with an invalid header should raise SystemExit
+    with tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file:
+        asset_json = {"asset_key": "asset_value"}
+        json.dump(asset_json, asset_file)
+        asset_file.flush()
+
+        args = runner.parse_args(
+            [
+                "webhook",
+                "test_webhook",
+                "--asset-file",
+                asset_file.name,
+                "--header",
+                "Content-Type=application/json",
+            ]
+        )
+
+        assert args.webhook_request == WebhookRequest(
+            method="GET",
+            headers={"Content-Type": "application/json"},
+            path_parts=["test_webhook"],
+            query={},
+            body=None,
+            asset={"asset_key": "asset_value"},
+            soar_base_url="https://example.com",
+            soar_auth_token="PLACEHOLDER",
+            asset_id=1,
+        )
+
+
+def test_parse_args_webhook_invalid_header(simple_app: App):
+    """Test parsing arguments for a webhook with an invalid header."""
+    simple_app.enable_webhooks()
+
+    @simple_app.webhook("test_webhook")
+    def test_webhook(request: WebhookRequest) -> WebhookResponse:
+        return WebhookResponse.text_response(
+            content="Webhook received",
+            status_code=200,
+            extra_headers={"X-Custom-Header": "CustomValue"},
+        )
+
+    runner = AppCliRunner(simple_app)
+
+    # Parsing args with an invalid header should raise SystemExit
+    with tempfile.NamedTemporaryFile(suffix=".json", mode="w+") as asset_file:
+        asset_json = {"asset_key": "asset_value"}
+        json.dump(asset_json, asset_file)
+        asset_file.flush()
+
+        with (
+            pytest.raises(SystemExit),
+        ):
+            runner.parse_args(
+                [
+                    "webhook",
+                    "test_webhook",
+                    "--asset-file",
+                    asset_file.name,
+                    "--header",
+                    "InvalidHeaderFormat",  # Missing '='
+                ]
+            )
+
+
 def test_parse_args_webhook_flattens_params(simple_app: App):
     """Test parsing arguments for a webhook."""
     simple_app.enable_webhooks()
