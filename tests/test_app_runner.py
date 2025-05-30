@@ -3,6 +3,8 @@ from unittest import mock
 import json
 from pathlib import Path
 import pytest
+from collections.abc import Iterator
+from typing import TextIO
 
 from soar_sdk.app import App
 from soar_sdk.app_cli_runner import AppCliRunner
@@ -12,12 +14,13 @@ from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 
 @pytest.fixture
-def tmp_asset_and_param_files(tmp_path: Path) -> tuple[Path, Path]:
+def tmp_asset_and_param_files(tmp_path: Path) -> Iterator[TextIO, TextIO]:
     """Fixture to create temporary asset and parameter files, already opened for writing."""
     asset_file = tmp_path / "asset.json"
     param_file = tmp_path / "params.json"
 
-    return asset_file.open("w+"), param_file.open("w+")
+    with asset_file.open("w") as af, param_file.open("w") as pf:
+        yield af, pf
 
 
 def test_parse_args_with_no_actions(simple_app: App):

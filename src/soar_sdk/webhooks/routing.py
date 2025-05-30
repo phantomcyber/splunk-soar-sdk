@@ -66,9 +66,6 @@ class Router(Generic[AssetType]):
                 if method not in {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}:
                     raise ValueError(f"Invalid HTTP method: {method}")
 
-        # Convert all methods to uppercase
-        methods_upper = [method.upper() for method in methods]
-
         # Convert URL pattern to regex
         regex_pattern, param_indices = self._pattern_to_regex(pattern)
 
@@ -82,7 +79,7 @@ class Router(Generic[AssetType]):
 
         # Add route
         self._routes.append(
-            Route(pattern, regex_pattern, methods_upper, handler, param_indices)
+            Route(pattern, regex_pattern, methods, handler, param_indices)
         )
 
     def handle_request(self, request: WebhookRequest[AssetType]) -> WebhookResponse:
