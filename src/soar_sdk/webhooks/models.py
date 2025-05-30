@@ -2,12 +2,13 @@ import json
 import base64
 import mimetypes
 
-from typing import Optional, TypeVar, Generic, Any, IO
+from typing import Optional, TypeVar, Generic, Any, IO, Callable
 from pydantic import BaseModel, Field
 
 from soar_sdk.asset import BaseAsset
 
 AssetType = TypeVar("AssetType", bound=BaseAsset)
+WebhookHandler = Callable[["WebhookRequest"], "WebhookResponse"]
 
 
 class WebhookRequest(BaseModel, Generic[AssetType]):
