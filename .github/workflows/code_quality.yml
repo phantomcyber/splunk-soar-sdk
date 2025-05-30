@@ -56,4 +56,4 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: Pytest + Coverage - ${{ matrix.python-version }}
-        run: uv run --locked pytest
+        run: uv run --locked pytest -n auto
