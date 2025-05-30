@@ -7,16 +7,16 @@ from pydantic import BaseModel, Field
 
 from soar_sdk.asset import BaseAsset
 
-Asset = TypeVar("Asset", bound=BaseAsset)
+AssetType = TypeVar("AssetType", bound=BaseAsset)
 
 
-class WebhookRequest(BaseModel, Generic[Asset]):
+class WebhookRequest(BaseModel, Generic[AssetType]):
     method: str
     headers: dict[str, str]
     path_parts: list[str]
     query: dict[str, list[str]]
     body: Optional[str]
-    asset: Asset
+    asset: AssetType
     soar_base_url: str
     soar_auth_token: str
     asset_id: int
@@ -40,6 +40,10 @@ class WebhookResponse(BaseModel):
 
         self.headers.append((name, value))
 
+    def set_headers(self, headers: dict[str, str]) -> None:
+        for name, value in headers.items():
+            self.set_header(name, value)
+
     def clear_header(self, name: str) -> None:
         for idx, header in enumerate(self.headers):
             if header[0] == name:
@@ -59,11 +63,7 @@ class WebhookResponse(BaseModel):
             status_code=status_code,
             headers=[("Content-Type", "text/plain")],
         )
-
-        extra_headers = extra_headers or {}
-        for name, value in extra_headers.items():
-            response.set_header(name, value)
-
+        response.set_headers(extra_headers or {})
         return response
 
     @staticmethod
@@ -77,11 +77,7 @@ class WebhookResponse(BaseModel):
             status_code=status_code,
             headers=[("Content-Type", "application/json")],
         )
-
-        extra_headers = extra_headers or {}
-        for name, value in extra_headers.items():
-            response.set_header(name, value)
-
+        response.set_headers(extra_headers or {})
         return response
 
     @staticmethod
@@ -115,9 +111,5 @@ class WebhookResponse(BaseModel):
 
         response.set_header("Content-Type", content_type)
         response.set_header("Content-Disposition", f'attachment; filename="{filename}"')
-
-        if extra_headers is not None:
-            for name, value in extra_headers.items():
-                response.set_header(name, value)
-
+        response.set_headers(extra_headers or {})
         return response

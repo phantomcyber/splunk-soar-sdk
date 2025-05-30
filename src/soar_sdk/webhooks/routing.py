@@ -60,6 +60,11 @@ class Router(Generic[AssetType]):
         """
         if methods is None:
             methods = ["GET", "POST"]
+        else:
+            methods = [method.upper() for method in methods]
+            for method in methods:
+                if method not in {"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"}:
+                    raise ValueError(f"Invalid HTTP method: {method}")
 
         # Convert all methods to uppercase
         methods_upper = [method.upper() for method in methods]

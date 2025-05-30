@@ -5,13 +5,23 @@ from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.webhooks.routing import Router, RouteConflictError
 
 
-def test_route_conflicts() -> None:
+def test_route_invalid_method() -> None:
     """
-    Test that route conflicts are detected correctly.
+    Test that adding a route with an invalid method raises an error.
     """
-    base_route = "/models/<model_id>/properties"
+    router = Router()
 
-    test_routes = [
+    with pytest.raises(ValueError, match="Invalid HTTP method: INVALID"):
+        router.add_route(
+            "/test/<param>",
+            lambda x: None,
+            methods=["GET", "INVALID"],
+        )
+
+
+@pytest.mark.parametrize(
+    "route,should_raise",
+    (
         ("/models/<model_id>/permissions", False),  # Different constant segment
         ("/models/<model_id>/properties", True),  # Exact match
         ("/models/<model_id>/properties/", True),  # Trailing slash
@@ -29,17 +39,22 @@ def test_route_conflicts() -> None:
             "/models/<model_id>/properties/<property_name>/<sub_property>/<extra>",
             False,
         ),  # Extra segment
-    ]
+    ),
+)
+def test_route_conflicts(route: str, should_raise: bool) -> None:
+    """
+    Test that route conflicts are detected correctly.
+    """
+    base_route = "/models/<model_id>/properties"
 
-    for route, should_raise in test_routes:
-        router = Router()
-        router.add_route(base_route, lambda x: None)
+    router = Router()
+    router.add_route(base_route, lambda x: None)
 
-        if should_raise:
-            with pytest.raises(RouteConflictError):
-                router.add_route(route, lambda x: None)
-        else:
+    if should_raise:
+        with pytest.raises(RouteConflictError):
             router.add_route(route, lambda x: None)
+    else:
+        router.add_route(route, lambda x: None)
 
 
 def test_handle_route() -> None:
