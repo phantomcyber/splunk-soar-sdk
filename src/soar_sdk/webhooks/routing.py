@@ -5,6 +5,7 @@ This module provides a router for mapping URL patterns to handler functions.
 """
 
 import re
+from dataclasses import dataclass
 from typing import Callable, TypeVar, Generic, Optional
 from collections.abc import Sequence
 
@@ -14,6 +15,15 @@ from soar_sdk.asset import BaseAsset
 
 class RouteConflictError(Exception):
     """Raised when a route conflicts with a previously registered route."""
+
+
+@dataclass
+class Route:
+    string_pattern: str
+    regex_pattern: re.Pattern
+    methods: list[str]
+    handler: Callable[[WebhookRequest], WebhookResponse]
+    parameter_indices: dict[int, str]
 
 
 AssetType = TypeVar("AssetType", bound=BaseAsset)
@@ -29,9 +39,7 @@ class Router(Generic[AssetType]):
     """
 
     def __init__(self) -> None:
-        self._routes: list[
-            tuple[str, re.Pattern, list[str], Callable, dict[int, str]]
-        ] = []
+        self._routes: list[Route] = []
 
     def add_route(
         self,
@@ -60,16 +68,16 @@ class Router(Generic[AssetType]):
         regex_pattern, param_indices = self._pattern_to_regex(pattern)
 
         # Check for conflicts with existing routes
-        for existing_pattern, _, _, _, _ in self._routes:
+        for route in self._routes:
             # Check if patterns have the same structure (conflict)
-            if self._patterns_conflict(pattern, existing_pattern):
+            if self._patterns_conflict(pattern, route.string_pattern):
                 raise RouteConflictError(
-                    f"Route with pattern '{pattern}' conflicts with existing pattern '{existing_pattern}'"
+                    f"Route with pattern '{pattern}' conflicts with existing pattern '{route.regex_pattern}'"
                 )
 
         # Add route
         self._routes.append(
-            (pattern, regex_pattern, methods_upper, handler, param_indices)
+            Route(pattern, regex_pattern, methods_upper, handler, param_indices)
         )
 
     def handle_request(self, request: WebhookRequest[AssetType]) -> WebhookResponse:
@@ -87,25 +95,25 @@ class Router(Generic[AssetType]):
         path = request.path
 
         # Find matching route
-        for _, regex_pattern, methods, handler, param_indices in self._routes:
-            match = regex_pattern.fullmatch(path)
+        for route in self._routes:
+            match = route.regex_pattern.fullmatch(path)
 
             if match:
                 # Check if method is allowed
-                if request.method.upper() not in methods:
+                if request.method.upper() not in route.methods:
                     return WebhookResponse.json_response(
                         {"error": f"Method {request.method} not allowed"},
                         status_code=405,
-                        extra_headers={"Allow": ", ".join(methods)},
+                        extra_headers={"Allow": ", ".join(route.methods)},
                     )
 
                 # Extract parameters
                 kwargs = {}
-                for i, group_name in param_indices.items():
+                for i, group_name in route.parameter_indices.items():
                     kwargs[group_name] = match.group(i)
 
                 # Call handler
-                return handler(request, **kwargs)
+                return route.handler(request, **kwargs)
 
         # No matching route found
         return WebhookResponse.json_response({"error": "Not found"}, status_code=404)
