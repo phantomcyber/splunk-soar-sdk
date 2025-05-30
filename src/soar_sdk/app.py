@@ -24,7 +24,7 @@ from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.webhooks.routing import Router
-from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse, WebhookHandler
 import traceback
 import uuid
 
@@ -605,12 +605,12 @@ class App:
 
     def webhook(
         self, url_pattern: str, allowed_methods: Optional[list[str]] = None
-    ) -> Callable[[Callable[[WebhookRequest], WebhookResponse]], None]:
+    ) -> Callable[[WebhookHandler], WebhookHandler]:
         """
         Decorator for registering a webhook handler.
         """
 
-        def decorator(function: Callable[[WebhookRequest], WebhookResponse]) -> None:
+        def decorator(function: WebhookHandler) -> WebhookHandler:
             """
             Decorator for the webhook handler function. Adds the specific meta
             information to the action passed to the generator. Validates types used on
@@ -624,6 +624,8 @@ class App:
                 function,
                 methods=allowed_methods,
             )
+
+            return function
 
         return decorator
 
