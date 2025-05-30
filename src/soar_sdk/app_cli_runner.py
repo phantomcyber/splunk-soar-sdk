@@ -198,11 +198,6 @@ class AppCliRunner:
         path = parsed.path
         query = parse_qs(parsed.query)
 
-        # Emulate some broken behavior in core, which flattens query parameters to the last value per key
-        flattened_query = {}
-        for q_key, q_value in query.items():
-            flattened_query[q_key] = q_value[-1]
-
         path_parts = path.strip("/").split("/")
 
         headers: dict[str, str] = {}
@@ -223,7 +218,7 @@ class AppCliRunner:
             method=args.method,
             headers=headers,
             path_parts=path_parts,
-            query=flattened_query,
+            query=query,
             body=args.data,
             asset=asset_json,
             soar_base_url=soar_base_url,

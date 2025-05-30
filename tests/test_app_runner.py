@@ -399,7 +399,10 @@ def test_parse_args_webhook_flattens_params(app_with_asset_webhook: App):
             method="GET",
             headers={},
             path_parts=["test_webhook"],
-            query={"key1": "value1", "key2": "value3"},  # Last value for key2 is used
+            query={
+                "key1": ["value1"],
+                "key2": ["value2", "value3"],
+            },
             body=None,
             asset={"asset_key": "asset_value"},
             soar_base_url="https://example.com",

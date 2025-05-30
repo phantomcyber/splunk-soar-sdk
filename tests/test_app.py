@@ -117,6 +117,33 @@ def test_handle_webhook(app_with_asset_webhook: App):
     assert response["content"] == "Webhook received!"
 
 
+def test_handle_webhook_normalizes_querystring(app_with_asset_webhook: App):
+    @app_with_asset_webhook.webhook("test_webhook_with_query")
+    def webhook_handler(request: WebhookRequest) -> WebhookResponse:
+        assert request.query == {
+            "string_param": ["value"],
+            "list_param": ["value1", "value2"],
+            "empty_param": [""],
+        }
+        return WebhookResponse.text_response("Webhook received!")
+
+    response = app_with_asset_webhook.handle_webhook(
+        method="GET",
+        headers={},
+        path_parts=["test_webhook_with_query"],
+        query={
+            "string_param": "value",
+            "list_param": ["value1", "value2"],
+            "empty_param": None,
+        },
+        body=None,
+        asset={"base_url": "https://example.com"},
+        soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
+    )
+    assert response["status_code"] == 200
+    assert response["content"] == "Webhook received!"
+
+
 def test_handle_webhook_without_enabling_webhooks_raises(
     app_with_simple_asset: App,
 ):

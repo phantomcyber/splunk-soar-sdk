@@ -632,7 +632,7 @@ class App:
         method: str,
         headers: dict[str, str],
         path_parts: list[str],
-        query: dict[str, str],
+        query: dict[str, Union[str, list[str], None]],
         body: Optional[str],
         asset: dict,
         soar_rest_client: SoarRestClient,
@@ -649,11 +649,23 @@ class App:
         asset_id = soar_rest_client.asset_id
         soar_base_url = soar_rest_client.base_url
 
+        normalized_query = {}
+        for key, value in query.items():
+            # Normalize query parameters to always be a list
+            # This is needed because SOAR prior to 7.0.0 used to flatten query parameters to the last item per key
+            # SOAR 7.0.0+ will normalize all query parameters to lists, with an "empty" parameter expressed as a list containing an empty string
+            if value is None:
+                normalized_query[key] = [""]
+            elif isinstance(value, list):
+                normalized_query[key] = value
+            else:
+                normalized_query[key] = [value]
+
         request = WebhookRequest(
             method=method,
             headers=headers,
             path_parts=path_parts,
-            query=query,
+            query=normalized_query,
             body=body,
             asset=self.asset,
             soar_auth_token=soar_auth_token,
