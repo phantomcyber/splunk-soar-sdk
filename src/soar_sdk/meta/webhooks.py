@@ -6,7 +6,7 @@ from typing import Optional
 class WebhookMeta(BaseModel):
     handler: Optional[str]
     requires_auth: bool = True
-    allowed_headers: list[str] = []
+    allowed_headers: list[str] = Field(default_factory=list)
     ip_allowlist: list[str] = Field(default=["0.0.0.0/0", "::/0"])
 
     @validator("ip_allowlist", each_item=True)

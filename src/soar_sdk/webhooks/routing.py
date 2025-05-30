@@ -74,7 +74,7 @@ class Router(Generic[AssetType]):
             # Check if patterns have the same structure (conflict)
             if self._patterns_conflict(pattern, route.string_pattern):
                 raise RouteConflictError(
-                    f"Route with pattern '{pattern}' conflicts with existing pattern '{route.regex_pattern}'"
+                    f"Route with pattern '{pattern}' conflicts with existing pattern '{route.string_pattern}'"
                 )
 
         # Add route
