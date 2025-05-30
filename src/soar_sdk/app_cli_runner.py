@@ -108,7 +108,6 @@ class AppCliRunner:
             "-d",
             "--data",
             help="Data to include in the request body. If not provided, the request will be empty.",
-            type=Path,
         )
 
         # By default, argv will be None and we'll fall back to sys.argv,
