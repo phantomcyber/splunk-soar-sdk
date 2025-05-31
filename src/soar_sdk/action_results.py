@@ -1,4 +1,4 @@
-from typing import Optional, get_origin, get_args, TypedDict, Any
+from typing import Optional, Union, get_origin, get_args, TypedDict, Any
 from collections.abc import Iterator
 from typing_extensions import NotRequired
 from pydantic import BaseModel, Field
@@ -30,11 +30,12 @@ class OutputFieldSpecification(TypedDict):
     data_path: str
     data_type: str
     contains: NotRequired[list[str]]
-    example_values: NotRequired[list[str]]
+    example_values: NotRequired[list[Union[str, float, bool]]]
 
 
 def OutputField(
-    cef_types: Optional[list[str]] = None, example_values: Optional[list[str]] = None
+    cef_types: Optional[list[str]] = None,
+    example_values: Optional[list[Union[str, float, bool]]] = None,
 ) -> Any:  # noqa: ANN401
     return Field(
         examples=example_values,

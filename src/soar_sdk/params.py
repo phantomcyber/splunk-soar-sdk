@@ -11,7 +11,7 @@ def Param(
     description: Optional[str] = None,
     required: bool = True,
     primary: bool = False,
-    default: Optional[str] = None,
+    default: Optional[Any] = None,  # noqa: ANN401
     value_list: Optional[list] = None,
     cef_types: Optional[list] = None,
     allow_list: bool = False,

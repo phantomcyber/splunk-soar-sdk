@@ -12,7 +12,7 @@ from soar_sdk.input_spec import AppConfig
 def AssetField(
     description: Optional[str] = None,
     required: bool = True,
-    default: Optional[str] = None,
+    default: Optional[Any] = None,  # noqa: ANN401
     value_list: Optional[list] = None,
     sensitive: bool = False,
 ) -> Any:  # noqa: ANN401
