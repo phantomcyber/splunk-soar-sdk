@@ -7,6 +7,7 @@ from pprint import pprint
 
 from soar_sdk.app import App
 from soar_sdk.cli.path_utils import context_directory
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.meta.dependencies import UvLock
@@ -39,9 +40,9 @@ class ManifestProcessor:
         )
 
         if app.webhook_meta is not None:
+            remove_when_soar_newer_than("6.4.0")
             app_meta.webhook = app.webhook_meta
             app_meta.webhook.handler = (
-                # TODO: remove `replace` call once Borg is n-2
                 f"{app_meta.main_module.replace(':', '.')}.handle_webhook"
             )
 

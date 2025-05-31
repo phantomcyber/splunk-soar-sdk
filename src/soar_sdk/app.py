@@ -223,11 +223,11 @@ class App:
                 action=action_name,
                 identifier=identifier or function.__name__,
                 description=description or inspect.getdoc(function) or action_name,
-                verbose=verbose,  # FIXME: must start with a capital and end with full stop
+                verbose=verbose,
                 type=action_type,
                 read_only=read_only,
                 parameters=validated_params_class,
-                output=validated_output_class,  # FIXME: all output need to contain params
+                output=validated_output_class,
                 versions=versions,
                 view_handler=view_handler,
             )
