@@ -8,6 +8,7 @@ from collections.abc import Iterator
 
 from soar_sdk.asset import BaseAsset
 from soar_sdk.input_spec import InputSpecification
+from soar_sdk.compat import MIN_PHANTOM_VERSION, PythonVersion
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClient
@@ -58,8 +59,8 @@ class App:
         product_name: str,
         publisher: str,
         appid: str,
-        python_version: list[str] = ["3.9", "3.13"],  # noqa: B006
-        min_phantom_version: str = "6.4.0",
+        python_version: Optional[list[PythonVersion]] = None,
+        min_phantom_version: str = MIN_PHANTOM_VERSION,
         fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
         legacy_connector_class: Optional[type[BaseConnector]] = None,
@@ -69,6 +70,9 @@ class App:
         self.__logger = getLogger()
         if not is_valid_uuid(appid):
             raise ValueError(f"Appid is not a valid uuid: {appid}")
+
+        if python_version is None:
+            python_version = PythonVersion.all()
 
         self.app_meta_info = {
             "name": name,

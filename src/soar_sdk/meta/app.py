@@ -1,6 +1,8 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 
+from soar_sdk.compat import PythonVersion
+
 from .actions import ActionMeta
 from .dependencies import DependencyList
 from .webhooks import WebhookMeta
@@ -21,7 +23,7 @@ class AppMeta(BaseModel):
     logo: str = ""
     logo_dark: str = ""
     product_name: str = ""
-    python_version: list[str] = ["3.9", "3.13"]
+    python_version: list[PythonVersion] = Field(default_factory=PythonVersion.all)
     product_version_regex: str = ".*"
     publisher: str = ""
     utctime_updated: str = ""

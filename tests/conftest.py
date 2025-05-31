@@ -6,6 +6,7 @@ import pytest
 from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app import App
 from soar_sdk.asset import BaseAsset
+from soar_sdk.compat import PythonVersion
 from soar_sdk.connector import AppConnector
 from soar_sdk.input_spec import AppConfig, InputSpecification, SoarAuth
 from soar_sdk.action_results import ActionOutput
@@ -77,6 +78,7 @@ def app_with_action() -> App:
         product_vendor="Splunk",
         product_name="Example App",
         publisher="Splunk",
+        python_version=[PythonVersion.PY_3_13],
     )
 
     @app.action(
