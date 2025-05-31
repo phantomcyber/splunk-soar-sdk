@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from io import BytesIO
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
