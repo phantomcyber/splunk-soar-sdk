@@ -3,7 +3,6 @@ name = "exampleapp"
 version = "0.1.0"
 description = "This is the basic example SOAR app"
 license = "Copyright (c) Splunk Inc., 2025"
-main_module = "src.app:app"
 readme = "README.md"
 requires-python = ">=3.9, <3.14"
 authors = [
@@ -27,6 +26,9 @@ dev = [
     "pytest-watch>=4.2.0,<5",
     "ruff>=0.11.6,<1",
 ]
+
+[tool.soar.app]
+main_module = "src.app:app"
 
 [[tool.uv.index]]
 url = "https://pypi.python.org/simple"
