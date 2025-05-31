@@ -11,10 +11,10 @@ class ActionMeta(BaseModel):
     action: str
     identifier: str
     description: str
-    verbose: str
     type: str  # contain, correct, generic, investigate or test
     read_only: bool
     versions: str
+    verbose: str = ""
     parameters: Type[Params] = Field(default=Params)  # noqa: UP006
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
     view_handler: Optional[Callable] = None
