@@ -208,6 +208,7 @@ strict_equality = true
 check_untyped_defs = true
 exclude = [
     'tests/.*',
+    'dist/.*',
 ]
 
 [[tool.mypy.overrides]]
