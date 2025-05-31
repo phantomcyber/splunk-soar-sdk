@@ -158,7 +158,7 @@ else:
 
     @dataclass
     class VaultEntry:
-        id: int
+        id: str
         file_path: str
         name: str
         container_id: int
