@@ -23,7 +23,7 @@ from itertools import chain
 import os
 import httpx
 
-package = typer.Typer(invoke_without_command=True)
+package = typer.Typer()
 console = Console()  # For printing lots of pretty colors and stuff
 
 
