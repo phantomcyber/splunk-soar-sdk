@@ -7,6 +7,8 @@ from logging import getLogger
 import httpx
 import hashlib
 
+from soar_sdk.compat import remove_when_soar_newer_than
+
 
 logger = getLogger(__name__)
 
@@ -45,9 +47,12 @@ class UvWheel(BaseModel):
     # The wheel file name is specified by PEP427. It's either a 5- or 6-tuple:
     # {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
     # We can parse this to determine which configurations it supports.
-    # TODO: when we upgrade to pydantic 2, we can replace these properties with cached properties.
     @property
     def basename(self) -> str:
+        remove_when_soar_newer_than(
+            "6.4.0",
+            "We should be able to adopt pydantic 2 now, and turn this into a cached property.",
+        )
         filename = self.url.split("/")[-1]
         return filename.removesuffix(".whl")
 
