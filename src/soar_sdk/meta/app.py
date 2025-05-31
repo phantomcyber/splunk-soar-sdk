@@ -8,6 +8,10 @@ from .dependencies import DependencyList
 from .webhooks import WebhookMeta
 
 
+class AppContributor(BaseModel):
+    name: str
+
+
 class AppMeta(BaseModel):
     name: str = ""
     description: str
@@ -28,6 +32,7 @@ class AppMeta(BaseModel):
     publisher: str = ""
     utctime_updated: str = ""
     fips_compliant: bool = False
+    contributors: list[AppContributor] = Field(default_factory=list)
 
     configuration: dict = Field(default_factory=dict)
     actions: list[ActionMeta] = Field(default_factory=list)
