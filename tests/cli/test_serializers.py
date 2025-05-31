@@ -175,6 +175,7 @@ def test_outputs_serialize_output_class():
         {
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
+            "example_values": [True, False],
         },
     ]
 
@@ -248,5 +249,6 @@ def test_outputs_serialize_with_parameters_class():
         {
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
+            "example_values": [True, False],
         },
     ]

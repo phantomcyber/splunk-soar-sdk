@@ -87,4 +87,7 @@ class ActionOutput(BaseModel):
             if examples := field.field_info.extra.get("examples"):
                 schema_field["example_values"] = examples
 
+            if field_type is bool:
+                schema_field["example_values"] = [True, False]
+
             yield schema_field
