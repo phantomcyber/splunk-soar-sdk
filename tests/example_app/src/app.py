@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 from typing import Union
 from collections.abc import Iterator
 from datetime import datetime, timezone
