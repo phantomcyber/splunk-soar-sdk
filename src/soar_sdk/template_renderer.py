@@ -1,7 +1,7 @@
-import os
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
-from jinja2 import Environment, FileSystemLoader
+from pathlib import Path
+from typing import Any, Optional
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 from soar_sdk.template_filters import setup_jinja_env
 
 
@@ -19,11 +19,11 @@ ERROR_TEMPLATE_PATH = "base/error.html"
 class TemplateRenderer(ABC):
     """Abstract base class for template rendering engines."""
 
-    def __init__(self, templates_dir: str):
+    def __init__(self, templates_dir: str) -> None:
         self.templates_dir = templates_dir
 
     @abstractmethod
-    def render_template(self, template_name: str, context: Dict[str, Any]) -> str:
+    def render_template(self, template_name: str, context: dict[str, Any]) -> str:
         """Render a template with the given context."""
         pass
 
@@ -42,21 +42,24 @@ class TemplateRenderer(ABC):
 class JinjaTemplateRenderer(TemplateRenderer):
     """Jinja2 template engine implementation."""
 
-    def __init__(self, templates_dir: str):
+    def __init__(self, templates_dir: str) -> None:
         super().__init__(templates_dir)
         self._setup_jinja()
 
     def _setup_jinja(self) -> None:
-        sdk_templates_dir = os.path.join(os.path.dirname(__file__), "templates")
-        template_dirs = [self.templates_dir, sdk_templates_dir]
+        sdk_templates_dir = Path(__file__).parent / "templates"
+        template_dirs = [self.templates_dir, str(sdk_templates_dir)]
 
         self.env = Environment(
-            loader=FileSystemLoader(template_dirs), trim_blocks=True, lstrip_blocks=True
+            loader=FileSystemLoader(template_dirs),
+            trim_blocks=True,
+            lstrip_blocks=True,
+            autoescape=select_autoescape(["html"]),
         )
 
         setup_jinja_env(self.env)
 
-    def render_template(self, template_name: str, context: Dict[str, Any]) -> str:
+    def render_template(self, template_name: str, context: dict[str, Any]) -> str:
         template = self.env.get_template(template_name)
         return template.render(**context)
 
@@ -90,7 +93,7 @@ def get_template_renderer(
         engine = DEFAULT_TEMPLATE_ENGINE
 
     if templates_dir is None:
-        templates_dir = os.path.join(os.getcwd(), "templates")
+        templates_dir = str(Path.cwd() / "templates")
 
     if engine.lower() == "jinja":
         return JinjaTemplateRenderer(templates_dir)
@@ -98,9 +101,9 @@ def get_template_renderer(
         raise ValueError(f"Unsupported template engine: {engine}")
 
 
-def get_templates_dir(function_globals: Dict[str, Any]) -> str:
+def get_templates_dir(function_globals: dict[str, Any]) -> str:
     caller_file = function_globals.get("__file__")
     if caller_file:
-        app_dir = os.path.dirname(caller_file)
-        return os.path.join(os.path.dirname(app_dir), "templates")
-    return os.path.join(os.getcwd(), "templates")
+        app_dir = Path(caller_file).parent
+        return str(app_dir.parent / "templates")
+    return str(Path.cwd() / "templates")
