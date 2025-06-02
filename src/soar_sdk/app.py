@@ -25,6 +25,12 @@ from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse, WebhookHandler
+from soar_sdk.view_parser import ViewFunctionParser
+from soar_sdk.template_renderer import (
+    get_template_renderer,
+    get_templates_dir,
+    BASE_TEMPLATE_PATH,
+)
 import traceback
 import uuid
 
@@ -125,6 +131,7 @@ class App:
         read_only: bool = True,
         params_class: Optional[type[Params]] = None,
         output_class: Optional[type[ActionOutput]] = None,
+        custom_view: Optional[Callable] = None,
         versions: str = "EQ(*)",
     ) -> Callable[[Callable], Action]:
         """
@@ -215,6 +222,7 @@ class App:
                 parameters=validated_params_class,
                 output=validated_output_class,  # FIXME: all output need to contain params
                 versions=versions,
+                custom_view=custom_view,
             )
 
             self.actions_provider.set_action(action_identifier, inner)
@@ -470,6 +478,98 @@ class App:
 
         return on_poll_decorator
 
+    def view_handler(
+        self,
+        *,
+        template: Optional[str] = None,
+        component: Optional[str] = None,
+        output_class: Optional[type[ActionOutput]] = None,
+    ) -> Callable[[Callable], Callable]:
+        """
+        Decorator for custom view functions with output parsing and template rendering.
+
+        The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering or HTML string.
+        If a template is provided, dict results will be rendered using the template. The component parameter is reserved for future component-based rendering functionality.
+
+        Usage:
+            @app.view_handler(template="my_template.html")
+            def my_view(outputs: List[MyActionOutput]) -> dict:
+                return {"data": outputs[0].some_field}
+        """
+
+        def view_decorator(function: Callable) -> Callable:
+            # TODO: Implement reusable component rendering when component parameter is provided
+
+            # If template is provided, wrap with template rendering
+            if template:
+
+                @wraps(function)
+                def template_wrapper(*args, **kwargs):
+                    if len(args) < 3 or not isinstance(args[2], dict):
+                        raise ValueError(
+                            "View handler expected context dict as third argument but none provided"
+                        )
+                    context = args[2]
+
+                    def set_html_content(html: str) -> str:
+                        context["html_content"] = html
+                        return BASE_TEMPLATE_PATH
+
+                    try:
+                        # Parsing output results
+                        parser = ViewFunctionParser(function, output_class)
+                        result = parser.execute(*args, **kwargs)
+
+                        # Get template renderer
+                        templates_dir = get_templates_dir(function.__globals__)
+                        renderer = get_template_renderer("jinja", templates_dir)
+
+                        if isinstance(result, dict):
+                            try:
+                                # Merge context and result for template rendering
+                                template_context = {**context, **result}
+
+                                rendered_html = renderer.render_template(
+                                    template, template_context
+                                )
+                                return set_html_content(rendered_html)
+
+                            except Exception as e:
+                                error_html = renderer.render_error_template(
+                                    "Template Rendering Failed",
+                                    f"Failed to render template '{template}': {e!s}",
+                                    function.__name__,
+                                    template,
+                                )
+                                return set_html_content(error_html)
+
+                        elif isinstance(result, str):
+                            return set_html_content(result)
+                        else:
+                            error_html = renderer.render_error_template(
+                                "Invalid Return Type",
+                                f"View function returned {type(result).__name__}, expected dict or str",
+                                function.__name__,
+                                template,
+                            )
+                            return set_html_content(error_html)
+
+                    except Exception as e:
+                        # Fallback error handling if renderer creation fails
+                        templates_dir = get_templates_dir(function.__globals__)
+                        renderer = get_template_renderer("jinja", templates_dir)
+                        error_html = renderer.render_error_template(
+                            "View Function Error",
+                            f"Error in view function '{function.__name__}': {e!s}",
+                            function.__name__,
+                            template,
+                        )
+                        return set_html_content(error_html)
+
+                return template_wrapper
+
+        return view_decorator
+
     @staticmethod
     def _validate_params_class(
         action_name: str,
@@ -554,8 +654,8 @@ class App:
             result = ActionResult(
                 status=True,
                 message="",
-                param=output_dict,
             )
+            result.add_data(output_dict)
 
         if isinstance(result, ActionResult):
             client.add_result(result)

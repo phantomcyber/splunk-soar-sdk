@@ -21,6 +21,7 @@ from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_instal
 from itertools import chain
 import os
 import httpx
+import soar_sdk
 
 package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
@@ -150,6 +151,28 @@ def build(
             app_tarball.add(
                 "src", f"{app_name}/src", recursive=True, filter=filter_source_files
             )
+
+            # Add templates directory if it exists
+            templates_path = Path("templates")
+            if templates_path.exists() and templates_path.is_dir():
+                console.print("Adding templates to package")
+                app_tarball.add("templates", f"{app_name}/templates", recursive=True)
+
+            # Add SDK template files to the package during build
+            # Need to be in app package for platform to access them (which older SOAR versions still need to do)
+            sdk_path = Path(soar_sdk.__file__).parent
+            sdk_templates_path = sdk_path / "templates"
+            if sdk_templates_path.exists() and sdk_templates_path.is_dir():
+                console.print("Adding SDK templates to package")
+                for item in sdk_templates_path.iterdir():
+                    if item.is_file():
+                        app_tarball.add(str(item), f"{app_name}/templates/{item.name}")
+                    elif item.is_dir():
+                        app_tarball.add(
+                            str(item),
+                            f"{app_name}/templates/{item.name}",
+                            recursive=True,
+                        )
 
             if with_sdk_wheel_from:
                 console.print(f"[dim]Adding SDK wheel from {with_sdk_wheel_from}[/]")

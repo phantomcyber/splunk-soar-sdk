@@ -1,0 +1,31 @@
+{% extends 'widgets/widget_template.html' %}
+
+{% block title_color %}{{ title_color or '#28a745' }}{% endblock %}
+{% block title_text_color %}{{ title_text_color or 'white' }}{% endblock %}
+{% block body_color %}{{ body_color or 'white' }}{% endblock %}
+{% block body_text_color %}{{ body_text_color or '#8775a7' }}{% endblock %}
+
+{% block custom_title_prop %}{% if title_logo %}style="background-size: auto 60%; background-position: 50%; background-repeat: no-repeat; background-image: url('/app_resource/{{ title_logo }}');"{% endif %}{% endblock %}
+
+{% block custom_tools %}
+  {% include 'widgets/widget_resize_snippet.html' %}
+{% endblock %}
+
+{% block widget_content %}
+<div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+  <div style="text-align: center; max-width: 800px; width: 100%;">
+    <div style="display: flex; align-items: center; justify-content: center; margin-bottom: 50px;">
+      <div style="flex: 1;">
+        <strong style="font-size: 20px;">Original</strong>
+        <div style="margin-top: 8px; font-size: 18px; color: #ff8c00; font-weight: 500;">{{ original }}</div>
+      </div>
+      <i class="fa fa-arrow-right" style="color: #ccc; font-size: 20px;"></i>
+      <div style="flex: 1;">
+        <strong style="font-size: 20px;">Reversed</strong>
+        <div style="margin-top: 8px; font-size: 18px; color: #007bff; font-weight: 500;">{{ reversed }}</div>
+      </div>
+    </div>
+    <div style="color: #28a745; font-weight: bold;">✓ Success</div>
+  </div>
+</div>
+{% endblock %}
