@@ -1,4 +1,4 @@
-from typing import Any, Type  # noqa: UP035
+from typing import Any, Type, Optional, Callable  # noqa: UP035
 
 from pydantic import BaseModel, Field
 
@@ -17,6 +17,7 @@ class ActionMeta(BaseModel):
     versions: str
     parameters: Type[Params] = Field(default=Params)  # noqa: UP006
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
+    custom_view: Optional[Callable] = None
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
         data = super().dict(*args, **kwargs)
@@ -24,4 +25,25 @@ class ActionMeta(BaseModel):
         data["output"] = OutputsSerializer.serialize_datapaths(
             self.parameters, self.output
         )
+
+        if self.custom_view:
+            # Get the module path and function name for the view
+            module = self.custom_view.__module__
+            # Convert module path from dot notation to the expected format
+            # e.g., "example_app.src.app" -> "src.app"
+            module_parts = module.split(".")
+            if len(module_parts) > 1:
+                # Remove the package name (first part) to get relative module path
+                relative_module = ".".join(module_parts[1:])
+            else:
+                relative_module = module
+
+            data["render"] = {
+                "type": "custom",
+                "view": f"{relative_module}.{self.custom_view.__name__}",
+            }
+
+        # Remove custom_view from the output since in render
+        data.pop("custom_view", None)
+
         return data

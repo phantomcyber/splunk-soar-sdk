@@ -59,6 +59,33 @@ def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStrin
     return ReverseStringOutput(reversed_string=reversed_string)
 
 
+class ReverseStringViewOutput(ActionOutput):
+    original_string: str
+    reversed_string: str
+
+
+@app.view_handler(template="reverse_string.html")
+def render_reverse_string_view(output: list[ReverseStringViewOutput]) -> dict:
+    return {
+        "original": output[0].original_string,
+        "reversed": output[0].reversed_string,
+    }
+
+
+@app.action(
+    action_type="investigate",
+    verbose="Reverses a string.",
+    custom_view=render_reverse_string_view,
+)
+def reverse_string_custom_view(
+    param: ReverseStringParams, soar: SOARClient
+) -> ReverseStringViewOutput:
+    reversed_string = param.input_string[::-1]
+    return ReverseStringViewOutput(
+        original_string=param.input_string, reversed_string=reversed_string
+    )
+
+
 @app.on_poll()
 def on_poll(
     params: OnPollParams, client: SOARClient, asset: Asset
