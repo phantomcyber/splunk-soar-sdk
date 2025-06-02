@@ -1,11 +1,11 @@
-from typing import Any, Dict, List, Union, Optional
+from typing import Any, Optional, Union
 from pydantic import BaseModel
 
 
 class ViewContext(BaseModel):
     """Model representing the context dictionary passed to view functions."""
 
-    QS: Dict[str, List[str]]
+    QS: dict[str, list[str]]
     container: int
     app: int
     no_connection: bool
@@ -13,7 +13,7 @@ class ViewContext(BaseModel):
     dark_title_logo: Optional[str] = None
     title_logo: Optional[str] = None
     app_name: Optional[str] = None
-    results: Optional[List[Dict[str, Any]]] = None
+    results: Optional[list[dict[str, Any]]] = None
     html_content: Optional[str] = None
 
     class Config:

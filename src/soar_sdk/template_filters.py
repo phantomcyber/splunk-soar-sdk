@@ -4,19 +4,12 @@ import hashlib
 import json
 import re
 import uuid
+import humanize
+import bleach  # type: ignore[import-untyped]
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional, Union
-
-
-try:
-    import humanize
-except ImportError:
-    humanize = None
-
-try:
-    import bleach
-except ImportError:
-    bleach = None
+from typing import Optional, Union
+from collections.abc import Iterator
+from jinja2 import Environment
 
 
 def widget_uuid(length: int = 8) -> str:
@@ -47,7 +40,7 @@ def human_timedelta(td: timedelta) -> str:
     return str(td)
 
 
-def sorteditems(dictionary: Dict) -> List:
+def sorteditems(dictionary: dict) -> list:
     """Sort dictionary items by key."""
     result = []
     for key in sorted(dictionary):
@@ -55,7 +48,7 @@ def sorteditems(dictionary: Dict) -> List:
     return result
 
 
-def batch(iterable: List, count: int) -> List:
+def batch(iterable: list, count: int) -> Iterator[list]:
     """Batch items into groups of specified count."""
     result = []
     for item in iterable:
@@ -67,7 +60,7 @@ def batch(iterable: List, count: int) -> List:
         yield result
 
 
-def dict_batch(d: Dict, count: int) -> List:
+def dict_batch(d: dict, count: int) -> Iterator[list]:
     """Batch dictionary items into groups."""
     result = []
     for key, value in d.items():
@@ -79,17 +72,17 @@ def dict_batch(d: Dict, count: int) -> List:
         yield result
 
 
-def remove_empty(dictionary: Dict) -> Dict:
+def remove_empty(dictionary: dict) -> dict:
     """Remove empty values from dictionary."""
     return {k: v for k, v in dictionary.items() if v}
 
 
-def by_key(dictionary: Dict, key: str) -> Any:
+def by_key(dictionary: dict, key: str) -> str:
     """Get dictionary value by key."""
     return dictionary.get(key, "")
 
 
-def by_nested_key(dictionary: Dict, key: str) -> Optional[Any]:
+def by_nested_key(dictionary: dict, key: str) -> Optional[str]:
     """Get nested dictionary value by space-separated key."""
     split_key = key.split()
     src = dictionary.get(split_key[0], None)
@@ -99,12 +92,12 @@ def by_nested_key(dictionary: Dict, key: str) -> Optional[Any]:
         return None
 
 
-def is_list(item: Any) -> bool:
+def is_list(item: object) -> bool:
     """Check if item is a list."""
     return isinstance(item, list)
 
 
-def typeof(item: Any) -> type:
+def typeof(item: object) -> type:
     """Get type of item."""
     return type(item)
 
@@ -132,7 +125,7 @@ def startswith(s: str, s2: str) -> bool:
     return str(s).startswith(str(s2))
 
 
-def getattribute(obj: Any, key: str) -> Any:
+def getattribute(obj: object, key: str) -> object:
     """Get attribute from object."""
     return getattr(obj, key, "")
 
@@ -144,17 +137,17 @@ def superslug(s: str) -> str:
     return s
 
 
-def sformat(s: str, value: Any) -> str:
+def sformat(s: str, value: object) -> str:
     """Format string with value."""
     return str(s) % value
 
 
-def jslist(obj: List) -> str:
+def jslist(obj: list) -> str:
     """Convert list to JavaScript array string."""
     return "[" + ",".join([f"'{s}'" for s in obj]) + "]"
 
 
-def to_json(obj: Any) -> str:
+def to_json(obj: object) -> str:
     """Convert object to JSON string."""
     return json.dumps(obj)
 
@@ -169,12 +162,12 @@ def commasplit(string: str, index: int) -> str:
     return str(string).split(",")[index]
 
 
-def slashsplit(string: str) -> List[str]:
+def slashsplit(string: str) -> list[str]:
     """Split string by slash."""
     return str(string).split("/")
 
 
-def strip_tenant_id(dictionary: Dict, key: str) -> str:
+def strip_tenant_id(dictionary: dict, key: str) -> str:
     """Strip tenant ID from dictionary value."""
     x = dictionary.get(key, "")
     if len(x):
@@ -183,7 +176,7 @@ def strip_tenant_id(dictionary: Dict, key: str) -> str:
         return ""
 
 
-def bleach_clean(value: str, **kwargs) -> str:
+def bleach_clean(value: str, **kwargs: object) -> str:
     """Clean HTML using bleach."""
     if bleach:
         return bleach.clean(value, **kwargs)
@@ -223,7 +216,7 @@ JINJA2_FILTERS = {
 }
 
 
-def setup_jinja_env(env):
+def setup_jinja_env(env: Environment) -> Environment:
     """Setup Jinja2 environment with custom filters and globals."""
     env.filters.update(JINJA2_FILTERS)
     env.globals.update(JINJA2_GLOBALS)

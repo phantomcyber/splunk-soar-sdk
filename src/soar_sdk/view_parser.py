@@ -1,16 +1,15 @@
 from typing import (
     Any,
-    Type,
     Callable,
     TypeVar,
-    Dict,
-    List,
-    Tuple,
     Union,
     Optional,
     get_origin,
     get_args,
+    Generic,
+    cast,
 )
+import contextlib
 import inspect
 from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.models.view import ViewContext, AppRunMetadata
@@ -18,26 +17,29 @@ from soar_sdk.models.view import ViewContext, AppRunMetadata
 T = TypeVar("T", bound=ActionOutput)
 
 
-AllAppRuns = List[Tuple[AppRunMetadata, List[ActionResult]]]
+AllAppRuns = list[tuple[AppRunMetadata, list[ActionResult]]]
 
 
-class ViewFunctionParser:
+class ViewFunctionParser(Generic[T]):
     """Handles parsing and validation of view function signatures and execution."""
 
-    def __init__(self, function: Callable, output_class: Optional[Type[T]] = None):
+    def __init__(
+        self, function: Callable, output_class: Optional[type[T]] = None
+    ) -> None:
         self.function = function
 
         # Auto-detect output class if not provided
         if output_class is None:
-            output_class = self.auto_detect_output_class(function)
+            detected_class = self.auto_detect_output_class(function)
+            output_class = cast(type[T], detected_class)
 
-        self.output_class = output_class
+        self.output_class: Optional[type[T]] = output_class
 
         # Validate function signature
         self.validate_function_signature(function)
 
     @staticmethod
-    def auto_detect_output_class(function: Callable) -> Type[ActionOutput]:
+    def auto_detect_output_class(function: Callable) -> type[ActionOutput]:
         """Auto-detect ActionOutput class from function type annotations."""
         signature = inspect.signature(function)
 
@@ -46,7 +48,7 @@ class ViewFunctionParser:
                 continue
 
             origin = get_origin(param.annotation)
-            if origin is list or origin is List:
+            if origin is list:
                 args = get_args(param.annotation)
                 if args and issubclass(args[0], ActionOutput):
                     return args[0]
@@ -71,13 +73,13 @@ class ViewFunctionParser:
 
         if (
             signature.return_annotation != inspect.Parameter.empty
-            and signature.return_annotation not in [str, dict, Dict[str, Any]]
+            and signature.return_annotation not in [str, dict, dict[str, Any]]
         ):
             raise TypeError(
                 f"View function {function.__name__} must return str or dict"
             )
 
-    def _extract_data_from_result(self, result: ActionResult) -> List[dict]:
+    def _extract_data_from_result(self, result: ActionResult) -> list[dict]:
         data_items = []
 
         data = result.get_data()
@@ -90,17 +92,24 @@ class ViewFunctionParser:
         return data_items
 
     def parse_action_results(
-        self, raw_all_app_runs: List[Tuple[Any, List[ActionResult]]]
-    ) -> Tuple[List[T], List[Tuple[AppRunMetadata, List[ActionResult]]]]:
-        parsed_outputs = []
-        parsed_app_runs = []
+        self, raw_all_app_runs: list[tuple[Any, list[ActionResult]]]
+    ) -> tuple[list[T], list[tuple[AppRunMetadata, list[ActionResult]]]]:
+        parsed_outputs: list[T] = []
+        parsed_app_runs: list[tuple[AppRunMetadata, list[ActionResult]]] = []
 
         for app_run_metadata, action_results in raw_all_app_runs:
             if isinstance(app_run_metadata, dict):
                 try:
-                    parsed_metadata = AppRunMetadata.parse_obj(app_run_metadata)
+                    parsed_metadata: AppRunMetadata = AppRunMetadata.parse_obj(
+                        app_run_metadata
+                    )
                 except Exception:
-                    parsed_metadata = app_run_metadata
+                    # If parsing fails, create a fallback AppRunMetadata object
+                    parsed_metadata = (
+                        AppRunMetadata(**app_run_metadata)
+                        if app_run_metadata
+                        else AppRunMetadata()
+                    )
             else:
                 parsed_metadata = app_run_metadata
 
@@ -110,16 +119,22 @@ class ViewFunctionParser:
             for result in action_results:
                 for data_item in self._extract_data_from_result(result):
                     try:
-                        parsed_output = self.output_class.parse_obj(data_item)
-                        parsed_outputs.append(parsed_output)
+                        if self.output_class is not None:
+                            parsed_output = self.output_class.parse_obj(data_item)
+                            parsed_outputs.append(parsed_output)
                     except Exception as e:
-                        raise ValueError(
-                            f"Data parsing failed for {self.output_class.__name__}: {e}"
+                        output_class_name = (
+                            self.output_class.__name__
+                            if self.output_class
+                            else "Unknown"
                         )
+                        raise ValueError(
+                            f"Data parsing failed for {output_class_name}: {e}"
+                        ) from e
 
         return parsed_outputs, parsed_app_runs
 
-    def execute(self, *args: Any, **kwargs: Any) -> Union[str, dict]:
+    def execute(self, *args: object, **kwargs: object) -> Union[str, dict]:
         if len(args) < 3:
             return self.function(*args, **kwargs)
 
@@ -128,12 +143,12 @@ class ViewFunctionParser:
         # Parse context
         context = raw_context
         if isinstance(raw_context, dict):
-            try:
+            with contextlib.suppress(Exception):
                 context = ViewContext.parse_obj(raw_context)
-            except Exception:
-                pass
 
         # Parse outputs
+        if not isinstance(raw_all_app_runs, list):
+            raise TypeError("Expected raw_all_app_runs to be a list")
         parsed_outputs, parsed_app_runs = self.parse_action_results(raw_all_app_runs)
 
         # Execute

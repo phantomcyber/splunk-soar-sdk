@@ -504,7 +504,7 @@ class App:
             if template:
 
                 @wraps(function)
-                def template_wrapper(*args, **kwargs):
+                def template_wrapper(*args: Any, **kwargs: Any) -> str:  # noqa: ANN401
                     if len(args) < 3 or not isinstance(args[2], dict):
                         raise ValueError(
                             "View handler expected context dict as third argument but none provided"
@@ -567,6 +567,9 @@ class App:
                         return set_html_content(error_html)
 
                 return template_wrapper
+
+            # TODO: Change this
+            return function
 
         return view_decorator
 
