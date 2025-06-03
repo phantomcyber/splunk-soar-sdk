@@ -511,7 +511,13 @@ class App:
                         )
                     context = args[2]
 
-                    def set_html_content(html: str) -> str:
+                    def handle_html_output(html: str) -> str:
+                        # New SOAR versions that support prerendering (just return pre-rendered HTML)
+                        if context.get("accepts_prerender"):
+                            context["prerender"] = True
+                            return html
+
+                        # Backwards compatibility for legacy SOAR versions (HTML injection into base template file)
                         context["html_content"] = html
                         return BASE_TEMPLATE_PATH
 
@@ -532,7 +538,7 @@ class App:
                                 rendered_html = renderer.render_template(
                                     template, template_context
                                 )
-                                return set_html_content(rendered_html)
+                                return handle_html_output(rendered_html)
 
                             except Exception as e:
                                 error_html = renderer.render_error_template(
@@ -541,10 +547,10 @@ class App:
                                     function.__name__,
                                     template,
                                 )
-                                return set_html_content(error_html)
+                                return handle_html_output(error_html)
 
                         elif isinstance(result, str):
-                            return set_html_content(result)
+                            return handle_html_output(result)
                         else:
                             error_html = renderer.render_error_template(
                                 "Invalid Return Type",
@@ -552,7 +558,7 @@ class App:
                                 function.__name__,
                                 template,
                             )
-                            return set_html_content(error_html)
+                            return handle_html_output(error_html)
 
                     except Exception as e:
                         # Fallback error handling if renderer creation fails
@@ -564,7 +570,7 @@ class App:
                             function.__name__,
                             template,
                         )
-                        return set_html_content(error_html)
+                        return handle_html_output(error_html)
 
                 return template_wrapper
 
