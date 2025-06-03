@@ -167,7 +167,7 @@ def build(
                 app_meta.pip313_dependencies.wheel.append(wheel_entry)
 
             console.print("Writing manifest")
-            manifest_json = json.dumps(app_meta.dict(), indent=4).encode()
+            manifest_json = json.dumps(app_meta.to_json_manifest(), indent=4).encode()
             manifest_info = tarfile.TarInfo(f"{app_name}/manifest.json")
             manifest_info.size = len(manifest_json)
             app_tarball.addfile(manifest_info, BytesIO(manifest_json))

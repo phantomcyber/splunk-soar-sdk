@@ -57,7 +57,7 @@ def test_build_manifests():
     for test_app in ["tests/example_app", "tests/example_app_with_webhook"]:
         with mock.patch("soar_sdk.cli.manifests.processors.datetime", mock_datetime):
             processor = ManifestProcessor("example_app.json", project_context=test_app)
-            app_meta = processor.build().dict(exclude_none=True)
+            app_meta = processor.build().to_json_manifest()
 
         with open(f"{test_app}/app.json") as expected_json:
             expected_meta = json.load(expected_json)
