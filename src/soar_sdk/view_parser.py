@@ -11,6 +11,7 @@ from typing import (
 )
 import contextlib
 import inspect
+from pydantic import BaseModel
 from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.models.view import ViewContext, AppRunMetadata
 
@@ -71,13 +72,24 @@ class ViewFunctionParser(Generic[T]):
                 f"View function {function.__name__} must accept at least 1 parameter"
             )
 
-        if (
-            signature.return_annotation != inspect.Parameter.empty
-            and signature.return_annotation not in [str, dict, dict[str, Any]]
-        ):
-            raise TypeError(
-                f"View function {function.__name__} must return str or dict"
-            )
+        if signature.return_annotation != inspect.Parameter.empty:
+            valid_types = [str, dict, dict[str, Any]]
+
+            # Check if return type is BaseModel or subclass
+            try:
+                if isinstance(signature.return_annotation, type) and issubclass(
+                    signature.return_annotation, BaseModel
+                ):
+                    # BaseModel is valid for component rendering
+                    return
+            except TypeError:
+                # issubclass can raise TypeError for non-class types
+                pass
+
+            if signature.return_annotation not in valid_types:
+                raise TypeError(
+                    f"View function {function.__name__} must return str, dict, or BaseModel"
+                )
 
     def _extract_data_from_result(self, result: ActionResult) -> list[dict]:
         data_items = []

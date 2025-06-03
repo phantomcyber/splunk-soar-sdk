@@ -498,57 +498,57 @@ class App:
         """
 
         def view_decorator(function: Callable) -> Callable:
-            # TODO: Implement reusable component rendering when component parameter is provided
+            if not template and not component:
+                return function
 
-            # If template is provided, wrap with template rendering
-            if template:
+            @wraps(function)
+            def view_wrapper(*args: Any, **kwargs: Any) -> str:  # noqa: ANN401
+                if len(args) < 3 or not isinstance(args[2], dict):
+                    raise ValueError(
+                        "View handler expected context dict as third argument but none provided"
+                    )
+                context = args[2]
 
-                @wraps(function)
-                def template_wrapper(*args: Any, **kwargs: Any) -> str:  # noqa: ANN401
-                    if len(args) < 3 or not isinstance(args[2], dict):
-                        raise ValueError(
-                            "View handler expected context dict as third argument but none provided"
-                        )
-                    context = args[2]
+                def handle_html_output(html: str) -> str:
+                    if context.get("accepts_prerender"):
+                        context["prerender"] = True
+                        return html
+                    context["html_content"] = html
+                    return BASE_TEMPLATE_PATH
 
-                    def handle_html_output(html: str) -> str:
-                        # New SOAR versions that support prerendering (just return pre-rendered HTML)
-                        if context.get("accepts_prerender"):
-                            context["prerender"] = True
-                            return html
-
-                        # Backwards compatibility for legacy SOAR versions (HTML injection into base template file)
-                        context["html_content"] = html
-                        return BASE_TEMPLATE_PATH
-
+                def render_with_error_handling(
+                    render_func: Callable[[], str], error_type: str, target_name: str
+                ) -> str:
                     try:
-                        # Parsing output results
-                        parser = ViewFunctionParser(function, output_class)
-                        result = parser.execute(*args, **kwargs)
-
-                        # Get template renderer
+                        return handle_html_output(render_func())
+                    except Exception as e:
                         templates_dir = get_templates_dir(function.__globals__)
                         renderer = get_template_renderer("jinja", templates_dir)
+                        error_html = renderer.render_error_template(
+                            error_type,
+                            f"Failed to render {target_name}: {e!s}",
+                            function.__name__,
+                            target_name,
+                        )
+                        return handle_html_output(error_html)
 
+                try:
+                    parser = ViewFunctionParser(function, output_class)
+                    result = parser.execute(*args, **kwargs)
+
+                    templates_dir = get_templates_dir(function.__globals__)
+                    renderer = get_template_renderer("jinja", templates_dir)
+
+                    if template:
                         if isinstance(result, dict):
-                            try:
-                                # Merge context and result for template rendering
-                                template_context = {**context, **result}
-
-                                rendered_html = renderer.render_template(
+                            template_context = {**context, **result}
+                            return render_with_error_handling(
+                                lambda: renderer.render_template(
                                     template, template_context
-                                )
-                                return handle_html_output(rendered_html)
-
-                            except Exception as e:
-                                error_html = renderer.render_error_template(
-                                    "Template Rendering Failed",
-                                    f"Failed to render template '{template}': {e!s}",
-                                    function.__name__,
-                                    template,
-                                )
-                                return handle_html_output(error_html)
-
+                                ),
+                                "Template Rendering Failed",
+                                f"template '{template}'",
+                            )
                         elif isinstance(result, str):
                             return handle_html_output(result)
                         else:
@@ -560,22 +560,46 @@ class App:
                             )
                             return handle_html_output(error_html)
 
-                    except Exception as e:
-                        # Fallback error handling if renderer creation fails
-                        templates_dir = get_templates_dir(function.__globals__)
-                        renderer = get_template_renderer("jinja", templates_dir)
-                        error_html = renderer.render_error_template(
-                            "View Function Error",
-                            f"Error in view function '{function.__name__}': {e!s}",
-                            function.__name__,
-                            template,
-                        )
-                        return handle_html_output(error_html)
+                    elif component:
+                        if hasattr(result, "dict"):
+                            template_context = {**context, **result.dict()}
+                            component_template = f"components/{component}.html"
+                            return render_with_error_handling(
+                                lambda: renderer.render_template(
+                                    component_template, template_context
+                                ),
+                                "Component Rendering Failed",
+                                f"component '{component}'",
+                            )
+                        else:
+                            error_html = renderer.render_error_template(
+                                "Invalid Component Data",
+                                f"Component function must return a BaseModel instance, got {type(result).__name__}",
+                                function.__name__,
+                                component,
+                            )
+                            return handle_html_output(error_html)
+                    else:
+                        return str(result) if result is not None else ""
 
-                return template_wrapper
+                except Exception as e:
+                    templates_dir = get_templates_dir(function.__globals__)
+                    renderer = get_template_renderer("jinja", templates_dir)
+                    target = template or component or "unknown"
+                    error_type = (
+                        "View Function Error"
+                        if template
+                        else "Component Function Error"
+                    )
+                    error_html = renderer.render_error_template(
+                        error_type,
+                        f"Error in {('view' if template else 'component')} function '{function.__name__}': {e!s}",
+                        function.__name__,
+                        target,
+                    )
+                    return handle_html_output(error_html)
 
-            # TODO: Change this
-            return function
+            return view_wrapper
 
         return view_decorator
 
