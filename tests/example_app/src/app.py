@@ -9,6 +9,7 @@ from soar_sdk.params import Params, OnPollParams
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
+from soar_sdk.components.pie_chart import PieChartData
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
@@ -68,7 +69,7 @@ class ReverseStringViewOutput(ActionOutput):
 def render_reverse_string_view(output: list[ReverseStringViewOutput]) -> dict:
     return {
         "original": output[0].original_string,
-        "reversed": output[0].reversed_string,
+        "reversed": output[0].reversed_stringfail,
     }
 
 
@@ -83,6 +84,59 @@ def reverse_string_custom_view(
     reversed_string = param.input_string[::-1]
     return ReverseStringViewOutput(
         original_string=param.input_string, reversed_string=reversed_string
+    )
+
+
+class StatisticsParams(Params):
+    category: str
+
+
+class StatisticsOutput(ActionOutput):
+    category: str
+    labels: list[str]
+    values: list[int]
+
+
+@app.view_handler(component="pie_chart")
+def render_statistics_chart(output: list[StatisticsOutput]) -> PieChartData:
+    stats = output[0]
+    colors = ["#4CAF50", "#2196F3", "#FF9800", "#F44336", "#9C27B0", "#607D8B"]
+
+    return PieChartData(
+        title=f"{stats.category} Distribution",
+        labels=stats.labels,
+        values=stats.values,
+        colors=colors,
+    )
+
+
+@app.action(
+    action_type="investigate",
+    verbose="Generate statistics with pie chart reusable component.",
+    custom_view=render_statistics_chart,
+)
+def generate_statistics(param: StatisticsParams, soar: SOARClient) -> StatisticsOutput:
+    if param.category.lower() == "test":
+        breakdown = {
+            "Malware": 45,
+            "Phishing": 32,
+            "Ransomware": 18,
+            "Data Breach": 12,
+            "DDoS": 8,
+        }
+    else:
+        breakdown = {
+            "Category A": 25,
+            "Category B": 35,
+            "Category C": 20,
+            "Category D": 15,
+            "Category E": 5,
+        }
+
+    return StatisticsOutput(
+        category=param.category,
+        labels=list(breakdown.keys()),
+        values=list(breakdown.values()),
     )
 
 

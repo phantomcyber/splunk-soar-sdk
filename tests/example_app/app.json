@@ -163,6 +163,60 @@
             }
         },
         {
+            "action": "generate statistics",
+            "identifier": "generate_statistics",
+            "description": "generate statistics",
+            "verbose": "Generate statistics with pie chart reusable component.",
+            "type": "investigate",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "parameters": {
+                "category": {
+                    "order": 0,
+                    "name": "category",
+                    "description": "Category",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.category",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.category",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.labels.*",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.values.*",
+                    "data_type": "numeric"
+                }
+            ],
+            "render": {
+                "type": "custom",
+                "view": "src.app.render_statistics_chart"
+            }
+        },
+        {
             "action": "on poll",
             "identifier": "on_poll",
             "description": "on poll",
