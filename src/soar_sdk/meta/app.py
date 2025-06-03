@@ -34,3 +34,9 @@ class AppMeta(BaseModel):
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
 
     webhook: Optional[WebhookMeta]
+
+    def to_json_manifest(self) -> dict:
+        """
+        Converts the AppMeta instance to a JSON-compatible dictionary.
+        """
+        return self.dict(exclude_none=True)

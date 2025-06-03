@@ -53,7 +53,7 @@ class ManifestProcessor:
         and save it back to the manifest file.
         """
         app_meta = self.build()
-        pprint(app_meta.dict(exclude_none=True))
+        pprint(app_meta.to_json_manifest())
 
         self.save_json_manifest(app_meta)
 
@@ -69,7 +69,7 @@ class ManifestProcessor:
 
     def save_json_manifest(self, app_meta: AppMeta) -> None:
         with open(self.manifest_path, "w") as f:
-            json.dump(app_meta.dict(exclude_none=True), f, indent=4)
+            json.dump(app_meta.to_json_manifest(), f, indent=4)
 
     @staticmethod
     def get_module_dot_path(main_module: str) -> str:
