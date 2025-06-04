@@ -82,13 +82,10 @@ class ViewFunctionParser(Generic[T]):
                 valid_types = [dict, dict[str, Any]]
                 expected_type = "dict"
             elif component:
-                try:
-                    if isinstance(signature.return_annotation, type) and issubclass(
-                        signature.return_annotation, BaseModel
-                    ):
-                        return  # Valid BaseModel return type
-                except TypeError:
-                    pass
+                if isinstance(signature.return_annotation, type) and issubclass(
+                    signature.return_annotation, BaseModel
+                ):
+                    return  # Valid BaseModel return type
 
                 raise TypeError(
                     f"View function {function.__name__} with component must return BaseModel, got {signature.return_annotation}"
@@ -102,18 +99,6 @@ class ViewFunctionParser(Generic[T]):
                     f"View function {function.__name__} must return {expected_type}, got {signature.return_annotation}"
                 )
 
-    def _extract_data_from_result(self, result: ActionResult) -> list[dict]:
-        data_items = []
-
-        data = result.get_data()
-
-        if isinstance(data, list):
-            data_items.extend([item for item in data if isinstance(item, dict)])
-        elif isinstance(data, dict):
-            data_items.append(data)
-
-        return data_items
-
     def parse_action_results(
         self, raw_all_app_runs: list[tuple[Any, list[ActionResult]]]
     ) -> tuple[list[T], list[tuple[AppRunMetadata, list[ActionResult]]]]:
@@ -122,17 +107,12 @@ class ViewFunctionParser(Generic[T]):
 
         for app_run_metadata, action_results in raw_all_app_runs:
             if isinstance(app_run_metadata, dict):
-                try:
+                if app_run_metadata:
                     parsed_metadata: AppRunMetadata = AppRunMetadata.parse_obj(
                         app_run_metadata
                     )
-                except Exception:
-                    # If parsing fails, create a fallback AppRunMetadata object
-                    parsed_metadata = (
-                        AppRunMetadata(**app_run_metadata)
-                        if app_run_metadata
-                        else AppRunMetadata()
-                    )
+                else:
+                    parsed_metadata = AppRunMetadata()
             else:
                 parsed_metadata = app_run_metadata
 
@@ -140,7 +120,7 @@ class ViewFunctionParser(Generic[T]):
 
             # Extract and parse outputs from each result
             for result in action_results:
-                for data_item in self._extract_data_from_result(result):
+                for data_item in result.get_data():
                     try:
                         parsed_output = self.output_class.parse_obj(data_item)
                         parsed_outputs.append(parsed_output)
@@ -177,12 +157,8 @@ class ViewFunctionParser(Generic[T]):
             result = self.function(parsed_outputs, **kwargs)
         elif param_count == 2:
             result = self.function(context, parsed_outputs, **kwargs)
-        elif param_count == 3:
-            result = self.function(context, action, parsed_outputs, **kwargs)
         else:
-            result = self.function(
-                context, action, parsed_outputs, parsed_app_runs, *args[4:], **kwargs
-            )
+            result = self.function(context, action, parsed_outputs, *args[3:], **kwargs)
 
         # Update context
         if isinstance(result, str) and isinstance(context, ViewContext):
