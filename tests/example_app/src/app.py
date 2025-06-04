@@ -69,7 +69,7 @@ class ReverseStringViewOutput(ActionOutput):
 def render_reverse_string_view(output: list[ReverseStringViewOutput]) -> dict:
     return {
         "original": output[0].original_string,
-        "reversed": output[0].reversed_stringfail,
+        "reversed": output[0].reversed_string,
     }
 
 

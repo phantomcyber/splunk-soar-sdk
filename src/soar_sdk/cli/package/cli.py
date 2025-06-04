@@ -152,27 +152,24 @@ def build(
                 "src", f"{app_name}/src", recursive=True, filter=filter_source_files
             )
 
-            # Add templates directory if it exists
-            templates_path = Path("templates")
-            if templates_path.exists() and templates_path.is_dir():
-                console.print("Adding templates to package")
-                app_tarball.add("templates", f"{app_name}/templates", recursive=True)
+            def add_templates_to_package(
+                source_path: Path, message: str, target_base: str = "templates"
+            ) -> None:
+                console.print(message)
+                app_tarball.add(
+                    str(source_path),
+                    f"{app_name}/{target_base}",
+                    recursive=True,
+                )
+
+            # Add app templates directory if it exists
+            add_templates_to_package(Path("templates"), "Adding templates to package")
 
             # Add SDK template files to the package during build
-            # Need to be in app package for platform to access them (which older SOAR versions still need to do)
-            sdk_path = Path(soar_sdk.__file__).parent
-            sdk_templates_path = sdk_path / "templates"
-            if sdk_templates_path.exists() and sdk_templates_path.is_dir():
-                console.print("Adding SDK templates to package")
-                for item in sdk_templates_path.iterdir():
-                    if item.is_file():
-                        app_tarball.add(str(item), f"{app_name}/templates/{item.name}")
-                    elif item.is_dir():
-                        app_tarball.add(
-                            str(item),
-                            f"{app_name}/templates/{item.name}",
-                            recursive=True,
-                        )
+            sdk_templates_path = Path(soar_sdk.__file__).parent / "templates"
+            add_templates_to_package(
+                sdk_templates_path, "Adding SDK templates to package"
+            )
 
             if with_sdk_wheel_from:
                 console.print(f"[dim]Adding SDK wheel from {with_sdk_wheel_from}[/]")

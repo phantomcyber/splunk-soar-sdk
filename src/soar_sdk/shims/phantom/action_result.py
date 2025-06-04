@@ -35,5 +35,13 @@ if TYPE_CHECKING or not _soar_is_available:
         def get_param(self) -> dict:
             return self.param
 
+        def add_data(self, data: dict) -> None:
+            if not hasattr(self, "_data"):
+                self._data = []
+            self._data.append(data)
+
+        def get_data(self) -> list[dict]:
+            return getattr(self, "_data", [])
+
 
 __all__ = ["ActionResult"]

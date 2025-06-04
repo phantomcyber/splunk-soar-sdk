@@ -17,7 +17,7 @@ class ComplexViewOutput(ActionOutput):
     data: dict
 
 
-class TestComponentData(BaseModel):
+class SampleComponentData(BaseModel):
     title: str
     value: int
     enabled: bool
@@ -68,11 +68,13 @@ def test_view_handler_template_wrapper_functionality(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {
-                        "message": "test_msg",
-                        "count": 5,
-                        "items": ["a", "b"],
-                    }
+                    get_data=lambda: [
+                        {
+                            "message": "test_msg",
+                            "count": 5,
+                            "items": ["a", "b"],
+                        }
+                    ]
                 )
             ],
         )
@@ -109,7 +111,9 @@ def test_view_handler_template_wrapper_prerender_support(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test_msg", "count": 1, "items": ["x"]}
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 1, "items": ["x"]}
+                    ]
                 )
             ],
         )
@@ -144,7 +148,9 @@ def test_view_handler_direct_html_return(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test_msg", "count": 1, "items": ["x"]}
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 1, "items": ["x"]}
+                    ]
                 )
             ],
         )
@@ -170,7 +176,9 @@ def test_view_handler_error_handling_invalid_return_type(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test_msg", "count": 1, "items": ["x"]}
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 1, "items": ["x"]}
+                    ]
                 )
             ],
         )
@@ -210,7 +218,9 @@ def test_view_handler_error_handling_invalid_return_type_with_prerender(
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test_msg", "count": 1, "items": ["x"]}
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 1, "items": ["x"]}
+                    ]
                 )
             ],
         )
@@ -248,7 +258,9 @@ def test_view_handler_error_handling_template_render_failure(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test_msg", "count": 1, "items": ["x"]}
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 1, "items": ["x"]}
+                    ]
                 )
             ],
         )
@@ -284,7 +296,9 @@ def test_view_handler_error_handling_general_exception(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test_msg", "count": 1, "items": ["x"]}
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 1, "items": ["x"]}
+                    ]
                 )
             ],
         )
@@ -357,8 +371,8 @@ def test_view_handler_component_functionality(simple_app: App):
     """Test view_handler with component parameter functionality."""
 
     @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> TestComponentData:
-        return TestComponentData(
+    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
+        return SampleComponentData(
             title=f"Component: {outputs[0].message}",
             value=outputs[0].count,
             enabled=True,
@@ -371,7 +385,9 @@ def test_view_handler_component_functionality(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test_msg", "count": 5, "items": ["a"]}
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 5, "items": ["a"]}
+                    ]
                 )
             ],
         )
@@ -405,8 +421,8 @@ def test_view_handler_component_with_prerender(simple_app: App):
     """Test view_handler component with prerender support."""
 
     @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> TestComponentData:
-        return TestComponentData(title="Prerender Test", value=42, enabled=False)
+    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
+        return SampleComponentData(title="Prerender Test", value=42, enabled=False)
 
     mock_context = {"accepts_prerender": True}
     mock_action = mock.Mock()
@@ -415,7 +431,7 @@ def test_view_handler_component_with_prerender(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test", "count": 1, "items": ["x"]}
+                    get_data=lambda: [{"message": "test", "count": 1, "items": ["x"]}]
                 )
             ],
         )
@@ -440,8 +456,8 @@ def test_view_handler_component_render_failure(simple_app: App):
     """Test view_handler component error handling when component rendering fails."""
 
     @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> TestComponentData:
-        return TestComponentData(title="Test", value=1, enabled=True)
+    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
+        return SampleComponentData(title="Test", value=1, enabled=True)
 
     mock_context = {"accepts_prerender": False}
     mock_action = mock.Mock()
@@ -450,7 +466,7 @@ def test_view_handler_component_render_failure(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test", "count": 1, "items": ["x"]}
+                    get_data=lambda: [{"message": "test", "count": 1, "items": ["x"]}]
                 )
             ],
         )
@@ -486,7 +502,7 @@ def test_view_handler_component_general_exception(simple_app: App):
     """Test view_handler component error handling for general exceptions."""
 
     @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> TestComponentData:
+    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
         raise RuntimeError("Component function error")
 
     mock_context = {"accepts_prerender": False}
@@ -496,7 +512,7 @@ def test_view_handler_component_general_exception(simple_app: App):
             {"app_id": "test"},
             [
                 mock.Mock(
-                    get_data=lambda: {"message": "test", "count": 1, "items": ["x"]}
+                    get_data=lambda: [{"message": "test", "count": 1, "items": ["x"]}]
                 )
             ],
         )
@@ -531,8 +547,8 @@ def test_view_handler_component_integration_with_action(simple_app: App):
     @simple_app.view_handler(component="integration_component")
     def integration_component_view(
         outputs: list[SampleViewOutput],
-    ) -> TestComponentData:
-        return TestComponentData(
+    ) -> SampleComponentData:
+        return SampleComponentData(
             title=f"Action Integration: {outputs[0].message}",
             value=outputs[0].count * 2,
             enabled=outputs[0].count > 0,

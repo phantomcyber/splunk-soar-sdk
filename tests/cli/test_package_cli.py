@@ -8,6 +8,8 @@ from soar_sdk.meta.dependencies import UvWheel
 
 from soar_sdk.cli.path_utils import context_directory
 
+import tarfile
+
 runner = CliRunner()
 
 
@@ -151,3 +153,57 @@ def test_install_app_tarball_not_file():
     example_app = Path.cwd() / "tests/example_app"
     result = runner.invoke(package, ["install", example_app.as_posix(), "10.1.23.4"])
     assert result.exit_code != 0
+
+
+def test_package_build_with_app_templates(wheel_resp_mock, tmp_path: Path):
+    example_app = Path.cwd() / "tests/example_app"
+    destination = tmp_path / "example_app.tgz"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "Adding templates to package" in result.stdout
+
+    # Verify templates are in the tarball
+    with tarfile.open(destination, "r:gz") as tar:
+        members = tar.getnames()
+        assert any("templates/reverse_string.html" in name for name in members)
+
+
+def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
+    example_app = Path.cwd() / "tests/example_app"
+    destination = tmp_path / "example_app.tgz"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert "Adding SDK templates to package" in result.stdout
+
+        with tarfile.open(destination, "r:gz") as tar:
+            members = tar.getnames()
+            sdk_template_files = [f for f in members if "/templates/" in f]
+            assert len(sdk_template_files) > 0
+            # Check for actual SDK template structure
+            assert any("templates/base/" in name for name in members)
+            assert any("templates/components/" in name for name in members)
+            assert any("templates/widgets/" in name for name in members)

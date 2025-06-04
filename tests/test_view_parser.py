@@ -12,7 +12,7 @@ class SampleViewOutput(ActionOutput):
     value: int
 
 
-class TestComponentData(BaseModel):
+class SampleComponentData(BaseModel):
     title: str
     count: int
 
@@ -42,7 +42,7 @@ def test_view_function_parser_validate_function_signature_insufficient_params():
 
 
 def test_view_function_parser_validate_function_signature_component_valid_return():
-    def test_function(outputs: list[SampleViewOutput]) -> TestComponentData:
+    def test_function(outputs: list[SampleViewOutput]) -> SampleComponentData:
         pass
 
     ViewFunctionParser.validate_function_signature(
