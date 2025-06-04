@@ -483,7 +483,6 @@ class App:
         *,
         template: Optional[str] = None,
         component: Optional[str] = None,
-        output_class: Optional[type[ActionOutput]] = None,
     ) -> Callable[[Callable], Callable]:
         """
         Decorator for custom view functions with output parsing and template rendering.
@@ -498,9 +497,6 @@ class App:
         """
 
         def view_decorator(function: Callable) -> Callable:
-            if not template and not component:
-                return function
-
             @wraps(function)
             def view_wrapper(*args: Any, **kwargs: Any) -> str:  # noqa: ANN401
                 if len(args) < 3 or not isinstance(args[2], dict):
@@ -533,54 +529,35 @@ class App:
                         return handle_html_output(error_html)
 
                 try:
-                    parser = ViewFunctionParser(function, output_class)
+                    parser = ViewFunctionParser(function, template, component)
                     result = parser.execute(*args, **kwargs)
 
                     templates_dir = get_templates_dir(function.__globals__)
                     renderer = get_template_renderer("jinja", templates_dir)
 
                     if template:
-                        if isinstance(result, dict):
-                            template_context = {**context, **result}
-                            return render_with_error_handling(
-                                lambda: renderer.render_template(
-                                    template, template_context
-                                ),
-                                "Template Rendering Failed",
-                                f"template '{template}'",
-                            )
-                        elif isinstance(result, str):
-                            return handle_html_output(result)
-                        else:
-                            error_html = renderer.render_error_template(
-                                "Invalid Return Type",
-                                f"View function returned {type(result).__name__}, expected dict or str",
-                                function.__name__,
-                                template,
-                            )
-                            return handle_html_output(error_html)
+                        template_context = {**context, **result}
+                        return render_with_error_handling(
+                            lambda: renderer.render_template(
+                                template, template_context
+                            ),
+                            "Template Rendering Failed",
+                            f"template '{template}'",
+                        )
 
                     elif component:
-                        if hasattr(result, "dict"):
-                            template_context = {**context, **result.dict()}
-                            component_template = f"components/{component}.html"
-                            return render_with_error_handling(
-                                lambda: renderer.render_template(
-                                    component_template, template_context
-                                ),
-                                "Component Rendering Failed",
-                                f"component '{component}'",
-                            )
-                        else:
-                            error_html = renderer.render_error_template(
-                                "Invalid Component Data",
-                                f"Component function must return a BaseModel instance, got {type(result).__name__}",
-                                function.__name__,
-                                component,
-                            )
-                            return handle_html_output(error_html)
+                        template_context = {**context, **result.dict()}
+                        component_template = f"components/{component}.html"
+                        return render_with_error_handling(
+                            lambda: renderer.render_template(
+                                component_template, template_context
+                            ),
+                            "Component Rendering Failed",
+                            f"component '{component}'",
+                        )
+
                     else:
-                        return str(result) if result is not None else ""
+                        return handle_html_output(result)
 
                 except Exception as e:
                     templates_dir = get_templates_dir(function.__globals__)
