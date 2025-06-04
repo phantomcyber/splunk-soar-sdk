@@ -25,19 +25,19 @@ class ViewFunctionParser(Generic[T]):
     """Handles parsing and validation of view function signatures and execution."""
 
     def __init__(
-        self, function: Callable, output_class: Optional[type[T]] = None
+        self,
+        function: Callable,
+        template: Optional[str] = None,
+        component: Optional[str] = None,
     ) -> None:
         self.function = function
 
-        # Auto-detect output class if not provided
-        if output_class is None:
-            detected_class = self.auto_detect_output_class(function)
-            output_class = cast(type[T], detected_class)
-
-        self.output_class: Optional[type[T]] = output_class
+        # Auto-detect output class from function signature
+        detected_class = self.auto_detect_output_class(function)
+        self.output_class: type[T] = cast(type[T], detected_class)
 
         # Validate function signature
-        self.validate_function_signature(function)
+        self.validate_function_signature(function, template, component)
 
     @staticmethod
     def auto_detect_output_class(function: Callable) -> type[ActionOutput]:
@@ -63,7 +63,11 @@ class ViewFunctionParser(Generic[T]):
         )
 
     @staticmethod
-    def validate_function_signature(function: Callable) -> None:
+    def validate_function_signature(
+        function: Callable,
+        template: Optional[str] = None,
+        component: Optional[str] = None,
+    ) -> None:
         """Validate that the function signature is compatible with view parsing."""
         signature = inspect.signature(function)
 
@@ -73,22 +77,29 @@ class ViewFunctionParser(Generic[T]):
             )
 
         if signature.return_annotation != inspect.Parameter.empty:
-            valid_types = [str, dict, dict[str, Any]]
+            # Determine expected return type based on handler configuration
+            if template:
+                valid_types = [dict, dict[str, Any]]
+                expected_type = "dict"
+            elif component:
+                try:
+                    if isinstance(signature.return_annotation, type) and issubclass(
+                        signature.return_annotation, BaseModel
+                    ):
+                        return  # Valid BaseModel return type
+                except TypeError:
+                    pass
 
-            # Check if return type is BaseModel or subclass
-            try:
-                if isinstance(signature.return_annotation, type) and issubclass(
-                    signature.return_annotation, BaseModel
-                ):
-                    # BaseModel is valid for component rendering
-                    return
-            except TypeError:
-                # issubclass can raise TypeError for non-class types
-                pass
+                raise TypeError(
+                    f"View function {function.__name__} with component must return BaseModel, got {signature.return_annotation}"
+                )
+            else:
+                valid_types = [str]
+                expected_type = "str"
 
             if signature.return_annotation not in valid_types:
                 raise TypeError(
-                    f"View function {function.__name__} must return str, dict, or BaseModel"
+                    f"View function {function.__name__} must return {expected_type}, got {signature.return_annotation}"
                 )
 
     def _extract_data_from_result(self, result: ActionResult) -> list[dict]:
@@ -131,15 +142,10 @@ class ViewFunctionParser(Generic[T]):
             for result in action_results:
                 for data_item in self._extract_data_from_result(result):
                     try:
-                        if self.output_class is not None:
-                            parsed_output = self.output_class.parse_obj(data_item)
-                            parsed_outputs.append(parsed_output)
+                        parsed_output = self.output_class.parse_obj(data_item)
+                        parsed_outputs.append(parsed_output)
                     except Exception as e:
-                        output_class_name = (
-                            self.output_class.__name__
-                            if self.output_class
-                            else "Unknown"
-                        )
+                        output_class_name = self.output_class.__name__
                         raise ValueError(
                             f"Data parsing failed for {output_class_name}: {e}"
                         ) from e
