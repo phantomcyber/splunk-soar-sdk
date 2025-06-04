@@ -2,7 +2,8 @@ import inspect
 import json
 import sys
 from functools import wraps
-from typing import Any, Optional, Union, Callable
+from typing import Any, Optional, Union, Callable, cast
+from pydantic import BaseModel
 from collections.abc import Iterator
 
 from soar_sdk.asset import BaseAsset
@@ -529,14 +530,18 @@ class App:
                         return handle_html_output(error_html)
 
                 try:
-                    parser = ViewFunctionParser(function, template, component)
+                    parser: ViewFunctionParser = ViewFunctionParser(
+                        function, template, component
+                    )
                     result = parser.execute(*args, **kwargs)
 
                     templates_dir = get_templates_dir(function.__globals__)
                     renderer = get_template_renderer("jinja", templates_dir)
 
                     if template:
-                        template_context = {**context, **result}
+                        # ViewFunctionParser validates this already
+                        result_dict = cast(dict, result)
+                        template_context = {**context, **result_dict}
                         return render_with_error_handling(
                             lambda: renderer.render_template(
                                 template, template_context
@@ -546,7 +551,8 @@ class App:
                         )
 
                     elif component:
-                        template_context = {**context, **result.dict()}
+                        result_model = cast(BaseModel, result)
+                        template_context = {**context, **result_model.dict()}
                         component_template = f"components/{component}.html"
                         return render_with_error_handling(
                             lambda: renderer.render_template(
@@ -557,7 +563,8 @@ class App:
                         )
 
                     else:
-                        return handle_html_output(result)
+                        result_str = cast(str, result)
+                        return handle_html_output(result_str)
 
                 except Exception as e:
                     templates_dir = get_templates_dir(function.__globals__)

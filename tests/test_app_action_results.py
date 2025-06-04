@@ -68,10 +68,12 @@ def test_app_action_called_with_more_complex_result_creates_the_result(app_with_
     )
     assert result is True
     assert client_mock.add_result.call_count == 1
-    assert client_mock.add_result.call_args[0][0].get_param() == {
-        "string_value": "test",
-        "int_value": 1,
-        "list_value": ["a", "b"],
-        "bool_value": True,
-        "nested_value": {"bool_value": True},
-    }
+    assert client_mock.add_result.call_args[0][0].get_data() == [
+        {
+            "string_value": "test",
+            "int_value": 1,
+            "list_value": ["a", "b"],
+            "bool_value": True,
+            "nested_value": {"bool_value": True},
+        }
+    ]

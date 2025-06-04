@@ -79,7 +79,7 @@ class ViewFunctionParser(Generic[T]):
         if signature.return_annotation != inspect.Parameter.empty:
             # Determine expected return type based on handler configuration
             if template:
-                valid_types = [dict, dict[str, Any]]
+                valid_types: list[type] = [dict]
                 expected_type = "dict"
             elif component:
                 if isinstance(signature.return_annotation, type) and issubclass(
