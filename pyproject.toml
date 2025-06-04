@@ -121,6 +121,7 @@ source = [
 omit = [
     "src/soar_sdk/api_callers.py",  # moved 1:1 from App Wizard, not re-designed yet
     "src/soar_sdk/shims/*",  # shims for BaseConnector, should not need testing
+    "src/soar_sdk/template_filters.py" # ported from platform, need to decide what we're keeping
 ]
 
 [tool.coverage.report]
