@@ -33,33 +33,6 @@ def test_view_function_parser_auto_detect_output_class_fails_no_annotation():
         ViewFunctionParser(test_function)
 
 
-def test_view_function_parser_validate_function_signature_insufficient_params():
-    def test_function():
-        pass
-
-    with pytest.raises(TypeError, match="must accept at least 1 parameter"):
-        ViewFunctionParser.validate_function_signature(test_function)
-
-
-def test_view_function_parser_validate_function_signature_component_valid_return():
-    def test_function(outputs: list[SampleViewOutput]) -> SampleComponentData:
-        pass
-
-    ViewFunctionParser.validate_function_signature(
-        test_function, component="TestComponent"
-    )
-
-
-def test_view_function_parser_validate_function_signature_component_invalid_return():
-    def test_function(outputs: list[SampleViewOutput]) -> dict:
-        pass
-
-    with pytest.raises(TypeError, match="must return BaseModel"):
-        ViewFunctionParser.validate_function_signature(
-            test_function, component="TestComponent"
-        )
-
-
 def test_view_function_parser_parse_action_results_success():
     def test_function(outputs: list[SampleViewOutput]):
         pass
@@ -136,26 +109,6 @@ def test_view_function_parser_auto_detect_output_class_invalid_type():
 
     with pytest.raises(TypeError, match="Could not auto-detect ActionOutput class"):
         ViewFunctionParser(test_function)
-
-
-def test_view_function_parser_validate_function_signature_invalid_template_return_type():
-    def test_function(outputs: list[SampleViewOutput]) -> int:  # Not dict for template
-        pass
-
-    with pytest.raises(TypeError, match="must return dict"):
-        ViewFunctionParser.validate_function_signature(
-            test_function, template="test.html"
-        )
-
-
-def test_view_function_parser_validate_function_signature_invalid_component_return_non_type():
-    def test_function(outputs: list[SampleViewOutput]) -> str:  # Not BaseModel
-        pass
-
-    with pytest.raises(TypeError, match="must return BaseModel"):
-        ViewFunctionParser.validate_function_signature(
-            test_function, component="TestComponent"
-        )
 
 
 def test_view_function_parser_execute_with_two_params():

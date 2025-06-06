@@ -1,15 +1,6 @@
-{% extends 'widgets/widget_template.html' %}
-
-{% block title_color %}{{ title_color or '#dc3545' }}{% endblock %}
-{% block title_text_color %}{{ title_text_color or 'white' }}{% endblock %}
-{% block body_color %}{{ body_color or 'white' }}{% endblock %}
-{% block body_text_color %}{{ body_text_color or '#8775a7' }}{% endblock %}
+{% extends 'base/header.html' %}
 
 {% block title1 %}View Function Error{% endblock %}
-
-{% block custom_tools %}
-  {% include 'widgets/widget_resize_snippet.html' %}
-{% endblock %}
 
 {% block widget_content %}
 <div style="display: flex; align-items: center; height: 100%; padding: 20px;">

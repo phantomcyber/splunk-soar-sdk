@@ -3,6 +3,7 @@ import pytest
 from soar_sdk.app import App
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.params import Params
+from soar_sdk.components import ComponentType, PieChartData
 from pydantic import BaseModel
 
 
@@ -165,41 +166,11 @@ def test_view_handler_direct_html_return(simple_app: App):
 def test_view_handler_error_handling_invalid_return_type(simple_app: App):
     """Test view_handler error handling for invalid return types."""
 
-    @simple_app.view_handler(template="test_template.html")
-    def test_view(outputs: list[SampleViewOutput]) -> int:  # Invalid return type
-        return 123
+    with pytest.raises(TypeError, match="must return dict"):
 
-    mock_context = {"accepts_prerender": False}
-    mock_action = mock.Mock()
-    mock_app_runs = [
-        (
-            {"app_id": "test"},
-            [
-                mock.Mock(
-                    get_data=lambda: [
-                        {"message": "test_msg", "count": 1, "items": ["x"]}
-                    ]
-                )
-            ],
-        )
-    ]
-
-    with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
-    ):
-        mock_renderer = mock.Mock()
-        mock_renderer.render_error_template.return_value = (
-            "<div>Error: Invalid return type</div>"
-        )
-        mock_get_renderer.return_value = mock_renderer
-
-        result = test_view(mock_action, mock_app_runs, mock_context)
-
-        # Should render error template
-        mock_renderer.render_error_template.assert_called_once()
-        assert result == "templates/base/base_template.html"
-        assert mock_context["html_content"] == "<div>Error: Invalid return type</div>"
+        @simple_app.view_handler(template="test_template.html")
+        def test_view(outputs: list[SampleViewOutput]) -> int:  # Invalid return type
+            return 123
 
 
 def test_view_handler_error_handling_invalid_return_type_with_prerender(
@@ -207,41 +178,11 @@ def test_view_handler_error_handling_invalid_return_type_with_prerender(
 ):
     """Test view_handler error handling for invalid return types with prerender support."""
 
-    @simple_app.view_handler(template="test_template.html")
-    def test_view(outputs: list[SampleViewOutput]) -> int:  # Invalid return type
-        return 123
+    with pytest.raises(TypeError, match="must return dict"):
 
-    mock_context = {"accepts_prerender": True}
-    mock_action = mock.Mock()
-    mock_app_runs = [
-        (
-            {"app_id": "test"},
-            [
-                mock.Mock(
-                    get_data=lambda: [
-                        {"message": "test_msg", "count": 1, "items": ["x"]}
-                    ]
-                )
-            ],
-        )
-    ]
-
-    with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
-    ):
-        mock_renderer = mock.Mock()
-        mock_renderer.render_error_template.return_value = (
-            "<div>Error: Invalid return type with prerender</div>"
-        )
-        mock_get_renderer.return_value = mock_renderer
-
-        result = test_view(mock_action, mock_app_runs, mock_context)
-
-        # Should render error template and return HTML directly for prerender
-        mock_renderer.render_error_template.assert_called_once()
-        assert result == "<div>Error: Invalid return type with prerender</div>"
-        assert mock_context["prerender"] is True
+        @simple_app.view_handler(template="test_template.html")
+        def test_view(outputs: list[SampleViewOutput]) -> int:  # Invalid return type
+            return 123
 
 
 def test_view_handler_error_handling_template_render_failure(simple_app: App):
@@ -370,12 +311,13 @@ def test_view_handler_integration_with_action_decorator(simple_app: App):
 def test_view_handler_component_functionality(simple_app: App):
     """Test view_handler with component parameter functionality."""
 
-    @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
-        return SampleComponentData(
+    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
+        return PieChartData(
             title=f"Component: {outputs[0].message}",
-            value=outputs[0].count,
-            enabled=True,
+            labels=["Data"],
+            values=[outputs[0].count],
+            colors=["#FF6384"],
         )
 
     mock_context = {"accepts_prerender": False}
@@ -405,12 +347,13 @@ def test_view_handler_component_functionality(simple_app: App):
 
         # Should render component template
         mock_renderer.render_template.assert_called_once_with(
-            "components/test_component.html",
+            "components/pie_chart.html",
             {
                 "accepts_prerender": False,
                 "title": "Component: test_msg",
-                "value": 5,
-                "enabled": True,
+                "labels": ["Data"],
+                "values": [5],
+                "colors": ["#FF6384"],
             },
         )
         assert result == "templates/base/base_template.html"
@@ -420,9 +363,11 @@ def test_view_handler_component_functionality(simple_app: App):
 def test_view_handler_component_with_prerender(simple_app: App):
     """Test view_handler component with prerender support."""
 
-    @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
-        return SampleComponentData(title="Prerender Test", value=42, enabled=False)
+    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
+        return PieChartData(
+            title="Prerender Test", labels=["Test"], values=[42], colors=["#36A2EB"]
+        )
 
     mock_context = {"accepts_prerender": True}
     mock_action = mock.Mock()
@@ -455,9 +400,9 @@ def test_view_handler_component_with_prerender(simple_app: App):
 def test_view_handler_component_render_failure(simple_app: App):
     """Test view_handler component error handling when component rendering fails."""
 
-    @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
-        return SampleComponentData(title="Test", value=1, enabled=True)
+    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
+        return PieChartData(title="Test", labels=["A"], values=[1], colors=["red"])
 
     mock_context = {"accepts_prerender": False}
     mock_action = mock.Mock()
@@ -490,9 +435,9 @@ def test_view_handler_component_render_failure(simple_app: App):
         # Should catch exception and render error template
         mock_renderer.render_error_template.assert_called_once_with(
             "Component Rendering Failed",
-            "Failed to render component 'test_component': Component template not found",
+            "Failed to render component 'pie_chart': Component template not found",
             "test_component_view",
-            "component 'test_component'",
+            "component 'pie_chart'",
         )
         assert result == "templates/base/base_template.html"
         assert mock_context["html_content"] == "<div>Component Render Error</div>"
@@ -501,8 +446,8 @@ def test_view_handler_component_render_failure(simple_app: App):
 def test_view_handler_component_general_exception(simple_app: App):
     """Test view_handler component error handling for general exceptions."""
 
-    @simple_app.view_handler(component="test_component")
-    def test_component_view(outputs: list[SampleViewOutput]) -> SampleComponentData:
+    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
         raise RuntimeError("Component function error")
 
     mock_context = {"accepts_prerender": False}
@@ -535,7 +480,7 @@ def test_view_handler_component_general_exception(simple_app: App):
             "Component Function Error",
             "Error in component function 'test_component_view': Component function error",
             "test_component_view",
-            "test_component",
+            "pie_chart",
         )
         assert result == "templates/base/base_template.html"
         assert mock_context["html_content"] == "<div>Component Function Error</div>"
@@ -544,14 +489,15 @@ def test_view_handler_component_general_exception(simple_app: App):
 def test_view_handler_component_integration_with_action(simple_app: App):
     """Test that component view handlers work correctly when assigned to action custom_view."""
 
-    @simple_app.view_handler(component="integration_component")
+    @simple_app.view_handler(component=ComponentType.PIE_CHART)
     def integration_component_view(
         outputs: list[SampleViewOutput],
-    ) -> SampleComponentData:
-        return SampleComponentData(
+    ) -> PieChartData:
+        return PieChartData(
             title=f"Action Integration: {outputs[0].message}",
-            value=outputs[0].count * 2,
-            enabled=outputs[0].count > 0,
+            labels=["Count"],
+            values=[outputs[0].count * 2],
+            colors=["#FFCE56"],
         )
 
     @simple_app.action(custom_view=integration_component_view)
@@ -565,3 +511,93 @@ def test_view_handler_component_integration_with_action(simple_app: App):
         actions["integration_component_action"].meta.custom_view
         == integration_component_view
     )
+
+
+def test_view_handler_component_validation_invalid_type(simple_app: App):
+    """Test view_handler raises TypeError when component is not ComponentType enum."""
+
+    with pytest.raises(
+        TypeError, match="Component parameter must be a ComponentType enum"
+    ):
+
+        @simple_app.view_handler(component="invalid_string")
+        def test_view(outputs: list[SampleViewOutput]) -> PieChartData:
+            return PieChartData(title="test", labels=["A"], values=[1], colors=["red"])
+
+
+def test_view_handler_component_validation_none_allowed(simple_app: App):
+    """Test view_handler allows component=None."""
+
+    @simple_app.view_handler(component=None)
+    def test_view(outputs: list[SampleViewOutput]) -> str:
+        return "<div>test</div>"
+
+    assert callable(test_view)
+
+
+def test_view_handler_component_validation_valid_component_type(simple_app: App):
+    """Test view_handler accepts valid ComponentType enum."""
+
+    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    def test_view(outputs: list[SampleViewOutput]) -> PieChartData:
+        return ComponentType.PIE_CHART.data_model(
+            title="test", labels=["A"], values=[1], colors=["red"]
+        )
+
+    assert callable(test_view)
+
+
+def test_view_handler_signature_validation_insufficient_params(simple_app: App):
+    """Test view_handler raises TypeError when function has no parameters."""
+
+    with pytest.raises(TypeError, match="must accept at least 1 parameter"):
+
+        @simple_app.view_handler(template="test.html")
+        def test_view() -> dict:
+            return {}
+
+
+def test_view_handler_signature_validation_missing_return_annotation(simple_app: App):
+    """Test view_handler raises TypeError when function has no return type annotation."""
+
+    with pytest.raises(TypeError, match="must have a return type annotation"):
+
+        @simple_app.view_handler(template="test.html")
+        def test_view(outputs):
+            return {}
+
+
+def test_view_handler_signature_validation_template_invalid_return_type(
+    simple_app: App,
+):
+    """Test view_handler raises TypeError when template function returns wrong type."""
+
+    with pytest.raises(TypeError, match="must return dict"):
+
+        @simple_app.view_handler(template="test.html")
+        def test_view(outputs: list[SampleViewOutput]) -> int:
+            return 123
+
+
+def test_view_handler_signature_validation_no_template_no_component_invalid_return_type(
+    simple_app: App,
+):
+    """Test view_handler raises TypeError when function with no template/component returns wrong type."""
+
+    with pytest.raises(TypeError, match="must return str"):
+
+        @simple_app.view_handler()
+        def test_view(outputs: list[SampleViewOutput]) -> dict:
+            return {}
+
+
+def test_view_handler_signature_validation_component_invalid_return_type(
+    simple_app: App,
+):
+    """Test view_handler raises TypeError when component function returns wrong type."""
+
+    with pytest.raises(TypeError, match="must return"):
+
+        @simple_app.view_handler(component=ComponentType.PIE_CHART)
+        def test_view(outputs: list[SampleViewOutput]) -> dict:
+            return {}

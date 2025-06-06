@@ -3,7 +3,6 @@ from typing import (
     Callable,
     TypeVar,
     Union,
-    Optional,
     get_origin,
     get_args,
     Generic,
@@ -11,7 +10,6 @@ from typing import (
 )
 import contextlib
 import inspect
-from pydantic import BaseModel
 from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.models.view import ViewContext, AppRunMetadata
 
@@ -27,17 +25,12 @@ class ViewFunctionParser(Generic[T]):
     def __init__(
         self,
         function: Callable,
-        template: Optional[str] = None,
-        component: Optional[str] = None,
     ) -> None:
         self.function = function
 
         # Auto-detect output class from function signature
         detected_class = self.auto_detect_output_class(function)
         self.output_class: type[T] = cast(type[T], detected_class)
-
-        # Validate function signature
-        self.validate_function_signature(function, template, component)
 
     @staticmethod
     def auto_detect_output_class(function: Callable) -> type[ActionOutput]:
@@ -61,43 +54,6 @@ class ViewFunctionParser(Generic[T]):
         raise TypeError(
             f"Could not auto-detect ActionOutput class from function signature of {function.__name__}."
         )
-
-    @staticmethod
-    def validate_function_signature(
-        function: Callable,
-        template: Optional[str] = None,
-        component: Optional[str] = None,
-    ) -> None:
-        """Validate that the function signature is compatible with view parsing."""
-        signature = inspect.signature(function)
-
-        if len(signature.parameters) < 1:
-            raise TypeError(
-                f"View function {function.__name__} must accept at least 1 parameter"
-            )
-
-        if signature.return_annotation != inspect.Parameter.empty:
-            # Determine expected return type based on handler configuration
-            if template:
-                valid_types: list[type] = [dict]
-                expected_type = "dict"
-            elif component:
-                if isinstance(signature.return_annotation, type) and issubclass(
-                    signature.return_annotation, BaseModel
-                ):
-                    return  # Valid BaseModel return type
-
-                raise TypeError(
-                    f"View function {function.__name__} with component must return BaseModel, got {signature.return_annotation}"
-                )
-            else:
-                valid_types = [str]
-                expected_type = "str"
-
-            if signature.return_annotation not in valid_types:
-                raise TypeError(
-                    f"View function {function.__name__} must return {expected_type}, got {signature.return_annotation}"
-                )
 
     def parse_action_results(
         self, raw_all_app_runs: list[tuple[Any, list[ActionResult]]]

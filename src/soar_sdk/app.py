@@ -32,6 +32,7 @@ from soar_sdk.template_renderer import (
     get_templates_dir,
     BASE_TEMPLATE_PATH,
 )
+from soar_sdk.components import ComponentType
 import traceback
 import uuid
 
@@ -479,25 +480,81 @@ class App:
 
         return on_poll_decorator
 
+    @staticmethod
+    def _validate_view_function_signature(
+        function: Callable,
+        template: Optional[str] = None,
+        component: Optional[ComponentType] = None,
+    ) -> None:
+        """Validate that the function signature is compatible with view handlers."""
+        signature = inspect.signature(function)
+
+        if len(signature.parameters) < 1:
+            raise TypeError(
+                f"View function {function.__name__} must accept at least 1 parameter"
+            )
+
+        if signature.return_annotation == inspect.Signature.empty:
+            raise TypeError(
+                f"View function {function.__name__} must have a return type annotation"
+            )
+
+        # Determine expected return type based on handler configuration
+        if template:
+            valid_types: list[type] = [dict]
+            expected_type = "dict"
+        elif component:
+            expected_model = component.data_model
+            if (
+                isinstance(signature.return_annotation, type)
+                and signature.return_annotation == expected_model
+            ):
+                return  # Valid specific component data model
+
+            raise TypeError(
+                f"View function {function.__name__} with component {component.value} must return {expected_model.__name__}, got {signature.return_annotation}"
+            )
+        else:
+            valid_types = [str]
+            expected_type = "str"
+
+        if signature.return_annotation not in valid_types:
+            raise TypeError(
+                f"View function {function.__name__} must return {expected_type}, got {signature.return_annotation}"
+            )
+
     def view_handler(
         self,
         *,
         template: Optional[str] = None,
-        component: Optional[str] = None,
+        component: Optional[ComponentType] = None,
     ) -> Callable[[Callable], Callable]:
         """
         Decorator for custom view functions with output parsing and template rendering.
 
         The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering or HTML string.
-        If a template is provided, dict results will be rendered using the template. The component parameter is reserved for future component-based rendering functionality.
+        If a template is provided, dict results will be rendered using the template. The component parameter must be a ComponentType enum for reusable component rendering.
 
         Usage:
             @app.view_handler(template="my_template.html")
             def my_view(outputs: List[MyActionOutput]) -> dict:
                 return {"data": outputs[0].some_field}
+
+            @app.view_handler(component=ComponentType.PIE_CHART)
+            def my_chart_view(outputs: List[MyActionOutput]) -> PieChartData:
+                return PieChartData(title="Chart", labels=["A", "B"], values=[1, 2], colors=["red", "blue"])
         """
 
         def view_decorator(function: Callable) -> Callable:
+            # Validate component parameter type
+            if component and not isinstance(component, ComponentType):
+                raise TypeError(
+                    f"Component parameter must be a ComponentType enum, got {type(component).__name__}: {component!r}. "
+                )
+
+            # Validate function signature
+            self._validate_view_function_signature(function, template, component)
+
             @wraps(function)
             def view_wrapper(*args: Any, **kwargs: Any) -> str:  # noqa: ANN401
                 if len(args) < 3 or not isinstance(args[2], dict):
@@ -530,16 +587,14 @@ class App:
                         return handle_html_output(error_html)
 
                 try:
-                    parser: ViewFunctionParser = ViewFunctionParser(
-                        function, template, component
-                    )
+                    parser: ViewFunctionParser = ViewFunctionParser(function)
                     result = parser.execute(*args, **kwargs)
 
                     templates_dir = get_templates_dir(function.__globals__)
                     renderer = get_template_renderer("jinja", templates_dir)
 
                     if template:
-                        # ViewFunctionParser validates this already
+                        # This will already have been validated
                         result_dict = cast(dict, result)
                         template_context = {**context, **result_dict}
                         return render_with_error_handling(
@@ -553,13 +608,13 @@ class App:
                     elif component:
                         result_model = cast(BaseModel, result)
                         template_context = {**context, **result_model.dict()}
-                        component_template = f"components/{component}.html"
+                        component_template = f"components/{component.value}.html"
                         return render_with_error_handling(
                             lambda: renderer.render_template(
                                 component_template, template_context
                             ),
                             "Component Rendering Failed",
-                            f"component '{component}'",
+                            f"component '{component.value}'",
                         )
 
                     else:
@@ -569,7 +624,11 @@ class App:
                 except Exception as e:
                     templates_dir = get_templates_dir(function.__globals__)
                     renderer = get_template_renderer("jinja", templates_dir)
-                    target = template or component or "unknown"
+                    target = (
+                        template
+                        or (component.value if component else None)
+                        or "unknown"
+                    )
                     error_type = (
                         "View Function Error"
                         if template

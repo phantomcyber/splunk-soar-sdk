@@ -1,18 +1,7 @@
 <!-- Example pie chart component -->
 <!-- TODO: This is just an example component replace with a better one as real reusable components get added -->
 
-{% extends 'widgets/widget_template.html' %}
-
-{% block title_color %}{{ title_color or '#6c757d' }}{% endblock %}
-{% block title_text_color %}{{ title_text_color or 'white' }}{% endblock %}
-{% block body_color %}{{ body_color or 'white' }}{% endblock %}
-{% block body_text_color %}{{ body_text_color or '#8775a7' }}{% endblock %}
-
-{% block custom_title_prop %}{% if title_logo %}style="background-size: auto 60%; background-position: 50%; background-repeat: no-repeat; background-image: url('/app_resource/{{ title_logo }}');"{% endif %}{% endblock %}
-
-{% block custom_tools %}
-  {% include 'widgets/widget_resize_snippet.html' %}
-{% endblock %}
+{% extends 'base/logo_header.html' %}
 
 {% block widget_content %}
 <div style="display: flex; flex-direction: column; height: 100%; position: relative;">
