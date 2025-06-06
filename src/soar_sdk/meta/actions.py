@@ -17,7 +17,7 @@ class ActionMeta(BaseModel):
     versions: str
     parameters: Type[Params] = Field(default=Params)  # noqa: UP006
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
-    custom_view: Optional[Callable] = None
+    view_handler: Optional[Callable] = None
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
         data = super().dict(*args, **kwargs)
@@ -26,9 +26,9 @@ class ActionMeta(BaseModel):
             self.parameters, self.output
         )
 
-        if self.custom_view:
+        if self.view_handler:
             # Get the module path and function name for the view
-            module = self.custom_view.__module__
+            module = self.view_handler.__module__
             # Convert module path from dot notation to the expected format
             # e.g., "example_app.src.app" -> "src.app"
             module_parts = module.split(".")
@@ -40,10 +40,10 @@ class ActionMeta(BaseModel):
 
             data["render"] = {
                 "type": "custom",
-                "view": f"{relative_module}.{self.custom_view.__name__}",
+                "view": f"{relative_module}.{self.view_handler.__name__}",
             }
 
-        # Remove custom_view from the output since in render
-        data.pop("custom_view", None)
+        # Remove view_handler from the output since in render
+        data.pop("view_handler", None)
 
         return data

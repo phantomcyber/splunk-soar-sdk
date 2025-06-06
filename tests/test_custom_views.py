@@ -3,7 +3,7 @@ import pytest
 from soar_sdk.app import App
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.params import Params
-from soar_sdk.components import ComponentType, PieChartData
+from soar_sdk.reusable_views import ComponentType, PieChartData
 from pydantic import BaseModel
 
 
@@ -292,20 +292,20 @@ def test_view_handler_context_validation_wrong_type(simple_app: App):
 
 
 def test_view_handler_integration_with_action_decorator(simple_app: App):
-    """Test that view handlers work correctly when assigned to action custom_view."""
+    """Test that view handlers work correctly when assigned to action view_handler."""
 
     @simple_app.view_handler(template="integration_test.html")
     def integration_view(outputs: list[SampleViewOutput]) -> dict:
         return {"processed_message": f"Processed: {outputs[0].message}"}
 
-    @simple_app.action(custom_view=integration_view)
+    @simple_app.action(view_handler=integration_view)
     def integration_action(params: Params) -> SampleViewOutput:
         return SampleViewOutput(message="test", count=1, items=["test"])
 
     # Verify the action was registered with the custom view
     actions = simple_app.get_actions()
     assert "integration_action" in actions
-    assert actions["integration_action"].meta.custom_view == integration_view
+    assert actions["integration_action"].meta.view_handler == integration_view
 
 
 def test_view_handler_component_functionality(simple_app: App):
@@ -487,7 +487,7 @@ def test_view_handler_component_general_exception(simple_app: App):
 
 
 def test_view_handler_component_integration_with_action(simple_app: App):
-    """Test that component view handlers work correctly when assigned to action custom_view."""
+    """Test that component view handlers work correctly when assigned to action view_handler."""
 
     @simple_app.view_handler(component=ComponentType.PIE_CHART)
     def integration_component_view(
@@ -500,7 +500,7 @@ def test_view_handler_component_integration_with_action(simple_app: App):
             colors=["#FFCE56"],
         )
 
-    @simple_app.action(custom_view=integration_component_view)
+    @simple_app.action(view_handler=integration_component_view)
     def integration_component_action(params: Params) -> SampleViewOutput:
         return SampleViewOutput(message="integration", count=5, items=["test"])
 
@@ -508,7 +508,7 @@ def test_view_handler_component_integration_with_action(simple_app: App):
     actions = simple_app.get_actions()
     assert "integration_component_action" in actions
     assert (
-        actions["integration_component_action"].meta.custom_view
+        actions["integration_component_action"].meta.view_handler
         == integration_component_view
     )
 

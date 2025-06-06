@@ -172,7 +172,7 @@ def test_package_build_with_app_templates(wheel_resp_mock, tmp_path: Path):
         )
 
     assert result.exit_code == 0
-    assert "Adding templates to package" in result.stdout
+    assert "Adding app templates to package" in result.stdout
 
     # Verify templates are in the tarball
     with tarfile.open(destination, "r:gz") as tar:
@@ -207,3 +207,28 @@ def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
             assert any("templates/base/" in name for name in members)
             assert any("templates/components/" in name for name in members)
             assert any("templates/widgets/" in name for name in members)
+
+
+def test_package_build_without_app_templates(wheel_resp_mock, tmp_path: Path):
+    example_app = Path.cwd() / "tests/example_app"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+        patch("soar_sdk.cli.package.cli.APP_TEMPLATES") as mock_app_templates,
+    ):
+        # Mock APP_TEMPLATES to not exist
+        mock_app_templates.exists.return_value = False
+
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0
+    # Should NOT contain the app templates message
+    assert "Adding app templates to package" not in result.stdout
+    assert "Adding SDK templates to package" in result.stdout

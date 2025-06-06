@@ -73,12 +73,12 @@ def render_as_table(output: list[DetectionOutput]) -> TableData:
 
 ## Attaching to Actions
 
-Connect your view handler to an action using the `custom_view` parameter:
+Connect your view handler to an action using the `view_handler` parameter:
 
 ```python
 @app.action(
     name="scan file",
-    custom_view=render_detections
+    view_handler=render_detections
 )
 def scan_file_action(params: ScanParams, client: SOARClient) -> list[DetectionOutput]:
     # Your action implementation

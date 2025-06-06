@@ -9,7 +9,7 @@ from soar_sdk.params import Params, OnPollParams
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.components import ComponentType, PieChartData
+from soar_sdk.reusable_views import ComponentType, PieChartData
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
@@ -76,7 +76,7 @@ def render_reverse_string_view(output: list[ReverseStringViewOutput]) -> dict:
 @app.action(
     action_type="investigate",
     verbose="Reverses a string.",
-    custom_view=render_reverse_string_view,
+    view_handler=render_reverse_string_view,
 )
 def reverse_string_custom_view(
     param: ReverseStringParams, soar: SOARClient
@@ -113,7 +113,7 @@ def render_statistics_chart(output: list[StatisticsOutput]) -> PieChartData:
 @app.action(
     action_type="investigate",
     verbose="Generate statistics with pie chart reusable component.",
-    custom_view=render_statistics_chart,
+    view_handler=render_statistics_chart,
 )
 def generate_statistics(param: StatisticsParams, soar: SOARClient) -> StatisticsOutput:
     if param.category.lower() == "test":

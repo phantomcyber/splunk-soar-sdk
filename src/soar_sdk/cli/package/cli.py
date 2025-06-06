@@ -18,10 +18,10 @@ from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.meta.dependencies import DependencyWheel
 from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
+from soar_sdk.paths import SDK_TEMPLATES, APP_TEMPLATES
 from itertools import chain
 import os
 import httpx
-import soar_sdk
 
 package = typer.Typer(invoke_without_command=True)
 console = Console()  # For printing lots of pretty colors and stuff
@@ -163,13 +163,13 @@ def build(
                 )
 
             # Add app templates directory if it exists
-            add_templates_to_package(Path("templates"), "Adding templates to package")
+            if APP_TEMPLATES.exists():
+                add_templates_to_package(
+                    APP_TEMPLATES, "Adding app templates to package"
+                )
 
             # Add SDK template files to the package during build
-            sdk_templates_path = Path(soar_sdk.__file__).parent / "templates"
-            add_templates_to_package(
-                sdk_templates_path, "Adding SDK templates to package"
-            )
+            add_templates_to_package(SDK_TEMPLATES, "Adding SDK templates to package")
 
             if with_sdk_wheel_from:
                 console.print(f"[dim]Adding SDK wheel from {with_sdk_wheel_from}[/]")
