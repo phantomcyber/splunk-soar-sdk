@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 from jinja2 import TemplateNotFound
 
-from soar_sdk.template_renderer import (
+from soar_sdk.views.template_renderer import (
     JinjaTemplateRenderer,
     get_template_renderer,
     get_templates_dir,

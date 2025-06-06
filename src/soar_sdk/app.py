@@ -26,13 +26,13 @@ from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse, WebhookHandler
-from soar_sdk.view_parser import ViewFunctionParser
-from soar_sdk.template_renderer import (
+from soar_sdk.views.view_parser import ViewFunctionParser
+from soar_sdk.views.template_renderer import (
     get_template_renderer,
     get_templates_dir,
     BASE_TEMPLATE_PATH,
 )
-from soar_sdk.components import ComponentType
+from soar_sdk.reusable_views import ComponentType
 import traceback
 import uuid
 
@@ -133,7 +133,7 @@ class App:
         read_only: bool = True,
         params_class: Optional[type[Params]] = None,
         output_class: Optional[type[ActionOutput]] = None,
-        custom_view: Optional[Callable] = None,
+        view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
     ) -> Callable[[Callable], Action]:
         """
@@ -224,7 +224,7 @@ class App:
                 parameters=validated_params_class,
                 output=validated_output_class,  # FIXME: all output need to contain params
                 versions=versions,
-                custom_view=custom_view,
+                view_handler=view_handler,
             )
 
             self.actions_provider.set_action(action_identifier, inner)
