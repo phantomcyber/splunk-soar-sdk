@@ -37,67 +37,82 @@ const data = {{ json_data|to_json|safe }};
 
 **Important:** Use `|safe` when outputting JSON data or pre-sanitized HTML. Normal text and variables are automatically escaped.
 
-## SDK Template Features
+## Widget Templates
 
-### Widget Template Structure
-When making a new template to get full usage, SOAR styling and configuration blocks. This preamble tells the SOAR platform how to style your widget.
+All custom views in SOAR use the widget template system, providing consistent styling and functionality.
 
-**Example Preamble:**
+**Note:** You can also create fully custom templates without extending any base should it be desired.
+
+### Base Template Options
+
+Choose a base header. The base headers sets up base template defining widget structure, styling, standard functionality like resizing.
+
+#### `base/logo_header.html`
+Use when you want your app's logo in the widget header (most common).
+
 ```html
-{% extends 'widgets/widget_template.html' %}
-
-{% block title_color %}{{ title_color or '#28a745' }}{% endblock %}
-{% block title_text_color %}{{ title_text_color or 'white' }}{% endblock %}
-{% block body_color %}{{ body_color or 'white' }}{% endblock %}
-{% block body_text_color %}{{ body_text_color or '#8775a7' }}{% endblock %}
-
-<!-- Add app icon as title -->
-{% block custom_title_prop %}{% if title_logo %}style="background-size: auto 60%; background-position: 50%; background-repeat: no-repeat; background-image: url('/app_resource/{{ title_logo }}');"{% endif %}{% endblock %}
-
-{% block custom_tools %}
-  {% include 'widgets/widget_resize_snippet.html' %}
-{% endblock %}
+{% extends 'base/logo_header.html' %}
 
 {% block widget_content %}
-<!-- Content goes here -->
+<div>
+  <h3>Results</h3>
+  <p>{{ my_data }}</p>
+</div>
 {% endblock %}
 ```
 
-**Example:**
+#### `base/header.html`
+Standard header with text-based titles.
+
 ```html
-<!-- templates/user_summary.html -->
-{% extends 'widgets/widget_template.html' %}
+{% extends 'base/header.html' %}
 
-{% block title_color %}{{ title_color or '#007bff' }}{% endblock %}
-{% block title_text_color %}{{ title_text_color or 'white' }}{% endblock %}
-{% block body_color %}{{ body_color or 'white' }}{% endblock %}
-{% block body_text_color %}{{ body_text_color or '#333' }}{% endblock %}
-
-{% block title1 %}User Summary{% endblock %}
-{% block title2 %}{{ user.name }}{% endblock %}
-
-{% block custom_tools %}
-  {% include 'widgets/widget_resize_snippet.html' %}
-{% endblock %}
+{% block title1 %}My Custom Title{% endblock %}
+{% block title2 %}Secondary Text{% endblock %}
 
 {% block widget_content %}
-<div style="display: flex;">
-  <div style="flex: 1;">
-    <h3>Account Details</h3>
-    <p><strong>Email:</strong> {{ user.email }}</p>
-    <p><strong>Role:</strong> {{ user.role }}</p>
-    <p><strong>Status:</strong>
-      <span style="color: {{ user.status == 'active' and '#28a745' or '#dc3545' }}">
-        {{ user.status|title }}
-      </span>
-    </p>
-  </div>
-  <div style="flex: 1;">
-    <h3>Statistics</h3>
-    <p><strong>Last Login:</strong> {{ user.last_login|human_datetime }}</p>
-    <p><strong>Total Logins:</strong> {{ user.login_count|safe_intcomma }}</p>
-  </div>
+<div>
+  <h3>Results</h3>
+  <p>{{ my_data }}</p>
 </div>
+{% endblock %}
+```
+
+### Override Base Template Blocks
+
+These are base template blocks can be overridden when creating a template:
+
+#### Content Blocks
+- `widget_content` - Main content area (required)
+- `title1` - Primary title text
+- `title2` - Secondary title text
+
+#### Styling Blocks
+- `title_text_color` - CSS color for title text
+- `extra_classes` - Additional CSS classes for the widget container
+- `update_type` - Widget update behavior
+
+#### Other Blocks
+- `custom_title_prop` - Custom properties for the title element
+
+### Theming
+Widgets automatically conform to SOAR's light and dark themes. Background colors, text colors, and logo variants are handled based on theme unless overridden.
+
+### Example Template
+
+```html
+<!-- templates/service_status.html -->
+{% extends 'base/logo_header.html' %}
+
+{% block widget_content %}
+<h3>Service Status</h3>
+{% for service in services %}
+<div style="margin-bottom: 1rem;">
+  <h4>{{ service.name }}</h4>
+  <p><strong>Status:</strong> {{ service.status }}</p>
+  <p><strong>Uptime:</strong> {{ service.uptime }}</p>
+</div>
+{% endfor %}
 {% endblock %}
 ```
 
