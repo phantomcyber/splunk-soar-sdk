@@ -3,6 +3,7 @@ from typing import Any, Type, Optional, Callable  # noqa: UP035
 from pydantic import BaseModel, Field
 
 from soar_sdk.cli.manifests.serializers import ParamsSerializer, OutputsSerializer
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
 
@@ -27,7 +28,7 @@ class ActionMeta(BaseModel):
         )
 
         if self.view_handler:
-            # TODO: remove_when_soar_newer_than()
+            remove_when_soar_newer_than("6.4.1")
             # Get the module path and function name for the view
             module = self.view_handler.__module__
             # Convert module path from dot notation to the expected format

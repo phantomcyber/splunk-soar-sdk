@@ -8,7 +8,11 @@ from collections.abc import Iterator
 
 from soar_sdk.asset import BaseAsset
 from soar_sdk.input_spec import InputSpecification
-from soar_sdk.compat import MIN_PHANTOM_VERSION, PythonVersion
+from soar_sdk.compat import (
+    MIN_PHANTOM_VERSION,
+    PythonVersion,
+    remove_when_soar_newer_than,
+)
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClient
@@ -566,7 +570,9 @@ class App:
                 **kwargs: Any,  # noqa: ANN401
             ) -> str:
                 def handle_html_output(html: str) -> str:
-                    # TODO: remove_when_soar_newer_than()
+                    remove_when_soar_newer_than(
+                        "6.4.1", "SOAR now fully supports prerendering views"
+                    )
                     if context.get("accepts_prerender"):
                         context["prerender"] = True
                         return html
