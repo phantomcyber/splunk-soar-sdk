@@ -16,19 +16,19 @@ Instead of returning a dictionary for template rendering, component view handler
 
 ## Usage
 
-Components are defined using the `ComponentType` enum, which ensures type safety and automatic validation. Reusable components should be easily discoverable via `ComponentType.(options)`.
-
-Each component type is linked to a corresponding data model. The enum values and their associated data models are tightly coupled, preventing components from being used with incompatible data models.
+Each component is linked through its corresponding data model. Just return the appropriate component data model with its content to render the component.
 
 ### Pie Chart Component
 
 Display data as a pie chart with customizable colors and labels.
 
 ```python
-from soar_sdk.reusable_views import PieChartData
+from soar_sdk.views.components.pie_chart import PieChartData
 
 @app.view_handler()
-def render_threat_distribution(output: ThreatAnalysisOutput) -> PieChartData:
+def render_threat_distribution(output: list[ThreatAnalysisOutput]) -> PieChartData:
+    output = output[0]
+
     return PieChartData(
         title="Threat Distribution",
         labels=["Malware", "Phishing", "Suspicious", "Clean"],
