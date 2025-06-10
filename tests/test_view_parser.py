@@ -42,10 +42,10 @@ def test_view_function_parser_parse_action_results_success():
     mock_result = mock.Mock()
     mock_result.get_data.return_value = [{"name": "test", "value": 42}]
 
-    app_run_metadata = {"action_run_id": 1, "asset_id": 1}
+    app_run_metadata = {"total_objects": 1, "total_objects_successful": 1}
     raw_all_app_runs = [(app_run_metadata, [mock_result])]
 
-    parsed_outputs, parsed_app_runs = parser.parse_action_results(raw_all_app_runs)
+    parsed_outputs = parser.parse_action_results(raw_all_app_runs)
 
     assert len(parsed_outputs) == 1
     assert isinstance(parsed_outputs[0], SampleViewOutput)
@@ -62,7 +62,7 @@ def test_view_function_parser_parse_action_results_invalid_data():
     mock_result = mock.Mock()
     mock_result.get_data.return_value = [{"invalid": "data"}]
 
-    app_run_metadata = {"action_run_id": 1}
+    app_run_metadata = {"total_objects": 1, "total_objects_successful": 1}
     raw_all_app_runs = [(app_run_metadata, [mock_result])]
 
     with pytest.raises(ValueError, match="Data parsing failed for SampleViewOutput"):
@@ -183,11 +183,9 @@ def test_view_function_parser_parse_action_results_non_dict_metadata():
     mock_metadata = mock.Mock()
     raw_all_app_runs = [(mock_metadata, [mock_result])]
 
-    parsed_outputs, parsed_app_runs = parser.parse_action_results(raw_all_app_runs)
+    parsed_outputs = parser.parse_action_results(raw_all_app_runs)
 
     assert len(parsed_outputs) == 1
-    assert len(parsed_app_runs) == 1
-    assert parsed_app_runs[0][0] is mock_metadata  # Should be the same object
 
 
 def test_view_function_parser_execute_context_parsing_fails():

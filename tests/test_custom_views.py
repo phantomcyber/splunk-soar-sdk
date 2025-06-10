@@ -73,7 +73,7 @@ def test_view_handler_template_wrapper_functionality(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [
@@ -123,7 +123,7 @@ def test_view_handler_template_wrapper_prerender_support(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [
@@ -167,7 +167,7 @@ def test_view_handler_direct_html_return(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [
@@ -224,7 +224,7 @@ def test_view_handler_error_handling_template_render_failure(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [
@@ -269,7 +269,7 @@ def test_view_handler_error_handling_general_exception(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [
@@ -368,7 +368,7 @@ def test_view_handler_component_functionality(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [
@@ -429,7 +429,7 @@ def test_view_handler_component_with_prerender(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [{"message": "test", "count": 1, "items": ["x"]}]
@@ -471,7 +471,7 @@ def test_view_handler_component_render_failure(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [{"message": "test", "count": 1, "items": ["x"]}]
@@ -524,7 +524,7 @@ def test_view_handler_component_general_exception(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = [
         (
-            {"app_id": "test"},
+            {"total_objects": 1, "total_objects_successful": 1},
             [
                 mock.Mock(
                     get_data=lambda: [{"message": "test", "count": 1, "items": ["x"]}]

@@ -21,6 +21,7 @@ from soar_sdk.params import OnPollParams
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
+from soar_sdk.models.view import ViewContext, AllAppRuns, ResultSummary
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure
@@ -553,7 +554,7 @@ class App:
             @wraps(function)
             def view_wrapper(
                 action: str,  # Action identifier
-                raw_all_app_runs: list[
+                all_app_runs: list[
                     tuple[dict[str, Any], list[ActionResult]]
                 ],  # Raw app run data
                 context: dict[str, Any],  # View context
@@ -585,8 +586,18 @@ class App:
 
                 try:
                     parser: ViewFunctionParser = ViewFunctionParser(function)
+
+                    # Parse context to ViewContext (coming from app_interface)
+                    parsed_context = ViewContext.parse_obj(context)
+
+                    # Parse all_app_runs to AllAppRuns (coming from app_interface)
+                    parsed_all_app_runs: AllAppRuns = []
+                    for app_run_data, action_results in all_app_runs:
+                        result_summary = ResultSummary.parse_obj(app_run_data)
+                        parsed_all_app_runs.append((result_summary, action_results))
+
                     result = parser.execute(
-                        action, raw_all_app_runs, context, *args, **kwargs
+                        action, parsed_all_app_runs, parsed_context, *args, **kwargs
                     )
                 except Exception as e:
                     templates_dir = get_templates_dir(function.__globals__)

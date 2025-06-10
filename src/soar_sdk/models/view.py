@@ -1,5 +1,6 @@
 from typing import Any, Optional, Union
 from pydantic import BaseModel
+from soar_sdk.action_results import ActionResult
 
 
 class ViewContext(BaseModel):
@@ -20,14 +21,11 @@ class ViewContext(BaseModel):
         extra = "allow"
 
 
-class AppRunMetadata(BaseModel):
-    """Model representing metadata for a single app run."""
+class ResultSummary(BaseModel):
+    """Summary statistics for an app run."""
 
-    action_run_id: Optional[int] = None
-    asset_id: Optional[int] = None
-    app_run_id: Optional[int] = None
-    connector_run_id: Optional[int] = None
-    debug_level: Optional[int] = None
+    total_objects: int
+    total_objects_successful: int
 
-    class Config:
-        extra = "allow"
+
+AllAppRuns = list[tuple[ResultSummary, list[ActionResult]]]

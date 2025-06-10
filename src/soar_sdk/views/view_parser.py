@@ -10,13 +10,10 @@ from typing import (
 )
 import inspect
 from pydantic import BaseModel
-from soar_sdk.action_results import ActionOutput, ActionResult
-from soar_sdk.models.view import ViewContext, AppRunMetadata
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.models.view import ViewContext, AllAppRuns
 
 T = TypeVar("T", bound=ActionOutput)
-
-
-AllAppRuns = list[tuple[AppRunMetadata, list[ActionResult]]]
 
 
 class ViewFunctionParser(Generic[T]):
@@ -54,21 +51,12 @@ class ViewFunctionParser(Generic[T]):
             f"Could not auto-detect ActionOutput class from function signature of {function.__name__}."
         )
 
-    def parse_action_results(
-        self, raw_all_app_runs: list[tuple[Any, list[ActionResult]]]
-    ) -> tuple[list[T], list[tuple[AppRunMetadata, list[ActionResult]]]]:
+    def parse_action_results(self, all_app_runs: AllAppRuns) -> list[T]:
         parsed_outputs: list[T] = []
-        parsed_app_runs: list[tuple[AppRunMetadata, list[ActionResult]]] = []
 
-        for app_run_metadata, action_results in raw_all_app_runs:
-            if isinstance(app_run_metadata, dict):
-                parsed_metadata: AppRunMetadata = AppRunMetadata.parse_obj(
-                    app_run_metadata
-                )
-            else:
-                parsed_metadata = app_run_metadata
-
-            parsed_app_runs.append((parsed_metadata, action_results))
+        for app_run_data in all_app_runs:
+            # Extract action_results from the app_run_data
+            _, action_results = app_run_data
 
             # Extract and parse outputs from each result
             for result in action_results:
@@ -82,21 +70,18 @@ class ViewFunctionParser(Generic[T]):
                             f"Data parsing failed for {output_class_name}: {e}"
                         ) from e
 
-        return parsed_outputs, parsed_app_runs
+        return parsed_outputs
 
     def execute(
         self,
         action: str,
-        raw_all_app_runs: list[tuple[dict[str, Any], list[ActionResult]]],
-        raw_context: dict[str, Any],
+        raw_all_app_runs: AllAppRuns,
+        context: ViewContext,
         *args: Any,  # noqa: ANN401
         **kwargs: Any,  # noqa: ANN401
     ) -> Union[str, dict, BaseModel]:
-        # Parse context
-        context = ViewContext.parse_obj(raw_context)
-
         # Parse outputs
-        parsed_outputs, parsed_app_runs = self.parse_action_results(raw_all_app_runs)
+        parsed_outputs = self.parse_action_results(raw_all_app_runs)
 
         # Execute
         sig = inspect.signature(self.function)
