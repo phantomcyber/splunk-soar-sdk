@@ -60,9 +60,10 @@ def render_detections(output: list[DetectionOutput]) -> dict:
 
 ### Using Components
 Use pre-built reusable components:
+- Return output data will define the reusable component used
 
 ```python
-@app.view_handler(component="table")
+@app.view_handler()
 def render_as_table(output: list[DetectionOutput]) -> TableData:
     return TableData(
         title="Detection Results",

@@ -9,7 +9,7 @@ from soar_sdk.params import Params, OnPollParams
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.reusable_views import ComponentType, PieChartData
+from soar_sdk.views.components.pie_chart import PieChartData
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
@@ -97,7 +97,7 @@ class StatisticsOutput(ActionOutput):
     values: list[int]
 
 
-@app.view_handler(component=ComponentType.PIE_CHART)
+@app.view_handler()
 def render_statistics_chart(output: list[StatisticsOutput]) -> PieChartData:
     stats = output[0]
     colors = ["#4CAF50", "#2196F3", "#FF9800", "#F44336", "#9C27B0", "#607D8B"]

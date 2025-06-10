@@ -25,9 +25,9 @@ Each component type is linked to a corresponding data model. The enum values and
 Display data as a pie chart with customizable colors and labels.
 
 ```python
-from soar_sdk.reusable_views import ComponentType, PieChartData
+from soar_sdk.reusable_views import PieChartData
 
-@app.view_handler(component=ComponentType.PIE_CHART)
+@app.view_handler()
 def render_threat_distribution(output: ThreatAnalysisOutput) -> PieChartData:
     return PieChartData(
         title="Threat Distribution",

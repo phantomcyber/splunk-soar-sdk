@@ -3,7 +3,7 @@ import pytest
 from soar_sdk.app import App
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.params import Params
-from soar_sdk.reusable_views import ComponentType, PieChartData
+from soar_sdk.views.components.pie_chart import PieChartData
 from pydantic import BaseModel
 
 
@@ -62,7 +62,14 @@ def test_view_handler_template_wrapper_functionality(simple_app: App):
         return {"message": outputs[0].message, "count": outputs[0].count}
 
     # Mock context and action results
-    mock_context = {"accepts_prerender": False}
+    mock_context = {
+        "accepts_prerender": False,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -105,7 +112,14 @@ def test_view_handler_template_wrapper_prerender_support(simple_app: App):
         return {"message": outputs[0].message}
 
     # Mock context with prerender support
-    mock_context = {"accepts_prerender": True}
+    mock_context = {
+        "accepts_prerender": True,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -142,7 +156,14 @@ def test_view_handler_direct_html_return(simple_app: App):
     def test_view(outputs: list[SampleViewOutput]) -> str:
         return f"<div>{outputs[0].message}</div>"
 
-    mock_context = {"accepts_prerender": True}
+    mock_context = {
+        "accepts_prerender": True,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -192,7 +213,14 @@ def test_view_handler_error_handling_template_render_failure(simple_app: App):
     def test_view(outputs: list[SampleViewOutput]) -> dict:
         return {"message": outputs[0].message}
 
-    mock_context = {"accepts_prerender": False}
+    mock_context = {
+        "accepts_prerender": False,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -230,7 +258,14 @@ def test_view_handler_error_handling_general_exception(simple_app: App):
     def test_view(outputs: list[SampleViewOutput]) -> dict:
         raise ValueError("Something went wrong")
 
-    mock_context = {"accepts_prerender": False}
+    mock_context = {
+        "accepts_prerender": False,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -271,7 +306,9 @@ def test_view_handler_context_validation_error(simple_app: App):
     mock_action = mock.Mock()
     mock_app_runs = []
 
-    with pytest.raises(ValueError, match="View handler expected context dict"):
+    with pytest.raises(
+        TypeError, match="missing 1 required positional argument: 'context'"
+    ):
         test_view(mock_action, mock_app_runs)
 
 
@@ -287,7 +324,7 @@ def test_view_handler_context_validation_wrong_type(simple_app: App):
     mock_app_runs = []
     mock_context = "not_a_dict"
 
-    with pytest.raises(ValueError, match="View handler expected context dict"):
+    with pytest.raises(AttributeError, match="'str' object has no attribute 'get'"):
         test_view(mock_action, mock_app_runs, mock_context)
 
 
@@ -311,7 +348,7 @@ def test_view_handler_integration_with_action_decorator(simple_app: App):
 def test_view_handler_component_functionality(simple_app: App):
     """Test view_handler with component parameter functionality."""
 
-    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    @simple_app.view_handler()
     def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
         return PieChartData(
             title=f"Component: {outputs[0].message}",
@@ -320,7 +357,14 @@ def test_view_handler_component_functionality(simple_app: App):
             colors=["#FF6384"],
         )
 
-    mock_context = {"accepts_prerender": False}
+    mock_context = {
+        "accepts_prerender": False,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -350,6 +394,11 @@ def test_view_handler_component_functionality(simple_app: App):
             "components/pie_chart.html",
             {
                 "accepts_prerender": False,
+                "QS": {},
+                "container": 1,
+                "app": 2,
+                "no_connection": False,
+                "google_maps_key": False,
                 "title": "Component: test_msg",
                 "labels": ["Data"],
                 "values": [5],
@@ -363,13 +412,20 @@ def test_view_handler_component_functionality(simple_app: App):
 def test_view_handler_component_with_prerender(simple_app: App):
     """Test view_handler component with prerender support."""
 
-    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    @simple_app.view_handler()
     def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
         return PieChartData(
             title="Prerender Test", labels=["Test"], values=[42], colors=["#36A2EB"]
         )
 
-    mock_context = {"accepts_prerender": True}
+    mock_context = {
+        "accepts_prerender": True,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -400,11 +456,18 @@ def test_view_handler_component_with_prerender(simple_app: App):
 def test_view_handler_component_render_failure(simple_app: App):
     """Test view_handler component error handling when component rendering fails."""
 
-    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    @simple_app.view_handler()
     def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
         return PieChartData(title="Test", labels=["A"], values=[1], colors=["red"])
 
-    mock_context = {"accepts_prerender": False}
+    mock_context = {
+        "accepts_prerender": False,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -446,11 +509,18 @@ def test_view_handler_component_render_failure(simple_app: App):
 def test_view_handler_component_general_exception(simple_app: App):
     """Test view_handler component error handling for general exceptions."""
 
-    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    @simple_app.view_handler()
     def test_component_view(outputs: list[SampleViewOutput]) -> PieChartData:
         raise RuntimeError("Component function error")
 
-    mock_context = {"accepts_prerender": False}
+    mock_context = {
+        "accepts_prerender": False,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
     mock_action = mock.Mock()
     mock_app_runs = [
         (
@@ -489,7 +559,7 @@ def test_view_handler_component_general_exception(simple_app: App):
 def test_view_handler_component_integration_with_action(simple_app: App):
     """Test that component view handlers work correctly when assigned to action view_handler."""
 
-    @simple_app.view_handler(component=ComponentType.PIE_CHART)
+    @simple_app.view_handler()
     def integration_component_view(
         outputs: list[SampleViewOutput],
     ) -> PieChartData:
@@ -511,40 +581,6 @@ def test_view_handler_component_integration_with_action(simple_app: App):
         actions["integration_component_action"].meta.view_handler
         == integration_component_view
     )
-
-
-def test_view_handler_component_validation_invalid_type(simple_app: App):
-    """Test view_handler raises TypeError when component is not ComponentType enum."""
-
-    with pytest.raises(
-        TypeError, match="Component parameter must be a ComponentType enum"
-    ):
-
-        @simple_app.view_handler(component="invalid_string")
-        def test_view(outputs: list[SampleViewOutput]) -> PieChartData:
-            return PieChartData(title="test", labels=["A"], values=[1], colors=["red"])
-
-
-def test_view_handler_component_validation_none_allowed(simple_app: App):
-    """Test view_handler allows component=None."""
-
-    @simple_app.view_handler(component=None)
-    def test_view(outputs: list[SampleViewOutput]) -> str:
-        return "<div>test</div>"
-
-    assert callable(test_view)
-
-
-def test_view_handler_component_validation_valid_component_type(simple_app: App):
-    """Test view_handler accepts valid ComponentType enum."""
-
-    @simple_app.view_handler(component=ComponentType.PIE_CHART)
-    def test_view(outputs: list[SampleViewOutput]) -> PieChartData:
-        return ComponentType.PIE_CHART.data_model(
-            title="test", labels=["A"], values=[1], colors=["red"]
-        )
-
-    assert callable(test_view)
 
 
 def test_view_handler_signature_validation_insufficient_params(simple_app: App):
@@ -584,20 +620,8 @@ def test_view_handler_signature_validation_no_template_no_component_invalid_retu
 ):
     """Test view_handler raises TypeError when function with no template/component returns wrong type."""
 
-    with pytest.raises(TypeError, match="must return str"):
+    with pytest.raises(TypeError, match="has invalid return type"):
 
         @simple_app.view_handler()
-        def test_view(outputs: list[SampleViewOutput]) -> dict:
-            return {}
-
-
-def test_view_handler_signature_validation_component_invalid_return_type(
-    simple_app: App,
-):
-    """Test view_handler raises TypeError when component function returns wrong type."""
-
-    with pytest.raises(TypeError, match="must return"):
-
-        @simple_app.view_handler(component=ComponentType.PIE_CHART)
         def test_view(outputs: list[SampleViewOutput]) -> dict:
             return {}

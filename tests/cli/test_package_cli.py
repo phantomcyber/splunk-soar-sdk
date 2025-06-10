@@ -197,16 +197,12 @@ def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
         )
 
         assert result.exit_code == 0
-        assert "Adding SDK templates to package" in result.stdout
+        assert "Adding SDK base template to package" in result.stdout
 
         with tarfile.open(destination, "r:gz") as tar:
             members = tar.getnames()
-            sdk_template_files = [f for f in members if "/templates/" in f]
-            assert len(sdk_template_files) > 0
-            # Check for actual SDK template structure
-            assert any("templates/base/" in name for name in members)
-            assert any("templates/components/" in name for name in members)
-            assert any("templates/widgets/" in name for name in members)
+            # Check for the specific base template file
+            assert any("templates/base/base_template.html" in name for name in members)
 
 
 def test_package_build_without_app_templates(wheel_resp_mock, tmp_path: Path):
@@ -231,4 +227,4 @@ def test_package_build_without_app_templates(wheel_resp_mock, tmp_path: Path):
     assert result.exit_code == 0
     # Should NOT contain the app templates message
     assert "Adding app templates to package" not in result.stdout
-    assert "Adding SDK templates to package" in result.stdout
+    assert "Adding SDK base template to package" in result.stdout

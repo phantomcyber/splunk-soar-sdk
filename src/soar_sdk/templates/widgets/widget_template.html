@@ -7,9 +7,8 @@
      data-update-type="{% block update_type %}{% endblock %}">
 
   <script>
-    $("#widget-tool-menu").on('keydown', e => {
-      let enter_key = 13
-      if (e.keyCode === enter_key) {
+    document.getElementById("widget-tool-menu").addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
         e.target.click();
       }
     })
@@ -34,8 +33,8 @@
 
       <span id="{{ this_widget_uuid }}" class="widget-title-text"
             style="color: {% block title_text_color %}{% endblock %};">
-        {% block title1 %}{% endblock %}
-        <span class="semi-bold">{% block title2 %}{% endblock %}</span>
+        {% block title %}{% endblock %}
+        <span class="semi-bold">{% block subtitle %}{% endblock %}</span>
       </span>
 
       <span id="widget-tools-menu-wrapper" class="tools dropdown pull-right">

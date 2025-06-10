@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any, Optional
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from soar_sdk.views.template_filters import setup_jinja_env
+from soar_sdk.paths import SDK_TEMPLATES
 
 
 # Only Jinja2 is supported (Django is not used in the SDK now)
@@ -47,8 +48,7 @@ class JinjaTemplateRenderer(TemplateRenderer):
         self._setup_jinja()
 
     def _setup_jinja(self) -> None:
-        sdk_templates_dir = Path(__file__).parent / "templates"
-        template_dirs = [self.templates_dir, str(sdk_templates_dir)]
+        template_dirs = [self.templates_dir, str(SDK_TEMPLATES)]
 
         self.env = Environment(
             loader=FileSystemLoader(template_dirs),

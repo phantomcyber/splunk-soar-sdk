@@ -2,7 +2,7 @@ import inspect
 import json
 import sys
 from functools import wraps
-from typing import Any, Optional, Union, Callable, cast
+from typing import Any, Optional, Union, Callable
 from pydantic import BaseModel
 from collections.abc import Iterator
 
@@ -32,7 +32,7 @@ from soar_sdk.views.template_renderer import (
     get_templates_dir,
     BASE_TEMPLATE_PATH,
 )
-from soar_sdk.reusable_views import ComponentType
+from soar_sdk.views.component_registry import COMPONENT_REGISTRY
 import traceback
 import uuid
 
@@ -210,7 +210,7 @@ class App:
                         ActionResult(status=False, message=traceback_str), soar
                     )
 
-                return self._adapt_action_result(result, soar)
+                return self._adapt_action_result(result, soar, action_params)
 
             # setting up meta information for the decorated function
             inner.params_class = validated_params_class
@@ -484,7 +484,7 @@ class App:
     def _validate_view_function_signature(
         function: Callable,
         template: Optional[str] = None,
-        component: Optional[ComponentType] = None,
+        component_type: Optional[str] = None,
     ) -> None:
         """Validate that the function signature is compatible with view handlers."""
         signature = inspect.signature(function)
@@ -499,70 +499,67 @@ class App:
                 f"View function {function.__name__} must have a return type annotation"
             )
 
-        # Determine expected return type based on handler configuration
+        # Custom template, handler should return a dict context
         if template:
-            valid_types: list[type] = [dict]
-            expected_type = "dict"
-        elif component:
-            expected_model = component.data_model
-            if (
-                isinstance(signature.return_annotation, type)
-                and signature.return_annotation == expected_model
-            ):
-                return  # Valid specific component data model
+            if signature.return_annotation is not dict:
+                raise TypeError(
+                    f"View handler {function.__name__} must return dict, got {signature.return_annotation}"
+                )
+            return
 
-            raise TypeError(
-                f"View function {function.__name__} with component {component.value} must return {expected_model.__name__}, got {signature.return_annotation}"
-            )
-        else:
-            valid_types = [str]
-            expected_type = "str"
+        # Rendering HTML itself, rare case
+        if signature.return_annotation is str:
+            return
 
-        if signature.return_annotation not in valid_types:
-            raise TypeError(
-                f"View function {function.__name__} must return {expected_type}, got {signature.return_annotation}"
-            )
+        # Reusable component, returns one of our component models
+        if component_type:
+            return
+
+        raise TypeError(
+            f"View handler {function.__name__} has invalid return type: {signature.return_annotation}. Handlers must define a template and return a dict, return a predefined view component, or return a fully-rendered HTML string."
+        )
 
     def view_handler(
         self,
         *,
         template: Optional[str] = None,
-        component: Optional[ComponentType] = None,
     ) -> Callable[[Callable], Callable]:
         """
         Decorator for custom view functions with output parsing and template rendering.
 
-        The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering or HTML string.
-        If a template is provided, dict results will be rendered using the template. The component parameter must be a ComponentType enum for reusable component rendering.
+        The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering, HTML string, or component data model.
+        If a template is provided, dict results will be rendered using the template. Component type is automatically inferred from the return type annotation.
 
         Usage:
             @app.view_handler(template="my_template.html")
             def my_view(outputs: List[MyActionOutput]) -> dict:
                 return {"data": outputs[0].some_field}
 
-            @app.view_handler(component=ComponentType.PIE_CHART)
+            @app.view_handler()
             def my_chart_view(outputs: List[MyActionOutput]) -> PieChartData:
                 return PieChartData(title="Chart", labels=["A", "B"], values=[1, 2], colors=["red", "blue"])
         """
 
         def view_decorator(function: Callable) -> Callable:
-            # Validate component parameter type
-            if component and not isinstance(component, ComponentType):
-                raise TypeError(
-                    f"Component parameter must be a ComponentType enum, got {type(component).__name__}: {component!r}. "
-                )
+            # Infer component type from return annotation
+            component_type = COMPONENT_REGISTRY.get(
+                inspect.signature(function).return_annotation
+            )
 
             # Validate function signature
-            self._validate_view_function_signature(function, template, component)
+            self._validate_view_function_signature(function, template, component_type)
 
+            # Wrapper emulates signature that SOAR sends to view handlers
             @wraps(function)
-            def view_wrapper(*args: Any, **kwargs: Any) -> str:  # noqa: ANN401
-                if len(args) < 3 or not isinstance(args[2], dict):
-                    raise ValueError(
-                        "View handler expected context dict as third argument but none provided"
-                    )
-                context = args[2]
-
+            def view_wrapper(
+                action: str,  # Action identifier
+                raw_all_app_runs: list[
+                    tuple[dict[str, Any], list[ActionResult]]
+                ],  # Raw app run data
+                context: dict[str, Any],  # View context
+                *args: Any,  # noqa: ANN401
+                **kwargs: Any,  # noqa: ANN401
+            ) -> str:
                 def handle_html_output(html: str) -> str:
                     if context.get("accepts_prerender"):
                         context["prerender"] = True
@@ -588,47 +585,13 @@ class App:
 
                 try:
                     parser: ViewFunctionParser = ViewFunctionParser(function)
-                    result = parser.execute(*args, **kwargs)
-
-                    templates_dir = get_templates_dir(function.__globals__)
-                    renderer = get_template_renderer("jinja", templates_dir)
-
-                    if template:
-                        # This will already have been validated
-                        result_dict = cast(dict, result)
-                        template_context = {**context, **result_dict}
-                        return render_with_error_handling(
-                            lambda: renderer.render_template(
-                                template, template_context
-                            ),
-                            "Template Rendering Failed",
-                            f"template '{template}'",
-                        )
-
-                    elif component:
-                        result_model = cast(BaseModel, result)
-                        template_context = {**context, **result_model.dict()}
-                        component_template = f"components/{component.value}.html"
-                        return render_with_error_handling(
-                            lambda: renderer.render_template(
-                                component_template, template_context
-                            ),
-                            "Component Rendering Failed",
-                            f"component '{component.value}'",
-                        )
-
-                    else:
-                        result_str = cast(str, result)
-                        return handle_html_output(result_str)
-
+                    result = parser.execute(
+                        action, raw_all_app_runs, context, *args, **kwargs
+                    )
                 except Exception as e:
                     templates_dir = get_templates_dir(function.__globals__)
                     renderer = get_template_renderer("jinja", templates_dir)
-                    target = (
-                        template
-                        or (component.value if component else None)
-                        or "unknown"
-                    )
+                    target = template or component_type or "unknown"
                     error_type = (
                         "View Function Error"
                         if template
@@ -641,6 +604,34 @@ class App:
                         target,
                     )
                     return handle_html_output(error_html)
+
+                # Rendered own HTML
+                if isinstance(result, str):
+                    return handle_html_output(result)
+
+                templates_dir = get_templates_dir(function.__globals__)
+                renderer = get_template_renderer("jinja", templates_dir)
+
+                # Reusable component
+                if isinstance(result, BaseModel):
+                    result_dict = result.dict()
+                    template_name = f"components/{component_type}.html"
+                    err_msg = "Component Rendering Failed"
+                    err_context = f"component '{component_type}'"
+
+                # Template rendering
+                else:
+                    result_dict = result
+                    template_name = template or ""
+                    err_msg = "Template Rendering Failed"
+                    err_context = f"template '{template}'"
+
+                render_context = {**context, **result_dict}
+                return render_with_error_handling(
+                    lambda: renderer.render_template(template_name, render_context),
+                    err_msg,
+                    err_context,
+                )
 
             return view_wrapper
 
@@ -716,6 +707,7 @@ class App:
     def _adapt_action_result(
         result: Union[ActionOutput, ActionResult, tuple[bool, str], bool],
         client: SOARClient,
+        action_params: Optional[Params] = None,
     ) -> bool:
         """
         Handles multiple ways of returning response from action. The simplest result
@@ -727,9 +719,11 @@ class App:
         """
         if isinstance(result, ActionOutput):
             output_dict = result.dict()
+            param_dict = action_params.dict() if action_params else None
             result = ActionResult(
                 status=True,
                 message="",
+                param=param_dict,
             )
             result.add_data(output_dict)
 

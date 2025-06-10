@@ -8,6 +8,7 @@ import humanize
 import bleach  # type: ignore[import-untyped]
 from datetime import datetime, timedelta
 from typing import Optional, Union
+from collections.abc import Iterable
 from collections.abc import Iterator
 from jinja2 import Environment
 
@@ -25,7 +26,7 @@ def datetime_minutes(dt: timedelta) -> int:
 
 def human_datetime(value: datetime, relative: bool = True) -> str:
     """Format datetime in human readable format."""
-    if humanize and relative:
+    if relative:
         return humanize.naturaltime(value)
     else:
         return "{dt:%b} {dt:%-d}, {dt:%Y} {dt:%-I}:{dt:%M} {ampm}".format(
@@ -35,20 +36,15 @@ def human_datetime(value: datetime, relative: bool = True) -> str:
 
 def human_timedelta(td: timedelta) -> str:
     """Format timedelta in human readable format."""
-    if humanize:
-        return humanize.naturaldelta(td)
-    return str(td)
+    return humanize.naturaldelta(td)
 
 
 def sorteditems(dictionary: dict) -> list:
     """Sort dictionary items by key."""
-    result = []
-    for key in sorted(dictionary):
-        result.append((key, dictionary[key]))
-    return result
+    return sorted(dictionary.items())
 
 
-def batch(iterable: list, count: int) -> Iterator[list]:
+def batch(iterable: Iterable, count: int) -> Iterator[list]:
     """Batch items into groups of specified count."""
     result = []
     for item in iterable:
@@ -62,14 +58,7 @@ def batch(iterable: list, count: int) -> Iterator[list]:
 
 def dict_batch(d: dict, count: int) -> Iterator[list]:
     """Batch dictionary items into groups."""
-    result = []
-    for key, value in d.items():
-        result.append((key, value))
-        if len(result) == count:
-            yield result
-            result = []
-    if result:
-        yield result
+    yield from batch(d.items(), count)
 
 
 def remove_empty(dictionary: dict) -> dict:
@@ -105,11 +94,7 @@ def typeof(item: object) -> type:
 def safe_intcomma(value: Union[str, int]) -> str:
     """Format integer with commas, safely handling non-integers."""
     try:
-        int(value)
-        if humanize:
-            return humanize.intcomma(value)
-        else:
-            return f"{int(value):,}"
+        return f"{int(value):,}"
     except (ValueError, TypeError):
         return str(value)
 
@@ -178,9 +163,7 @@ def strip_tenant_id(dictionary: dict, key: str) -> str:
 
 def bleach_clean(value: str, **kwargs: object) -> str:
     """Clean HTML using bleach."""
-    if bleach:
-        return bleach.clean(value, **kwargs)
-    return value
+    return bleach.clean(value, **kwargs)
 
 
 # Global functions for templates

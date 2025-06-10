@@ -168,8 +168,12 @@ def build(
                     APP_TEMPLATES, "Adding app templates to package"
                 )
 
-            # Add SDK template files to the package during build
-            add_templates_to_package(SDK_TEMPLATES, "Adding SDK templates to package")
+            # Add SDK base template to package
+            console.print("Adding SDK base template to package")
+            app_tarball.add(
+                str(SDK_TEMPLATES / "base" / "base_template.html"),
+                f"{app_name}/templates/base/base_template.html",
+            )
 
             if with_sdk_wheel_from:
                 console.print(f"[dim]Adding SDK wheel from {with_sdk_wheel_from}[/]")
