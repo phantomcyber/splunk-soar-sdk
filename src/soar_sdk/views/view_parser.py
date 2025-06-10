@@ -8,8 +8,8 @@ from typing import (
     Generic,
     cast,
 )
-import contextlib
 import inspect
+from pydantic import BaseModel
 from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.models.view import ViewContext, AppRunMetadata
 
@@ -41,8 +41,7 @@ class ViewFunctionParser(Generic[T]):
             if param.annotation == inspect.Parameter.empty:
                 continue
 
-            origin = get_origin(param.annotation)
-            if origin is list:
+            if get_origin(param.annotation) is list:
                 args = get_args(param.annotation)
                 if args and issubclass(args[0], ActionOutput):
                     return args[0]
@@ -63,12 +62,9 @@ class ViewFunctionParser(Generic[T]):
 
         for app_run_metadata, action_results in raw_all_app_runs:
             if isinstance(app_run_metadata, dict):
-                if app_run_metadata:
-                    parsed_metadata: AppRunMetadata = AppRunMetadata.parse_obj(
-                        app_run_metadata
-                    )
-                else:
-                    parsed_metadata = AppRunMetadata()
+                parsed_metadata: AppRunMetadata = AppRunMetadata.parse_obj(
+                    app_run_metadata
+                )
             else:
                 parsed_metadata = app_run_metadata
 
@@ -88,21 +84,18 @@ class ViewFunctionParser(Generic[T]):
 
         return parsed_outputs, parsed_app_runs
 
-    def execute(self, *args: object, **kwargs: object) -> Union[str, dict]:
-        if len(args) < 3:
-            return self.function(*args, **kwargs)
-
-        action, raw_all_app_runs, raw_context = args[0], args[1], args[2]
-
+    def execute(
+        self,
+        action: str,
+        raw_all_app_runs: list[tuple[dict[str, Any], list[ActionResult]]],
+        raw_context: dict[str, Any],
+        *args: Any,  # noqa: ANN401
+        **kwargs: Any,  # noqa: ANN401
+    ) -> Union[str, dict, BaseModel]:
         # Parse context
-        context = raw_context
-        if isinstance(raw_context, dict):
-            with contextlib.suppress(Exception):
-                context = ViewContext.parse_obj(raw_context)
+        context = ViewContext.parse_obj(raw_context)
 
         # Parse outputs
-        if not isinstance(raw_all_app_runs, list):
-            raise TypeError("Expected raw_all_app_runs to be a list")
         parsed_outputs, parsed_app_runs = self.parse_action_results(raw_all_app_runs)
 
         # Execute
@@ -114,10 +107,6 @@ class ViewFunctionParser(Generic[T]):
         elif param_count == 2:
             result = self.function(context, parsed_outputs, **kwargs)
         else:
-            result = self.function(context, action, parsed_outputs, *args[3:], **kwargs)
-
-        # Update context
-        if isinstance(result, str) and isinstance(context, ViewContext):
-            context.html_content = result
+            result = self.function(context, action, parsed_outputs, *args, **kwargs)
 
         return result

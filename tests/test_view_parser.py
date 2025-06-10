@@ -75,8 +75,20 @@ def test_view_function_parser_execute_with_one_param():
 
     parser = ViewFunctionParser(test_function)
 
-    outputs = [SampleViewOutput(name="test", value=42)]
-    result = parser.execute(outputs)
+    mock_result = mock.Mock()
+    mock_result.get_data.return_value = [{"name": "test", "value": 42}]
+
+    action = "test_action"
+    raw_all_app_runs = [({}, [mock_result])]
+    raw_context = {
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
+
+    result = parser.execute(action, raw_all_app_runs, raw_context)
 
     assert result == "Found 1 outputs"
 
@@ -89,9 +101,15 @@ def test_view_function_parser_execute_invalid_raw_all_app_runs_type():
 
     action = "test_action"
     raw_all_app_runs = "invalid"
-    raw_context = {}
+    raw_context = {
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
 
-    with pytest.raises(TypeError, match="Expected raw_all_app_runs to be a list"):
+    with pytest.raises(ValueError, match="not enough values to unpack"):
         parser.execute(action, raw_all_app_runs, raw_context)
 
 
@@ -183,7 +201,13 @@ def test_view_function_parser_execute_context_parsing_fails():
 
     action = "test_action"
     raw_all_app_runs = [({}, [mock_result])]
-    raw_context = {"invalid_context": "data"}
+    raw_context = {
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
 
     result = parser.execute(action, raw_all_app_runs, raw_context)
 

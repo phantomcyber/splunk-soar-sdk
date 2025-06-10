@@ -67,8 +67,8 @@ Standard header with text-based titles.
 ```html
 {% extends 'base/header.html' %}
 
-{% block title1 %}My Custom Title{% endblock %}
-{% block title2 %}Secondary Text{% endblock %}
+{% block title %}My Custom Title{% endblock %}
+{% block subtitle %}Secondary Text{% endblock %}
 
 {% block widget_content %}
 <div>
@@ -84,8 +84,8 @@ These are base template blocks can be overridden when creating a template:
 
 #### Content Blocks
 - `widget_content` - Main content area (required)
-- `title1` - Primary title text
-- `title2` - Secondary title text
+- `title` - Primary title text
+- `subtitle` - Secondary title text
 
 #### Styling Blocks
 - `title_text_color` - CSS color for title text
