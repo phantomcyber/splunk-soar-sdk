@@ -562,6 +562,7 @@ class App:
                 **kwargs: Any,  # noqa: ANN401
             ) -> str:
                 def handle_html_output(html: str) -> str:
+                    # TODO: remove_when_soar_newer_than()
                     if context.get("accepts_prerender"):
                         context["prerender"] = True
                         return html

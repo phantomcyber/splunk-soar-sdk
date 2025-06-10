@@ -27,6 +27,7 @@ class ActionMeta(BaseModel):
         )
 
         if self.view_handler:
+            # TODO: remove_when_soar_newer_than()
             # Get the module path and function name for the view
             module = self.view_handler.__module__
             # Convert module path from dot notation to the expected format
