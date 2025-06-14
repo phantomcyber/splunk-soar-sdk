@@ -1,12 +1,17 @@
-from typing import Any, Optional, TypedDict, Union
+from typing import Any, Optional, Union
 from pydantic import BaseModel, root_validator
 from pydantic.fields import Field, Undefined
 
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict
 
 
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.input_spec import AppConfig
+
+remove_when_soar_newer_than(
+    "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
+)
 
 
 def AssetField(
