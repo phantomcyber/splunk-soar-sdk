@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 
+from soar_sdk.asset import AssetFieldSpecification
 from soar_sdk.compat import PythonVersion
 
 from .actions import ActionMeta
@@ -34,7 +35,7 @@ class AppMeta(BaseModel):
     fips_compliant: bool = False
     contributors: list[AppContributor] = Field(default_factory=list)
 
-    configuration: dict = Field(default_factory=dict)
+    configuration: dict[str, AssetFieldSpecification] = Field(default_factory=dict)
     actions: list[ActionMeta] = Field(default_factory=list)
 
     pip39_dependencies: DependencyList = Field(default_factory=DependencyList)

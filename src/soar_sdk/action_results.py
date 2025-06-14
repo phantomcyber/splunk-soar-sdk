@@ -1,11 +1,16 @@
-from typing import Optional, Union, get_origin, get_args, TypedDict, Any
+from typing import Optional, Union, get_origin, get_args, Any
 from collections.abc import Iterator
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict
 from pydantic import BaseModel, Field
 
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
 from soar_sdk.meta.datatypes import as_datatype
+
+remove_when_soar_newer_than(
+    "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
+)
 
 
 class ActionResult(PhantomActionResult):

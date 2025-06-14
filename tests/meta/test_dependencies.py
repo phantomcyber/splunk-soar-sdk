@@ -1,3 +1,4 @@
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.dependencies import (
     UvWheel,
     UvPackage,
@@ -6,7 +7,13 @@ from soar_sdk.meta.dependencies import (
     UvDependency,
 )
 
-from typing import TypedDict, Optional
+from typing import Optional
+
+from typing_extensions import TypedDict
+
+remove_when_soar_newer_than(
+    "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
+)
 
 import pytest
 
