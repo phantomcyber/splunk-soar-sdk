@@ -14,7 +14,7 @@ class ActionMeta(BaseModel):
     description: str
     type: str  # contain, correct, generic, investigate or test
     read_only: bool
-    versions: str
+    versions: str = "EQ(*)"
     verbose: str = ""
     parameters: Type[Params] = Field(default=Params)  # noqa: UP006
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
