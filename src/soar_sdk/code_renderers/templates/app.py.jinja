@@ -1,0 +1,34 @@
+from typing import Union
+from collections.abc import Iterator
+
+from soar_sdk.abstract import SOARClient
+from soar_sdk.app import App
+from soar_sdk.params import Param, Params, OnPollParams
+from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.asset import BaseAsset, AssetField
+from soar_sdk.logging import getLogger
+from soar_sdk.models.container import Container
+from soar_sdk.models.artifact import Artifact
+
+logger = getLogger()
+
+
+class Asset(BaseAsset):
+    pass
+
+app = App(
+    name="{{ name }}",
+    app_type="{{ app_type }}",
+    logo="{{ logo }}",
+    logo_dark="{{ logo_dark }}",
+    product_vendor="{{ product_vendor }}",
+    product_name="{{ product_name }}",
+    publisher="{{ publisher }}",
+    appid="{{ appid }}",
+    fips_compliant={{ fips_compliant }},
+    asset_cls=Asset,
+)
+
+
+if __name__ == "__main__":
+    app.cli()

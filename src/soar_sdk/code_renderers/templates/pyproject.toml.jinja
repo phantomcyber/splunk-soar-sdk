@@ -1,0 +1,142 @@
+[project]
+name = "{{ name }}"
+version = "{{ version }}"
+description = "{{ description }}"
+license = "{{ copyright }}"
+requires-python = "{{ requires_python }}"
+authors = [
+    {% for author in authors %}
+    { name = "{{ author }}" },
+    {% endfor %}
+]
+dependencies = [
+    {% for dependency in dependencies %}
+    "{{ dependency }}",
+    {% endfor %}
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.6.7,<8",
+    "mypy>=1.2.0,<2",
+    "pre-commit>=4.2.0,<5",
+    "pytest>=7.4.2,<8",
+    "pytest-mock>=3.14.0,<4",
+    "pytest-watch>=4.2.0,<5",
+    "ruff>=0.11.6,<1",
+]
+
+[tool.soar.app]
+main_module = "src.app:app"
+
+[[tool.uv.index]]
+url = "https://pypi.python.org/simple"
+
+[tool.uv]
+environments = [
+    {% for py_version in python_versions %}
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '{{ py_version }}'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '{{ py_version }}'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '{{ py_version }}'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '{{ py_version }}'",
+    {% endfor %}
+]
+required-environments = [
+    {% for py_version in python_versions %}
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '{{ py_version }}'",
+    {% endfor %}
+]
+
+[tool.ruff]
+output-format = "full"  # <full|concise>
+fix = true
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "ERA",  # commented out code
+    "YTT",  # bad use of sys.version_info
+    "S",    # security issues
+    "B",    # bugbear
+    "A",    # builtins
+    "DTZ",  # datetime footguns
+    "T10",  # breakpoints
+    "ISC",  # implicit string concatenation
+    "PT",   # pytest style
+    "SIM",  # simplify
+    "PTH",  # use pathlib
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "PL",   # pylint
+    "UP",   # pyupgrade
+    "RUF",  # ruff's own rules
+]
+ignore = [
+    "E402",    # Module level import not at top of file.
+    "E501",    # Line too long. Format covers this.
+    "PT006",   # Opinions about types for pytest.parametrize
+    "PT007",   # Opinions about types for pytest.parametrize
+    "PTH123",  # Allow builtin open()
+    "PLR",     # pylint refactors
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = [
+    "ANN",  # Disable flake8-annotations rules for test files
+    "S",    # Disable flake8-bandit rules for test files
+]
+"src/**/*" = [
+    "PT",  # Disable pytest rules for src files
+]
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+# This is necessary since we rely on runtime type annotations in our code and in pydantic
+keep-runtime-typing = true
+
+[tool.ruff.format]
+docstring-code-format = true
+
+# HTML linting
+[tool.djlint]
+profile = "django"
+extension = "html"
+indent = 2
+
+# Auto-fixable rules only
+include = "H008,H009,H010,H014,H024,H026,H033,T028,T034"
+
+# Ignore troublesome rules that aren't auto-fixable or causing issues
+ignore = "D004,D018,H005,H006,H007,H011,H012,H013,H015,H016,H017,H019,H020,H021,H022,H023,H025,H029,H030,H031,H035,H036,H037,J004,J018,T001,T002,T003,T027,T032"
+
+# Markdown linting
+[tool.mdformat]
+wrap = true
+number = true
+
+# Semgrep configuration
+[tool.semgrep]
+config = [
+    "p/python", # Built-in Python rules
+    "semgrep", # Look for our other rules
+    "r/typescript.react.security.audit.react-dangerouslysetinnerhtml.react-dangerouslysetinnerhtml" # TypeScript React security rule
+]
+ignore-patterns = [
+    "dist/",
+    "vendor/",
+    "env/",
+    ".env/",
+    "venv/",
+    ".venv/",
+    "test/",
+    "tests/",
+    ".semgrep",
+    "wheels/",
+    ".html",
+    ".md",
+    ".svg"
+]
