@@ -73,6 +73,14 @@ class ActionOutput(BaseModel):
                 field_type = get_args(field_type)[0]
                 datapath += ".*"
 
+            # For some reason, issubclass(Optional, _) doesn't work.
+            # This provides a nicer error message to an app dev, unless and
+            # until we can build proper support for Optional types.
+            if get_origin(field_type) is Union:
+                raise TypeError(
+                    f"Output field {field_name} cannot be Union or Optional."
+                )
+
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema
                 yield from field_type._to_json_schema(datapath)
