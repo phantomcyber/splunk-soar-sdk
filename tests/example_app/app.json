@@ -77,50 +77,12 @@
             "identifier": "reverse_string",
             "description": "reverse string",
             "verbose": "Reverses a string.",
-            "type": "test",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "parameters": {
-                "input_string": {
-                    "order": 0,
-                    "name": "input_string",
-                    "description": "Input String",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.input_string",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.reversed_string",
-                    "data_type": "string"
-                }
-            ]
-        },
-        {
-            "action": "reverse string custom view",
-            "identifier": "reverse_string_custom_view",
-            "description": "reverse string custom view",
-            "verbose": "Reverses a string.",
             "type": "investigate",
             "read_only": true,
+            "render": {
+                "type": "custom",
+                "view": "src.actions.reverse_string.render_reverse_string_view"
+            },
             "versions": "EQ(*)",
             "parameters": {
                 "input_string": {
@@ -158,11 +120,7 @@
                     "data_path": "action_result.data.*.reversed_string",
                     "data_type": "string"
                 }
-            ],
-            "render": {
-                "type": "custom",
-                "view": "src.app.render_reverse_string_view"
-            }
+            ]
         },
         {
             "action": "generate statistics",
