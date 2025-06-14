@@ -1,0 +1,29 @@
+{{ name }}: {{ py_type.__name__ }} = Param(
+    {% if alias %}
+    alias="{{ alias }}",
+    {% endif %}
+    {% if description %}
+    description="{{ description }}",
+    {% endif %}
+    {% if not required %}
+    required=False,
+    {% endif %}
+    {% if primary %}
+    primary=True,
+    {% endif %}
+    {% if default %}
+    default={% if is_str %}"{% endif %}{{ default }}{% if is_str %}"{% endif %},
+    {% endif %}
+    {% if value_list %}
+    value_list={{ value_list }},
+    {% endif %}
+    {% if contains %}
+    cef_types={{ contains }},
+    {% endif %}
+    {% if allow_list %}
+    allow_list=True,
+    {% endif %}
+    {% if data_type == "password" %}
+    sensitive=True,
+    {% endif %}
+)

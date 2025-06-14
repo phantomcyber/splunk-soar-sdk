@@ -31,6 +31,31 @@ class PythonVersion(str, Enum):
         return self.value
 
     @classmethod
+    def from_str(cls, version_str: str) -> "PythonVersion":
+        """
+        Returns the PythonVersion enum member corresponding to the given string.
+        Raises ValueError if the version is not supported.
+        """
+        # "3" is a special case for connectors that don't properly define their Python version
+        if version_str in ("3", "3.9"):
+            return cls.PY_3_9
+        if version_str == "3.13":
+            return cls.PY_3_13
+
+        raise ValueError(f"Unsupported Python version: {version_str}")
+
+    @classmethod
+    def from_csv(cls, version_csv: str) -> list["PythonVersion"]:
+        """
+        Parses a comma-separated string of Python versions and returns a list of PythonVersion enum members.
+        Raises ValueError if any version is not supported.
+        """
+        versions = version_csv.split(",")
+        return [
+            cls.from_str(version.strip()) for version in versions if version.strip()
+        ]
+
+    @classmethod
     def all(cls) -> list["PythonVersion"]:
         """
         Returns a list of all supported Python versions.
