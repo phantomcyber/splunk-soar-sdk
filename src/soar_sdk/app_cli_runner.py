@@ -235,9 +235,9 @@ class AppCliRunner:
             # FIXME: ActionResult mock isn't quite right. Choosing not to unit test this section
             # yet, because the test will need to be rewritten. We shouldn't be posting our results
             # into ActionResult.param...
-            for result in (
-                self.app.actions_provider.soar_client.get_action_results()
-            ):  # pragma: no cover
+            for (
+                result
+            ) in self.app.actions_provider.get_action_results():  # pragma: no cover
                 pretty = json.dumps(result.param, indent=2, ensure_ascii=False)
                 logger.info(pretty)
 

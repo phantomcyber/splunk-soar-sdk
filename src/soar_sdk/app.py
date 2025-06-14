@@ -15,7 +15,7 @@ from soar_sdk.compat import (
 )
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
-from soar_sdk.abstract import SOARClient
+from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_provider import ActionsProvider
 from soar_sdk.app_cli_runner import AppCliRunner
@@ -23,6 +23,7 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.meta.webhooks import WebhookMeta
 from soar_sdk.params import Params
 from soar_sdk.params import OnPollParams
+from soar_sdk.connector import AppConnector
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
@@ -93,6 +94,7 @@ class App:
         }
 
         self.actions_provider = ActionsProvider(legacy_connector_class)
+        self.soar_client = AppConnector()
 
     def get_actions(self) -> dict[str, Action]:
         """
@@ -118,8 +120,32 @@ class App:
         input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
         self._raw_asset_config = input_data.config.get_asset_config()
         self.__logger.handler.set_handle(handle)
-        self.actions_provider.soar_client.update_client(input_data)
+        soar_auth = App.create_soar_client_auth_object(input_data)
+        self.soar_client.update_client(soar_auth, input_data.asset_id)
         return self.actions_provider.handle(input_data, handle=handle)
+
+    @staticmethod
+    def create_soar_client_auth_object(
+        input_data: InputSpecification,
+    ) -> SOARClientAuth:
+        """
+        Creates a SOARClientAuth object based on the input data.
+        This is used to authenticate the SOAR client before running actions.
+        """
+
+        if input_data.user_session_token:
+            return SOARClientAuth(
+                user_session_token=input_data.user_session_token,
+                base_url=ActionsProvider.get_soar_base_url(),
+            )
+        elif input_data.soar_auth:
+            return SOARClientAuth(
+                username=input_data.soar_auth.username,
+                password=input_data.soar_auth.password,
+                base_url=input_data.soar_auth.phantom_url,
+            )
+        else:
+            return SOARClientAuth(base_url=ActionsProvider.get_soar_base_url())
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
 
@@ -193,7 +219,7 @@ class App:
             def inner(
                 params: Params,
                 /,
-                soar: SOARClient = self.actions_provider.soar_client,
+                soar: SOARClient = self.soar_client,
                 *args: Any,  # noqa: ANN401
                 **kwargs: Any,  # noqa: ANN401
             ) -> bool:
@@ -208,18 +234,22 @@ class App:
                 except ActionFailure as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)), soar
+                        ActionResult(status=False, message=str(e)),
+                        self.actions_provider,
                     )
                 except Exception as e:
-                    soar.add_exception(e)
+                    self.actions_provider.add_exception(e)
                     traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=traceback_str), soar
+                        ActionResult(status=False, message=traceback_str),
+                        self.actions_provider,
                     )
 
-                return self._adapt_action_result(result, soar, action_params)
+                return self._adapt_action_result(
+                    result, self.actions_provider, action_params
+                )
 
             # setting up meta information for the decorated function
             inner.params_class = validated_params_class
@@ -276,7 +306,7 @@ class App:
             @wraps(function)
             def inner(
                 _param: Optional[dict] = None,
-                soar: SOARClient = self.actions_provider.soar_client,
+                soar: SOARClient = self.soar_client,
             ) -> bool:
                 kwargs = self._build_magic_args(function, soar=soar)
 
@@ -289,20 +319,22 @@ class App:
                 except ActionFailure as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)), soar
+                        ActionResult(status=False, message=str(e)),
+                        self.actions_provider,
                     )
                 except Exception as e:
-                    soar.add_exception(e)
+                    self.actions_provider.add_exception(e)
                     traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=traceback_str), soar
+                        ActionResult(status=False, message=traceback_str),
+                        self.actions_provider,
                     )
 
                 return self._adapt_action_result(
                     ActionResult(status=True, message="Test connectivity successful"),
-                    soar,
+                    self.actions_provider,
                 )
 
             inner.params_class = None
@@ -368,7 +400,7 @@ class App:
             @wraps(function)
             def inner(
                 params: OnPollParams,
-                client: SOARClient = self.actions_provider.soar_client,
+                client: SOARClient = self.soar_client,
                 *args: Any,  # noqa: ANN401
                 **kwargs: Any,  # noqa: ANN401
             ) -> bool:
@@ -382,7 +414,7 @@ class App:
                             ActionResult(
                                 status=False, message=f"Invalid parameters: {e!s}"
                             ),
-                            client,
+                            self.actions_provider,
                         )
 
                     kwargs = self._build_magic_args(function, client=client, **kwargs)
@@ -448,18 +480,21 @@ class App:
                         )
 
                     return self._adapt_action_result(
-                        ActionResult(status=True, message="Polling complete"), client
+                        ActionResult(status=True, message="Polling complete"),
+                        self.actions_provider,
                     )
                 except ActionFailure as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)), client
+                        ActionResult(status=False, message=str(e)),
+                        self.actions_provider,
                     )
                 except Exception as e:
-                    client.add_exception(e)
+                    self.actions_provider.add_exception(e)
                     logger.info(f"Error during polling: {e!s}")
                     return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)), client
+                        ActionResult(status=False, message=str(e)),
+                        self.actions_provider,
                     )
 
             inner.params_class = validated_params_class
@@ -700,7 +735,7 @@ class App:
         """
         sig = inspect.signature(function)
         magic_args: dict[str, object] = {
-            "soar": self.actions_provider.soar_client,
+            "soar": self.soar_client,
             "asset": self.asset,
         }
 
@@ -728,7 +763,7 @@ class App:
     @staticmethod
     def _adapt_action_result(
         result: Union[ActionOutput, ActionResult, tuple[bool, str], bool],
-        client: SOARClient,
+        actions_provider: ActionsProvider,
         action_params: Optional[Params] = None,
     ) -> bool:
         """
@@ -750,11 +785,11 @@ class App:
             result.add_data(output_dict)
 
         if isinstance(result, ActionResult):
-            client.add_result(result)
+            actions_provider.add_result(result)
             return result.get_status()
         if isinstance(result, tuple) and 2 <= len(result) <= 3:
             action_result = ActionResult(*result)
-            client.add_result(action_result)
+            actions_provider.add_result(action_result)
             return result[0]
         return False
 

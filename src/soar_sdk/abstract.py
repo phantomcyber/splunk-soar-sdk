@@ -1,29 +1,31 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Any, Optional, Union
 from collections.abc import Mapping, Iterable, AsyncIterable
 
-from soar_sdk.input_spec import InputSpecification
-from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
-from soar_sdk.action_results import ActionResult
 from soar_sdk.apis.vault import Vault
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 import httpx
+from dataclasses import dataclass
 
 JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
 
-class SOARClient(ABC):
+@dataclass
+class SOARClientAuth:
+    base_url: str
+    username: str = ""
+    password: str = ""
+    user_session_token: str = ""
+
+
+class SOARClient:
     """
     A unified API interface for performing actions on SOAR Platform.
     Replaces previously used BaseConnector API interface.
 
     This interface is still a subject to change, so consider it to be WIP.
     """
-
-    ingestion_state: dict
-    auth_state: dict
-    asset_cache: dict
 
     @property
     @abstractmethod
@@ -56,7 +58,6 @@ class SOARClient(ABC):
         Api interface to manage SOAR containers.
         """
 
-    @abstractmethod
     def get(
         self,
         endpoint: str,
@@ -72,9 +73,19 @@ class SOARClient(ABC):
         """
         Perform a GET request to the specfic endpoint using the soar client
         """
-        pass
+        response = self.client.get(
+            endpoint,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            auth=auth,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
 
-    @abstractmethod
     def post(
         self,
         endpoint: str,
@@ -96,9 +107,25 @@ class SOARClient(ABC):
         """
         Perform a POST request to the specfic endpoint using the soar client
         """
-        pass
+        headers = headers or {}
+        headers.update({"Referer": f"{self.client.base_url}/{endpoint}"})
+        response = self.client.post(
+            endpoint,
+            headers=headers,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            cookies=cookies,
+            auth=auth,  # type: ignore[arg-type]
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
 
-    @abstractmethod
     def put(
         self,
         endpoint: str,
@@ -120,9 +147,25 @@ class SOARClient(ABC):
         """
         Perform a PUT request to the specfic endpoint using the soar client
         """
-        pass
+        headers = headers or {}
+        headers.update({"Referer": f"{self.client.base_url}/{endpoint}"})
+        response = self.client.put(
+            endpoint,
+            headers=headers,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            cookies=cookies,
+            auth=auth,  # type: ignore[arg-type]
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
 
-    @abstractmethod
     def delete(
         self,
         endpoint: str,
@@ -138,86 +181,28 @@ class SOARClient(ABC):
         """
         Perform a DELETE request to the specfic endpoint using the soar client
         """
-        pass
 
-    @abstractmethod
+        headers = headers or {}
+        headers.update({"Referer": f"{self.client.base_url}/{endpoint}"})
+        response = self.client.delete(
+            endpoint,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            auth=auth,
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
+
     def get_soar_base_url(self) -> str:
-        pass
+        return "https://localhost:9999/"
 
     @abstractmethod
-    def update_client(self, input_data: InputSpecification) -> None:
+    def update_client(self, soar_auth: SOARClientAuth, asset_id: str) -> None:
         """
         Updates the client before an actions run with the input data. An example of what this function might do is authenticate the api client.
         """
-        pass
-
-    @abstractmethod
-    def get_product_installation_id(self) -> str:
-        pass
-
-    @abstractmethod
-    def set_csrf_info(self, token: str, referer: str) -> None:
-        pass
-
-    @abstractmethod
-    def handle_action(self, param: dict[str, Any]) -> None:
-        """
-        The actual handling method that is being called internally by BaseConnector
-        at the momment.
-        :param param: dict containing parameters for the action
-        """
-        pass
-
-    @abstractmethod
-    def handle(
-        self,
-        input_data: InputSpecification,
-        handle: Optional[int] = None,
-    ) -> str:
-        """Public method for handling the input data with the selected handler"""
-        pass
-
-    @abstractmethod
-    def initialize(self) -> bool:
-        pass
-
-    @abstractmethod
-    def finalize(self) -> bool:
-        pass
-
-    @abstractmethod
-    def add_result(self, action_result: ActionResult) -> PhantomActionResult:
-        pass
-
-    @abstractmethod
-    def get_results(self) -> list[ActionResult]:
-        pass
-
-    @abstractmethod
-    def error(
-        self,
-        tag: str,
-        dump_object: Union[str, list, dict, ActionResult, Exception] = "",
-    ) -> None:
-        pass
-
-    @abstractmethod
-    def save_progress(
-        self,
-        progress_str_const: str,
-        *unnamed_format_args: object,
-        **named_format_args: object,
-    ) -> None:
-        pass
-
-    @abstractmethod
-    def debug(
-        self,
-        tag: str,
-        dump_object: Union[str, list, dict, ActionResult, Exception] = "",
-    ) -> None:
-        pass
-
-    @abstractmethod
-    def add_exception(self, exception: Exception) -> None:
         pass
