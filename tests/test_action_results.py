@@ -1,3 +1,4 @@
+from typing import Optional, Union
 import pytest
 from soar_sdk.action_results import ActionOutput, OutputField
 
@@ -17,10 +18,6 @@ class ExampleActionOutput(ActionOutput):
     )
     nested_type: ExampleInnerData
     list_of_types: list[ExampleInnerData]
-
-
-class BadActionOutput(ActionOutput):
-    byte_field: bytes
 
 
 def test_action_output_to_json_schema():
@@ -50,9 +47,25 @@ def test_action_output_to_json_schema():
     assert schema == expected_schema
 
 
-def test_action_output_to_json_schema_bad_type():
+class BadActionOutput(ActionOutput):
+    byte_field: bytes
+
+
+class BadOptionalActionOutput(ActionOutput):
+    optional_field: Optional[str] = None
+
+
+class BadUnionActionOutput(ActionOutput):
+    optional_field: Union[str, int]
+
+
+@pytest.mark.parametrize(
+    "action_output_class",
+    (BadActionOutput, BadOptionalActionOutput, BadUnionActionOutput),
+)
+def test_action_output_to_json_schema_bad_type(action_output_class: type[ActionOutput]):
     with pytest.raises(TypeError):
-        next(BadActionOutput._to_json_schema())
+        next(action_output_class._to_json_schema())
 
 
 def test_parse_action_output():
