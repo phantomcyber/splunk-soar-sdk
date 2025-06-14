@@ -36,10 +36,12 @@ class OutputFieldSpecification(TypedDict):
 def OutputField(
     cef_types: Optional[list[str]] = None,
     example_values: Optional[list[Union[str, float, bool]]] = None,
+    alias: Optional[str] = None,
 ) -> Any:  # noqa: ANN401
     return Field(
         examples=example_values,
         cef_types=cef_types,
+        alias=alias,
     )
 
 
