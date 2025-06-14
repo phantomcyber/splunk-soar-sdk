@@ -15,8 +15,10 @@ logger = getLogger()
 
 
 class Asset(BaseAsset):
-    base_url: str
-    api_key: str = AssetField(sensitive=True, description="API key for authentication")
+    base_url: str = AssetField(default="https://example")
+    api_key: str = AssetField(
+        sensitive=True, description="API key for authentication", default="1234"
+    )
     key_header: str = AssetField(
         default="Authorization",
         value_list=["Authorization", "X-API-Key"],
@@ -40,6 +42,7 @@ app = App(
 
 @app.test_connectivity()
 def test_connectivity(soar: SOARClient, asset: Asset) -> None:
+    soar.get("rest/version")
     logger.info(f"testing connectivity against {asset.base_url}")
 
 

@@ -3,6 +3,9 @@ from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.logging import getLogger
+
+logger = getLogger()
 
 app = App(
     name="basic_app",
@@ -19,7 +22,7 @@ app = App(
 @app.action(action_type="test")
 def test_connectivity(params: Params, client: SOARClient) -> ActionOutput:
     """Testing the connectivity service."""
-    client.save_progress("Connectivity checked!")
+    logger.info("Connectivity checked!")
     return ActionOutput()
 
 
