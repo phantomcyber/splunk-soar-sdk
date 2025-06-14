@@ -44,47 +44,16 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.info(f"testing connectivity against {asset.base_url}")
 
 
-class ReverseStringParams(Params):
-    input_string: str
+from .actions.reverse_string import render_reverse_string_view
 
-
-class ReverseStringOutput(ActionOutput):
-    reversed_string: str
-
-
-@app.action(action_type="test", verbose="Reverses a string.")
-def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStringOutput:
-    logger.debug("params: %s", param)
-    reversed_string = param.input_string[::-1]
-    logger.debug("reversed_string %s", reversed_string)
-    return ReverseStringOutput(reversed_string=reversed_string)
-
-
-class ReverseStringViewOutput(ActionOutput):
-    original_string: str
-    reversed_string: str
-
-
-@app.view_handler(template="reverse_string.html")
-def render_reverse_string_view(output: list[ReverseStringViewOutput]) -> dict:
-    return {
-        "original": output[0].original_string,
-        "reversed": output[0].reversed_string,
-    }
-
-
-@app.action(
+app.register_action(
+    "actions.reverse_string:reverse_string",
     action_type="investigate",
     verbose="Reverses a string.",
-    view_handler=render_reverse_string_view,
+    view_handler=app.view_handler(template="reverse_string_view.html")(
+        render_reverse_string_view
+    ),
 )
-def reverse_string_custom_view(
-    param: ReverseStringParams, soar: SOARClient
-) -> ReverseStringViewOutput:
-    reversed_string = param.input_string[::-1]
-    return ReverseStringViewOutput(
-        original_string=param.input_string, reversed_string=reversed_string
-    )
 
 
 class StatisticsParams(Params):

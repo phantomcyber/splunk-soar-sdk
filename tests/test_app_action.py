@@ -1,4 +1,5 @@
 from unittest import mock
+from uuid import uuid4
 
 import pytest
 
@@ -9,6 +10,7 @@ from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 from soar_sdk.exceptions import ActionFailure
 import httpx
+from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
 
 
 class SampleParams(Params):
@@ -340,3 +342,45 @@ def test_delete(
 
     result = delete_action(SampleParams(), client=TestClient())
     assert mock_delete_any_soar_call.call_count == 1
+def test_direct_action_registration(simple_app: App):
+    from tests.mocks.importable_action import importable_action
+
+    simple_app.register_action(
+        importable_action,
+        identifier="register_direct_callable",
+    )
+
+
+@pytest.mark.parametrize(
+    "action_import",
+    (
+        "mocks.importable_action.importable_action",
+        "mocks.importable_action:importable_action",
+        "mocks/importable_action.py:importable_action",
+    ),
+)
+def test_import_path_action_registration(action_import: str, simple_app: App):
+    action_id = str(uuid4())
+    simple_app.register_action(
+        action_import,
+        identifier=action_id,
+    )
+    actions = simple_app.actions_provider.get_actions()
+    assert action_id in actions
+
+
+@pytest.mark.parametrize(
+    "action_import",
+    (
+        "abcd.efgh:importable_action",
+        "abcd.efgh.importable_action",
+        "tuv/wxyz:importable_action",
+        "tuv/wxyz.py:importable_action",
+        "mocks.importable_action:abcdef",
+        "mocks.importable_action.ghijkl",
+        "mocks/importable_action.py:mnopqr",
+    ),
+)
+def test_action_bad_path(action_import: str, simple_app: App):
+    with pytest.raises(ActionRegistrationError):
+        simple_app.register_action(action_import)
