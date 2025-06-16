@@ -3,9 +3,10 @@ from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.exceptions import AssetMisconfiguration
 from unittest import mock
+from soar_sdk.app import App
 
 
-def test_connectivity_decoration_fails_when_used_more_than_once(app_with_action):
+def test_connectivity_decoration_fails_when_used_more_than_once(app_with_action: App):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient):
         pass
@@ -22,7 +23,7 @@ def test_connectivity_decoration_fails_when_used_more_than_once(app_with_action)
     )
 
 
-def test_connectivity_decoration_with_meta(app_with_action):
+def test_connectivity_decoration_with_meta(app_with_action: App):
     @app_with_action.test_connectivity()
     def test_connectivity(params: SOARClient):
         """
@@ -47,7 +48,7 @@ def test_connectivity_decoration_with_meta(app_with_action):
     assert test_connectivity.meta.action == "test connectivity"
     assert test_connectivity.meta.description == "This action does nothing for now."
     assert (
-        app_with_action.actions_provider.get_action("test_connectivity")
+        app_with_action.actions_manager.get_action("test_connectivity")
         == test_connectivity
     )
 
@@ -65,28 +66,28 @@ def test_connectivity_returns_not_none(app_with_action):
     )
 
 
-def test_connectivity_raises_with_no_type_hint(app_with_action):
+def test_connectivity_raises_with_no_type_hint(app_with_action: App):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient):
         return ActionOutput(bool=True)
 
-    client_mock = mock.Mock()
-    result = test_connectivity(soar=client_mock)
+    app_with_action.actions_manager = mock.Mock()
+    result = test_connectivity(soar=app_with_action.soar_client)
     assert not result
-    assert client_mock.add_result.call_count == 1
+    assert app_with_action.actions_manager.add_result.call_count == 1
 
 
-def test_connectivity_bubbles_up_errors(app_with_action):
+def test_connectivity_bubbles_up_errors(app_with_action: App):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient):
         raise RuntimeError("Test connectivity failed")
 
-    client_mock = mock.Mock()
+    app_with_action.actions_manager = mock.Mock()
 
-    result = test_connectivity(soar=client_mock)
+    result = test_connectivity(soar=app_with_action.soar_client)
     assert not result
-    assert client_mock.add_exception.call_count == 1
-    assert client_mock.add_result.call_count == 1
+    assert app_with_action.actions_manager.add_exception.call_count == 1
+    assert app_with_action.actions_manager.add_result.call_count == 1
 
 
 def test_connectivity_run(app_with_action):
@@ -97,12 +98,12 @@ def test_connectivity_run(app_with_action):
     assert test_connectivity()
 
 
-def test_connectivity_action_failed(app_with_action):
+def test_connectivity_action_failed(app_with_action: App):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient) -> None:
         raise AssetMisconfiguration("Test connectivity failed")
 
-    client_mock = mock.Mock()
-    result = test_connectivity(soar=client_mock)
+    app_with_action.actions_manager = mock.Mock()
+    result = test_connectivity(soar=app_with_action.soar_client)
     assert not result
-    assert client_mock.add_result.call_count == 1
+    assert app_with_action.actions_manager.add_result.call_count == 1

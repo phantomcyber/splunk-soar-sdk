@@ -16,9 +16,7 @@ logger = getLogger()
 
 class Asset(BaseAsset):
     base_url: str = AssetField(default="https://example")
-    api_key: str = AssetField(
-        sensitive=True, description="API key for authentication", default="1234"
-    )
+    api_key: str = AssetField(sensitive=True, description="API key for authentication")
     key_header: str = AssetField(
         default="Authorization",
         value_list=["Authorization", "X-API-Key"],

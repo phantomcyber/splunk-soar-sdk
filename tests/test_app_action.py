@@ -8,6 +8,7 @@ from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 from soar_sdk.exceptions import ActionFailure
+import httpx
 
 
 class SampleParams(Params):
@@ -97,11 +98,9 @@ def test_action_call_with_params(simple_app: App, sample_params: SampleParams):
         assert params.str_value == "test"
         assert params.pass_value == "<PASSWORD>"
         assert params.bool_value
-        soar.debug("TAG", "Progress was made")
 
     client_mock = mock.Mock(spec=SOARClient)
     action_function(sample_params, soar=client_mock)
-    client_mock.debug.assert_called_once()
 
 
 def test_action_call_with_params_dict(simple_app, sample_params):
@@ -111,14 +110,10 @@ def test_action_call_with_params_dict(simple_app, sample_params):
         assert params.str_value == "test"
         assert params.pass_value == "<PASSWORD>"
         assert params.bool_value
-        soar.debug("TAG", "Progress was made")
 
     client_mock = mock.Mock()
-    client_mock.debug = mock.Mock()
 
     action_function(sample_params, soar=client_mock)
-
-    assert client_mock.debug.call_count == 1
 
 
 def test_action_call_with_state(simple_app, sample_params):
@@ -148,15 +143,15 @@ def test_action_call_with_state(simple_app, sample_params):
     assert client_mock.asset_cache == updated_state
 
 
-def test_app_action_simple_declaration(simple_app):
+def test_app_action_simple_declaration(simple_app: App):
     @simple_app.action()
     def some_handler(params: Params) -> ActionOutput: ...
 
-    assert len(simple_app.actions_provider.get_actions()) == 1
-    assert "some_handler" in simple_app.actions_provider.get_actions()
+    assert len(simple_app.actions_manager.get_actions()) == 1
+    assert "some_handler" in simple_app.actions_manager.get_actions()
 
 
-def test_action_decoration_with_meta(simple_app):
+def test_action_decoration_with_meta(simple_app: App):
     @simple_app.action(name="Test Function", identifier="test_function_id")
     def foo(params: Params) -> ActionOutput:
         """
@@ -180,7 +175,7 @@ def test_action_decoration_with_meta(simple_app):
 
     assert foo.meta.action == "Test Function"
     assert foo.meta.description == "This action does nothing for now."
-    assert simple_app.actions_provider.get_action("test_function_id") == foo
+    assert simple_app.actions_manager.get_action("test_function_id") == foo
 
 
 def test_action_decoration_uses_function_name_for_action_name(simple_app):
@@ -274,51 +269,74 @@ def test_action_failure_raised(simple_app: App):
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         raise ActionFailure("Action failed")
 
-    client_mock = mock.Mock()
+    # Mock the add_result method
+    simple_app.actions_manager.add_result = mock.Mock()
 
-    result = action_function(Params(), soar=client_mock)
+    result = action_function(Params(), soar=simple_app.soar_client)
     assert not result
-    assert client_mock.add_result.call_count == 1
+    assert simple_app.actions_manager.add_result.call_count == 1
 
 
-def test_other_failure_raised(simple_app: App, app_connector):
+def test_other_failure_raised(simple_app: App):
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         raise ValueError("Value error occurred")
 
-    result = action_function(Params(), soar=app_connector)
+    result = action_function(Params(), soar=simple_app.soar_client)
 
     assert not result
 
 
-def test_client_get(simple_app: App, app_connector, mock_get_any_soar_call):
+def test_client_get(simple_app: App, mock_get_any_soar_call):
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         soar.get("rest/version")
         return ActionOutput()
 
-    result = action_function(Params(), soar=app_connector)
+    result = action_function(Params(), soar=simple_app.soar_client)
     assert result
     assert mock_get_any_soar_call.called
 
 
-def test_client_post(simple_app: App, app_connector, mock_post_any_soar_call):
+def test_client_post(simple_app: App, mock_post_any_soar_call):
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         soar.post("rest/version")
         assert result
         return ActionOutput()
 
-    result = action_function(Params(), soar=app_connector)
+    result = action_function(Params(), soar=simple_app.soar_client)
     assert mock_post_any_soar_call.called
 
 
-def test_client_put(simple_app: App, app_connector, mock_put_any_call):
+def test_client_put(simple_app: App, mock_put_any_call):
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         soar.put("rest/version")
         assert result
         return ActionOutput()
 
-    result = action_function(Params(), soar=app_connector)
+    result = action_function(Params(), soar=simple_app.soar_client)
     assert mock_put_any_call.called
+
+
+def test_delete(
+    simple_app: App,
+    mock_delete_any_soar_call,
+):
+    class TestClient(SOARClient):
+        @property
+        def client(self):
+            return httpx.Client(base_url="https://example.com", verify=False)
+
+        def update_client(self, soar_auth, asset_id):
+            pass
+
+    @simple_app.action()
+    def delete_action(params: Params, client: SOARClient) -> ActionOutput:
+        client.delete("/some/delete/endpoint")
+        assert result
+        assert ActionOutput()
+
+    result = delete_action(SampleParams(), client=TestClient())
+    assert mock_delete_any_soar_call.call_count == 1

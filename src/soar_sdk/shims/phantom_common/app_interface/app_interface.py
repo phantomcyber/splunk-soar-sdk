@@ -9,6 +9,10 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or not _soar_is_available:
     import requests
+    from soar_sdk.abstract import SOARClient
+
+    class WebhookClient(SOARClient):
+        pass
 
     class SoarRestClient:  # type: ignore[no-redef]
         def __init__(self, token: str, asset_id: int) -> None:

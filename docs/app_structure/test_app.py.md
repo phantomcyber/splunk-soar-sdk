@@ -36,7 +36,7 @@ is the actual action declaration (from the SDK source code):
             def inner(
                 params: Params,
                 /,
-                client: SOARClient = self.actions_provider.soar_client,
+                client: SOARClient = self.soar_client,
                 *args: Iterable[Any],
                 **kwargs: dict[str, Any],
             ) -> bool:

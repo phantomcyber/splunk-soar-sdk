@@ -17,18 +17,13 @@ _CACHE_STATE_KEY = "asset_cache"
 logger = getLogger()
 
 
-class ActionsProvider(BaseConnector):
+class ActionsManager(BaseConnector):
     """
-    Supports working on both: old legacy connectors and new connectors.
-    If you provide legacy connector class from the old implementation, it will be
-    adapted to the new interfaces and used by App to properly run old handlers.
+    Manages the execution of an action.
     """
 
-    def __init__(
-        self, legacy_connector_class: Optional[type[BaseConnector]] = None
-    ) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self.legacy_connector_class = legacy_connector_class
 
         self._actions: dict[str, Action] = {}
         self.ingestion_state: dict = {}
@@ -67,10 +62,6 @@ class ActionsProvider(BaseConnector):
         if self.get_action(action_id):
             self.print_progress_message = True
             return self._handle_action(input_data.json(), handle or 0)
-        elif self.legacy_connector_class:
-            return self.legacy_connector_class._handle_action(
-                input_data.json(), handle or 0
-            )
         else:
             raise RuntimeError(
                 f"Action {action_id} not recognized"
@@ -116,9 +107,7 @@ class ActionsProvider(BaseConnector):
         return True
 
     def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
-        return self.add_action_result(
-            action_result
-        )  # need to get this to work with legacy connectors
+        return self.add_action_result(action_result)
 
     def get_results(self) -> list[PhantomActionResult]:
         return self.get_action_results()

@@ -52,7 +52,7 @@ class AppCliRunner:
             dest="action", title="Actions"
         )
         action_subparsers.required = True
-        for name, action in self.app.actions_provider.get_actions().items():
+        for name, action in self.app.actions_manager.get_actions().items():
             parser = action_subparsers.add_parser(
                 name,
                 aliases=(action.meta.action.replace(" ", "-"),),
@@ -237,7 +237,7 @@ class AppCliRunner:
             # into ActionResult.param...
             for (
                 result
-            ) in self.app.actions_provider.get_action_results():  # pragma: no cover
+            ) in self.app.actions_manager.get_action_results():  # pragma: no cover
                 pretty = json.dumps(result.param, indent=2, ensure_ascii=False)
                 logger.info(pretty)
 

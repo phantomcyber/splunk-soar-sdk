@@ -13,17 +13,16 @@ from soar_sdk.compat import (
     PythonVersion,
     remove_when_soar_newer_than,
 )
-from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionResult
-from soar_sdk.actions_provider import ActionsProvider
+from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app_cli_runner import AppCliRunner
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.meta.webhooks import WebhookMeta
 from soar_sdk.params import Params
 from soar_sdk.params import OnPollParams
-from soar_sdk.connector import AppConnector
+from soar_sdk.app_client import AppClient
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
@@ -68,7 +67,6 @@ class App:
         min_phantom_version: str = MIN_PHANTOM_VERSION,
         fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
-        legacy_connector_class: Optional[type[BaseConnector]] = None,
     ) -> None:
         self.asset_cls = asset_cls
         self._raw_asset_config: dict[str, Any] = {}
@@ -93,14 +91,14 @@ class App:
             "appid": appid,
         }
 
-        self.actions_provider = ActionsProvider(legacy_connector_class)
-        self.soar_client = AppConnector()
+        self.actions_manager: ActionsManager = ActionsManager()
+        self.soar_client: SOARClient = AppClient()
 
     def get_actions(self) -> dict[str, Action]:
         """
         Returns the list of actions registered in the app.
         """
-        return self.actions_provider.get_actions()
+        return self.actions_manager.get_actions()
 
     def cli(self) -> None:
         """
@@ -122,7 +120,7 @@ class App:
         self.__logger.handler.set_handle(handle)
         soar_auth = App.create_soar_client_auth_object(input_data)
         self.soar_client.update_client(soar_auth, input_data.asset_id)
-        return self.actions_provider.handle(input_data, handle=handle)
+        return self.actions_manager.handle(input_data, handle=handle)
 
     @staticmethod
     def create_soar_client_auth_object(
@@ -132,11 +130,10 @@ class App:
         Creates a SOARClientAuth object based on the input data.
         This is used to authenticate the SOAR client before running actions.
         """
-
         if input_data.user_session_token:
             return SOARClientAuth(
                 user_session_token=input_data.user_session_token,
-                base_url=ActionsProvider.get_soar_base_url(),
+                base_url=ActionsManager.get_soar_base_url(),
             )
         elif input_data.soar_auth:
             return SOARClientAuth(
@@ -145,7 +142,7 @@ class App:
                 base_url=input_data.soar_auth.phantom_url,
             )
         else:
-            return SOARClientAuth(base_url=ActionsProvider.get_soar_base_url())
+            return SOARClientAuth(base_url=ActionsManager.get_soar_base_url())
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
 
@@ -187,7 +184,7 @@ class App:
                 raise TypeError(
                     "The 'test_connectivity' action identifier is reserved and cannot be used. Please use the test_connectivity decorator instead."
                 )
-            if self.actions_provider.get_action(action_identifier):
+            if self.actions_manager.get_action(action_identifier):
                 raise TypeError(
                     f"Action identifier '{action_identifier}' is already used. Please use a different identifier."
                 )
@@ -235,20 +232,20 @@ class App:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)),
-                        self.actions_provider,
+                        self.actions_manager,
                     )
                 except Exception as e:
-                    self.actions_provider.add_exception(e)
+                    self.actions_manager.add_exception(e)
                     traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
                         ActionResult(status=False, message=traceback_str),
-                        self.actions_provider,
+                        self.actions_manager,
                     )
 
                 return self._adapt_action_result(
-                    result, self.actions_provider, action_params
+                    result, self.actions_manager, action_params
                 )
 
             # setting up meta information for the decorated function
@@ -266,7 +263,7 @@ class App:
                 view_handler=view_handler,
             )
 
-            self.actions_provider.set_action(action_identifier, inner)
+            self.actions_manager.set_action(action_identifier, inner)
 
             self._dev_skip_in_pytest(function, inner)
 
@@ -288,7 +285,7 @@ class App:
             value based on the success or failure of test connectivity.
             """
 
-            if self.actions_provider.get_action("test_connectivity"):
+            if self.actions_manager.get_action("test_connectivity"):
                 raise TypeError(
                     "The 'test_connectivity' decorator can only be used once per App instance."
                 )
@@ -320,21 +317,21 @@ class App:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)),
-                        self.actions_provider,
+                        self.actions_manager,
                     )
                 except Exception as e:
-                    self.actions_provider.add_exception(e)
+                    self.actions_manager.add_exception(e)
                     traceback_str = "".join(
                         traceback.format_exception(type(e), e, e.__traceback__)
                     )
                     return self._adapt_action_result(
                         ActionResult(status=False, message=traceback_str),
-                        self.actions_provider,
+                        self.actions_manager,
                     )
 
                 return self._adapt_action_result(
                     ActionResult(status=True, message="Test connectivity successful"),
-                    self.actions_provider,
+                    self.actions_manager,
                 )
 
             inner.params_class = None
@@ -348,7 +345,7 @@ class App:
                 versions="EQ(*)",
             )
 
-            self.actions_provider.set_action(action_identifier, inner)
+            self.actions_manager.set_action(action_identifier, inner)
             self._dev_skip_in_pytest(function, inner)
             return inner
 
@@ -366,7 +363,7 @@ class App:
         """
 
         def on_poll_decorator(function: Callable) -> Action:
-            if self.actions_provider.get_action("on_poll"):
+            if self.actions_manager.get_action("on_poll"):
                 raise TypeError(
                     "The 'on_poll' decorator can only be used once per App instance."
                 )
@@ -414,7 +411,7 @@ class App:
                             ActionResult(
                                 status=False, message=f"Invalid parameters: {e!s}"
                             ),
-                            self.actions_provider,
+                            self.actions_manager,
                         )
 
                     kwargs = self._build_magic_args(function, client=client, **kwargs)
@@ -481,20 +478,20 @@ class App:
 
                     return self._adapt_action_result(
                         ActionResult(status=True, message="Polling complete"),
-                        self.actions_provider,
+                        self.actions_manager,
                     )
                 except ActionFailure as e:
                     e.set_action_name(action_name)
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)),
-                        self.actions_provider,
+                        self.actions_manager,
                     )
                 except Exception as e:
-                    self.actions_provider.add_exception(e)
+                    self.actions_manager.add_exception(e)
                     logger.info(f"Error during polling: {e!s}")
                     return self._adapt_action_result(
                         ActionResult(status=False, message=str(e)),
-                        self.actions_provider,
+                        self.actions_manager,
                     )
 
             inner.params_class = validated_params_class
@@ -518,7 +515,7 @@ class App:
                 versions="EQ(*)",
             )
 
-            self.actions_provider.set_action(action_identifier, inner)
+            self.actions_manager.set_action(action_identifier, inner)
             self._dev_skip_in_pytest(function, inner)
             return inner
 
@@ -751,7 +748,7 @@ class App:
     def _validate_params(params: Params, action_name: str) -> Params:
         """
         Validates input params, checking them against the use of proper Params class
-        inheritance. This is automatically covered by AppConnector, but can be also
+        inheritance. This is automatically covered by AppClient, but can be also
         useful for when using in testing with mocked SOARClient implementation.
         """
         if not isinstance(params, Params):
@@ -763,7 +760,7 @@ class App:
     @staticmethod
     def _adapt_action_result(
         result: Union[ActionOutput, ActionResult, tuple[bool, str], bool],
-        actions_provider: ActionsProvider,
+        actions_manager: ActionsManager,
         action_params: Optional[Params] = None,
     ) -> bool:
         """
@@ -785,11 +782,11 @@ class App:
             result.add_data(output_dict)
 
         if isinstance(result, ActionResult):
-            actions_provider.add_result(result)
+            actions_manager.add_result(result)
             return result.get_status()
         if isinstance(result, tuple) and 2 <= len(result) <= 3:
             action_result = ActionResult(*result)
-            actions_provider.add_result(action_result)
+            actions_manager.add_result(action_result)
             return result[0]
         return False
 

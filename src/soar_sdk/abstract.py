@@ -189,7 +189,7 @@ class SOARClient:
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth,
+            auth=auth,  # type: ignore[arg-type]
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
