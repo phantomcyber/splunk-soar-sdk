@@ -8,6 +8,7 @@ import pytest
 
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
+from soar_sdk.abstract import SOARClientAuth
 
 
 def test_app_run(example_app):
@@ -18,7 +19,7 @@ def test_app_run(example_app):
 
 
 def test_handle(example_app: App, simple_action_input: InputSpecification):
-    with mock.patch.object(example_app.actions_provider, "handle") as mock_handle:
+    with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
         example_app.handle(simple_action_input.json())
 
     mock_handle.assert_called_once()
@@ -182,3 +183,17 @@ def test_handle_webhook_invalid_return_type_raises(
             asset={"base_url": "https://example.com"},
             soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
         )
+
+
+def test_create_soar_client_auth_object(auth_action_input):
+    result = App.create_soar_client_auth_object(auth_action_input)
+    assert isinstance(result, SOARClientAuth)
+    assert result.username == "soar_local_admin"
+    assert result.password == "password"
+
+
+def test_create_soar_client_auth_token_object(auth_token_input):
+    result = App.create_soar_client_auth_object(auth_token_input)
+    assert isinstance(result, SOARClientAuth)
+    assert result.base_url == "https://localhost:9999/"
+    assert result.user_session_token == "example_token"

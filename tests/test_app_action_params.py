@@ -30,27 +30,27 @@ def test_app_action_run_use_params_model(example_app):
     foo(SampleActionParams(field1=5))
 
 
-def test_app_action_handling_simple_params_conversion(example_app):
+def test_app_action_handling_simple_params_conversion(example_app: App):
     @example_app.action()
     def foo(params: SampleActionParams, client) -> ActionOutput:
         assert params.field1 == 5
 
     with mock.patch.object(
-        example_app.actions_provider.soar_client,
+        example_app.actions_manager,
         "get_action_identifier",
         return_value="foo",
     ):
-        example_app.actions_provider.soar_client.handle_action({"field1": 5})
+        example_app.actions_manager.handle_action({"field1": 5})
 
 
-def test_app_action_handling_validation_error_raised(example_app):
+def test_app_action_handling_validation_error_raised(example_app: App):
     @example_app.action(params_class=SampleActionParams)
     def foo(params: SampleActionParams, client) -> ActionOutput:
         assert params.field1 == 5
 
     with mock.patch.object(
-        example_app.actions_provider.soar_client,
+        example_app.actions_manager,
         "get_action_identifier",
         return_value="foo",
     ):
-        example_app.actions_provider.soar_client.handle_action({"field1": "five"})
+        example_app.actions_manager.handle_action({"field1": "five"})

@@ -28,7 +28,7 @@ def test_parse_args_with_no_actions(simple_app: App):
     runner = AppCliRunner(simple_app)
 
     # Mock get_actions to return an empty dict
-    runner.app.actions_provider.get_actions = mock.Mock(return_value={})
+    runner.app.actions_manager.get_actions = mock.Mock(return_value={})
 
     # Calling parse_args with no argv should raise SystemExit because subparser is required
     with pytest.raises(SystemExit):
@@ -40,7 +40,7 @@ def test_parse_args_with_action_no_params(app_with_action: App):
     runner = AppCliRunner(app_with_action)
 
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action")
+    action = runner.app.actions_manager.get_action("test_action")
     assert action is not None
 
     # Modify the action to not require params
@@ -61,7 +61,7 @@ def test_parse_args_with_action_needs_asset(
     """Test parsing arguments for an action that requires an asset file."""
     runner = AppCliRunner(app_with_asset_action)
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action_with_asset")
+    action = runner.app.actions_manager.get_action("test_action_with_asset")
     assert action is not None
 
     asset_file, param_file = tmp_asset_and_param_files
@@ -100,7 +100,7 @@ def test_parse_args_with_action_needs_params(
     runner = AppCliRunner(app_with_action)
 
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action")
+    action = runner.app.actions_manager.get_action("test_action")
     assert action is not None
 
     _, param_file = tmp_asset_and_param_files
@@ -134,7 +134,7 @@ def test_parse_args_with_action_needs_asset_and_params(
     runner = AppCliRunner(app_with_asset_action)
 
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action_with_asset")
+    action = runner.app.actions_manager.get_action("test_action_with_asset")
     assert action is not None
 
     asset_file, param_file = tmp_asset_and_param_files
@@ -221,7 +221,7 @@ def test_parse_args_with_malformed_param_values(
     runner = AppCliRunner(app_with_action)
 
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action")
+    action = runner.app.actions_manager.get_action("test_action")
     assert action is not None
     assert action.params_class is not None
 
@@ -248,7 +248,7 @@ def test_with_soar_authentication(
     runner = AppCliRunner(app_with_action)
 
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action")
+    action = runner.app.actions_manager.get_action("test_action")
     assert action is not None
     action.params_class = None
     os.environ["PHANTOM_PASSWORD"] = "password"
@@ -280,7 +280,7 @@ def test_bas_soar_auth_params(app_with_action: App):
     runner = AppCliRunner(app_with_action)
 
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action")
+    action = runner.app.actions_manager.get_action("test_action")
     assert action is not None
     action.params_class = None
 
@@ -436,7 +436,7 @@ def test_run_action_cli(app_with_action: App):
     runner = AppCliRunner(app_with_action)
 
     # Get the real action from our fixture
-    action = runner.app.actions_provider.get_action("test_action")
+    action = runner.app.actions_manager.get_action("test_action")
     assert action is not None
 
     # Modify the action to not require params

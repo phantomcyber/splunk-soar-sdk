@@ -3,11 +3,12 @@ from unittest import mock
 
 import pytest
 
-from soar_sdk.actions_provider import ActionsProvider
+from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.asset import BaseAsset
 from soar_sdk.compat import PythonVersion
-from soar_sdk.connector import AppConnector
+from soar_sdk.app_client import AppClient
+from soar_sdk.abstract import SOARClientAuth
 from soar_sdk.input_spec import AppConfig, InputSpecification, SoarAuth
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
@@ -32,19 +33,19 @@ def example_app() -> App:
         product_name="Example App",
         publisher="Splunk",
     )
-    app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
-    app.actions_provider.soar_client.get_state_dir = mock.Mock(return_value="/tmp/")
-    app.actions_provider.soar_client._load_app_json = mock.Mock(return_value=True)
+    app.actions_manager._load_app_json = mock.Mock(return_value=True)
+    app.actions_manager.get_state_dir = mock.Mock(return_value="/tmp/")
+    app.actions_manager._load_app_json = mock.Mock(return_value=True)
 
     with open("tests/example_app/app.json") as app_json:
-        app.actions_provider.soar_client._BaseConnector__app_json = json.load(app_json)
+        app.actions_manager._BaseConnector__app_json = json.load(app_json)
 
     return app
 
 
 @pytest.fixture
-def example_provider(example_app):
-    return example_app.actions_provider
+def example_provider(example_app: App) -> ActionsManager:
+    return example_app.actions_manager
 
 
 @pytest.fixture
@@ -64,6 +65,13 @@ def simple_app() -> App:
         product_name="Example App",
         publisher="Splunk",
     )
+
+
+@pytest.fixture
+def app_connector() -> AppClient:
+    connector = AppClient()
+    connector.client.headers.update({"X-CSRFToken": "fake-token"})
+    return connector
 
 
 @pytest.fixture
@@ -166,20 +174,13 @@ def app_with_asset_webhook() -> App:
 
 
 @pytest.fixture
-def simple_provider(simple_app) -> ActionsProvider:
-    return simple_app.actions_provider
+def simple_connector(simple_app: App) -> AppClient:
+    return simple_app.soar_client
 
 
 @pytest.fixture
-def simple_connector(simple_app) -> AppConnector:
-    return AppConnector(simple_app.actions_provider)
-
-
-@pytest.fixture
-def app_connector(simple_app) -> AppConnector:
-    connector = AppConnector(simple_app.actions_provider)
-    connector.client.headers.update({"X-CSRFToken": "fake-token"})
-    return connector
+def app_actions_manager(simple_app: App) -> AppClient:
+    return simple_app.actions_manager
 
 
 @pytest.fixture
@@ -191,6 +192,36 @@ def simple_action_input() -> InputSpecification:
         config=AppConfig(
             app_version="1.0.0", directory=".", main_module="example_connector.py"
         ),
+    )
+
+
+@pytest.fixture
+def auth_action_input() -> InputSpecification:
+    return InputSpecification(
+        asset_id="1",
+        identifier="test_action",
+        action="test_action",
+        config=AppConfig(
+            app_version="1.0.0", directory=".", main_module="example_connector.py"
+        ),
+        soar_auth=SoarAuth(
+            phantom_url="https://example.com",
+            username="soar_local_admin",
+            password="password",
+        ),
+    )
+
+
+@pytest.fixture
+def auth_token_input() -> InputSpecification:
+    return InputSpecification(
+        asset_id="1",
+        identifier="test_action",
+        action="test_action",
+        config=AppConfig(
+            app_version="1.0.0", directory=".", main_module="example_connector.py"
+        ),
+        user_session_token="example_token",
     )
 
 
@@ -245,32 +276,19 @@ def app_tarball(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
-def action_input_soar_auth() -> InputSpecification:
-    return InputSpecification(
-        asset_id="1",
-        identifier="test_action",
-        action="test_action",
-        config=AppConfig(
-            app_version="1.0.0", directory=".", main_module="example_connector.py"
-        ),
-        soar_auth=SoarAuth(
-            phantom_url="https://10.34.5.6",
-            username="soar_local_admin",
-            password="password",
-        ),
+def soar_client_auth() -> SOARClientAuth:
+    return SOARClientAuth(
+        base_url="https://10.34.5.6",
+        username="soar_local_admin",
+        password="password",
     )
 
 
 @pytest.fixture
-def action_input_soar_platform_auth() -> InputSpecification:
-    return InputSpecification(
-        asset_id="1",
-        identifier="test_action",
-        action="test_action",
-        config=AppConfig(
-            app_version="1.0.0", directory=".", main_module="example_connector.py"
-        ),
-        user_session_token="U675T542",
+def soar_client_auth_token() -> SOARClientAuth:
+    return SOARClientAuth(
+        base_url="https://10.34.5.6",
+        user_session_token="example_token",
     )
 
 
@@ -312,6 +330,19 @@ def mock_post_any_soar_call(respx_mock):
         return_value=Response(
             200,
             json={"message": "Mocked POST response"},
+            headers={"Set-Cookie": "sessionid=mocked_session_id; Path=/; HttpOnly"},
+        )
+    )
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
+def mock_delete_any_soar_call(respx_mock):
+    mock_route = respx_mock.delete(re.compile(r".*")).mock(
+        return_value=Response(
+            200,
+            json={"message": "Mocked Deleted response"},
             headers={"Set-Cookie": "sessionid=mocked_session_id; Path=/; HttpOnly"},
         )
     )

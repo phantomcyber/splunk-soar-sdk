@@ -1,6 +1,6 @@
 from httpx import Response, RequestError
 from soar_sdk.exceptions import SoarAPIError
-from soar_sdk.connector import BasicAuth
+from soar_sdk.app_client import BasicAuth
 import pytest
 from soar_sdk.apis.utils import get_request_iter_pages
 
@@ -128,7 +128,7 @@ def test_vault_delete_attachment(app_connector):
 def test_vault_delete_attachment_authenticated_client(
     app_connector, mock_get_vault, mock_delete_vault
 ):
-    app_connector._AppConnector__basic_auth = BasicAuth(
+    app_connector._AppClient__basic_auth = BasicAuth(
         username="username", password="password"
     )
     deleted_files = app_connector.vault.delete_attachment(
@@ -138,7 +138,7 @@ def test_vault_delete_attachment_authenticated_client(
     assert deleted_files == ["test.txt"]
     assert mock_get_vault.called
     assert mock_delete_vault.called
-    app_connector._AppConnector__basic_auth = None
+    app_connector._AppClient__basic_auth = None
 
 
 def test_vault_delete_attachment_authenticated_client_error(

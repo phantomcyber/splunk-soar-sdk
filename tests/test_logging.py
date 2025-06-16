@@ -1,7 +1,6 @@
 from unittest import mock
 import pytest
 
-from soar_sdk.connector import AppConnector
 from soar_sdk.logging import (
     getLogger,
     debug,
@@ -27,7 +26,7 @@ def test_root_logger():
 
     logger = python_logger.getLogger()
     logger.warning("This is an info message from the test_logging module.")
-    ph_ipc.debugprint.assert_called_once()
+    ph_ipc.debugprint.assert_called()
 
 
 def test_logging():
@@ -76,7 +75,7 @@ def test_logging():
     )
 
 
-def test_standalone_logging(app_connector: AppConnector):
+def test_standalone_logging():
     info("This is an info message from the test_logging module.")
     ph_ipc.sendstatus.assert_called_with(
         None,

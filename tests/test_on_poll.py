@@ -278,7 +278,7 @@ def test_on_poll_decoration_with_meta(app_with_action: App):
     def on_poll_function(params: OnPollParams, client=None) -> Iterator[dict]:
         yield {"data": "test"}
 
-    action = app_with_action.actions_provider.get_action("on_poll")
+    action = app_with_action.actions_manager.get_action("on_poll")
     assert action is not None
     assert action.meta.action == "on poll"
     assert action == on_poll_function
@@ -291,7 +291,7 @@ def test_on_poll_actionmeta_dict_output_empty(app_with_action: App):
     def on_poll_function(params: OnPollParams, client=None):
         yield Artifact(name="a1")
 
-    action = app_with_action.actions_provider.get_action("on_poll")
+    action = app_with_action.actions_manager.get_action("on_poll")
     meta_dict = action.meta.dict()
     assert "output" in meta_dict
     assert meta_dict["output"] == []

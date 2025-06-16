@@ -24,6 +24,7 @@
     "configuration": {
         "base_url": {
             "data_type": "string",
+            "default": "https://example",
             "required": true,
             "description": "Base Url",
             "order": 0
