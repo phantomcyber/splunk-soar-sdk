@@ -427,7 +427,9 @@ class App:
                         if isinstance(item, Container):
                             # TODO: Change save_container for incorporation with container.create()
                             container = item.to_dict()  # Convert for saving
-                            ret_val, message, cid = client.save_container(container)  # type: ignore[attr-defined]
+                            ret_val, message, cid = self.actions_manager.save_container(
+                                container
+                            )
                             logger.info(f"Creating container: {container['name']}")
 
                             if ret_val:
@@ -471,7 +473,7 @@ class App:
                             item.container_id = container_id
 
                         # TODO: Change save_artifact for incorporation with artifact.create()
-                        client.save_artifacts([artifact_dict])  # type: ignore[attr-defined]
+                        self.actions_manager.save_artifacts([artifact_dict])
                         logger.info(
                             f"Added artifact: {artifact_dict.get('name', 'Unnamed artifact')}"
                         )

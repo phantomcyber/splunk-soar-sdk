@@ -161,9 +161,14 @@ def test_on_poll_multiple_yields(app_with_action: App):
 
 def test_on_poll_yields_container_success(app_with_action: App):
     """Test on_poll yields a Container and successfully."""
-    client_mock = mock.Mock()
-    client_mock.save_container.return_value = (True, "Created", 42)
-    client_mock.save_artifacts.return_value = None
+
+    # Mock the save_container method to return success
+    app_with_action.actions_manager.save_container = mock.Mock()
+    app_with_action.actions_manager.save_container.return_value = (True, "Created", 42)
+
+    # Mock the save_artifacts method
+    app_with_action.actions_manager.save_artifacts = mock.Mock()
+    app_with_action.actions_manager.save_artifacts.return_value = None
 
     @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
@@ -171,17 +176,22 @@ def test_on_poll_yields_container_success(app_with_action: App):
         yield Artifact(name="a1")
 
     params = OnPollParams(start_time=0, end_time=1)
-    result = on_poll_function(params, client=client_mock)
+    result = on_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    assert client_mock.save_container.call_count == 1
-    client_mock.save_artifacts.assert_called()
+    assert app_with_action.actions_manager.save_container.call_count == 1
+    app_with_action.actions_manager.save_artifacts.assert_called()
 
 
 def test_on_poll_yields_container_duplicate(app_with_action: App):
     """Test on_poll yields a Container and handles duplicate container correctly."""
-    client_mock = mock.Mock()
-    client_mock.save_container.return_value = (True, "Duplicate container found", 99)
-    client_mock.save_artifacts.return_value = None
+    app_with_action.actions_manager.save_container = mock.Mock()
+    app_with_action.actions_manager.save_artifacts = mock.Mock()
+    app_with_action.actions_manager.save_container.return_value = (
+        True,
+        "Duplicate container found",
+        99,
+    )
+    app_with_action.actions_manager.save_artifacts.return_value = None
 
     @app_with_action.on_poll()
     def on_poll_function_dup(params: OnPollParams, client=None):
@@ -189,17 +199,22 @@ def test_on_poll_yields_container_duplicate(app_with_action: App):
         yield Artifact(name="a2")
 
     params = OnPollParams(start_time=0, end_time=1)
-    result = on_poll_function_dup(params, client=client_mock)
+    result = on_poll_function_dup(params, client=app_with_action.soar_client)
     assert result is True
-    assert client_mock.save_container.call_count == 1
-    client_mock.save_artifacts.assert_called()
+    assert app_with_action.actions_manager.save_container.call_count == 1
+    app_with_action.actions_manager.save_artifacts.assert_called()
 
 
 def test_on_poll_yields_container_creation_failure(app_with_action: App):
     """Test on_poll handles container creation failure correctly."""
-    client_mock = mock.Mock()
-    client_mock.save_container.return_value = (False, "Error creating container", None)
-    client_mock.save_artifacts.return_value = None
+    app_with_action.actions_manager.save_container = mock.Mock()
+    app_with_action.actions_manager.save_artifacts = mock.Mock()
+    app_with_action.actions_manager.save_container.return_value = (
+        False,
+        "Error creating container",
+        None,
+    )
+    app_with_action.actions_manager.save_artifacts.return_value = None
 
     @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
@@ -207,10 +222,10 @@ def test_on_poll_yields_container_creation_failure(app_with_action: App):
         yield Artifact(name="a3")  # Should be skipped because no container
 
     params = OnPollParams(start_time=0, end_time=1)
-    result = on_poll_function(params, client=client_mock)
+    result = on_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    assert client_mock.save_container.call_count == 1
-    client_mock.save_artifacts.assert_not_called()
+    assert app_with_action.actions_manager.save_container.call_count == 1
+    app_with_action.actions_manager.save_artifacts.assert_not_called()
 
 
 def test_on_poll_yields_non_container_artifact(app_with_action: App):
@@ -242,7 +257,7 @@ def test_on_poll_artifact_no_container(app_with_action: App):
 
 def test_on_poll_sets_container_id_on_artifact(app_with_action: App):
     """Test that on_poll sets container_id on artifact if not present and container_id is available."""
-    client_mock = mock.Mock()
+    app_with_action.actions_manager.save_artifacts = mock.Mock()
 
     @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
@@ -250,8 +265,8 @@ def test_on_poll_sets_container_id_on_artifact(app_with_action: App):
         yield artifact2
 
     params = OnPollParams(start_time=0, end_time=1)
-    on_poll_function(params, client=client_mock)
-    called_artifacts = client_mock.save_artifacts.call_args_list
+    on_poll_function(params, client=app_with_action.soar_client)
+    called_artifacts = app_with_action.actions_manager.save_artifacts.call_args_list
     saved_artifact = called_artifacts[0][0][0][0]
     assert saved_artifact["container_id"] == 999
 
