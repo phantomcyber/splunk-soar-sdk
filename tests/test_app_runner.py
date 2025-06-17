@@ -11,6 +11,11 @@ from soar_sdk.app_cli_runner import AppCliRunner
 import os
 
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+from soar_sdk.asset import BaseAsset
+
+
+class Asset(BaseAsset):
+    base_url: str
 
 
 @pytest.fixture
@@ -304,7 +309,7 @@ def test_parse_args_webhook(
     runner = AppCliRunner(app_with_asset_webhook)
 
     asset_file, _ = tmp_asset_and_param_files
-    asset_json = {"asset_key": "asset_value"}
+    asset_json = {"base_url": "https://example.com"}
     json.dump(asset_json, asset_file)
     asset_file.flush()
 
@@ -316,16 +321,15 @@ def test_parse_args_webhook(
             asset_file.name,
         ]
     )
-
     assert args.webhook_request == WebhookRequest(
         method="GET",
         headers={},
         path_parts=["test_webhook"],
         query={},
         body=None,
-        asset={"asset_key": "asset_value"},
+        asset=Asset(base_url="https://example.com"),
         soar_base_url="https://example.com",
-        soar_auth_token="PLACEHOLDER",
+        soar_auth_token="",
         asset_id=1,
     )
 
@@ -339,7 +343,7 @@ def test_parse_args_webhook_headers(
     asset_file, _ = tmp_asset_and_param_files
 
     # Parsing args with an invalid header should raise SystemExit
-    asset_json = {"asset_key": "asset_value"}
+    asset_json = {"base_url": "https://example.com"}
     json.dump(asset_json, asset_file)
     asset_file.flush()
 
@@ -351,6 +355,8 @@ def test_parse_args_webhook_headers(
             asset_file.name,
             "--header",
             "Content-Type=application/json",
+            "--asset-id",
+            "1",
         ]
     )
 
@@ -360,9 +366,9 @@ def test_parse_args_webhook_headers(
         path_parts=["test_webhook"],
         query={},
         body=None,
-        asset={"asset_key": "asset_value"},
+        asset=Asset(base_url="https://example.com"),
         soar_base_url="https://example.com",
-        soar_auth_token="PLACEHOLDER",
+        soar_auth_token="",
         asset_id=1,
     )
 
@@ -376,7 +382,7 @@ def test_parse_args_webhook_invalid_header(
     asset_file, _ = tmp_asset_and_param_files
 
     # Parsing args with an invalid header should raise SystemExit
-    asset_json = {"asset_key": "asset_value"}
+    asset_json = {"base_url": "https://example.com"}
     json.dump(asset_json, asset_file)
     asset_file.flush()
 
@@ -402,7 +408,7 @@ def test_parse_args_webhook_flattens_params(
     runner = AppCliRunner(app_with_asset_webhook)
 
     asset_file, _ = tmp_asset_and_param_files
-    asset_json = {"asset_key": "asset_value"}
+    asset_json = {"base_url": "https://example.com"}
     json.dump(asset_json, asset_file)
     asset_file.flush()
 
@@ -412,6 +418,8 @@ def test_parse_args_webhook_flattens_params(
             "test_webhook?key1=value1&key2=value2&key2=value3",
             "--asset-file",
             asset_file.name,
+            "--asset-id",
+            "2",
         ]
     )
 
@@ -424,10 +432,10 @@ def test_parse_args_webhook_flattens_params(
             "key2": ["value2", "value3"],
         },
         body=None,
-        asset={"asset_key": "asset_value"},
+        asset=Asset(base_url="https://example.com"),
         soar_base_url="https://example.com",
-        soar_auth_token="PLACEHOLDER",
-        asset_id=1,
+        soar_auth_token="",
+        asset_id=2,
     )
 
 
@@ -463,7 +471,7 @@ def test_run_webhook_cli(
 
     asset_file, _ = tmp_asset_and_param_files
 
-    asset_json = {"asset_key": "asset_value"}
+    asset_json = {"base_url": "https://example.com"}
     json.dump(asset_json, asset_file)
     asset_file.flush()
 
@@ -492,7 +500,7 @@ def test_run_webhook_cli_base64(
 
     asset_file, _ = tmp_asset_and_param_files
 
-    asset_json = {"asset_key": "asset_value"}
+    asset_json = {"base_url": "https://example.com"}
     json.dump(asset_json, asset_file)
     asset_file.flush()
 
@@ -501,3 +509,52 @@ def test_run_webhook_cli_base64(
 
     # Run the webhook
     runner.run()
+
+
+def test_webhooks_with_soar_authentication(
+    app_with_client_webhook: App,
+    tmp_asset_and_param_files: tuple[Path, Path],
+    mock_get_any_soar_call,
+    mock_post_any_soar_call,
+):
+    """Test parsing arguments for an action that requires both asset and parameters."""
+    runner = AppCliRunner(app_with_client_webhook)
+
+    asset_file, _ = tmp_asset_and_param_files
+    asset_json = {"base_url": "https://example.com"}
+    json.dump(asset_json, asset_file)
+    asset_file.flush()
+
+    args = runner.parse_args(
+        [
+            "--soar-url",
+            "10.34.5.6",
+            "--soar-user",
+            "soar_local_admin",
+            "--soar-password",
+            "password",
+            "webhook",
+            "test_webhook",
+            "--asset-file",
+            asset_file.name,
+            "--asset-id",
+            "2",
+        ]
+    )
+
+    assert args.webhook_request == WebhookRequest(
+        method="GET",
+        headers={},
+        path_parts=["test_webhook"],
+        query={},
+        body=None,
+        asset=Asset(base_url="https://example.com"),
+        soar_base_url="10.34.5.6",
+        soar_auth_token="mocked_session_id",
+        asset_id=2,
+    )
+    runner.parse_args = mock.Mock(return_value=args)
+    runner.run()
+
+    assert mock_get_any_soar_call.call_count == 3
+    assert mock_post_any_soar_call.call_count == 1

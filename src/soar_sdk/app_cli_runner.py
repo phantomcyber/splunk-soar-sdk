@@ -12,6 +12,8 @@ from soar_sdk.input_spec import ActionParameter, AppConfig, InputSpecification, 
 from soar_sdk.types import Action
 from soar_sdk.webhooks.models import WebhookRequest
 from soar_sdk.logging import PhantomLogger
+from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
+from soar_sdk.abstract import SOARClientAuth
 
 if typing.TYPE_CHECKING:
     from .app import App
@@ -88,6 +90,12 @@ class AppCliRunner:
             help="Path to the asset file",
             type=Path,
             required=True,
+        )
+        webhooks_parser.add_argument(
+            "--asset-id",
+            help="ID of the asset the webhook is tied to",
+            type=int,
+            default=1,
         )
         webhooks_parser.add_argument(
             "-X",
@@ -208,10 +216,17 @@ class AppCliRunner:
             h_key, h_value = header.split("=", 1)
             headers[h_key] = h_value
 
-        # TODO: Once we have a stable SOARClient for webhooks, we should accept real values here and use them to create a session
         soar_base_url = args.soar_url or "https://example.com"
-        soar_auth_token = "PLACEHOLDER"  # noqa: S105
-        asset_id = 1
+        soar_auth_token = ""
+        soar_args = (soar_base_url, args.soar_user, args.soar_password)
+        if all(soar_args):
+            auth = SOARClientAuth(
+                base_url=soar_base_url,
+                username=args.soar_user,
+                password=args.soar_password,
+            )
+            self.app.soar_client.update_client(auth, args.asset_id)
+            soar_auth_token = self.app.soar_client.client.cookies.get("sessionid")
 
         args.webhook_request = WebhookRequest(
             method=args.method,
@@ -219,11 +234,12 @@ class AppCliRunner:
             path_parts=path_parts,
             query=query,
             body=args.data,
-            asset=asset_json,
+            asset=self.app.asset_cls.parse_obj(asset_json),
             soar_base_url=soar_base_url,
             soar_auth_token=soar_auth_token,
-            asset_id=asset_id,
+            asset_id=args.asset_id,
         )
+        print(f"Parsed webhook request: {args.webhook_request}")
 
     def run(self) -> None:
         args = self.parse_args()
@@ -241,19 +257,31 @@ class AppCliRunner:
                 pretty = json.dumps(result.param, indent=2, ensure_ascii=False)
                 logger.info(pretty)
 
-        if (webhook_request := getattr(args, "webhook_request", None)) and (
-            router := self.app.webhook_router
-        ):
-            response = router.handle_request(webhook_request)
-            logger.info(f"Response status code: {response.status_code}\n")
+        if webhook_request := getattr(args, "webhook_request", None):
+            soar_rest_client = SoarRestClient(
+                token=webhook_request.soar_auth_token, asset_id=webhook_request.asset_id
+            )
+            soar_rest_client.base_url = webhook_request.soar_base_url
+            response = self.app.handle_webhook(
+                method=webhook_request.method,
+                headers=webhook_request.headers,
+                path_parts=webhook_request.path_parts,
+                query=webhook_request.query,
+                body=webhook_request.body,
+                asset=webhook_request.asset,
+                soar_rest_client=soar_rest_client,
+            )
+
+            status_code = response["status_code"]
+            logger.info(f"Response status code: {status_code}\n")
 
             logger.info("Response headers:")
-            for name, value in response.headers:
+            for name, value in response.get("headers", []):
                 logger.info(f"{name}: {value}")
             logger.info("")
 
-            if response.is_base64_encoded:
+            if response.get("is_base64_encoded", False):
                 logger.info("Response content (base64-encoded):")
             else:
                 logger.info("Response content:")
-            logger.info(response.content)
+            logger.info(response.get("content", ""))
