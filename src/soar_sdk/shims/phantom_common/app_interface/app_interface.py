@@ -21,8 +21,10 @@ if TYPE_CHECKING or not _soar_is_available:
 
             self.session = requests.Session()
             self.session.headers.update({"Cookie": f"sessionid={token}"})
+            self.username = ""
+            self.password = ""
 
-            self.is_authenticated = bool(token)
+            self.is_authenticated = bool(token) or (self.username and self.password)
 
 
 __all__ = ["SoarRestClient"]

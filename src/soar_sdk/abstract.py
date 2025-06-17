@@ -6,7 +6,8 @@ from soar_sdk.apis.vault import Vault
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 import httpx
-from dataclasses import dataclass
+from pydantic.dataclasses import dataclass
+from pydantic import validator
 
 JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 
@@ -17,6 +18,14 @@ class SOARClientAuth:
     username: str = ""
     password: str = ""
     user_session_token: str = ""
+
+    @validator("base_url")
+    def validate_phantom_url(cls, value: str) -> str:
+        return (
+            f"https://{value}"
+            if not value.startswith(("http://", "https://"))
+            else value
+        )
 
 
 class SOARClient:

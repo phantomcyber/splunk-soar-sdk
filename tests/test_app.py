@@ -8,7 +8,7 @@ import pytest
 
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
-from soar_sdk.abstract import SOARClientAuth
+from soar_sdk.abstract import SOARClientAuth, SOARClient
 
 
 def test_app_run(example_app):
@@ -104,7 +104,7 @@ def test_register_webhook_without_enabling_webhooks_raises(app_with_simple_asset
             return WebhookResponse.text_response("Hello, world!")
 
 
-def test_handle_webhook(app_with_asset_webhook: App):
+def test_handle_webhook(app_with_asset_webhook: App, mock_get_any_soar_call):
     response = app_with_asset_webhook.handle_webhook(
         method="GET",
         headers={},
@@ -116,9 +116,12 @@ def test_handle_webhook(app_with_asset_webhook: App):
     )
     assert response["status_code"] == 200
     assert response["content"] == "Webhook received!"
+    assert mock_get_any_soar_call.call_count == 1
 
 
-def test_handle_webhook_normalizes_querystring(app_with_asset_webhook: App):
+def test_handle_webhook_normalizes_querystring(
+    app_with_asset_webhook: App, mock_get_any_soar_call
+):
     @app_with_asset_webhook.webhook("test_webhook_with_query")
     def webhook_handler(request: WebhookRequest) -> WebhookResponse:
         assert request.query == {
@@ -143,6 +146,7 @@ def test_handle_webhook_normalizes_querystring(app_with_asset_webhook: App):
     )
     assert response["status_code"] == 200
     assert response["content"] == "Webhook received!"
+    assert mock_get_any_soar_call.call_count == 1
 
 
 def test_handle_webhook_without_enabling_webhooks_raises(
@@ -164,7 +168,7 @@ def test_handle_webhook_without_enabling_webhooks_raises(
 
 
 def test_handle_webhook_invalid_return_type_raises(
-    app_with_asset_webhook: App,
+    app_with_asset_webhook: App, mock_get_any_soar_call
 ):
     @app_with_asset_webhook.webhook("example_webhook")
     def webhook_handler(request: WebhookRequest) -> str:
@@ -183,6 +187,39 @@ def test_handle_webhook_invalid_return_type_raises(
             asset={"base_url": "https://example.com"},
             soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
         )
+
+
+def test_handle_webhook_soar_client(
+    app_with_asset_webhook: App, mock_get_any_soar_call, mock_delete_any_soar_call
+):
+    @app_with_asset_webhook.webhook("test_webhook_with_query")
+    def webhook_handler(request: WebhookRequest, soar: SOARClient) -> WebhookResponse:
+        assert request.query == {
+            "string_param": ["value"],
+            "list_param": ["value1", "value2"],
+            "empty_param": [""],
+        }
+        soar.get("rest/version")
+        soar.delete("rest/containers/1/artifacts/2")
+        return WebhookResponse.text_response("Webhook received!")
+
+    response = app_with_asset_webhook.handle_webhook(
+        method="GET",
+        headers={},
+        path_parts=["test_webhook_with_query"],
+        query={
+            "string_param": "value",
+            "list_param": ["value1", "value2"],
+            "empty_param": None,
+        },
+        body=None,
+        asset={"base_url": "https://example.com"},
+        soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
+    )
+    assert mock_get_any_soar_call.call_count == 2
+    assert mock_delete_any_soar_call.call_count == 1
+    assert response["status_code"] == 200
+    assert response["content"] == "Webhook received!"
 
 
 def test_create_soar_client_auth_object(auth_action_input):
