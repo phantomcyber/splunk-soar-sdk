@@ -226,7 +226,7 @@ class AppCliRunner:
                 password=args.soar_password,
             )
             self.app.soar_client.update_client(auth, args.asset_id)
-            soar_auth_token = self.app.soar_client.client.cookies.get("sessionid")
+            soar_auth_token = self.app.soar_client.client.cookies.get("sessionid") or ""
 
         args.webhook_request = WebhookRequest(
             method=args.method,
