@@ -58,8 +58,9 @@ def reverse_string(
 
 
 @app.webhook("test_webhook")
-def test_webhook(request: WebhookRequest[Asset]) -> WebhookResponse:
+def test_webhook(request: WebhookRequest[Asset], soar: SOARClient) -> WebhookResponse:
     logger.debug("Webhook request: %s", request)
+    soar.get("rest/version")
     response = WebhookResponse.text_response(
         content="Webhook received",
         status_code=200,

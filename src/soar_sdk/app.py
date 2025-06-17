@@ -845,13 +845,24 @@ class App:
             if self.webhook_router is None:
                 raise RuntimeError("Webhooks are not enabled for this app.")
 
+            @wraps(function)
+            def webhook_wrapper(
+                request: WebhookRequest,
+            ) -> WebhookResponse:
+                # Inject soar_client if the function expects it
+                kwargs = {}
+                sig = inspect.signature(function)
+                if "soar" in sig.parameters:
+                    kwargs["soar"] = self.soar_client
+                return function(request, **kwargs)
+
             self.webhook_router.add_route(
                 url_pattern,
-                function,
+                webhook_wrapper,
                 methods=allowed_methods,
             )
 
-            return function
+            return webhook_wrapper
 
         return decorator
 
@@ -876,6 +887,11 @@ class App:
         _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
         asset_id = soar_rest_client.asset_id
         soar_base_url = soar_rest_client.base_url
+        soar_auth = SOARClientAuth(
+            user_session_token=soar_auth_token,
+            base_url=soar_base_url,
+        )
+        self.soar_client.update_client(soar_auth, asset_id)
 
         normalized_query = {}
         for key, value in query.items():
