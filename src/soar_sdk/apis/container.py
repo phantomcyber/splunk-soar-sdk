@@ -9,6 +9,8 @@ from soar_sdk.apis.utils import is_client_authenticated
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
 
+logger = getLogger()
+
 
 class Container:
     """
@@ -22,7 +24,6 @@ class Container:
             ph_jsons.APP_JSON_RUN_AUTOMATION: False,  # Don't run any playbooks, when this container is added
         }
         self.__containers: dict[int, dict] = {}
-        self.logger = getLogger()
 
     def set_executing_asset(self, asset_id: str) -> None:
         """
@@ -58,12 +59,11 @@ class Container:
 
             if "existing_container_id" in resp_data:
                 if not fail_on_duplicate:
-                    self.logger.info("Container already exists")
+                    logger.info("Container already exists")
                     self._process_container_artifacts_response(artifact_resp_data)
                     return resp_data["existing_container_id"]
                 else:
                     raise SoarAPIError("Container already exists")
-
             if "id" in resp_data:
                 self._process_container_artifacts_response(artifact_resp_data)
                 return resp_data["id"]
@@ -97,18 +97,18 @@ class Container:
     ) -> None:
         for resp_datum in artifact_resp_data:
             if "id" in resp_datum:
-                self.logger.debug("Added artifact")
+                logger.debug("Added artifact")
                 continue
 
             if "existing_artifact_id" in resp_datum:
-                self.logger.debug("Duplicate artifact found")
+                logger.debug("Duplicate artifact found")
                 continue
 
             if "failed" in resp_datum:
                 msg_cause = resp_datum.get("message", "NONE_GIVEN")
                 message = f"artifact addition failed, reason from server: {msg_cause}"
-                self.logger.warning(message)
+                logger.warning(message)
                 continue
 
             message = "Artifact addition failed, Artifact ID was not returned"
-            self.logger.warning(message)
+            logger.warning(message)
