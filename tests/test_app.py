@@ -104,7 +104,7 @@ def test_register_webhook_without_enabling_webhooks_raises(app_with_simple_asset
             return WebhookResponse.text_response("Hello, world!")
 
 
-def test_handle_webhook(app_with_asset_webhook: App):
+def test_handle_webhook(app_with_asset_webhook: App, mock_get_any_soar_call):
     response = app_with_asset_webhook.handle_webhook(
         method="GET",
         headers={},
@@ -116,9 +116,12 @@ def test_handle_webhook(app_with_asset_webhook: App):
     )
     assert response["status_code"] == 200
     assert response["content"] == "Webhook received!"
+    assert mock_get_any_soar_call.call_count == 1
 
 
-def test_handle_webhook_normalizes_querystring(app_with_asset_webhook: App):
+def test_handle_webhook_normalizes_querystring(
+    app_with_asset_webhook: App, mock_get_any_soar_call
+):
     @app_with_asset_webhook.webhook("test_webhook_with_query")
     def webhook_handler(request: WebhookRequest) -> WebhookResponse:
         assert request.query == {
@@ -143,6 +146,7 @@ def test_handle_webhook_normalizes_querystring(app_with_asset_webhook: App):
     )
     assert response["status_code"] == 200
     assert response["content"] == "Webhook received!"
+    assert mock_get_any_soar_call.call_count == 1
 
 
 def test_handle_webhook_without_enabling_webhooks_raises(
@@ -164,7 +168,7 @@ def test_handle_webhook_without_enabling_webhooks_raises(
 
 
 def test_handle_webhook_invalid_return_type_raises(
-    app_with_asset_webhook: App,
+    app_with_asset_webhook: App, mock_get_any_soar_call
 ):
     @app_with_asset_webhook.webhook("example_webhook")
     def webhook_handler(request: WebhookRequest) -> str:
