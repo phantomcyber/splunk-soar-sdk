@@ -31,6 +31,7 @@ from soar_sdk.decorators import (
     OnPollDecorator,
     WebhookDecorator,
 )
+from soar_sdk.action_group import ActionGroup
 
 
 def is_valid_uuid(value: str) -> bool:
@@ -418,3 +419,15 @@ class App:
                 f"Webhook handler must return a WebhookResponse, got {type(response)}"
             )
         return response.dict()
+    
+    def register_action_group(self, action_group: ActionGroup) -> "App":
+        """
+        Registers an action group to the app.
+        This will register all the actions defined in the ActionGroup with this App.
+        """
+        if not isinstance(action_group, ActionGroup):
+            raise TypeError("action_group must be an instance of ActionGroup")
+        
+        # Register the ActionGroup with this app, which will register all its actions
+        action_group._register_with_app(self)
+        return self
