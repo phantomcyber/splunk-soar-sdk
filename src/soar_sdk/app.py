@@ -3,7 +3,6 @@ import json
 import sys
 from functools import wraps
 from typing import Any, Optional, Union, Callable
-from pydantic import BaseModel
 from collections.abc import Iterator
 
 from soar_sdk.asset import BaseAsset
@@ -11,7 +10,6 @@ from soar_sdk.input_spec import InputSpecification
 from soar_sdk.compat import (
     MIN_PHANTOM_VERSION,
     PythonVersion,
-    remove_when_soar_newer_than,
 )
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClient, SOARClientAuth
@@ -26,21 +24,18 @@ from soar_sdk.app_client import AppClient
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.models.view import ViewContext, AllAppRuns, ResultSummary
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.logging import getLogger
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse, WebhookHandler
-from soar_sdk.views.view_parser import ViewFunctionParser
-from soar_sdk.views.template_renderer import (
-    get_template_renderer,
-    get_templates_dir,
-    BASE_TEMPLATE_PATH,
-)
-from soar_sdk.views.component_registry import COMPONENT_REGISTRY
-import traceback
+
 import uuid
+from soar_sdk.app_decorators import (
+    TestConnectivityDecorator,
+    ActionDecorator,
+    ViewHandlerDecorator,
+)
 
 
 def is_valid_uuid(value: str) -> bool:
@@ -167,189 +162,31 @@ class App:
         output_class: Optional[type[ActionOutput]] = None,
         view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
-    ) -> Callable[[Callable], Action]:
+    ) -> ActionDecorator:
         """
-        Generates a decorator for the action handling function attaching action
+        Returns a decorator instance for the action handling function attaching action
         specific meta information to the function.
         """
+        return ActionDecorator(
+            app=self,
+            name=name,
+            identifier=identifier,
+            description=description,
+            verbose=verbose,
+            action_type=action_type,
+            read_only=read_only,
+            params_class=params_class,
+            output_class=output_class,
+            view_handler=view_handler,
+            versions=versions,
+        )
 
-        def app_action(function: Callable) -> Action:
-            """
-            Decorator for the action handling function. Adds the specific meta
-            information to the action passed to the generator. Validates types used on
-            the action arguments and adapts output for fast and seamless development.
-            """
-            action_identifier = identifier or function.__name__
-            if action_identifier == "test_connectivity":
-                raise TypeError(
-                    "The 'test_connectivity' action identifier is reserved and cannot be used. Please use the test_connectivity decorator instead."
-                )
-            if self.actions_manager.get_action(action_identifier):
-                raise TypeError(
-                    f"Action identifier '{action_identifier}' is already used. Please use a different identifier."
-                )
-
-            action_name = name or str(action_identifier.replace("_", " "))
-
-            spec = inspect.getfullargspec(function)
-            validated_params_class = self._validate_params_class(
-                action_name, spec, params_class
-            )
-
-            return_type = inspect.signature(function).return_annotation
-            if return_type is not inspect.Signature.empty:
-                validated_output_class = return_type
-            elif output_class is not None:
-                validated_output_class = output_class
-            else:
-                raise TypeError(
-                    "Action function must specify a return type via type hint or output_class parameter"
-                )
-
-            if not issubclass(validated_output_class, ActionOutput):
-                raise TypeError(
-                    "Return type for action function must be derived from ActionOutput class."
-                )
-
-            @action_protocol
-            @wraps(function)
-            def inner(
-                params: Params,
-                /,
-                soar: SOARClient = self.soar_client,
-                *args: Any,  # noqa: ANN401
-                **kwargs: Any,  # noqa: ANN401
-            ) -> bool:
-                """
-                Validates input params and adapts the results from the action.
-                """
-                action_params = self._validate_params(params, action_name)
-                kwargs = self._build_magic_args(function, soar=soar, **kwargs)
-
-                try:
-                    result = function(action_params, *args, **kwargs)
-                except ActionFailure as e:
-                    e.set_action_name(action_name)
-                    return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)),
-                        self.actions_manager,
-                    )
-                except Exception as e:
-                    self.actions_manager.add_exception(e)
-                    traceback_str = "".join(
-                        traceback.format_exception(type(e), e, e.__traceback__)
-                    )
-                    return self._adapt_action_result(
-                        ActionResult(status=False, message=traceback_str),
-                        self.actions_manager,
-                    )
-
-                return self._adapt_action_result(
-                    result, self.actions_manager, action_params
-                )
-
-            # setting up meta information for the decorated function
-            inner.params_class = validated_params_class
-            inner.meta = ActionMeta(
-                action=action_name,
-                identifier=identifier or function.__name__,
-                description=description or inspect.getdoc(function) or action_name,
-                verbose=verbose,
-                type=action_type,
-                read_only=read_only,
-                parameters=validated_params_class,
-                output=validated_output_class,
-                versions=versions,
-                view_handler=view_handler,
-            )
-
-            self.actions_manager.set_action(action_identifier, inner)
-
-            self._dev_skip_in_pytest(function, inner)
-
-            return inner
-
-        return app_action
-
-    def test_connectivity(self) -> Callable[[Callable], Action]:
+    def test_connectivity(self) -> TestConnectivityDecorator:
         """
-        Generates a decorator for test connectivity attaching action
+        Returns a decorator instance for test connectivity attaching action
         specific meta information to the function.
         """
-
-        def test_con_function(function: Callable) -> Action:
-            """
-            Decorator for the test connectivity function. Makes sure that only 1 function
-            in the app is decorated with this decorator and attaches generic metadata to the
-            action. Validates that the only param passed is the SOARClient and adapts the return
-            value based on the success or failure of test connectivity.
-            """
-
-            if self.actions_manager.get_action("test_connectivity"):
-                raise TypeError(
-                    "The 'test_connectivity' decorator can only be used once per App instance."
-                )
-
-            signature = inspect.signature(function)
-            if signature.return_annotation not in (None, inspect._empty):
-                raise TypeError(
-                    "Test connectivity function must not return any value (return type should be None)."
-                )
-
-            action_identifier = "test_connectivity"
-            action_name = "test connectivity"
-
-            @action_protocol
-            @wraps(function)
-            def inner(
-                _param: Optional[dict] = None,
-                soar: SOARClient = self.soar_client,
-            ) -> bool:
-                kwargs = self._build_magic_args(function, soar=soar)
-
-                try:
-                    result = function(**kwargs)
-                    if result is not None:
-                        raise RuntimeError(
-                            "Test connectivity function must not return any value (return type should be None)."
-                        )
-                except ActionFailure as e:
-                    e.set_action_name(action_name)
-                    return self._adapt_action_result(
-                        ActionResult(status=False, message=str(e)),
-                        self.actions_manager,
-                    )
-                except Exception as e:
-                    self.actions_manager.add_exception(e)
-                    traceback_str = "".join(
-                        traceback.format_exception(type(e), e, e.__traceback__)
-                    )
-                    return self._adapt_action_result(
-                        ActionResult(status=False, message=traceback_str),
-                        self.actions_manager,
-                    )
-
-                return self._adapt_action_result(
-                    ActionResult(status=True, message="Test connectivity successful"),
-                    self.actions_manager,
-                )
-
-            inner.params_class = None
-            inner.meta = ActionMeta(
-                action=action_name,
-                identifier=action_identifier,
-                description=inspect.getdoc(function) or action_name,
-                verbose="Basic test for app.",
-                type="test",
-                read_only=True,
-                versions="EQ(*)",
-            )
-
-            self.actions_manager.set_action(action_identifier, inner)
-            self._dev_skip_in_pytest(function, inner)
-            return inner
-
-        return test_con_function
+        return TestConnectivityDecorator(self)
 
     def on_poll(self) -> Callable[[Callable], Action]:
         """
@@ -523,50 +360,11 @@ class App:
 
         return on_poll_decorator
 
-    @staticmethod
-    def _validate_view_function_signature(
-        function: Callable,
-        template: Optional[str] = None,
-        component_type: Optional[str] = None,
-    ) -> None:
-        """Validate that the function signature is compatible with view handlers."""
-        signature = inspect.signature(function)
-
-        if len(signature.parameters) < 1:
-            raise TypeError(
-                f"View function {function.__name__} must accept at least 1 parameter"
-            )
-
-        if signature.return_annotation == inspect.Signature.empty:
-            raise TypeError(
-                f"View function {function.__name__} must have a return type annotation"
-            )
-
-        # Custom template, handler should return a dict context
-        if template:
-            if signature.return_annotation is not dict:
-                raise TypeError(
-                    f"View handler {function.__name__} must return dict, got {signature.return_annotation}"
-                )
-            return
-
-        # Rendering HTML itself, rare case
-        if signature.return_annotation is str:
-            return
-
-        # Reusable component, returns one of our component models
-        if component_type:
-            return
-
-        raise TypeError(
-            f"View handler {function.__name__} has invalid return type: {signature.return_annotation}. Handlers must define a template and return a dict, return a predefined view component, or return a fully-rendered HTML string."
-        )
-
     def view_handler(
         self,
         *,
         template: Optional[str] = None,
-    ) -> Callable[[Callable], Callable]:
+    ) -> ViewHandlerDecorator:
         """
         Decorator for custom view functions with output parsing and template rendering.
 
@@ -582,116 +380,7 @@ class App:
             def my_chart_view(outputs: List[MyActionOutput]) -> PieChartData:
                 return PieChartData(title="Chart", labels=["A", "B"], values=[1, 2], colors=["red", "blue"])
         """
-
-        def view_decorator(function: Callable) -> Callable:
-            # Infer component type from return annotation
-            component_type = COMPONENT_REGISTRY.get(
-                inspect.signature(function).return_annotation
-            )
-
-            # Validate function signature
-            self._validate_view_function_signature(function, template, component_type)
-
-            # Wrapper emulates signature that SOAR sends to view handlers
-            @wraps(function)
-            def view_wrapper(
-                action: str,  # Action identifier
-                all_app_runs: list[
-                    tuple[dict[str, Any], list[ActionResult]]
-                ],  # Raw app run data
-                context: dict[str, Any],  # View context
-                *args: Any,  # noqa: ANN401
-                **kwargs: Any,  # noqa: ANN401
-            ) -> str:
-                def handle_html_output(html: str) -> str:
-                    remove_when_soar_newer_than(
-                        "6.4.1", "SOAR now fully supports prerendering views"
-                    )
-                    if context.get("accepts_prerender"):
-                        context["prerender"] = True
-                        return html
-                    context["html_content"] = html
-                    return BASE_TEMPLATE_PATH
-
-                def render_with_error_handling(
-                    render_func: Callable[[], str], error_type: str, target_name: str
-                ) -> str:
-                    try:
-                        return handle_html_output(render_func())
-                    except Exception as e:
-                        templates_dir = get_templates_dir(function.__globals__)
-                        renderer = get_template_renderer("jinja", templates_dir)
-                        error_html = renderer.render_error_template(
-                            error_type,
-                            f"Failed to render {target_name}: {e!s}",
-                            function.__name__,
-                            target_name,
-                        )
-                        return handle_html_output(error_html)
-
-                try:
-                    parser: ViewFunctionParser = ViewFunctionParser(function)
-
-                    # Parse context to ViewContext (coming from app_interface)
-                    parsed_context = ViewContext.parse_obj(context)
-
-                    # Parse all_app_runs to AllAppRuns (coming from app_interface)
-                    parsed_all_app_runs: AllAppRuns = []
-                    for app_run_data, action_results in all_app_runs:
-                        result_summary = ResultSummary.parse_obj(app_run_data)
-                        parsed_all_app_runs.append((result_summary, action_results))
-
-                    result = parser.execute(
-                        action, parsed_all_app_runs, parsed_context, *args, **kwargs
-                    )
-                except Exception as e:
-                    templates_dir = get_templates_dir(function.__globals__)
-                    renderer = get_template_renderer("jinja", templates_dir)
-                    target = template or component_type or "unknown"
-                    error_type = (
-                        "View Function Error"
-                        if template
-                        else "Component Function Error"
-                    )
-                    error_html = renderer.render_error_template(
-                        error_type,
-                        f"Error in {('view' if template else 'component')} function '{function.__name__}': {e!s}",
-                        function.__name__,
-                        target,
-                    )
-                    return handle_html_output(error_html)
-
-                # Rendered own HTML
-                if isinstance(result, str):
-                    return handle_html_output(result)
-
-                templates_dir = get_templates_dir(function.__globals__)
-                renderer = get_template_renderer("jinja", templates_dir)
-
-                # Reusable component
-                if isinstance(result, BaseModel):
-                    result_dict = result.dict()
-                    template_name = f"components/{component_type}.html"
-                    err_msg = "Component Rendering Failed"
-                    err_context = f"component '{component_type}'"
-
-                # Template rendering
-                else:
-                    result_dict = result
-                    template_name = template or ""
-                    err_msg = "Template Rendering Failed"
-                    err_context = f"template '{template}'"
-
-                render_context = {**context, **result_dict}
-                return render_with_error_handling(
-                    lambda: renderer.render_template(template_name, render_context),
-                    err_msg,
-                    err_context,
-                )
-
-            return view_wrapper
-
-        return view_decorator
+        return ViewHandlerDecorator(self, template=template)
 
     @staticmethod
     def _validate_params_class(

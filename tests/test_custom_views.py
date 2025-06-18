@@ -89,8 +89,10 @@ def test_view_handler_template_wrapper_functionality(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir") as mock_get_dir,
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir") as mock_get_dir,
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_template.return_value = "<html>rendered</html>"
@@ -135,8 +137,10 @@ def test_view_handler_template_wrapper_prerender_support(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir"),
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_template.return_value = "<html>prerendered</html>"
@@ -236,8 +240,10 @@ def test_view_handler_error_handling_template_render_failure(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir"),
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_template.side_effect = Exception("Template error")
@@ -281,8 +287,10 @@ def test_view_handler_error_handling_general_exception(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir"),
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_error_template.return_value = "<div>General Error</div>"
@@ -380,8 +388,10 @@ def test_view_handler_component_functionality(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir"),
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_template.return_value = "<div>Component rendered</div>"
@@ -439,8 +449,10 @@ def test_view_handler_component_with_prerender(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir"),
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_template.return_value = "<div>Prerendered component</div>"
@@ -481,8 +493,10 @@ def test_view_handler_component_render_failure(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir"),
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_template.side_effect = Exception(
@@ -534,8 +548,10 @@ def test_view_handler_component_general_exception(simple_app: App):
     ]
 
     with (
-        mock.patch("soar_sdk.app.get_templates_dir"),
-        mock.patch("soar_sdk.app.get_template_renderer") as mock_get_renderer,
+        mock.patch("soar_sdk.app_decorators.get_templates_dir"),
+        mock.patch(
+            "soar_sdk.app_decorators.get_template_renderer"
+        ) as mock_get_renderer,
     ):
         mock_renderer = mock.Mock()
         mock_renderer.render_error_template.return_value = (
