@@ -254,8 +254,14 @@ class AppCliRunner:
             for (
                 result
             ) in self.app.actions_manager.get_action_results():  # pragma: no cover
-                pretty = json.dumps(result.param, indent=2, ensure_ascii=False)
-                logger.info(pretty)
+                params_pretty = json.dumps(result.param, indent=2, ensure_ascii=False)
+                data_pretty = json.dumps(
+                    result.get_data(), indent=2, ensure_ascii=False
+                )
+
+                logger.info(f"Action params: {params_pretty}")
+                logger.info(f"Action success: {result.get_status()}")
+                logger.info(f"Result data: {data_pretty}")
 
         if webhook_request := getattr(args, "webhook_request", None):
             soar_rest_client = SoarRestClient(
