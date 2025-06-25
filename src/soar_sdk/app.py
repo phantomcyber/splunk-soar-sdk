@@ -1,7 +1,5 @@
-import importlib.util
 import inspect
 import json
-from pathlib import Path
 import sys
 from typing import Any, Optional, Union, Callable
 
@@ -22,7 +20,6 @@ from soar_sdk.app_client import AppClient
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.logging import getLogger
 from soar_sdk.types import Action
-from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
@@ -148,19 +145,10 @@ class App:
             self._asset = self.asset_cls.parse_obj(self._raw_asset_config)
         return self._asset
 
-    def _split_action_module(self, action: str, module_root: Path) -> tuple[Path, str]:
-        """
-        Splits the action string into module name and function name.
-        """
-        func_delim = ":" if ":" in action else "."
-        module_name, action_func_name = action.rsplit(func_delim, 1)
-        module_name = module_name.removesuffix(".py").replace(".", "/") + ".py"
-        return module_root / module_name, action_func_name
-
     def register_action(
         self,
         /,
-        action: Union[str, Callable],
+        action: Callable,
         *,
         name: Optional[str] = None,
         identifier: Optional[str] = None,
@@ -171,34 +159,31 @@ class App:
         params_class: Optional[type[Params]] = None,
         output_class: Optional[type[ActionOutput]] = None,
         view_handler: Optional[Callable] = None,
+        view_template: Optional[str] = None,
         versions: str = "EQ(*)",
     ) -> Action:
         """
         Registers an action module with the app. This is a convenience method to
         allow for easy registration of actions from a module.
         """
-        if isinstance(action, str):
-            module_root = Path(inspect.stack()[1].filename).parent
-            module_path, action_func_name = self._split_action_module(
-                action, module_root
+
+        if view_handler:
+            # Apply the view_handler decorator
+            decorated_view_handler = self.view_handler(template=view_template)(
+                view_handler
             )
 
-            spec = importlib.util.spec_from_file_location(module_path.stem, module_path)
-            # Not sure how to actually make spec None,
-            # but the type hint says it's technically possible
-            if spec is None or spec.loader is None:  # pragma: no cover
-                raise ActionRegistrationError(identifier or action_func_name)
+            # Replace the function in its original module with the decorated version
+            if hasattr(view_handler, "__module__") and view_handler.__module__:
+                import sys
 
-            module = importlib.util.module_from_spec(spec)
-            sys.modules[module_path.stem] = module
-            try:
-                spec.loader.exec_module(module)
-                action_func = getattr(module, action_func_name)
-            except Exception as e:
-                raise ActionRegistrationError(identifier or action_func_name) from e
+                original_module = sys.modules.get(view_handler.__module__)
+                if original_module and hasattr(original_module, view_handler.__name__):
+                    setattr(
+                        original_module, view_handler.__name__, decorated_view_handler
+                    )
 
-        else:
-            action_func = action
+            view_handler = decorated_view_handler
 
         return self.action(
             name=name,
@@ -211,7 +196,7 @@ class App:
             output_class=output_class,
             view_handler=view_handler,
             versions=versions,
-        )(action_func)
+        )(action)
 
     def action(
         self,

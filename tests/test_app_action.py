@@ -1,5 +1,4 @@
 from unittest import mock
-from uuid import uuid4
 
 import pytest
 
@@ -10,7 +9,6 @@ from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 from soar_sdk.exceptions import ActionFailure
 import httpx
-from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
 
 
 class SampleParams(Params):
@@ -342,6 +340,8 @@ def test_delete(
 
     result = delete_action(SampleParams(), client=TestClient())
     assert mock_delete_any_soar_call.call_count == 1
+
+
 def test_direct_action_registration(simple_app: App):
     from tests.mocks.importable_action import importable_action
 
@@ -351,36 +351,108 @@ def test_direct_action_registration(simple_app: App):
     )
 
 
-@pytest.mark.parametrize(
-    "action_import",
-    (
-        "mocks.importable_action.importable_action",
-        "mocks.importable_action:importable_action",
-        "mocks/importable_action.py:importable_action",
-    ),
-)
-def test_import_path_action_registration(action_import: str, simple_app: App):
-    action_id = str(uuid4())
-    simple_app.register_action(
-        action_import,
-        identifier=action_id,
+def test_register_action_basic(simple_app: App):
+    """Test basic register_action functionality."""
+
+    def sample_action(params: SampleParams, soar: SOARClient) -> SampleOutput:
+        return SampleOutput(
+            string_value=params.str_value,
+            int_value=params.int_value,
+            list_value=["test"],
+            bool_value=params.bool_value,
+            nested_value=SampleNestedOutput(bool_value=True),
+        )
+
+    registered_action = simple_app.register_action(
+        sample_action,
+        name="Sample Action",
+        identifier="sample_action",
+        description="A sample action for testing",
+        verbose="This is a verbose description",
+        action_type="investigate",
     )
-    actions = simple_app.actions_provider.get_actions()
-    assert action_id in actions
+
+    assert hasattr(registered_action, "meta")
+    assert registered_action.meta.action == "Sample Action"
+    assert registered_action.meta.identifier == "sample_action"
+    assert registered_action.meta.description == "A sample action for testing"
+    assert registered_action.meta.verbose == "This is a verbose description"
+    assert registered_action.meta.type == "investigate"
+
+    # Verify the action is in the app's actions
+    actions = simple_app.get_actions()
+    assert "sample_action" in actions
+    assert actions["sample_action"] == registered_action
 
 
-@pytest.mark.parametrize(
-    "action_import",
-    (
-        "abcd.efgh:importable_action",
-        "abcd.efgh.importable_action",
-        "tuv/wxyz:importable_action",
-        "tuv/wxyz.py:importable_action",
-        "mocks.importable_action:abcdef",
-        "mocks.importable_action.ghijkl",
-        "mocks/importable_action.py:mnopqr",
-    ),
-)
-def test_action_bad_path(action_import: str, simple_app: App):
-    with pytest.raises(ActionRegistrationError):
-        simple_app.register_action(action_import)
+def test_register_action_with_view_handler(simple_app: App):
+    """Test register_action with view_handler and view_template."""
+    import inspect
+    import sys
+
+    def sample_action(params: SampleParams, soar: SOARClient) -> SampleOutput:
+        return SampleOutput(
+            string_value=params.str_value,
+            int_value=params.int_value,
+            list_value=["test"],
+            bool_value=params.bool_value,
+            nested_value=SampleNestedOutput(bool_value=True),
+        )
+
+    def sample_view_handler(output: list[SampleOutput]) -> dict:
+        return {"data": output[0].string_value}
+
+    # Store original signature for comparison
+    original_signature = inspect.signature(sample_view_handler)
+    assert len(original_signature.parameters) == 1  # Should start with 1 parameter
+
+    registered_action = simple_app.register_action(
+        sample_action,
+        name="Sample Action with View",
+        view_handler=sample_view_handler,
+        view_template="sample_template.html",
+    )
+
+    # Verify the action was registered with view handler
+    assert registered_action.meta.view_handler is not None
+
+    # Check if the original function in its module was replaced with decorated version
+    # This tests the module replacement logic in register_action
+    module_name = sample_view_handler.__module__
+    if module_name and module_name in sys.modules:
+        module = sys.modules[module_name]
+        if hasattr(module, sample_view_handler.__name__):
+            replaced_function = getattr(module, sample_view_handler.__name__)
+            replaced_signature = inspect.signature(replaced_function)
+            # The replaced function should have 3 parameters if decoration worked
+            assert len(replaced_signature.parameters) == 3
+
+
+def test_register_action_with_view_handler_empty_module(simple_app: App):
+    """Test register_action with view_handler that has empty __module__ string."""
+
+    def sample_action(params: SampleParams, soar: SOARClient) -> SampleOutput:
+        return SampleOutput(
+            string_value=params.str_value,
+            int_value=params.int_value,
+            list_value=["test"],
+            bool_value=params.bool_value,
+            nested_value=SampleNestedOutput(bool_value=True),
+        )
+
+    def sample_view_handler(output: list[SampleOutput]) -> dict:
+        return {"data": output[0].string_value}
+
+    # Set __module__ to empty string to test the second part of the condition
+    sample_view_handler.__module__ = ""
+
+    # Register the action with view handler that has empty module
+    registered_action = simple_app.register_action(
+        sample_action,
+        name="Sample Action with Empty Module View",
+        view_handler=sample_view_handler,
+        view_template="sample_template.html",
+    )
+
+    # Verify the action was registered with view handler
+    assert registered_action.meta.view_handler is not None

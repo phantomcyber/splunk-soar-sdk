@@ -98,3 +98,39 @@ def test_get_templates_dir_without_file_path():
     result = get_templates_dir(function_globals)
     expected = str(Path.cwd() / "templates")
     assert result == expected
+
+
+def test_get_templates_dir_fallback_when_no_templates_found():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        nested_path = Path(temp_dir) / "app" / "src" / "actions"
+        nested_path.mkdir(parents=True)
+
+        module_file = nested_path / "my_module.py"
+        module_file.write_text("# fake module")
+
+        function_globals = {"__file__": str(module_file)}
+
+        result = get_templates_dir(function_globals)
+
+        expected = str(nested_path.parent / "templates")
+        assert result == expected
+
+
+def test_get_templates_dir_finds_existing_templates_directory():
+    with tempfile.TemporaryDirectory() as temp_dir:
+        app_root = Path(temp_dir) / "app"
+        templates_dir = app_root / "templates"
+        nested_path = app_root / "src" / "actions"
+
+        app_root.mkdir()
+        templates_dir.mkdir()
+        nested_path.mkdir(parents=True)
+
+        module_file = nested_path / "my_module.py"
+        module_file.write_text("# fake module")
+
+        function_globals = {"__file__": str(module_file)}
+
+        result = get_templates_dir(function_globals)
+
+        assert result == str(templates_dir)

@@ -105,5 +105,14 @@ def get_templates_dir(function_globals: dict[str, Any]) -> str:
     caller_file = function_globals.get("__file__")
     if caller_file:
         app_dir = Path(caller_file).parent
+
+        # Walk up the directory tree looking for a templates directory
+        for current_dir in [app_dir, *list(app_dir.parents)]:
+            templates_dir = current_dir / "templates"
+            if templates_dir.exists() and templates_dir.is_dir():
+                return str(templates_dir)
+
+        # If no templates directory found, default to the app_dir level
         return str(app_dir.parent / "templates")
+
     return str(Path.cwd() / "templates")

@@ -4,11 +4,9 @@ from datetime import datetime, timezone
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.params import Params, OnPollParams
-from soar_sdk.action_results import ActionOutput
+from soar_sdk.params import OnPollParams
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.views.components.pie_chart import PieChartData
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
@@ -44,69 +42,24 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.info(f"testing connectivity against {asset.base_url}")
 
 
-from .actions.reverse_string import render_reverse_string_view
+from .actions.reverse_string import render_reverse_string_view, reverse_string
 
 app.register_action(
-    "actions.reverse_string:reverse_string",
+    reverse_string,
     action_type="investigate",
     verbose="Reverses a string.",
-    view_handler=app.view_handler(template="reverse_string_view.html")(
-        render_reverse_string_view
-    ),
+    view_template="reverse_string.html",
+    view_handler=render_reverse_string_view,
 )
 
+from .actions.generate_category import render_statistics_chart, generate_statistics
 
-class StatisticsParams(Params):
-    category: str
-
-
-class StatisticsOutput(ActionOutput):
-    category: str
-    labels: list[str]
-    values: list[int]
-
-
-@app.view_handler()
-def render_statistics_chart(output: list[StatisticsOutput]) -> PieChartData:
-    stats = output[0]
-    colors = ["#4CAF50", "#2196F3", "#FF9800", "#F44336", "#9C27B0", "#607D8B"]
-
-    return PieChartData(
-        title=f"{stats.category} Distribution",
-        labels=stats.labels,
-        values=stats.values,
-        colors=colors,
-    )
-
-
-@app.action(
+app.register_action(
+    generate_statistics,
     action_type="investigate",
     verbose="Generate statistics with pie chart reusable component.",
     view_handler=render_statistics_chart,
 )
-def generate_statistics(param: StatisticsParams, soar: SOARClient) -> StatisticsOutput:
-    if param.category.lower() == "test":
-        breakdown = {
-            "Malware": 45,
-            "Phishing": 32,
-            "Ransomware": 18,
-            "Data Breach": 12,
-            "DDoS": 8,
-        }
-    else:
-        breakdown = {
-            "Category A": 25,
-            "Category B": 35,
-            "Category C": 20,
-            "Category D": 15,
-            "Category E": 5,
-        }
-
-    return StatisticsOutput(
-        category=param.category,
-        labels=list(breakdown.keys()),
-        values=list(breakdown.values()),
-    )
 
 
 @app.on_poll()

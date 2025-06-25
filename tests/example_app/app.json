@@ -173,7 +173,7 @@
             ],
             "render": {
                 "type": "custom",
-                "view": "src.app.render_statistics_chart"
+                "view": "src.actions.generate_category.render_statistics_chart"
             }
         },
         {
