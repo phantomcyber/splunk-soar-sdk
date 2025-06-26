@@ -125,8 +125,8 @@ def test_action_renderer_with_template(mock_jinja_env, app_with_action: App):
     rendered = renderer.render()
 
     # Should use Jinja template for non-stub actions
-    mock_jinja_env.get_template.has_calls(("action.py.jinja", "action_params.py.jinja"))
-    mock_jinja_env.get_template.assert_called_with("action_params.py.jinja")
+    mock_jinja_env.get_template.assert_any_call("action.py.jinja")
+    mock_jinja_env.get_template.assert_any_call("action_params.py.jinja")
     assert rendered == "Rendered content"
 
 
