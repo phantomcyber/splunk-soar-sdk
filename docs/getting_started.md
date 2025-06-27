@@ -21,13 +21,39 @@ actions.
 The following guide will get you through the process of building your first app, explaining
 its crucial components and functionality.
 
+## Creating a new app
+
+To create a new, empty app, simply run:
+
+```shell
+soarapps init
+```
+
+## Migrating an existing app
+
+To migrate an existing app, `myapp`, that was written in the old `BaseConnector` framework, run:
+
+```shell
+soarapps convert myapp
+```
+
+The conversion script will create a new SDK app, migrating the following aspects of your existing app:
+
+- Asset configuration parameters
+- Action names, descriptions, and other metadata
+- Action parameters and outputs
+
+You will need to re-implement the code for each of your actions yourself.
+
+Automatic migration is not yet supported for the following features, and you will need to migrate these yourself:
+
+- Custom views
+- Webhook handlers
+- Custom REST handlers (must be converted to webhooks, as the SDK does not support Custom REST)
+
 ## The app structure
 
-The SDK works with the common python library structure written using poetry. You can quickly dive into
-the app development by using one of the app templates available in the `app_templates` directory of the SDK repository.
-
-To create your own app you should either copy the [`app_templates/basic_app`](/app_templates/basic_app) files as your own project directory or
-create the starting directory/files structure yourself that will reflect this tree:
+Running the `soarapps init` or `soarapps convert` commands will create the following directory structure:
 
 ```shell
 
