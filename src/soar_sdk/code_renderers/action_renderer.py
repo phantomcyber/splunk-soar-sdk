@@ -66,7 +66,7 @@ class ActionRenderer(Renderer[ActionMeta]):
         Returns:
             str: The rendered code for the action parameters.
         """
-        template = self.jinja_env.get_template("action_params.py.jinja")
+        template = self.jinja_env.get_template("action_param.py.jinja")
         for field_name_str, field_def in self.action_meta.parameters.__fields__.items():
             field_name = normalize_field_name(field_name_str)
             yield template.render(

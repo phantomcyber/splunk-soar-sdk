@@ -1,0 +1,4 @@
+class Asset(BaseAsset):
+    username: str = AssetField(
+        description="The username for the application",
+    )
