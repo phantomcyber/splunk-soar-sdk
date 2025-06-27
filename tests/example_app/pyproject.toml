@@ -33,8 +33,6 @@ main_module = "src.app:app"
 [[tool.uv.index]]
 url = "https://pypi.python.org/simple"
 
-[tool.uv.sources]
-splunk-soar-sdk = { path = "../../" }
 
 [tool.uv]
 environments = [

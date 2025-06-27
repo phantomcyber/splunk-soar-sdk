@@ -18,7 +18,7 @@ class ManifestProcessor:
         self.manifest_path = manifest_path
         self.project_context = Path(project_context)
 
-    def build(self) -> AppMeta:
+    def build(self, is_sdk_locally_built: bool = False) -> AppMeta:
         """
         Builds full AppMeta information including actions and other extra fields
         """
@@ -34,6 +34,10 @@ class ManifestProcessor:
 
         uv_lock = self.load_app_uv_lock()
         dependencies = uv_lock.build_package_list(app_meta.project_name)
+        if is_sdk_locally_built:
+            dependencies[:] = [
+                dep for dep in dependencies if dep.name != "splunk-soar-sdk"
+            ]
 
         app_meta.pip39_dependencies, app_meta.pip313_dependencies = (
             uv_lock.resolve_dependencies(dependencies)

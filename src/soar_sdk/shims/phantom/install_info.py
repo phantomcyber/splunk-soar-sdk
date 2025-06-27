@@ -1,5 +1,5 @@
 try:
-    from phantom_common.install_info import get_verify_ssl_setting
+    from phantom_common.install_info import get_verify_ssl_setting, get_product_version
 
     _soar_is_available = True
 except ImportError:
@@ -13,6 +13,10 @@ if TYPE_CHECKING or not _soar_is_available:
         """Mock function to simulate the behavior of get_verify_ssl_setting."""
         return False
 
+    def get_product_version() -> str:
+        """Mock function to simulate the behavior of get_product_version."""
+        return "6.4.1"
+
 
 def is_soar_available() -> bool:
     """
@@ -21,4 +25,4 @@ def is_soar_available() -> bool:
     return _soar_is_available
 
 
-__all__ = ["get_verify_ssl_setting", "is_soar_available"]
+__all__ = ["get_product_version", "get_verify_ssl_setting", "is_soar_available"]

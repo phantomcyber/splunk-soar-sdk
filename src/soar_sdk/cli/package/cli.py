@@ -105,7 +105,9 @@ def build(
         console.print(f"[blue]Output file:[/] {output_file}")
 
     with context_directory(project_context):
-        app_meta = ManifestProcessor("manifest.json", ".").build()
+        app_meta = ManifestProcessor("manifest.json", ".").build(
+            is_sdk_locally_built=with_sdk_wheel_from is not None
+        )
         app_name = app_meta.name
 
         if output_file is None:

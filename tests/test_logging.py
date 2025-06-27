@@ -119,6 +119,35 @@ def test_standalone_logging():
     )
 
 
+def test_is_new_soar_with_version_7_0_0():
+    with mock.patch("soar_sdk.logging.get_product_version", return_value="7.0.0"):
+        logger = getLogger()
+
+        logger.progress("Test progress message for SOAR 7.0.0")
+        ph_ipc.sendstatus.assert_called_with(
+            ph_ipc.PH_STATUS_PROGRESS,
+            "Test progress message for SOAR 7.0.0\x1b[0m",
+            False,
+        )
+
+        logger.debug("Test debug message for SOAR 7.0.0")
+        ph_ipc.debugprint.assert_called_with(
+            "\x1b[2mTest debug message for SOAR 7.0.0\x1b[0m"
+        )
+
+        logger.critical("Test critical message for SOAR 7.0.0")
+        ph_ipc.errorprint.assert_called_with(
+            "\x1b[1;4;31mTest critical message for SOAR 7.0.0\x1b[0m"
+        )
+
+        logger.info("Test info message for SOAR 7.0.0")
+        ph_ipc.sendstatus.assert_called_with(
+            ph_ipc.PH_STATUS_PROGRESS,
+            "\x1b[0mTest info message for SOAR 7.0.0\x1b[0m",
+            True,
+        )
+
+
 def test_logging_soar_not_available():
     with mock.patch.object(soar_sdk.logging, "is_soar_available", return_value=True):
         logger = PhantomLogger()
