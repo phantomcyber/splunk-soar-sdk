@@ -7,7 +7,8 @@ from soar_sdk.app import App
 from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
-from soar_sdk.exceptions import ActionFailure
+from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
+from tests.mocks.importable_action import importable_action, importable_view_handler
 import httpx
 
 
@@ -352,107 +353,94 @@ def test_direct_action_registration(simple_app: App):
 
 
 def test_register_action_basic(simple_app: App):
-    """Test basic register_action functionality."""
-
-    def sample_action(params: SampleParams, soar: SOARClient) -> SampleOutput:
-        return SampleOutput(
-            string_value=params.str_value,
-            int_value=params.int_value,
-            list_value=["test"],
-            bool_value=params.bool_value,
-            nested_value=SampleNestedOutput(bool_value=True),
-        )
-
     registered_action = simple_app.register_action(
-        sample_action,
-        name="Sample Action",
-        identifier="sample_action",
-        description="A sample action for testing",
+        importable_action,
+        name="Importable Action",
+        identifier="importable_action",
+        description="An importable action for testing",
         verbose="This is a verbose description",
         action_type="investigate",
     )
 
+    # Verify the action was registered
+    assert registered_action is not None
     assert hasattr(registered_action, "meta")
-    assert registered_action.meta.action == "Sample Action"
-    assert registered_action.meta.identifier == "sample_action"
-    assert registered_action.meta.description == "A sample action for testing"
+    assert registered_action.meta.action == "Importable Action"
+    assert registered_action.meta.identifier == "importable_action"
+    assert registered_action.meta.description == "An importable action for testing"
     assert registered_action.meta.verbose == "This is a verbose description"
     assert registered_action.meta.type == "investigate"
 
     # Verify the action is in the app's actions
     actions = simple_app.get_actions()
-    assert "sample_action" in actions
-    assert actions["sample_action"] == registered_action
+    assert "importable_action" in actions
+    assert actions["importable_action"] == registered_action
 
 
 def test_register_action_with_view_handler(simple_app: App):
-    """Test register_action with view_handler and view_template."""
     import inspect
     import sys
+    import types
 
-    def sample_action(params: SampleParams, soar: SOARClient) -> SampleOutput:
-        return SampleOutput(
-            string_value=params.str_value,
-            int_value=params.int_value,
-            list_value=["test"],
-            bool_value=params.bool_value,
-            nested_value=SampleNestedOutput(bool_value=True),
-        )
+    original_signature = inspect.signature(importable_view_handler)
+    assert len(original_signature.parameters) == 1
 
-    def sample_view_handler(output: list[SampleOutput]) -> dict:
-        return {"data": output[0].string_value}
+    module_name = importable_view_handler.__module__
+    assert module_name in sys.modules
 
-    # Store original signature for comparison
-    original_signature = inspect.signature(sample_view_handler)
-    assert len(original_signature.parameters) == 1  # Should start with 1 parameter
-
+    # Register the importable action with view handler
     registered_action = simple_app.register_action(
-        sample_action,
-        name="Sample Action with View",
-        view_handler=sample_view_handler,
+        importable_action,
+        name="Importable Action with View",
+        view_handler=importable_view_handler,
         view_template="sample_template.html",
     )
 
     # Verify the action was registered with view handler
     assert registered_action.meta.view_handler is not None
+    module = sys.modules[module_name]
+    replaced_function = getattr(module, importable_view_handler.__name__)
 
-    # Check if the original function in its module was replaced with decorated version
-    # This tests the module replacement logic in register_action
-    module_name = sample_view_handler.__module__
-    if module_name and module_name in sys.modules:
-        module = sys.modules[module_name]
-        if hasattr(module, sample_view_handler.__name__):
-            replaced_function = getattr(module, sample_view_handler.__name__)
-            replaced_signature = inspect.signature(replaced_function)
-            # The replaced function should have 3 parameters if decoration worked
-            assert len(replaced_signature.parameters) == 3
+    assert replaced_function is not importable_view_handler
+
+    # The @wraps decorator preserves the original signature for inspect.signature()
+    # but the actual callable code should have the wrapper signature
+    if isinstance(replaced_function, types.FunctionType):
+        code_args = replaced_function.__code__.co_varnames[
+            : replaced_function.__code__.co_argcount
+        ]
+        assert code_args == ("action", "all_app_runs", "context")
+        assert replaced_function.__code__.co_argcount == 3
+
+    # Additional verification: the action should be properly registered
+    actions = simple_app.get_actions()
+    assert "importable_action" in actions
 
 
 def test_register_action_with_view_handler_empty_module(simple_app: App):
-    """Test register_action with view_handler that has empty __module__ string."""
+    importable_view_handler.__module__ = ""
 
-    def sample_action(params: SampleParams, soar: SOARClient) -> SampleOutput:
-        return SampleOutput(
-            string_value=params.str_value,
-            int_value=params.int_value,
-            list_value=["test"],
-            bool_value=params.bool_value,
-            nested_value=SampleNestedOutput(bool_value=True),
-        )
-
-    def sample_view_handler(output: list[SampleOutput]) -> dict:
-        return {"data": output[0].string_value}
-
-    # Set __module__ to empty string to test the second part of the condition
-    sample_view_handler.__module__ = ""
-
-    # Register the action with view handler that has empty module
     registered_action = simple_app.register_action(
-        sample_action,
-        name="Sample Action with Empty Module View",
-        view_handler=sample_view_handler,
+        importable_action,
+        name="Importable Action with Empty Module View",
+        view_handler=importable_view_handler,
         view_template="sample_template.html",
     )
 
-    # Verify the action was registered with view handler
     assert registered_action.meta.view_handler is not None
+
+
+def test_register_action_with_view_handler_module_not_in_sys_modules(simple_app: App):
+    # Create a view handler with a fake module name
+    def fake_module_view_handler(output: list[ActionOutput]) -> dict:
+        return {"data": "test"}
+
+    fake_module_view_handler.__module__ = "nonexistent.fake.module"
+
+    with pytest.raises(ActionRegistrationError):
+        simple_app.register_action(
+            importable_action,
+            name="Importable Action with Fake Module View",
+            view_handler=fake_module_view_handler,
+            view_template="sample_template.html",
+        )
