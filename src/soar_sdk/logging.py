@@ -1,8 +1,9 @@
 import logging
 from soar_sdk.colors import ANSIColor
 
-from soar_sdk.shims.phantom.install_info import is_soar_available
+from soar_sdk.shims.phantom.install_info import is_soar_available, get_product_version
 from soar_sdk.shims.phantom.ph_ipc import ph_ipc
+from packaging.version import Version
 from typing import Any, Optional
 
 PROGRESS_LEVEL = 25
@@ -41,20 +42,35 @@ class SOARHandler(logging.Handler):
         self.__handle: Optional[int] = None
 
     def emit(self, record: logging.LogRecord) -> None:
+        is_new_soar = Version(get_product_version()) >= Version("7.0.0")
+        print(is_new_soar)
         try:
             message = self.format(record)
             if record.levelno == PROGRESS_LEVEL:
-                ph_ipc.sendstatus(
-                    self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, False
-                )
+                if is_new_soar:
+                    ph_ipc.sendstatus(ph_ipc.PH_STATUS_PROGRESS, message, False)
+                else:
+                    ph_ipc.sendstatus(
+                        self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, False
+                    )
             elif record.levelno in (logging.DEBUG, logging.WARNING, logging.ERROR):
-                ph_ipc.debugprint(self.__handle, message, 2)
+                if is_new_soar:
+                    ph_ipc.debugprint(message)
+                else:
+                    ph_ipc.debugprint(self.__handle, message, 2)
             elif record.levelno == logging.CRITICAL:
-                ph_ipc.errorprint(self.__handle, message, 2)
+                if is_new_soar:
+                    ph_ipc.errorprint(message)
+                else:
+                    ph_ipc.errorprint(self.__handle, message, 2)
             elif record.levelno == logging.INFO:
-                ph_ipc.sendstatus(
-                    self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, True
-                )
+                if is_new_soar:
+                    ph_ipc.sendstatus(ph_ipc.PH_STATUS_PROGRESS, message, True)
+                else:
+                    ph_ipc.sendstatus(
+                        self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, True
+                    )
+
             else:
                 raise ValueError("Log level not supporeted")
         except Exception:

@@ -40,6 +40,9 @@ app = App(
 def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     soar.get("rest/version")
     logger.info(f"testing connectivity against {asset.base_url}")
+    logger.debug("hello")
+    logger.warning("this is a warning")
+    logger.progress("this is a progress message")
 
 
 from .actions.reverse_string import render_reverse_string_view, reverse_string
