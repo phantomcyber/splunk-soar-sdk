@@ -66,6 +66,24 @@ def test_generate_asset_definition(app_meta, tmp_path):
     assert expected_definition == definition
 
 
+def test_generate_asset_definition_with_no_fields(app_meta, tmp_path):
+    """Test that convert command generates an empty asset definition when no fields are provided."""
+    app_py_path = tmp_path / "app.py"
+    app_py_path.write_text("class Asset(BaseAsset):\n    pass")
+
+    app_meta.configuration = {}
+
+    cli.generate_asset_definition(
+        app_py_path=app_py_path,
+        app_meta=app_meta,
+    )
+
+    definition = app_py_path.read_text()
+    expected_definition = (asset_dir / "asset_empty.py.txt").read_text()
+
+    assert expected_definition == definition
+
+
 def test_generate_action_definitions(app_meta, tmp_path):
     """Test that convert command generates the expected action definitions."""
     app_py_path = tmp_path / "app.py"
