@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from soar_sdk.app import App
 
 
-class TestConnectivityDecorator:
+class ConnectivityTestDecorator:
     """
     Class-based decorator for test connectivity functionality.
     """

@@ -26,7 +26,7 @@ from soar_sdk.exceptions import ActionRegistrationError
 
 import uuid
 from soar_sdk.decorators import (
-    TestConnectivityDecorator,
+    ConnectivityTestDecorator,
     ActionDecorator,
     ViewHandlerDecorator,
     OnPollDecorator,
@@ -235,12 +235,12 @@ class App:
             versions=versions,
         )
 
-    def test_connectivity(self) -> TestConnectivityDecorator:
+    def test_connectivity(self) -> ConnectivityTestDecorator:
         """
         Returns a decorator instance for test connectivity attaching action
         specific meta information to the function.
         """
-        return TestConnectivityDecorator(self)
+        return ConnectivityTestDecorator(self)
 
     def on_poll(self) -> OnPollDecorator:
         """
