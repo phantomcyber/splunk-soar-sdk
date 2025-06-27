@@ -39,6 +39,7 @@ def test_as_datatype_invalid_types(invalid_type):
     [
         ("string", str),
         ("password", str),
+        ("file", str),
         ("numeric", float),
         ("boolean", bool),
     ],

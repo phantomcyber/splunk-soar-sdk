@@ -10,7 +10,7 @@ def as_datatype(t: type) -> str:
 
 def to_python_type(datatype: str) -> type:
     datatype = datatype.lower()
-    if datatype in ("string", "password"):
+    if datatype in ("string", "password", "file"):
         return str
     if datatype == "numeric":
         return float
