@@ -74,6 +74,9 @@ class ActionDeserializer:
         # Create field definitions for each parameter
         fields: dict[str, FieldSpec] = {}
         for param_name, param_spec in parameters.items():
+            if param_spec["data_type"].startswith("ph"):
+                # Skip parameters that are placeholders
+                continue
             fields[param_name] = cls._create_param_field(param_spec)
 
         # Dynamically create a subclass of Params

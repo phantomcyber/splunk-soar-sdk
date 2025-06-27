@@ -593,6 +593,12 @@ def test_parse_parameters_with_complex_params():
             "description": "Third parameter",
             "order": 2,
         },
+        "param4": {
+            "data_type": "ph",
+            "required": False,
+            "description": "Placeholder parameter",
+            "order": 3,
+        },
     }
 
     result = ActionDeserializer.parse_parameters("complex_action", complex_params)
