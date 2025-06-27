@@ -12,6 +12,7 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich import print as rprint
+from rich.markup import escape as rescape
 
 from soar_sdk.cli.manifests.deserializers import AppMetaDeserializer
 from soar_sdk.code_renderers.action_renderer import ActionRenderer
@@ -264,8 +265,8 @@ def resolve_dependencies(app_dir: Path, output_dir: Path) -> None:
             dep = _dep.strip()
             if not dep or dep.startswith("#"):
                 continue
-            if not re.match(r"^[a-zA-Z0-9_.=<>~-]+$", dep):
-                rprint(f"[yellow]Skipping invalid dependency: {dep}[/]")
+            if not re.match(r"^[a-zA-Z0-9_.=<>~\-\[\]]+$", dep):
+                rprint(f"[yellow]Skipping invalid dependency: {rescape(dep)}[/]")
                 continue
             validated_deps.add(dep)
 

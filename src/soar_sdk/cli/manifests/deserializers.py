@@ -47,6 +47,8 @@ class OutputFieldModel:
     data_type: str
     contains: Optional[list[str]] = None
     example_values: Optional[list[Union[str, float, bool]]] = None
+    column_name: Optional[str] = None
+    column_order: Optional[int] = None
 
 
 class ActionDeserializer:

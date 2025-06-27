@@ -142,6 +142,7 @@ def test_resolve_dependencies(tmp_path):
             beautifulsoup4==4.9.3
             # This is a comment
             urllib3~=1.26.0
+            httpx[http2]==0.27.2
 
             invalid-dep-with-@-symbol@
             numpy
@@ -163,6 +164,7 @@ def test_resolve_dependencies(tmp_path):
         "requests>=2.25.0",
         "beautifulsoup4==4.9.3",
         "urllib3~=1.26.0",
+        "httpx[http2]==0.27.2",
         "numpy",
     }
 
