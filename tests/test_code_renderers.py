@@ -178,8 +178,12 @@ def test_asset_renderer(mock_jinja_env):
     renderer = asset_renderer.AssetRenderer(asset_fields, mock_jinja_env)
     rendered = renderer.render()
 
-    mock_jinja_env.get_template.assert_called_once_with("asset.py.jinja")
-    mock_jinja_env.get_template.return_value.render.assert_called_once_with(
-        asset_fields=asset_fields
+    expected_output = "\n".join(
+        [
+            "class Asset(BaseAsset):",
+            "    username: str = AssetField(required=True, description='Username for authentication')",
+            "    port: float = AssetField(required=False, description='Port number', default=443)",
+        ]
     )
-    assert rendered == "Rendered content"
+
+    assert rendered == expected_output

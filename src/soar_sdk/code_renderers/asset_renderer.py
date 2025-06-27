@@ -1,5 +1,6 @@
 import dataclasses
 from typing import Optional, Union
+import ast
 
 from soar_sdk.code_renderers.renderer import Renderer
 from soar_sdk.meta.datatypes import to_python_type
@@ -46,11 +47,62 @@ class AssetRenderer(Renderer[list[AssetContext]]):
 
     def render(self) -> str:
         """
-        Render the Asset class using Jinja2.
+        Render the Asset class by building an AST.
 
         Returns:
             str: The rendered code for the Asset class.
         """
-        template = self.jinja_env.get_template("asset.py.jinja")
-        rendered_content = template.render(asset_fields=self.context)
-        return rendered_content
+        asset_class = ast.ClassDef(
+            name="Asset",
+            bases=[ast.Name(id="BaseAsset", ctx=ast.Load())],
+            body=[],
+            decorator_list=[],
+            keywords=[],
+        )
+
+        for field in self.context:
+            field_name = ast.Name(id=field.name, ctx=ast.Store())
+            field_type = ast.Name(id=field.py_type, ctx=ast.Load())
+
+            field_kwargs = [
+                ast.keyword(arg="required", value=ast.Constant(value=field.required)),
+            ]
+            if field.description:
+                field_kwargs.append(
+                    ast.keyword(
+                        arg="description", value=ast.Constant(value=field.description)
+                    )
+                )
+            if field.default:
+                field_kwargs.append(
+                    ast.keyword(
+                        arg="default",
+                        value=ast.Constant(value=field.default),
+                    )
+                )
+            if field.value_list:
+                field_kwargs.append(
+                    ast.keyword(
+                        arg="value_list",
+                        value=ast.List(
+                            elts=[ast.Constant(value=v) for v in field.value_list]
+                        ),
+                    )
+                )
+
+            field_statement = ast.AnnAssign(
+                target=field_name,
+                annotation=field_type,
+                simple=1,
+                value=ast.Call(
+                    func=ast.Name(id="AssetField", ctx=ast.Load()),
+                    args=[],
+                    keywords=field_kwargs,
+                ),
+            )
+            asset_class.body.append(field_statement)
+
+        if not asset_class.body:
+            asset_class.body.append(ast.Pass())
+
+        return ast.unparse(asset_class)

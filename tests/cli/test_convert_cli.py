@@ -47,11 +47,17 @@ def test_generate_asset_definition(app_meta, tmp_path):
             required=True,
             data_type="string",
         ),
-        "internal_field": AssetFieldSpecification(
-            label="Internal Field",
-            description="An internal field that should not be exposed",
+        "placeholder": AssetFieldSpecification(
+            label="Placeholder",
             required=False,
-            data_type="ph_string",
+            data_type="ph",
+        ),
+        "color": AssetFieldSpecification(
+            label="Color",
+            required=False,
+            data_type="string",
+            default="blue",
+            value_list=["red", "green", "blue"],
         ),
     }
 
@@ -61,7 +67,13 @@ def test_generate_asset_definition(app_meta, tmp_path):
     )
 
     definition = app_py_path.read_text()
-    expected_definition = (asset_dir / "asset.py.txt").read_text()
+    expected_definition = "\n".join(
+        [
+            "class Asset(BaseAsset):",
+            "    username: str = AssetField(required=True, description='The username for the application')",
+            "    color: str = AssetField(required=False, default='blue', value_list=['red', 'green', 'blue'])",
+        ]
+    )
 
     assert expected_definition == definition
 
@@ -79,7 +91,12 @@ def test_generate_asset_definition_with_no_fields(app_meta, tmp_path):
     )
 
     definition = app_py_path.read_text()
-    expected_definition = (asset_dir / "asset_empty.py.txt").read_text()
+    expected_definition = "\n".join(
+        [
+            "class Asset(BaseAsset):",
+            "    pass",
+        ]
+    )
 
     assert expected_definition == definition
 
