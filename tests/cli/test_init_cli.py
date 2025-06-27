@@ -4,8 +4,7 @@ from uuid import uuid4
 import pytest
 from typer.testing import CliRunner
 from soar_sdk.cli.init.cli import init, resolve_dependencies, get_app_json
-from unittest.mock import Mock, patch
-from soar_sdk.meta.app import AppMeta
+from unittest.mock import patch
 
 
 @pytest.fixture
@@ -150,11 +149,8 @@ def test_resolve_dependencies(tmp_path):
         )
     )
 
-    # Create mock AppMeta
-    app_meta = Mock(spec=AppMeta)
-
     with patch("soar_sdk.cli.init.cli.subprocess.run") as mock_run:
-        resolve_dependencies(app_meta, app_dir, output_dir)
+        resolve_dependencies(app_dir, output_dir)
 
         # Verify subprocess.run was called with correct arguments
         mock_run.assert_called_once()
@@ -172,6 +168,28 @@ def test_resolve_dependencies(tmp_path):
 
     assert cmd_arg[:2] == ["uv", "add"]
     assert set(cmd_arg[2:]) == expected_deps
+    assert kwargs["cwd"] == output_dir
+    assert kwargs["check"] is True
+
+
+def test_resolve_dependencies_no_requirements(tmp_path):
+    """Test that resolve_dependencies does nothing when no requirements.txt exists."""
+
+    app_dir = tmp_path / "app"
+    output_dir = tmp_path / "output"
+    app_dir.mkdir()
+    output_dir.mkdir()
+
+    with patch("soar_sdk.cli.init.cli.subprocess.run") as mock_run:
+        resolve_dependencies(app_dir, output_dir)
+
+        # Verify subprocess.run was called with correct arguments
+        mock_run.assert_called_once()
+        args, kwargs = mock_run.call_args
+
+    # Check the command arguments
+    cmd_arg = args[0]
+    assert cmd_arg == ["uv", "add", "splunk-soar-sdk"]
     assert kwargs["cwd"] == output_dir
     assert kwargs["check"] is True
 

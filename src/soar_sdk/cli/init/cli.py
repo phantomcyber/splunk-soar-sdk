@@ -201,7 +201,6 @@ def convert_connector_to_sdk(
     app_meta = AppMetaDeserializer.from_app_json(json_path)
 
     # Convert the main module path to the SDK format, but save a reference to the original
-    # connector_path = app_dir / app_meta.main_module  # noqa: ERA001
     app_meta.main_module = "src.app:app"
 
     init_sdk_app(
@@ -225,7 +224,7 @@ def convert_connector_to_sdk(
     )
 
     with console.status("[green]Adding dependencies to app."):
-        resolve_dependencies(app_meta, app_dir, output_dir)
+        resolve_dependencies(app_dir, output_dir)
 
     with console.status("[green]Adding asset definition to app."):
         generate_asset_definition(app_meta, output_dir / "src/app.py")
@@ -251,7 +250,7 @@ def convert_connector_to_sdk(
     )
 
 
-def resolve_dependencies(app_meta: AppMeta, app_dir: Path, output_dir: Path) -> None:
+def resolve_dependencies(app_dir: Path, output_dir: Path) -> None:
     """
     Write the app metadata to a pyproject.toml file in the output directory.
     """

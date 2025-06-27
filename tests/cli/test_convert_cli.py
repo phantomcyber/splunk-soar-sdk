@@ -1,0 +1,175 @@
+import pytest
+from pathlib import Path
+
+from typer.testing import CliRunner
+
+from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.meta.app import AppMeta, AssetFieldSpecification
+
+from soar_sdk.cli.init import cli
+
+
+@pytest.fixture
+def runner():
+    return CliRunner()
+
+
+parent_dir = Path(__file__).parent
+asset_dir = parent_dir / "test_assets" / "converted_app"
+
+
+@pytest.fixture
+def app_meta():
+    return AppMeta(
+        name="Test App",
+        description="A test app",
+        app_version="1.0.0",
+        package_name="test_app",
+        main_module="src/app.py:app",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_name="Test Product",
+        python_version=["3.9", "3.13"],
+        project_name="test_app",
+        license="Copyright (c) 2025 Splunk Inc.",
+    )
+
+
+def test_generate_asset_definition(app_meta, tmp_path):
+    """Test that convert command generates the expected asset definition."""
+    app_py_path = tmp_path / "app.py"
+    app_py_path.write_text("class Asset(BaseAsset):\n    pass")
+
+    app_meta.configuration = {
+        "username": AssetFieldSpecification(
+            label="Username",
+            description="The username for the application",
+            required=True,
+            data_type="string",
+        ),
+        "internal_field": AssetFieldSpecification(
+            label="Internal Field",
+            description="An internal field that should not be exposed",
+            required=False,
+            data_type="ph_string",
+        ),
+    }
+
+    cli.generate_asset_definition(
+        app_py_path=app_py_path,
+        app_meta=app_meta,
+    )
+
+    definition = app_py_path.read_text()
+    expected_definition = (asset_dir / "asset.py.txt").read_text()
+
+    assert expected_definition == definition
+
+
+def test_generate_action_definitions(app_meta, tmp_path):
+    """Test that convert command generates the expected action definitions."""
+    app_py_path = tmp_path / "app.py"
+    app_py_path.write_text('if __name__ == "__main__":\n')
+
+    app_meta.actions = [
+        ActionMeta(
+            action="send message",
+            identifier="send_message",
+            description="Send a message",
+            type="test",
+            read_only=False,
+            verbose="This is a test action",
+        ),
+        ActionMeta(
+            action="test connectivity",
+            identifier="test_connectivity",
+            description="Test connectivity to the application",
+            type="test",
+            read_only=True,
+        ),
+    ]
+
+    cli.generate_action_definitions(
+        app_py_path=app_py_path,
+        app_meta=app_meta,
+    )
+
+    definition = app_py_path.read_text()
+    expected_definition = (asset_dir / "actions.py.txt").read_text()
+
+    assert expected_definition == definition
+
+
+def test_convert_cli(runner, tmp_path, app_meta):
+    """Test that convert command generates the expected app structure."""
+
+    app_meta.configuration = {
+        "username": AssetFieldSpecification(
+            label="Username",
+            description="The username for the application",
+            required=True,
+            data_type="string",
+        )
+    }
+
+    app_dir = tmp_path / "test_app"
+    app_dir.mkdir()
+    (app_dir / "app.json").write_text(app_meta.json())
+    (app_dir / app_meta.logo).touch()
+    (app_dir / app_meta.logo_dark).touch()
+
+    output_dir = tmp_path / "output"
+
+    result = runner.invoke(
+        cli.convert,
+        [
+            str(app_dir),
+            str(output_dir),
+        ],
+    )
+
+    print(result.output)  # For debugging purposes
+
+    assert result.exit_code == 0
+    assert (output_dir / "src").is_dir()
+    assert (output_dir / "src" / "__init__.py").exists()
+    assert (output_dir / "src" / "app.py").exists()
+    assert (output_dir / "pyproject.toml").exists()
+    assert (output_dir / "logo.svg").exists()
+    assert (output_dir / "logo_dark.svg").exists()
+
+
+def test_convert_cli_with_default_output(runner, tmp_path, app_meta):
+    """Test that convert command uses default output directory if not specified."""
+
+    app_meta.configuration = {
+        "username": AssetFieldSpecification(
+            label="Username",
+            description="The username for the application",
+            required=True,
+            data_type="string",
+        )
+    }
+
+    app_dir = tmp_path / "test_app"
+    app_dir.mkdir()
+    (app_dir / "app.json").write_text(app_meta.json())
+    (app_dir / app_meta.logo).touch()
+    (app_dir / app_meta.logo_dark).touch()
+
+    output_dir = app_dir / "sdk_app"
+
+    result = runner.invoke(
+        cli.convert,
+        [str(app_dir)],
+    )
+
+    print(result.output)  # For debugging purposes
+
+    assert result.exit_code == 0
+    assert (output_dir / "src").is_dir()
+    assert (output_dir / "src" / "__init__.py").exists()
+    assert (output_dir / "src" / "app.py").exists()
+    assert (output_dir / "pyproject.toml").exists()
+    assert (output_dir / "logo.svg").exists()
+    assert (output_dir / "logo_dark.svg").exists()
