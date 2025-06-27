@@ -26,6 +26,12 @@ uv tool install splunk-soar-sdk
 soarapps --help
 ```
 
+## Quick Start
+
+**Create a new, empty app**: Run `soarapps init`.
+
+**Migrate an existing app to the SDK**: Run `soarapps convert myapp`, where `myapp` is your app written using BaseConnector. This will convert asset configuration, action declarations, and inputs and outputs. You'll still need to re-implement your action code, as well as any custom views and webhooks.
+
 ## Installing the SDK as an app dependency
 
 When developing a new Splunk SOAR app using the SDK, you should use [uv](https://docs.astral.sh/uv/) as your project management tool:
