@@ -5,6 +5,7 @@ from soar_sdk.shims.phantom.install_info import is_soar_available, get_product_v
 from soar_sdk.shims.phantom.ph_ipc import ph_ipc
 from packaging.version import Version
 from typing import Any, Optional
+from soar_sdk.compat import remove_when_soar_newer_than
 
 PROGRESS_LEVEL = 25
 logging.addLevelName(PROGRESS_LEVEL, "PROGRESS")
@@ -43,7 +44,11 @@ class SOARHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord) -> None:
         is_new_soar = Version(get_product_version()) >= Version("7.0.0")
-        print(is_new_soar)
+        remove_when_soar_newer_than(
+            "7.0.0",
+            "In 7.0.0+ ph_ipc is injected into the module path by spawn so passing handle is not needed",
+        )
+
         try:
             message = self.format(record)
             if record.levelno == PROGRESS_LEVEL:
