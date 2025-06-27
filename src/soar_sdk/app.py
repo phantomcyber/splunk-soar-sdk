@@ -22,6 +22,7 @@ from soar_sdk.logging import getLogger
 from soar_sdk.types import Action
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+from soar_sdk.exceptions import ActionRegistrationError
 
 import uuid
 from soar_sdk.decorators import (
@@ -168,7 +169,6 @@ class App:
         """
 
         if view_handler:
-            # Apply the view_handler decorator
             decorated_view_handler = self.view_handler(template=view_template)(
                 view_handler
             )
@@ -177,10 +177,15 @@ class App:
             if hasattr(view_handler, "__module__") and view_handler.__module__:
                 import sys
 
-                original_module = sys.modules.get(view_handler.__module__)
-                if original_module and hasattr(original_module, view_handler.__name__):
+                if (
+                    original_module := sys.modules.get(view_handler.__module__)
+                ) and hasattr(original_module, view_handler.__name__):
                     setattr(
                         original_module, view_handler.__name__, decorated_view_handler
+                    )
+                else:
+                    raise ActionRegistrationError(
+                        f"View handler {view_handler.__name__} not found in its module {view_handler.__module__}"
                     )
 
             view_handler = decorated_view_handler

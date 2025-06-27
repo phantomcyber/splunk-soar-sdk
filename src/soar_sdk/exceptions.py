@@ -46,8 +46,17 @@ class SoarAPIError(ActionFailure):
         )
 
 
+class ActionRegistrationError(Exception):
+    """Exception raised when there is an error registering an action."""
+
+    def __init__(self, action: str) -> None:
+        self.action = action
+        super().__init__(f"Error registering action: {action}")
+
+
 __all__ = [
     "ActionFailure",
+    "ActionRegistrationError",
     "AssetMisconfiguration",
     "SoarAPIError",
 ]
