@@ -57,3 +57,29 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Pytest + Coverage - ${{ matrix.python-version }}
         run: uv run --locked pytest -n auto
+
+  Generate_Docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.13
+      - name: Install dependencies with docs extras
+        run: uv sync --group docs
+      - name: Generate API documentation
+        run: uv run sphinx-apidoc -o docs/api src/soar_sdk --force --module-first
+      - name: Build documentation with Sphinx
+        run: |
+          cd docs
+          uv run sphinx-build -b html . _build/html
+          # Create .nojekyll file to allow files starting with underscore
+          touch _build/html/.nojekyll
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/_build/html
+          retention-days: 7
