@@ -40,9 +40,14 @@ class ActionRenderer(Renderer[ActionMeta]):
         "test connectivity": ast.FunctionDef(
             name="test_connectivity",
             args=ast.arguments(
+                posonlyargs=[],
                 args=[
-                    ast.arg(arg="soar", annotation=ast.Name(id="SOARClient")),
-                    ast.arg(arg="asset", annotation=ast.Name(id="Asset")),
+                    ast.arg(
+                        arg="soar", annotation=ast.Name(id="SOARClient", ctx=ast.Load())
+                    ),
+                    ast.arg(
+                        arg="asset", annotation=ast.Name(id="Asset", ctx=ast.Load())
+                    ),
                 ],
                 vararg=None,
                 kwonlyargs=[],
@@ -67,10 +72,18 @@ class ActionRenderer(Renderer[ActionMeta]):
         "on poll": ast.FunctionDef(
             name="on_poll",
             args=ast.arguments(
+                posonlyargs=[],
                 args=[
-                    ast.arg(arg="soar", annotation=ast.Name(id="SOARClient")),
-                    ast.arg(arg="asset", annotation=ast.Name(id="Asset")),
-                    ast.arg(arg="params", annotation=ast.Name(id="OnPollParams")),
+                    ast.arg(
+                        arg="soar", annotation=ast.Name(id="SOARClient", ctx=ast.Load())
+                    ),
+                    ast.arg(
+                        arg="asset", annotation=ast.Name(id="Asset", ctx=ast.Load())
+                    ),
+                    ast.arg(
+                        arg="params",
+                        annotation=ast.Name(id="OnPollParams", ctx=ast.Load()),
+                    ),
                 ],
                 vararg=None,
                 kwonlyargs=[],
