@@ -154,6 +154,15 @@ def init_sdk_app(
     src_dir.mkdir()
     (src_dir / "__init__.py").touch()
 
+    shutil.copy(
+        APP_INIT_TEMPLATES / "basic_app/.pre-commit-config.yml",
+        app_dir / ".pre-commit-config.yml",
+    )
+    shutil.copy(
+        APP_INIT_TEMPLATES / "basic_app/.gitignore",
+        app_dir / ".gitignore",
+    )
+
     # Use Jinja2 to render the pyproject.toml file
     rprint("[blue]Creating pyproject.toml")
     toml_context = TomlContext(
