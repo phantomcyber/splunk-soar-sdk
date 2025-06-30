@@ -1,19 +1,13 @@
 import jinja2 as j2
-from soar_sdk.app import App
 from soar_sdk.code_renderers.renderer import Renderer
 import pytest
 from unittest.mock import Mock
 from soar_sdk.code_renderers import (
     app_renderer,
     toml_renderer,
-    action_renderer,
     asset_renderer,
 )
 from soar_sdk.compat import PythonVersion
-from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.action_results import ActionOutput
-
-from soar_sdk.params import Params
 
 
 class ConcreteRenderer(Renderer[str]):
@@ -88,45 +82,6 @@ def test_toml_renderer(mock_jinja_env):
     renderer = toml_renderer.TomlRenderer(context, mock_jinja_env)
     rendered = renderer.render()
     mock_jinja_env.get_template.assert_called_once_with("pyproject.toml.jinja")
-    assert rendered == "Rendered content"
-
-
-@pytest.mark.parametrize(
-    "action_identifier", (list(action_renderer.ActionRenderer.STUBS))
-)
-def test_action_renderer_with_stub(action_identifier: str):
-    """Test ActionRenderer with a stub action."""
-
-    # Create mock ActionMeta for a stub action
-    action_meta = ActionMeta(
-        action=action_identifier,
-        identifier=action_identifier,
-        description="Stub action",
-        type="test",
-        read_only=True,
-        parameters=Params,
-        output=ActionOutput,
-    )
-
-    renderer = action_renderer.ActionRenderer(action_meta)
-    rendered = renderer.render()
-
-    # Should return the stub without using Jinja templates
-    assert rendered == action_renderer.ActionRenderer.STUBS[action_identifier]
-
-
-def test_action_renderer_with_template(mock_jinja_env, app_with_action: App):
-    """Test ActionRenderer with a non-stub action using Jinja template."""
-
-    action = app_with_action.actions_manager.get_action("test_action")
-    assert action is not None
-
-    renderer = action_renderer.ActionRenderer(action.meta, mock_jinja_env)
-    rendered = renderer.render()
-
-    # Should use Jinja template for non-stub actions
-    mock_jinja_env.get_template.assert_any_call("action.py.jinja")
-    mock_jinja_env.get_template.assert_any_call("action_param.py.jinja")
     assert rendered == "Rendered content"
 
 

@@ -8,6 +8,10 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params, Param
 
 
+class ExampleEmptyOutput(ActionOutput):
+    pass
+
+
 class ExampleInnerData(ActionOutput):
     inner_string: str = OutputField(
         example_values=["example_value_1", "example_value_2"]
@@ -26,6 +30,7 @@ class ExampleActionOutput(ActionOutput):
     nested_type: ExampleInnerData = OutputField(alias="nested!type")
     list_of_types: list[ExampleInnerData]
     odd_field: str = OutputField(alias="odd-field", example_values=["default_value"])
+    empty_field: ExampleEmptyOutput
 
 
 class ExampleParams(Params):
@@ -54,7 +59,6 @@ def action_meta() -> ActionMeta:
         read_only=False,
         parameters=ExampleParams,
         output=ExampleActionOutput,
-        verbose="This is an example action for testing purposes.",
     )
 
 
@@ -78,6 +82,13 @@ def test_render_outputs(action_meta) -> None:
                 "    nested_type: ExampleInnerData = OutputField(alias='nested!type')",
                 "    list_of_types: list[ExampleInnerData]",
                 "    odd_field: str = OutputField(example_values=['default_value'], alias='odd-field')",
+                "    empty_field: ExampleEmptyOutput",
+            ]
+        ),
+        "ExampleEmptyOutput": "\n".join(
+            [
+                "class ExampleEmptyOutput(ActionOutput):",
+                "    pass",
             ]
         ),
     }
@@ -140,6 +151,34 @@ def test_render_empty_params(action_meta) -> None:
 def test_render_action(action_meta) -> None:
     expected_action = "\n".join(
         [
+            "@app.action(description='An example action for testing.', action_type='example', read_only=False)",
+            "def example_action(params: ExampleParams, soar: SOARClient, asset: Asset) -> ExampleActionOutput:",
+            "    raise NotImplementedError()",
+        ]
+    )
+
+    renderer = ActionRenderer(action_meta)
+
+    blocks = {
+        getattr(block, "name", "<UNKNOWN FIELD>"): ast.unparse(block)
+        for block in renderer.render_ast()
+    }
+
+    assert set(blocks.keys()) == {
+        "example_action",
+        "ExampleParams",
+        "ExampleActionOutput",
+        "ExampleInnerData",
+        "ExampleEmptyOutput",
+    }
+
+    assert blocks["example_action"] == expected_action
+
+
+def test_render_action_verbose(action_meta) -> None:
+    action_meta.verbose = "This is an example action for testing purposes."
+    expected_action = "\n".join(
+        [
             "@app.action(description='An example action for testing.', action_type='example', read_only=False, verbose='This is an example action for testing purposes.')",
             "def example_action(params: ExampleParams, soar: SOARClient, asset: Asset) -> ExampleActionOutput:",
             "    raise NotImplementedError()",
@@ -158,6 +197,7 @@ def test_render_action(action_meta) -> None:
         "ExampleParams",
         "ExampleActionOutput",
         "ExampleInnerData",
+        "ExampleEmptyOutput",
     }
 
     assert blocks["example_action"] == expected_action
@@ -167,7 +207,7 @@ def test_render_action_read_only(action_meta) -> None:
     action_meta.read_only = True
     expected_action = "\n".join(
         [
-            "@app.action(description='An example action for testing.', action_type='example', verbose='This is an example action for testing purposes.')",
+            "@app.action(description='An example action for testing.', action_type='example')",
             "def example_action(params: ExampleParams, soar: SOARClient, asset: Asset) -> ExampleActionOutput:",
             "    raise NotImplementedError()",
         ]
@@ -185,6 +225,7 @@ def test_render_action_read_only(action_meta) -> None:
         "ExampleParams",
         "ExampleActionOutput",
         "ExampleInnerData",
+        "ExampleEmptyOutput",
     }
 
     assert blocks["example_action"] == expected_action
