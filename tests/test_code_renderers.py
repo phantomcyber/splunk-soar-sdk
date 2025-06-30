@@ -8,6 +8,7 @@ from soar_sdk.code_renderers import (
     asset_renderer,
 )
 from soar_sdk.compat import PythonVersion
+import ast
 
 
 class ConcreteRenderer(Renderer[str]):
@@ -45,7 +46,7 @@ def mock_jinja_env():
     return mock_env
 
 
-def test_app_renderer(mock_jinja_env):
+def test_app_renderer():
     context = app_renderer.AppContext(
         name="Test App",
         app_type="ingestion",
@@ -56,12 +57,40 @@ def test_app_renderer(mock_jinja_env):
         publisher="Test Publisher",
         appid="test_app_123",
         fips_compliant=True,
+        app_content=[
+            ast.ClassDef(
+                name="Asset",
+                bases=[ast.Name(id="BaseAsset", ctx=ast.Load())],
+                body=[ast.Pass()],
+                decorator_list=[],
+            ),
+        ],
     )
 
-    renderer = app_renderer.AppRenderer(context, mock_jinja_env)
+    renderer = app_renderer.AppRenderer(context)
     rendered = renderer.render()
-    mock_jinja_env.get_template.assert_called_once_with("app.py.jinja")
-    assert rendered == "Rendered content"
+
+    classes = [
+        statement for statement in rendered.body if isinstance(statement, ast.ClassDef)
+    ]
+    class_names = set(cls.name for cls in classes)
+    assert class_names == {"Asset"}
+
+    assignments = [
+        statement for statement in rendered.body if isinstance(statement, ast.Assign)
+    ]
+    assignment_names = set(
+        target.id
+        for assign in assignments
+        for target in assign.targets
+        if isinstance(target, ast.Name)
+    )
+    assert assignment_names == {"logger", "app"}
+
+    main_check = next(
+        (stmt for stmt in rendered.body if isinstance(stmt, ast.If)), None
+    )
+    assert main_check is not None
 
 
 def test_toml_renderer(mock_jinja_env):
@@ -109,7 +138,7 @@ def test_asset_context_properties(data_type: str, is_str: bool, py_type: str):
     assert context.py_type == py_type
 
 
-def test_asset_renderer(mock_jinja_env):
+def test_asset_renderer():
     """Test AssetRenderer with asset fields context."""
     asset_fields = [
         asset_renderer.AssetContext(
@@ -130,8 +159,9 @@ def test_asset_renderer(mock_jinja_env):
         ),
     ]
 
-    renderer = asset_renderer.AssetRenderer(asset_fields, mock_jinja_env)
-    rendered = renderer.render()
+    renderer = asset_renderer.AssetRenderer(asset_fields)
+    rendered = renderer.render_ast()
+    asset_class = next(rendered)
 
     expected_output = "\n".join(
         [
@@ -141,4 +171,4 @@ def test_asset_renderer(mock_jinja_env):
         ]
     )
 
-    assert rendered == expected_output
+    assert ast.unparse(asset_class) == expected_output

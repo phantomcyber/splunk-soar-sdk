@@ -1,8 +1,9 @@
 import dataclasses
 from typing import Optional, Union
 import ast
+from collections.abc import Iterator
 
-from soar_sdk.code_renderers.renderer import Renderer
+from soar_sdk.code_renderers.renderer import AstRenderer
 from soar_sdk.meta.datatypes import to_python_type
 
 
@@ -40,12 +41,12 @@ class AssetContext:
         return to_python_type(self.data_type).__name__
 
 
-class AssetRenderer(Renderer[list[AssetContext]]):
+class AssetRenderer(AstRenderer[list[AssetContext]]):
     """
     A class to render an app's Asset class using Jinja2 templates.
     """
 
-    def render(self) -> str:
+    def render_ast(self) -> Iterator[ast.stmt]:
         """
         Render the Asset class by building an AST.
 
@@ -105,4 +106,4 @@ class AssetRenderer(Renderer[list[AssetContext]]):
         if not asset_class.body:
             asset_class.body.append(ast.Pass())
 
-        return ast.unparse(asset_class)
+        yield asset_class

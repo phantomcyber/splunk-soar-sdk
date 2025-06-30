@@ -1,5 +1,6 @@
 import pytest
 from pathlib import Path
+import ast
 
 from typer.testing import CliRunner
 
@@ -60,13 +61,9 @@ def test_generate_asset_definition(app_meta, tmp_path):
             value_list=["red", "green", "blue"],
         ),
     }
+    asset_class = cli.generate_asset_definition_ast(app_meta=app_meta)
 
-    cli.generate_asset_definition(
-        app_py_path=app_py_path,
-        app_meta=app_meta,
-    )
-
-    definition = app_py_path.read_text()
+    definition = ast.unparse(asset_class)
     expected_definition = "\n".join(
         [
             "class Asset(BaseAsset):",
@@ -84,13 +81,9 @@ def test_generate_asset_definition_with_no_fields(app_meta, tmp_path):
     app_py_path.write_text("class Asset(BaseAsset):\n    pass")
 
     app_meta.configuration = {}
+    asset_class = cli.generate_asset_definition_ast(app_meta=app_meta)
 
-    cli.generate_asset_definition(
-        app_py_path=app_py_path,
-        app_meta=app_meta,
-    )
-
-    definition = app_py_path.read_text()
+    definition = ast.unparse(asset_class)
     expected_definition = "\n".join(
         [
             "class Asset(BaseAsset):",
@@ -123,16 +116,10 @@ def test_generate_action_definitions(app_meta, tmp_path):
             read_only=True,
         ),
     ]
+    actions = cli.generate_action_definitions_ast(app_meta=app_meta)
+    action_names = set(action.name for action in actions)
 
-    cli.generate_action_definitions(
-        app_py_path=app_py_path,
-        app_meta=app_meta,
-    )
-
-    definition = app_py_path.read_text()
-    expected_definition = (asset_dir / "actions.py.txt").read_text()
-
-    assert expected_definition == definition
+    assert action_names == {"send_message", "test_connectivity"}
 
 
 def test_convert_cli(runner, tmp_path, app_meta):

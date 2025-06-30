@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Optional, cast
 import datetime
 import json
 import os
@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import uuid
+import ast
 
 import typer
 from rich.console import Console
@@ -31,7 +32,7 @@ init = typer.Typer(invoke_without_command=True)
 
 
 @init.callback()
-def init_sdk_app(
+def init_callback(
     name: Annotated[str, typer.Option(prompt="App name")],
     description: Annotated[str, typer.Option(prompt="App description")],
     authors: Annotated[list[str], typer.Option(default_factory=list)],
@@ -86,6 +87,49 @@ def init_sdk_app(
     product: Optional[str] = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
+) -> None:
+    init_sdk_app(
+        name,
+        description,
+        authors,
+        python_versions,
+        dependencies,
+        appid,
+        app_dir,
+        copyright,
+        version,
+        type,
+        vendor,
+        publisher,
+        logo,
+        logo_dark,
+        product,
+        fips_compliant,
+        overwrite,
+    )
+
+
+def init_sdk_app(
+    name: str,
+    description: str,
+    authors: list[str],
+    python_versions: list[PythonVersion],
+    dependencies: list[str],
+    appid: uuid.UUID,
+    app_dir: Path = WORK_DIR,
+    copyright: str = "Copyright (c) {year} Splunk Inc.",  # noqa: A002
+    version: str = "1.0.0",
+    # TODO: Enum for app types
+    type: str = "generic",  # noqa: A002
+    vendor: str = "Splunk Inc.",
+    publisher: str = "Splunk Inc.",
+    logo: Optional[Path] = None,
+    logo_dark: Optional[Path] = None,
+    product: Optional[str] = None,
+    fips_compliant: bool = False,
+    overwrite: bool = False,
+    app_content: Optional[list[ast.stmt]] = None,
+    asset_class: Optional[ast.ClassDef] = None,
 ) -> None:
     """
     Initialize a new SOAR app in the specified directory.
@@ -150,7 +194,15 @@ def init_sdk_app(
         appid=str(appid),
         fips_compliant=fips_compliant,
     )
-    app_text = AppRenderer(app_context).render()
+
+    if app_content is not None:
+        app_context.app_content = app_content
+    if asset_class is not None:
+        app_context.asset_cls = asset_class
+
+    app_module = AppRenderer(app_context).render()
+    app_module = ast.fix_missing_locations(app_module)
+    app_text = ast.unparse(app_module)
     (app_dir / "src/app.py").write_text(app_text)
 
     rprint(f"[green]Successfully created app at[/] {app_dir}")
@@ -222,16 +274,12 @@ def convert_connector_to_sdk(
         logo_dark=app_dir / app_meta.logo_dark,
         fips_compliant=app_meta.fips_compliant,
         overwrite=overwrite,
+        asset_class=generate_asset_definition_ast(app_meta),
+        app_content=generate_action_definitions_ast(app_meta),
     )
 
     with console.status("[green]Adding dependencies to app."):
         resolve_dependencies(app_dir, output_dir)
-
-    with console.status("[green]Adding asset definition to app."):
-        generate_asset_definition(app_meta, output_dir / "src/app.py")
-
-    with console.status("[green]Adding action definitions to app."):
-        generate_action_definitions(app_meta, output_dir / "src/app.py")
 
     with console.status("[green]Adding action view handlers to app."):
         # This is a placeholder for any future action view handler generation
@@ -310,12 +358,12 @@ def get_app_json(app_dir: Path) -> Path:
     )
 
 
-def generate_asset_definition(
-    app_meta: AppMeta,
-    app_py_path: Path,
-) -> None:
-    """
-    Generate the asset definition from the app metadata and save it to the specified output path.
+def generate_asset_definition_ast(app_meta: AppMeta) -> ast.ClassDef:
+    """Generate the asset definition AST from the app metadata.
+    Args:
+        app_meta (AppMeta): The app metadata containing configuration specifications.
+    Returns:
+        ast.stmt: The AST node representing the Asset class with its fields.
     """
     asset_context: list[AssetContext] = []
     for name, config_spec in app_meta.configuration.items():
@@ -335,43 +383,26 @@ def generate_asset_definition(
         )
 
     renderer = AssetRenderer(asset_context)
-    asset_def = renderer.render()
-    app_content = app_py_path.read_text()
-    app_content = re.sub(
-        r"class Asset\(BaseAsset\):\n +pass",
-        f"{asset_def}",
-        app_content,
-        count=1,
-        flags=re.MULTILINE,
-    )
-    app_py_path.write_text(app_content)
+    asset_def = next(renderer.render_ast())
+    return cast(ast.ClassDef, asset_def)
 
 
-def generate_action_definitions(
-    app_meta: AppMeta,
-    app_py_path: Path,
-) -> None:
+def generate_action_definitions_ast(app_meta: AppMeta) -> list[ast.stmt]:
     """
-    Generate action definitions from the app metadata and save them to the specified output path.
+    Generate action definitions from the app metadata and return them as a list of AST statements.
     """
-    action_defs: list[str] = []
+    action_defs: list[ast.stmt] = []
 
     for action_meta in app_meta.actions:
         renderer = ActionRenderer(action_meta)
 
+        # Render the action's AST
+        action_asts = list(renderer.render_ast())
+
         # Push reserved actions to the front of the list
         if action_meta.action in ActionRenderer.AST_STUBS:
-            action_defs.insert(0, renderer.render())
+            action_defs[:0] = action_asts
         else:
-            action_defs.append(renderer.render())
+            action_defs.extend(action_asts)
 
-    action_str = "\n\n".join(action_defs)
-    app_content = app_py_path.read_text()
-    app_content = re.sub(
-        r"(^if __name__ == .+)",
-        f"{action_str}\n\n\\1",
-        app_content,
-        count=1,
-        flags=re.MULTILINE,
-    )
-    app_py_path.write_text(app_content)
+    return action_defs
