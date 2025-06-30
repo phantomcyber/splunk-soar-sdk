@@ -16,6 +16,7 @@ def create_default_asset_cls() -> ast.ClassDef:
         bases=[ast.Name(id="BaseAsset", ctx=ast.Load())],
         body=[ast.Pass()],
         decorator_list=[],
+        keywords=[],
     )
 
 
