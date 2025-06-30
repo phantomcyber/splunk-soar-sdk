@@ -66,6 +66,8 @@ class ActionRenderer(Renderer[ActionMeta]):
             decorator_list=[
                 ast.Call(
                     func=ast.Name(id="app.test_connectivity", ctx=ast.Load()),
+                    args=[],
+                    keywords=[],
                 )
             ],
         ),
@@ -102,6 +104,7 @@ class ActionRenderer(Renderer[ActionMeta]):
                 ast.Call(
                     func=ast.Name(id="app.on_poll", ctx=ast.Load()),
                     args=[],
+                    keywords=[],
                 )
             ],
             returns=ast.Subscript(
@@ -201,6 +204,7 @@ class ActionRenderer(Renderer[ActionMeta]):
         node = ast.FunctionDef(
             name=self.action_meta.identifier,
             args=ast.arguments(
+                posonlyargs=[],
                 args=[
                     ast.arg(
                         arg="params",
@@ -230,7 +234,6 @@ class ActionRenderer(Renderer[ActionMeta]):
                 )
             ],
             returns=return_type,
-            type_params=[],
         )
         yield ast.fix_missing_locations(node)
 
