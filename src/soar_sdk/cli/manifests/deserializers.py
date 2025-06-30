@@ -13,9 +13,16 @@ from soar_sdk.params import Params, Param
 from soar_sdk.meta.datatypes import to_python_type
 
 
+class DeserializedAppMeta(NamedTuple):
+    app_meta: AppMeta
+    actions_with_custom_views: list[str]
+    has_rest_handlers: bool
+    has_webhooks: bool
+
+
 class AppMetaDeserializer:
     @staticmethod
-    def from_app_json(json_path: Path) -> AppMeta:
+    def from_app_json(json_path: Path) -> DeserializedAppMeta:
         manifest: dict[str, Any] = json.loads(json_path.read_text())
 
         # Massage the python_version field, which may be a comma-separated string
@@ -27,13 +34,29 @@ class AppMetaDeserializer:
                 PythonVersion.from_str(py) for py in python_version
             ]
 
-        manifest["actions"] = [
+        deserialized_actions = [
             ActionDeserializer.from_action_json(action)
             for action in manifest.get("actions", [])
             if isinstance(action, dict)
         ]
 
-        return AppMeta(project_name=json_path.parent.name, **manifest)
+        manifest["actions"] = [action.action_meta for action in deserialized_actions]
+        actions_with_custom_views = [
+            action.action_meta.identifier
+            for action in deserialized_actions
+            if action.has_custom_view
+        ]
+        app_meta = AppMeta(project_name=json_path.parent.name, **manifest)
+
+        has_rest_handlers = isinstance(manifest.get("rest_handler"), str)
+        has_webhooks = isinstance(manifest.get("webhooks"), dict)
+
+        return DeserializedAppMeta(
+            app_meta=app_meta,
+            actions_with_custom_views=actions_with_custom_views,
+            has_rest_handlers=has_rest_handlers,
+            has_webhooks=has_webhooks,
+        )
 
 
 class FieldSpec(NamedTuple):
@@ -51,14 +74,22 @@ class OutputFieldModel:
     column_order: Optional[int] = None
 
 
+class DeserializedActionMeta(NamedTuple):
+    action_meta: ActionMeta
+    has_custom_view: bool
+
+
 class ActionDeserializer:
     @classmethod
-    def from_action_json(cls, action: dict[str, Any]) -> ActionMeta:
+    def from_action_json(cls, action: dict[str, Any]) -> DeserializedActionMeta:
         action["parameters"] = cls.parse_parameters(
             action["action"], action.get("parameters", {})
         )
         action["output"] = cls.parse_output(action["action"], action.get("output", []))
-        return ActionMeta.parse_obj(action)
+        return DeserializedActionMeta(
+            action_meta=ActionMeta.parse_obj(action),
+            has_custom_view=action.get("render", {}).get("type") == "custom",
+        )
 
     @classmethod
     def parse_parameters(

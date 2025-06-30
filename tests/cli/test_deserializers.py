@@ -2,7 +2,11 @@ import json
 import pytest
 from unittest.mock import Mock, patch
 
-from soar_sdk.cli.manifests.deserializers import AppMetaDeserializer, ActionDeserializer
+from soar_sdk.cli.manifests.deserializers import (
+    AppMetaDeserializer,
+    ActionDeserializer,
+    DeserializedActionMeta,
+)
 from soar_sdk.cli.manifests.serializers import OutputsSerializer
 from soar_sdk.compat import PythonVersion
 from soar_sdk.meta.app import AppMeta
@@ -78,8 +82,13 @@ def test_from_app_json_basic_deserialization(basic_app_data, create_app_json):
     """Test basic deserialization of a minimal app.json file."""
     app_json_path = create_app_json(basic_app_data)
 
-    result = AppMetaDeserializer.from_app_json(app_json_path)
+    deserialized_result = AppMetaDeserializer.from_app_json(app_json_path)
 
+    assert not deserialized_result.has_rest_handlers
+    assert not deserialized_result.has_webhooks
+    assert not deserialized_result.actions_with_custom_views
+
+    result = deserialized_result.app_meta
     assert isinstance(result, AppMeta)
     assert result.name == "test_app"
     assert result.description == "Test application"
@@ -105,17 +114,19 @@ def test_from_app_json_python_version_handling(
         app_data["python_version"] = python_version_input
 
     app_json_path = create_app_json(app_data)
-    result = AppMetaDeserializer.from_app_json(app_json_path)
+    deserialized_result = AppMetaDeserializer.from_app_json(app_json_path)
 
+    result = deserialized_result.app_meta
     assert result.python_version == expected
 
 
 def test_from_app_json_python_version_missing(basic_app_data, create_app_json):
     """Test handling when python_version field is missing entirely."""
     app_json_path = create_app_json(basic_app_data)
-    result = AppMetaDeserializer.from_app_json(app_json_path)
+    deserialized_result = AppMetaDeserializer.from_app_json(app_json_path)
 
     # Should use default from AppMeta model
+    result = deserialized_result.app_meta
     assert result.python_version == PythonVersion.all()
 
 
@@ -161,10 +172,14 @@ def test_from_app_json_with_actions(basic_app_data, create_app_json):
     with patch.object(ActionDeserializer, "from_action_json") as mock_deserializer:
         mock_action1 = Mock(spec=ActionMeta)
         mock_action2 = Mock(spec=ActionMeta)
-        mock_deserializer.side_effect = [mock_action1, mock_action2]
+        mock_deserializer.side_effect = [
+            DeserializedActionMeta(action_meta=mock_action1, has_custom_view=False),
+            DeserializedActionMeta(action_meta=mock_action2, has_custom_view=False),
+        ]
 
-        result = AppMetaDeserializer.from_app_json(app_json_path)
+        deserialized_result = AppMetaDeserializer.from_app_json(app_json_path)
 
+        result = deserialized_result.app_meta
         assert len(result.actions) == 2
         assert mock_deserializer.call_count == 2
 
@@ -203,7 +218,10 @@ def test_from_app_json_actions_non_dict_filtered(basic_app_data, create_app_json
     with patch.object(ActionDeserializer, "from_action_json") as mock_deserializer:
         mock_action1 = Mock(spec=ActionMeta)
         mock_action2 = Mock(spec=ActionMeta)
-        mock_deserializer.side_effect = [mock_action1, mock_action2]
+        mock_deserializer.side_effect = [
+            DeserializedActionMeta(action_meta=mock_action1, has_custom_view=False),
+            DeserializedActionMeta(action_meta=mock_action2, has_custom_view=False),
+        ]
 
         AppMetaDeserializer.from_app_json(app_json_path)
 
@@ -227,7 +245,7 @@ def test_from_app_json_actions_edge_cases(
         app_data["actions"] = actions_value
 
     app_json_path = create_app_json(app_data)
-    result = AppMetaDeserializer.from_app_json(app_json_path)
+    result = AppMetaDeserializer.from_app_json(app_json_path).app_meta
 
     assert len(result.actions) == expected_count
 
@@ -281,9 +299,11 @@ def test_from_app_json_complex_example(create_app_json):
 
     with patch.object(ActionDeserializer, "from_action_json") as mock_deserializer:
         mock_action = Mock(spec=ActionMeta)
-        mock_deserializer.return_value = mock_action
+        mock_deserializer.return_value = DeserializedActionMeta(
+            action_meta=mock_action, has_custom_view=False
+        )
 
-        result = AppMetaDeserializer.from_app_json(app_json_path)
+        result = AppMetaDeserializer.from_app_json(app_json_path).app_meta
 
         assert result.name == "example_app"
         assert result.appid == "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
@@ -336,7 +356,7 @@ def test_from_app_json_preserves_original_data(basic_app_data, create_app_json):
     )
 
     app_json_path = create_app_json(app_data)
-    app_meta = AppMetaDeserializer.from_app_json(app_json_path)
+    app_meta = AppMetaDeserializer.from_app_json(app_json_path).app_meta
 
     # Verify that all fields are preserved
     assert app_meta.license == app_data["license"]
@@ -351,7 +371,7 @@ def test_from_app_json_project_name_derived_from_path(basic_app_data, create_app
     app_data["name"] = "different_name"
 
     app_json_path = create_app_json(app_data, "actual_project_name")
-    app_meta = AppMetaDeserializer.from_app_json(app_json_path)
+    app_meta = AppMetaDeserializer.from_app_json(app_json_path).app_meta
 
     # project_name should come from directory name, not the "name" field
     assert app_meta.project_name == "actual_project_name"
@@ -363,7 +383,7 @@ def test_from_action_json_basic(basic_action_data, mock_action_deserializer):
     """Test basic action deserialization."""
     mocks = mock_action_deserializer
 
-    result = ActionDeserializer.from_action_json(basic_action_data)
+    result = ActionDeserializer.from_action_json(basic_action_data).action_meta
 
     assert result == mocks["action_meta"]
     mocks["parse_parameters"].assert_called_once_with("test connectivity", {})
@@ -400,7 +420,7 @@ def test_from_action_json_with_parameters_and_output(mock_action_deserializer):
     original_parameters = action_data["parameters"]
     original_output = action_data["output"]
 
-    result = ActionDeserializer.from_action_json(action_data)
+    result = ActionDeserializer.from_action_json(action_data).action_meta
 
     assert result == mocks["action_meta"]
     mocks["parse_parameters"].assert_called_once_with(
@@ -422,7 +442,7 @@ def test_from_action_json_missing_optional_fields(mock_action_deserializer):
     }
 
     mocks = mock_action_deserializer
-    result = ActionDeserializer.from_action_json(action_data)
+    result = ActionDeserializer.from_action_json(action_data).action_meta
 
     assert result == mocks["action_meta"]
     # Should use empty defaults for missing fields
