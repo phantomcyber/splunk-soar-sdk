@@ -6,12 +6,12 @@ from pydantic.fields import Undefined
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.cli.utils import normalize_field_name
-from soar_sdk.code_renderers.renderer import Renderer
+from soar_sdk.code_renderers.renderer import AstRenderer
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 
 
-class ActionRenderer(Renderer[ActionMeta]):
+class ActionRenderer(AstRenderer[ActionMeta]):
     """
     Generates code for actions in the Soar SDK.
     """
@@ -114,14 +114,6 @@ class ActionRenderer(Renderer[ActionMeta]):
             ActionMeta: The metadata for the action.
         """
         return self.context
-
-    def render(self) -> str:
-        """
-        Renders the action code as a string.
-        Returns:
-            str: The rendered code for the action.
-        """
-        return ast.unparse(ast.Module(body=list(self.render_ast()), type_ignores=[]))
 
     def render_ast(self) -> Iterator[ast.stmt]:
         """
