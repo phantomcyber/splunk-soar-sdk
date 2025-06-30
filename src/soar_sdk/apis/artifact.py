@@ -14,11 +14,23 @@ logger = getLogger()
 
 
 class Artifact:
-    """
-    API interface for artifacts.
+    """API interface for managing SOAR artifacts.
+
+    This class provides methods to create and manage artifacts within SOAR.
+
+    Attributes:
+        soar_client (SOARClient): The SOAR client instance for API communication.
     """
 
     def __init__(self, soar_client: "SOARClient") -> None:
+        """Initialize the Artifact API interface.
+
+        Sets up the artifact interface with default artifact properties and
+        initializes internal artifact storage for unauthenticated clients.
+
+        Args:
+            soar_client (SOARClient): The SOAR client instance for API communication.
+        """
         self.soar_client: SOARClient = soar_client
         self._artifact_common = {
             ph_jsons.APP_JSON_LABEL: ph_consts.APP_DEFAULT_ARTIFACT_LABEL,
@@ -29,10 +41,39 @@ class Artifact:
         self.__artifacts: dict[int, dict] = {}
 
     def create(self, artifact: dict) -> int:
-        """
-        Create a new artifact.
+        """Create a new artifact in the SOAR platform.
 
-        :param artifact: The artifact data to create.
+        Creates an artifact with the provided data, applying default values for
+        common fields if not specified. For authenticated clients, the artifact
+        is created via the REST API. For unauthenticated clients, the artifact
+        is stored locally for testing purposes.
+
+        Args:
+            artifact (dict): The artifact data to create. Must be JSON-serializable.
+                           Common fields include:
+                           - container_id: ID of the container to associate with
+                           - cef: Common Event Format data
+                           - label: Artifact label (defaults to 'artifact')
+                           - type: Artifact type (defaults to 'generic')
+                           - description: Human-readable description
+
+        Returns:
+            int: The ID of the created artifact.
+
+        Raises:
+            ActionFailure: If the artifact data cannot be serialized to JSON.
+            SoarAPIError: If the API request fails or the artifact cannot be created.
+                         For unauthenticated clients, raised if no container_id is provided.
+
+        Example:
+            >>> artifact_data = {
+            ...     "container_id": 123,
+            ...     "cef": {"sourceAddress": "192.168.1.1"},
+            ...     "label": "ip",
+            ...     "type": "network",
+            ... }
+            >>> artifact_id = artifact_api.create(artifact_data)
+            >>> print(f"Created artifact with ID: {artifact_id}")
         """
         artifact.update(
             {k: v for k, v in self._artifact_common.items() if (not artifact.get(k))}

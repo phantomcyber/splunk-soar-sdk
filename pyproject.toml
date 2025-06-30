@@ -89,6 +89,13 @@ dev = [
     "types-urllib3>=1.26.25.13,<2",
 ]
 
+docs = [
+    "sphinx>=7.0.0,<8",
+    "sphinx-autodoc-typehints>=2.0.0,<3",
+    "sphinx-rtd-theme>=2.0.0,<3",
+    "myst-parser>=3.0.0,<4",
+]
+
 [[tool.uv.index]]
 url = "https://pypi.python.org/simple"
 
