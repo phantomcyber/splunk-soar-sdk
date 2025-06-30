@@ -1,6 +1,7 @@
 import pytest
 from pathlib import Path
 import ast
+import json
 
 from typer.testing import CliRunner
 
@@ -195,3 +196,103 @@ def test_convert_cli_with_default_output(runner, tmp_path, app_meta):
     assert (output_dir / "pyproject.toml").exists()
     assert (output_dir / "logo.svg").exists()
     assert (output_dir / "logo_dark.svg").exists()
+
+
+def test_convert_cli_with_custom_view(runner, tmp_path, app_meta):
+    """Test that convert command handles custom views correctly."""
+
+    app_meta_dict = app_meta.dict()
+    app_meta_dict["actions"] = [
+        {
+            "action": "custom view action",
+            "identifier": "custom_view_action",
+            "description": "An action with a custom view",
+            "type": "test",
+            "read_only": False,
+            "verbose": "This action has a custom view",
+            "render": {
+                "type": "custom",
+            },
+        }
+    ]
+
+    app_dir = tmp_path / "test_app"
+    app_dir.mkdir()
+    (app_dir / "app.json").write_text(json.dumps(app_meta_dict, indent=4))
+    (app_dir / app_meta.logo).touch()
+    (app_dir / app_meta.logo_dark).touch()
+
+    output_dir = tmp_path / "output"
+
+    result = runner.invoke(
+        cli.convert,
+        [
+            str(app_dir),
+            str(output_dir),
+        ],
+    )
+
+    print(result.output)  # For debugging purposes
+
+    assert (
+        "The following actions have custom views: custom_view_action" in result.output
+    )
+    assert result.exit_code == 0
+
+
+def test_convert_cli_with_rest_handler(runner, tmp_path, app_meta):
+    """Test that convert command handles REST handlers correctly."""
+
+    app_meta_dict = app_meta.dict()
+    app_meta_dict["rest_handler"] = "my_connector.rest_handler"
+
+    app_dir = tmp_path / "test_app"
+    app_dir.mkdir()
+    (app_dir / "app.json").write_text(json.dumps(app_meta_dict, indent=4))
+    (app_dir / app_meta.logo).touch()
+    (app_dir / app_meta.logo_dark).touch()
+
+    output_dir = tmp_path / "output"
+
+    result = runner.invoke(
+        cli.convert,
+        [
+            str(app_dir),
+            str(output_dir),
+        ],
+    )
+
+    print(result.output)  # For debugging purposes
+
+    assert "The app has REST handlers defined." in result.output
+    assert result.exit_code == 0
+
+
+def test_convert_cli_with_webhooks(runner, tmp_path, app_meta):
+    """Test that convert command handles webhooks correctly."""
+
+    app_meta_dict = app_meta.dict()
+    app_meta_dict["webhooks"] = {
+        "handler": "my_connector.webhook_handler",
+    }
+
+    app_dir = tmp_path / "test_app"
+    app_dir.mkdir()
+    (app_dir / "app.json").write_text(json.dumps(app_meta_dict, indent=4))
+    (app_dir / app_meta.logo).touch()
+    (app_dir / app_meta.logo_dark).touch()
+
+    output_dir = tmp_path / "output"
+
+    result = runner.invoke(
+        cli.convert,
+        [
+            str(app_dir),
+            str(output_dir),
+        ],
+    )
+
+    print(result.output)  # For debugging purposes
+
+    assert "The app has Webhooks defined." in result.output
+    assert result.exit_code == 0

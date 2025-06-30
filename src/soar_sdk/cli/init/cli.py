@@ -260,7 +260,8 @@ def convert_connector_to_sdk(
 
     json_path = get_app_json(app_dir)
 
-    app_meta = AppMetaDeserializer.from_app_json(json_path)
+    deserialized_app_meta = AppMetaDeserializer.from_app_json(json_path)
+    app_meta = deserialized_app_meta.app_meta
 
     # Convert the main module path to the SDK format, but save a reference to the original
     app_meta.main_module = "src.app:app"
@@ -290,13 +291,22 @@ def convert_connector_to_sdk(
     with console.status("[green]Adding dependencies to app."):
         resolve_dependencies(app_dir, output_dir)
 
-    with console.status("[green]Adding action view handlers to app."):
-        # This is a placeholder for any future action view handler generation
-        pass
+    actions_with_custom_views = deserialized_app_meta.actions_with_custom_views
+    if actions_with_custom_views:
+        rprint(
+            f"[yellow]The following actions have custom views: {', '.join(actions_with_custom_views)}[/]"
+        )
+        rprint("[yellow]You will need to manually implement these in the new app.[/]")
 
-    with console.status("[green]Adding webhook handlers to app."):
-        # This is a placeholder for any future webhook handler generation
-        pass
+    if deserialized_app_meta.has_rest_handlers:
+        rprint(
+            "[yellow]The app has REST handlers defined. You will need to manually re-implement these as Webhooks in the new app.[/]"
+        )
+
+    if deserialized_app_meta.has_webhooks:
+        rprint(
+            "[yellow]The app has Webhooks defined. You will need to manually re-implement these in the new app.[/]"
+        )
 
     subprocess.run(["ruff", "format", output_dir], check=True)  # noqa: S603, S607
 
