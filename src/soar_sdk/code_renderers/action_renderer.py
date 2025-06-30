@@ -121,7 +121,7 @@ class ActionRenderer(Renderer[ActionMeta]):
         Returns:
             str: The rendered code for the action.
         """
-        return ast.unparse(ast.Module(body=list(self.render_ast())))
+        return ast.unparse(ast.Module(body=list(self.render_ast()), type_ignores=[]))
 
     def render_ast(self) -> Iterator[ast.stmt]:
         """
