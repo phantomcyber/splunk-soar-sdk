@@ -360,7 +360,7 @@ def generate_action_definitions(
         renderer = ActionRenderer(action_meta)
 
         # Push reserved actions to the front of the list
-        if action_meta.action in ActionRenderer.STUBS:
+        if action_meta.action in ActionRenderer.AST_STUBS:
             action_defs.insert(0, renderer.render())
         else:
             action_defs.append(renderer.render())
