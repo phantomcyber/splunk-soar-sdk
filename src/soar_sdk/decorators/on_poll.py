@@ -9,6 +9,7 @@ from soar_sdk.params import OnPollParams
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.async_utils import run_async_if_needed
 from soar_sdk.logging import getLogger
 
 
@@ -43,6 +44,7 @@ class OnPollDecorator:
 
         # Check if function is generator function or has a return type annotation of iterator
         is_generator = inspect.isgeneratorfunction(function)
+        is_async_generator = inspect.isasyncgenfunction(function)
         signature = inspect.signature(function)
         has_iterator_return = False
 
@@ -54,7 +56,7 @@ class OnPollDecorator:
         ):
             has_iterator_return = True
 
-        if not (is_generator or has_iterator_return):
+        if not (is_generator or is_async_generator or has_iterator_return):
             raise TypeError(
                 "The on_poll function must be a generator (use 'yield') or return an Iterator."
             )
@@ -94,6 +96,7 @@ class OnPollDecorator:
                 kwargs = self.app._build_magic_args(function, client=client, **kwargs)
 
                 result = function(action_params, *args, **kwargs)
+                result = run_async_if_needed(result)
 
                 # Check if container_id is provided in params
                 container_id = getattr(params, "container_id", None)

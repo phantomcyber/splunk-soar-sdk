@@ -12,6 +12,7 @@ import inspect
 from pydantic import BaseModel
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.view import ViewContext, AllAppRuns
+from soar_sdk.async_utils import run_async_if_needed
 
 T = TypeVar("T", bound=ActionOutput)
 
@@ -94,4 +95,4 @@ class ViewFunctionParser(Generic[T]):
         else:
             result = self.function(context, action, parsed_outputs, *args, **kwargs)
 
-        return result
+        return run_async_if_needed(result)

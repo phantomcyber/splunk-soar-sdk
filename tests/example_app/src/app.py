@@ -99,5 +99,20 @@ def on_poll(
         yield artifact
 
 
+from .actions.async_process_message import async_process_message, sync_process_message
+
+app.register_action(
+    async_process_message,
+    action_type="investigate",
+    verbose="Processes a message asynchronously with concurrent HTTP requests.",
+)
+
+app.register_action(
+    sync_process_message,
+    action_type="investigate",
+    verbose="Processes a message synchronously with sequential HTTP requests.",
+)
+
+
 if __name__ == "__main__":
     app.cli()
