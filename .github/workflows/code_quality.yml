@@ -58,14 +58,17 @@ jobs:
       - name: Pytest + Coverage - ${{ matrix.python-version }}
         run: uv run --locked pytest -n auto
 
-  Generate_Docs:
+  generate_docs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
       - name: Install uv
         uses: astral-sh/setup-uv@v5
         with:
+          enable-cache: true
           python-version: 3.13
       - name: Install dependencies with docs extras
         run: uv sync --group docs
@@ -80,4 +83,4 @@ jobs:
         with:
           name: documentation
           path: docs/_build/html
-          retention-days: 7
+          retention-days: 1
