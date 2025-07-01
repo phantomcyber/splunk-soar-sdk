@@ -28,6 +28,36 @@
     "ip_allowlist": [
       "0.0.0.0/0",
       "::/0"
+    ],
+    "routes": [
+      {
+        "allowed_methods": [
+          "GET",
+          "POST"
+        ],
+        "declaration_lineno": 60,
+        "declaration_path": "src/app.py",
+        "url_pattern": "test_webhook"
+      },
+      {
+        "allowed_methods": [
+          "GET",
+          "POST",
+          "DELETE"
+        ],
+        "declaration_lineno": 72,
+        "declaration_path": "src/app.py",
+        "url_pattern": "test_webhook/<asset_id>"
+      },
+      {
+        "allowed_methods": [
+          "GET",
+          "POST"
+        ],
+        "declaration_lineno": 85,
+        "declaration_path": "src/app.py",
+        "url_pattern": "test_webhook_file"
+      }
     ]
   },
   "configuration": {

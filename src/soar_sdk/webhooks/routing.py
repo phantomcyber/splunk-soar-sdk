@@ -79,7 +79,13 @@ class Router(Generic[AssetType]):
 
         # Add route
         self._routes.append(
-            Route(pattern, regex_pattern, methods, handler, param_indices)
+            Route(
+                pattern,
+                regex_pattern,
+                methods,
+                handler,
+                param_indices,
+            )
         )
 
     def handle_request(self, request: WebhookRequest[AssetType]) -> WebhookResponse:
