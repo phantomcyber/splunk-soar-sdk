@@ -78,7 +78,7 @@ jobs:
   #     - name: Install uv
   #       uses: astral-sh/setup-uv@v5
   #       with:
-  #         python-version: 3.13
+  #         python-version: 3.12
 
   #     - name: Install dependencies with docs extras
   #       run: uv sync --group docs

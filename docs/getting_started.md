@@ -321,4 +321,3 @@ with the app you create:
 - [defining action params](/docs/actions/action_params.md)
 - [defining and using the action output](/docs/actions/action_outputs.md)
 - [configuring the app assets](/docs/app_configuration.md)
-
