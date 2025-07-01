@@ -1,0 +1,27 @@
+/* Custom CSS for Splunk SOAR SDK Documentation */
+
+/* Make the main title black */
+.wy-nav-content-wrap .wy-nav-content .rst-content .document h1 {
+    color: #000000 !important;
+}
+
+/* Also target the project title in the sidebar */
+.wy-side-nav-search .wy-dropdown > a,
+.wy-side-nav-search > a {
+    color: #000000 !important;
+}
+
+/* Make sure all main headings are black */
+.rst-content h1,
+.rst-content h2,
+.rst-content h3,
+.rst-content h4,
+.rst-content h5,
+.rst-content h6 {
+    color: #000000 !important;
+}
+
+/* Override any theme-specific title styles */
+.wy-nav-content .rst-content .document .section > h1 {
+    color: #000000 !important;
+}

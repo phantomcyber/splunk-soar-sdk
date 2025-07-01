@@ -22,15 +22,18 @@ repos:
       - id: ruff
       - id: ruff-format
 
-  - repo: local
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
     hooks:
-      - id: pydocstyle-warning
+      - id: pydocstyle
         name: pydocstyle (warning only)
-        entry: bash -c 'uv run pydocstyle --convention=google --add-ignore=D100,D104,D105,D107 "$@" || true'
-        language: system
-        types: [python]
-        pass_filenames: true
+        args:
+          - --convention=google
+          - --add-ignore=D100,D104,D105,D107
+        additional_dependencies: [tomli]
         verbose: true
+        # Override the command to make it non-blocking
+        entry: bash -c 'pydocstyle "$@" || true' --
 
   - repo: local
     hooks:
