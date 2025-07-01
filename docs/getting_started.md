@@ -296,5 +296,3 @@ with the app you create:
 - [defining and using the action output](/docs/actions/action_outputs.md)
 - [configuring the app assets](/docs/app_configuration.md)
 
-For more advanced topics, see the [advanced apps development docs page](/docs/advanced_usage.md).
-It covers old connectors porting, good practices, using the old connectors API and more.

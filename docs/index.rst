@@ -10,9 +10,7 @@ Welcome to the Splunk SOAR SDK documentation. This SDK provides a comprehensive 
    getting_started
    app_configuration
    app_manifest
-   advanced_usage
    cicd_tools
-   api/modules
 
 Getting Started
 ===============
@@ -32,11 +30,6 @@ App Manifest
 .. include:: app_manifest.md
    :parser: myst_parser.sphinx_
 
-Advanced Usage
-==============
-
-.. include:: advanced_usage.md
-   :parser: myst_parser.sphinx_
 
 CI/CD Tools
 ===========
@@ -51,7 +44,7 @@ API Reference
    :maxdepth: 4
    :caption: API Reference:
 
-   api/soar_sdk
+   api_reference
 
 Actions Documentation
 =====================
@@ -63,15 +56,6 @@ Actions Documentation
 
    actions/*
 
-App Structure Documentation
-===========================
-
-.. toctree::
-   :maxdepth: 2
-   :caption: App Structure:
-   :glob:
-
-   app_structure/*
 
 Custom Views Documentation
 ==========================
