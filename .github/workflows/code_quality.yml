@@ -85,40 +85,30 @@ jobs:
   Publish_Docs:
     runs-on: ubuntu-latest
     needs: Generate_Docs
-    if: success() && github.ref == 'refs/heads/main'
+    if: success()
     permissions:
       contents: read
       pages: write
       id-token: write
     environment:
-      name: github-pages
+      name: ${{ github.ref_name == 'main' && 'github-pages' || 'github-pages-testing' }}
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: main  # Ensure we're on the latest main branch
+      - name: Debug branch info
+        run: |
+          echo "github.ref: ${{ github.ref }}"
+          echo "github.ref_name: ${{ github.ref_name }}"
+          echo "github.head_ref: ${{ github.head_ref }}"
+          echo "github.base_ref: ${{ github.base_ref }}"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
+      - name: Download documentation artifact
+        uses: actions/download-artifact@v4
         with:
-          python-version: 3.13
-
-      - name: Install dependencies with docs extras
-        run: uv sync --group docs
+          name: documentation
+          path: docs/_build/html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
-
-      - name: Generate and build documentation for testing
-        run: |
-          # Build HTML documentation using our manual API reference
-          cd docs
-          uv run sphinx-build -b html . _build/html
-
-          # Create .nojekyll file to allow files starting with underscore
-          touch _build/html/.nojekyll
 
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
@@ -128,3 +118,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          enablement: true

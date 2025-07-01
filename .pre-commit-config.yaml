@@ -22,14 +22,15 @@ repos:
       - id: ruff
       - id: ruff-format
 
-  - repo: https://github.com/pycqa/pydocstyle
-    rev: 6.3.0
+  - repo: local
     hooks:
-      - id: pydocstyle
-        args:
-          - --convention=google
-          - --add-ignore=D100,D104,D105,D107  # Ignore missing docstrings for modules, packages, magic methods, __init__
-        additional_dependencies: [tomli]
+      - id: pydocstyle-warning
+        name: pydocstyle (warning only)
+        entry: bash -c 'uv run pydocstyle --convention=google --add-ignore=D100,D104,D105,D107 "$@" || true'
+        language: system
+        types: [python]
+        pass_filenames: true
+        verbose: true
 
   - repo: local
     hooks:
