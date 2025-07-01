@@ -19,7 +19,7 @@ class AsyncTestOutput(ActionOutput):
     status_codes: list[int]
 
 
-async def async_process_message(
+async def async_process(
     params: AsyncTestParams, soar: SOARClient, asset: Asset
 ) -> AsyncTestOutput:
     start_time = time.time()
@@ -59,7 +59,7 @@ class SyncTestOutput(ActionOutput):
     status_codes: list[int]
 
 
-def sync_process_message(
+def sync_process(
     params: SyncTestParams, soar: SOARClient, asset: Asset
 ) -> SyncTestOutput:
     start_time = time.time()

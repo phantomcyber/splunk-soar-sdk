@@ -14,7 +14,8 @@ def is_async_generator(obj: Any) -> bool:  # noqa: ANN401
 
 async def async_generator_to_list(agen: AsyncGenerator[Any, None]) -> list[Any]:
     result = []
-    async for item in agen:
+    # Python 3.9 coverage limitation with async for loops
+    async for item in agen:  # pragma: no cover
         result.append(item)
     return result
 
