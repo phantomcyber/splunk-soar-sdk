@@ -8,6 +8,7 @@ from soar_sdk.params import Params
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.async_utils import run_async_if_needed
 import traceback
 
 from typing import TYPE_CHECKING
@@ -102,6 +103,7 @@ class ActionDecorator:
 
             try:
                 result = function(action_params, *args, **kwargs)
+                result = run_async_if_needed(result)
             except ActionFailure as e:
                 e.set_action_name(action_name)
                 return self.app._adapt_action_result(

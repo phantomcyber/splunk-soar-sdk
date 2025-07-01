@@ -45,12 +45,24 @@ You can read more on [the decorator itself on the separate docs page](./action_d
 
 ## 3. Action Function
 
-It is just a regular python function. Keep in mind that the name of the function will be also a name and identifier
-of the action used in the manifest file and the platform.
+It is just a regular python function, which can be either synchronous or asynchronous. Keep in mind that the name of the function will be also a name and identifier of the action used in the manifest file and the platform.
 
 Every action function must have the same two arguments named using the expected names:
 - `params` contains the params passed to the action in the runtime
 - `client` is an instance of the SOAR Client providing API for interacting with SOAR platform when performing the action
+
+### Asynchronous Actions
+
+The SDK supports asynchronous actions using `async def` syntax:
+
+```python
+@app.action()
+async def async_action(params: MyParams, client: SOARClient) -> MyOutput:
+    """An asynchronous action"""
+    async with httpx.AsyncClient() as http_client:
+        response = await http_client.get(params.url)
+    return MyOutput(data=response.json())
+```
 
 ## 4. Action Params
 

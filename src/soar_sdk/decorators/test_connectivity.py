@@ -7,6 +7,7 @@ from soar_sdk.action_results import ActionResult
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.async_utils import run_async_if_needed
 import traceback
 
 from typing import TYPE_CHECKING
@@ -54,6 +55,7 @@ class ConnectivityTestDecorator:
 
             try:
                 result = function(**kwargs)
+                result = run_async_if_needed(result)
                 if result is not None:
                     raise RuntimeError(
                         "Test connectivity function must not return any value (return type should be None)."

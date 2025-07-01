@@ -6,6 +6,7 @@ from pathlib import Path
 from soar_sdk.cli.path_utils import relative_to_cwd
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse, WebhookHandler
 from soar_sdk.meta.webhooks import WebhookRouteMeta
+from soar_sdk.async_utils import run_async_if_needed
 
 
 from typing import TYPE_CHECKING
@@ -44,7 +45,8 @@ class WebhookDecorator:
             sig = inspect.signature(function)
             if "soar" in sig.parameters:
                 kwargs["soar"] = self.app.soar_client
-            return function(request, **kwargs)
+            result = function(request, **kwargs)
+            return run_async_if_needed(result)
 
         stack = inspect.stack()
         declaration_path_absolute = stack[1].filename
