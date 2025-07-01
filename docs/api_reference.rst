@@ -19,7 +19,7 @@ Key Methods
 ^^^^^^^^^^^
 
 .. automethod:: soar_sdk.app.App.action
-.. automethod:: soar_sdk.app.App.test_connectivity  
+.. automethod:: soar_sdk.app.App.test_connectivity
 .. automethod:: soar_sdk.app.App.on_poll
 .. automethod:: soar_sdk.app.App.register_action
 .. automethod:: soar_sdk.app.App.enable_webhooks

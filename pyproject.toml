@@ -74,6 +74,7 @@ dev = [
     "ipython>=8.18.1,<9",
     "mypy>=1.2,<2",
     "pre-commit>=4.2.0,<5",
+    "pydocstyle>=6.3.0",
     "pytest>=7.4.2,<8",
     "pytest-asyncio>=0.23.8",
     "pytest-cov>=5,<6",
@@ -226,3 +227,12 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = "phantom_common.*"
 ignore_missing_imports = true
+
+[tool.pydocstyle]
+convention = "google"
+# Ignore missing docstrings for modules, packages, magic methods, and __init__ methods
+add-ignore = ["D100", "D104", "D105", "D107"]
+# Match patterns for files to check
+match = "(?!test_).*\\.py"
+# Don't check docstrings in test files
+match-dir = "(?!tests|__pycache__|build|dist).*"
