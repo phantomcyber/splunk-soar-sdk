@@ -111,6 +111,11 @@ html_theme_options = {
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
+# Custom CSS files
+html_css_files = [
+    "custom.css",
+]
+
 # Create _static directory if it doesn't exist
 Path("_static").mkdir(parents=True, exist_ok=True)
 
