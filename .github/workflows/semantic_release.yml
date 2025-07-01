@@ -6,39 +6,6 @@ on:
       - beta
 
 jobs:
-  publish_docs:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-      actions: read
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Download documentation from code quality workflow
-        uses: dawidd6/action-download-artifact@v3
-        with:
-          workflow: code_quality.yml
-          name: documentation
-          path: docs/_build/html
-          commit: ${{ github.sha }}
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/_build/html
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-        with:
-          enablement: true
-
   semantic_release:
     runs-on: ubuntu-latest
     concurrency:
