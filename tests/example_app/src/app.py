@@ -99,16 +99,16 @@ def on_poll(
         yield artifact
 
 
-from .actions.async_process_message import async_process_message, sync_process_message
+from .actions.async_action import async_process, sync_process
 
 app.register_action(
-    async_process_message,
+    async_process,
     action_type="investigate",
     verbose="Processes a message asynchronously with concurrent HTTP requests.",
 )
 
 app.register_action(
-    sync_process_message,
+    sync_process,
     action_type="investigate",
     verbose="Processes a message synchronously with sequential HTTP requests.",
 )
