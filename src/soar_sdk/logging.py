@@ -32,9 +32,7 @@ class ColorFilter(logging.Filter):
 
 
 class SOARHandler(logging.Handler):
-    """
-    Custom logging handler to send logs to the SOAR client.
-    """
+    """Custom logging handler to send logs to the SOAR client."""
 
     def __init__(
         self,
@@ -82,9 +80,7 @@ class SOARHandler(logging.Handler):
             self.handleError(record)
 
     def set_handle(self, handle: Optional[int]) -> None:
-        """
-        Set the action handle for the SOAR client.
-        """
+        """Set the action handle for the SOAR client."""
         self.__handle = handle
 
 
@@ -108,9 +104,7 @@ class PhantomLogger(logging.Logger):
         self.addHandler(self.handler)
 
     def progress(self, message: str, *args: object, **kwargs: object) -> None:
-        """
-        Log a message with the PROGRESS level.
-        """
+        """Log a message with the PROGRESS level."""
         if self.isEnabledFor(PROGRESS_LEVEL):
             self._log(
                 PROGRESS_LEVEL,
@@ -120,9 +114,7 @@ class PhantomLogger(logging.Logger):
             )
 
     def removeHandler(self, hdlr: logging.Handler) -> None:
-        """
-        Remove a handler from the logger.
-        """
+        """Remove a handler from the logger."""
         if isinstance(hdlr, SOARHandler):
             raise ValueError("Removing the SOARHandler is not allowed.")
         super().removeHandler(hdlr)
@@ -131,17 +123,17 @@ class PhantomLogger(logging.Logger):
 # Expose logging methods as top-level functions
 def debug(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
     """Log a debug message using the default SOAR logger.
-    
+
     Convenience function for debug-level logging without needing to instantiate
     a logger. This function uses the singleton SOAR logger instance and supports
     all standard Python logging formatting and options.
-    
+
     Args:
-        msg (str): The log message. Supports Python string formatting with 
+        msg (str): The log message. Supports Python string formatting with
                   positional arguments.
         *args: Variable length argument list for string formatting.
         **kwargs: Arbitrary keyword arguments passed to the underlying logger.
-    
+
     Example:
         >>> from soar_sdk.logging import debug
         >>> debug("Processing user: %s", username)
@@ -151,17 +143,17 @@ def debug(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
 
 def info(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
     """Log an informational message using the default SOAR logger.
-    
+
     Convenience function for info-level logging without needing to instantiate
     a logger. Use this for general informational messages about normal program
     execution and important events.
-    
+
     Args:
-        msg (str): The log message. Supports Python string formatting with 
+        msg (str): The log message. Supports Python string formatting with
                   positional arguments.
         *args: Variable length argument list for string formatting.
         **kwargs: Arbitrary keyword arguments passed to the underlying logger.
-    
+
     Example:
         >>> from soar_sdk.logging import info
         >>> info("Action started successfully")
@@ -171,17 +163,17 @@ def info(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
 
 def warning(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
     """Log a warning message using the default SOAR logger.
-    
+
     Convenience function for warning-level logging without needing to instantiate
     a logger. Use this for potentially harmful situations that don't prevent the
     program from continuing but warrant attention.
-    
+
     Args:
-        msg (str): The log message. Supports Python string formatting with 
+        msg (str): The log message. Supports Python string formatting with
                   positional arguments.
         *args: Variable length argument list for string formatting.
         **kwargs: Arbitrary keyword arguments passed to the underlying logger.
-    
+
     Example:
         >>> from soar_sdk.logging import warning
         >>> warning("API rate limit approaching")
@@ -191,17 +183,17 @@ def warning(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
 
 def error(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
     """Log an error message using the default SOAR logger.
-    
+
     Convenience function for error-level logging without needing to instantiate
     a logger. Use this for error conditions that are serious but allow the
     program to continue running.
-    
+
     Args:
-        msg (str): The log message. Supports Python string formatting with 
+        msg (str): The log message. Supports Python string formatting with
                   positional arguments.
         *args: Variable length argument list for string formatting.
         **kwargs: Arbitrary keyword arguments passed to the underlying logger.
-    
+
     Example:
         >>> from soar_sdk.logging import error
         >>> error("Failed to connect to external API")
@@ -211,17 +203,17 @@ def error(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
 
 def critical(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
     """Log a critical error message using the default SOAR logger.
-    
+
     Convenience function for critical-level logging without needing to instantiate
     a logger. Use this for very serious error events that may cause the program
     to abort or require immediate attention.
-    
+
     Args:
-        msg (str): The log message. Supports Python string formatting with 
+        msg (str): The log message. Supports Python string formatting with
                   positional arguments.
         *args: Variable length argument list for string formatting.
         **kwargs: Arbitrary keyword arguments passed to the underlying logger.
-    
+
     Example:
         >>> from soar_sdk.logging import critical
         >>> critical("Database connection lost, cannot continue")
@@ -231,22 +223,22 @@ def critical(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
 
 def progress(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
     """Log a progress message using the default SOAR logger.
-    
+
     Convenience function for progress-level logging without needing to instantiate
-    a logger. This is a custom logging level specific to SOAR that's used to 
+    a logger. This is a custom logging level specific to SOAR that's used to
     report action progress and status updates to users. Progress messages are
     typically displayed in the SOAR UI to show action execution status.
-    
+
     Args:
-        msg (str): The progress message. Supports Python string formatting with 
+        msg (str): The progress message. Supports Python string formatting with
                   positional arguments.
         *args: Variable length argument list for string formatting.
         **kwargs: Arbitrary keyword arguments passed to the underlying logger.
-    
+
     Example:
         >>> from soar_sdk.logging import progress
         >>> progress("Starting data collection...")
-    
+
     Note:
         Progress messages are displayed to end users in the SOAR interface,
         so they should be clear, informative, and user-friendly.
@@ -256,23 +248,23 @@ def progress(msg: str, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
 
 def getLogger(name: str = "phantom_logger") -> PhantomLogger:
     """Get the recommended logger for SOAR SDK applications.
-    
+
     This is the standard logger you should use in all SOAR applications built
-    with the SDK. It provides all normal Python logging capabilities with 
+    with the SDK. It provides all normal Python logging capabilities with
     additional SOAR-specific features like progress logging and integration
     with the SOAR platform's logging system.
-    
+
     The logger supports all standard Python logging levels (DEBUG, INFO, WARNING,
     ERROR, CRITICAL) plus a custom PROGRESS level for tracking action progress.
-    
+
     Args:
-        name (str, optional): The name for the logger instance. Defaults to 
+        name (str, optional): The name for the logger instance. Defaults to
                             "phantom_logger" for compatibility.
-    
+
     Returns:
         PhantomLogger: A logger instance with SOAR-specific capabilities that
                       extends the standard Python logger interface.
-    
+
     Example:
         >>> from soar_sdk.logging import getLogger
         >>> logger = getLogger()
@@ -281,18 +273,17 @@ def getLogger(name: str = "phantom_logger") -> PhantomLogger:
         >>> logger.warning("Warning about potential issue")
         >>> logger.error("Error occurred during processing")
         >>> logger.progress("Action is 50% complete")
-        >>> 
+        >>>
         >>> # Logger supports all standard logging methods
         >>> logger.setLevel(logging.DEBUG)
         >>> logger.addHandler(custom_handler)
         >>> logger.log(logging.INFO, "Custom level logging")
-        
+
     Note:
         This function returns a singleton instance, so multiple calls with the
         same name will return the same logger object for consistency across
         your application.
     """
-
     if PhantomLogger._instance is None:
         return PhantomLogger(name)
     return PhantomLogger._instance
