@@ -69,8 +69,6 @@ jobs:
           python-version: 3.13
       - name: Install dependencies with docs extras
         run: uv sync --group docs
-      - name: Generate API documentation
-        run: uv run sphinx-apidoc -o docs/api src/soar_sdk --force --module-first
       - name: Build documentation with Sphinx
         run: |
           cd docs
