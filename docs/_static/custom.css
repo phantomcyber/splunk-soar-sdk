@@ -25,3 +25,40 @@
 .wy-nav-content .rst-content .document .section > h1 {
     color: #000000 !important;
 }
+
+/* Make version number visible - target various possible version display elements */
+.wy-side-nav-search .version,
+.wy-nav-content .version,
+.rst-content .version,
+.wy-nav-top .version,
+.wy-nav-side .version {
+    color: #000000 !important;
+}
+
+/* Target Read the Docs theme version display */
+.wy-side-nav-search .version {
+    color: #000000 !important;
+    font-weight: normal !important;
+}
+
+/* Make sure version text in navigation is visible */
+.wy-side-nav-search > div.version {
+    color: #000000 !important;
+}
+
+/* Additional version selectors for different themes and layouts */
+.wy-side-nav-search .version,
+.wy-side-nav-search div[class*="version"] {
+    color: #000000 !important;
+    opacity: 1 !important;
+}
+
+/* Target any text that might be the version in the search area */
+.wy-side-nav-search > div {
+    color: #000000 !important;
+}
+
+/* Ensure version is visible if it's in a different container */
+.wy-side-nav-search .wy-dropdown .version {
+    color: #000000 !important;
+}
