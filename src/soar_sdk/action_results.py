@@ -1,11 +1,16 @@
-from typing import Optional, Union, get_origin, get_args, TypedDict, Any
+from typing import Optional, Union, get_origin, get_args, Any
 from collections.abc import Iterator
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, TypedDict
 from pydantic import BaseModel, Field
 
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
 from soar_sdk.meta.datatypes import as_datatype
+
+remove_when_soar_newer_than(
+    "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
+)
 
 
 class ActionResult(PhantomActionResult):
@@ -36,10 +41,12 @@ class OutputFieldSpecification(TypedDict):
 def OutputField(
     cef_types: Optional[list[str]] = None,
     example_values: Optional[list[Union[str, float, bool]]] = None,
+    alias: Optional[str] = None,
 ) -> Any:  # noqa: ANN401
     return Field(
         examples=example_values,
         cef_types=cef_types,
+        alias=alias,
     )
 
 
@@ -65,6 +72,14 @@ class ActionOutput(BaseModel):
             while get_origin(field_type) is list:
                 field_type = get_args(field_type)[0]
                 datapath += ".*"
+
+            # For some reason, issubclass(Optional, _) doesn't work.
+            # This provides a nicer error message to an app dev, unless and
+            # until we can build proper support for Optional types.
+            if get_origin(field_type) is Union:
+                raise TypeError(
+                    f"Output field {field_name} cannot be Union or Optional."
+                )
 
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema

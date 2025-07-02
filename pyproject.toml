@@ -1,6 +1,6 @@
 [project]
 name = "splunk-soar-sdk"
-version = "1.0.0-beta.37"
+version = "1.0.0-beta.39"
 description = "The official framework for developing and testing Splunk SOAR Apps"
 readme = "README.md"
 requires-python = ">=3.9, <3.14"
@@ -131,7 +131,8 @@ omit = [
     "src/soar_sdk/api_callers.py",  # moved 1:1 from App Wizard, not re-designed yet
     "src/soar_sdk/shims/*",  # shims for BaseConnector, should not need testing
     "src/soar_sdk/views/components/*",  # reusable components, testing deferred till actual usage
-    "src/soar_sdk/views/template_filters.py" # ported from platform, need to decide what we're keeping
+    "src/soar_sdk/views/template_filters.py", # ported from platform, need to decide what we're keeping
+    "src/soar_sdk/code_renderers/templates/*"  # jinja templates, not code
 ]
 
 [tool.coverage.report]

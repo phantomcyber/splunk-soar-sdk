@@ -90,6 +90,7 @@ def test_enable_webhooks(app_with_simple_asset: App):
         "requires_auth": False,
         "allowed_headers": ["Authorization", "X-Forwarded-For"],
         "ip_allowlist": ["10.0.0.0/24"],
+        "routes": [],
     }
 
 

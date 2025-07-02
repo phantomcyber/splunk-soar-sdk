@@ -315,16 +315,21 @@ class App:
         Builds the auto-magic optional arguments for an action function.
         This is used to pass the soar client and asset to the action function, when requested
         """
-        sig = inspect.signature(function)
-        magic_args: dict[str, object] = {
+        # The reason we wrap values in callables is to avoid evaluating any lazy attributes
+        # (like asset) unless they're actually going to be used in the action function.
+        magic_args: dict[str, Union[object, Callable[[], object]]] = {
             "soar": self.soar_client,
-            "asset": self.asset,
+            "asset": lambda: self.asset,
         }
 
-        for name, value in magic_args.items():
+        sig = inspect.signature(function)
+        for name, value_or_getter in magic_args.items():
             given_value = kwargs.pop(name, None)
             if name in sig.parameters:
                 # Give the original kwargs precedence over the magic args
+                value = (
+                    value_or_getter() if callable(value_or_getter) else value_or_getter
+                )
                 kwargs[name] = given_value or value
 
         return kwargs
