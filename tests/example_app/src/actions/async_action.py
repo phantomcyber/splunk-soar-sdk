@@ -24,17 +24,17 @@ async def async_process(
 ) -> AsyncTestOutput:
     start_time = time.time()
 
-    async def fetch_request(client, request_id: int):
+    async def fetch_request(client):
         url = "https://httpbin.org/delay/1"
         try:
-            response = await client.get(url)
+            response = await client.get(url, timeout=10)
             return response.status_code
         except Exception:
             return 0
 
     # Make concurrent HTTP requests to demonstrate async
     async with httpx.AsyncClient() as client:
-        tasks = [fetch_request(client, i) for i in range(params.num_requests)]
+        tasks = [fetch_request(client) for _ in range(params.num_requests)]
         status_codes = await asyncio.gather(*tasks)
 
     end_time = time.time()
@@ -64,7 +64,7 @@ def sync_process(
 ) -> SyncTestOutput:
     start_time = time.time()
 
-    def fetch_request(request_id: int):
+    def fetch_request():
         url = "https://httpbin.org/delay/1"
         try:
             response = httpx.get(url, timeout=10)
@@ -74,8 +74,8 @@ def sync_process(
 
     # Make sequential HTTP requests (slower)
     status_codes = []
-    for i in range(params.num_requests):
-        status_code = fetch_request(i)
+    for _ in range(params.num_requests):
+        status_code = fetch_request()
         status_codes.append(status_code)
 
     end_time = time.time()
