@@ -94,7 +94,7 @@ html_theme_options = {
     "canonical_url": "",
     "analytics_id": "",
     "logo_only": False,
-    "display_version": True,
+    "display_version": False,
     "prev_next_buttons_location": "bottom",
     "style_external_links": False,
     "style_nav_header_background": "white",
