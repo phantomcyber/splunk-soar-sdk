@@ -23,6 +23,7 @@ Key Methods
 .. automethod:: soar_sdk.app.App.on_poll
 .. automethod:: soar_sdk.app.App.register_action
 .. automethod:: soar_sdk.app.App.enable_webhooks
+.. automethod:: soar_sdk.app.App.view_handler
 
 ActionResult
 ~~~~~~~~~~~~
