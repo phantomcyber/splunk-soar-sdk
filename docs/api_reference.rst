@@ -3,7 +3,7 @@ API Reference
 
 This section documents the public API of the Splunk SOAR SDK.
 
-Core Classes
+Core Functionality
 ------------
 
 App
@@ -25,10 +25,17 @@ Key Methods
 .. automethod:: soar_sdk.app.App.enable_webhooks
 .. automethod:: soar_sdk.app.App.view_handler
 
-Asset
+Asset Configuration
 ~~~~~~~~~~~~
 
+AssetField
+^^^^^^^^^^
+
 .. autofunction:: soar_sdk.asset.AssetField
+   :noindex:
+
+BaseAsset
+^^^^^^^^^^
 
 .. autoclass:: soar_sdk.asset.BaseAsset
    :members: to_json_schema
