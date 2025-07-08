@@ -27,11 +27,13 @@ Key Methods
 
 Asset
 ~~~~~~~~~~~~
-.. automethod:: soar_sdk.asset.AssetField
+
+.. autofunction:: soar_sdk.asset.AssetField
 
 .. autoclass:: soar_sdk.asset.BaseAsset
    :members: to_json_schema
    :show-inheritance:
+   :exclude-members: validate_no_reserved_fields
 
 ActionResult
 ~~~~~~~~~~~~
