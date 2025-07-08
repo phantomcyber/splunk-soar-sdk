@@ -103,5 +103,4 @@ Exceptions
 .. automodule:: soar_sdk.exceptions
    :members:
    :show-inheritance:
-   :special-members: __init__
-   :exclude-members: with_traceback, __cause__, __context__, __suppress_context__, __traceback__, __notes__, args
+   :exclude-members: __init__, __cause__, __context__, __suppress_context__, __traceback__, __notes__, args, __str__, set_action_name
