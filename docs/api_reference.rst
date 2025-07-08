@@ -25,6 +25,14 @@ Key Methods
 .. automethod:: soar_sdk.app.App.enable_webhooks
 .. automethod:: soar_sdk.app.App.view_handler
 
+Asset
+~~~~~~~~~~~~
+.. automethod:: soar_sdk.asset.AssetField
+
+.. autoclass:: soar_sdk.asset.BaseAsset
+   :members: to_json_schema
+   :show-inheritance:
+
 ActionResult
 ~~~~~~~~~~~~
 
@@ -83,8 +91,8 @@ Logging
 Exceptions
 ----------
 
-.. autoexception:: soar_sdk.exceptions.ActionFailure
+.. automodule:: soar_sdk.exceptions
+   :members:
    :show-inheritance:
-
-.. autoexception:: soar_sdk.exceptions.SoarAPIError
-   :show-inheritance:
+   :special-members: __init__
+   :exclude-members: with_traceback, __cause__, __context__, __suppress_context__, __traceback__, __notes__, args
