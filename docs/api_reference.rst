@@ -42,12 +42,65 @@ BaseAsset
    :show-inheritance:
    :exclude-members: validate_no_reserved_fields
 
-ActionResult
+Action Outputs
 ~~~~~~~~~~~~
 
+Basic Return Types
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Actions in the SOAR SDK can return values in several simple formats for basic success/failure reporting:
+
+**Boolean Return (`bool`)**
+
+The simplest return type. Actions can return just `True` for success or `False` for failure:
+
+.. code-block:: python
+
+   @app.action()
+   def simple_action(params: Params, client: SOARClient, asset: Asset) -> bool:
+       # Perform some operation
+       if operation_successful:
+           return True
+       return False
+
+**Tuple Return (`tuple[bool, str]`)**
+
+For more descriptive results, actions can return a tuple with a boolean status and a message:
+
+.. code-block:: python
+
+   @app.action()
+   def descriptive_action(params: Params, client: SOARClient, asset: Asset) -> tuple[bool, str]:
+       try:
+           # Perform operation
+           return True, "Operation completed successfully"
+       except Exception as e:
+           return False, f"Operation failed: {str(e)}"
+
+**ActionResult Classes**
+
+For more control over action results, use these result classes:
+
 .. autoclass:: soar_sdk.action_results.ActionResult
-   :members: set_status, add_data, get_status
    :show-inheritance:
+
+.. autoclass:: soar_sdk.action_results.SuccessActionResult
+   :show-inheritance:
+
+.. autoclass:: soar_sdk.action_results.ErrorActionResult
+   :show-inheritance:
+
+Customizable Output Classes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+To provide more detailed action output, you can use the ActionOutput class:
+
+.. autoclass:: soar_sdk.action_results.OutputField
+   :show-inheritance:
+
+.. autoclass:: soar_sdk.action_results.ActionOutput
+   :show-inheritance:
+   :exclude-members: to_json_schema
 
 APIs
 ----

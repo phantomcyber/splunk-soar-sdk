@@ -11,6 +11,10 @@
 [![PyPI - Types](https://img.shields.io/pypi/types/splunk-soar-sdk)](https://pypi.org/project/splunk-soar-sdk/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
+## Documentation
+
+Detailed documentation can be found [here](https://phantomcyber.github.io/splunk-soar-sdk/index.html)
+
 ## Installation
 
 The Splunk SOAR SDK is available as [a package on PyPI](https://pypi.org/project/splunk-soar-sdk/).

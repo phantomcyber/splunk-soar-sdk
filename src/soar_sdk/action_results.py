@@ -14,24 +14,127 @@ remove_when_soar_newer_than(
 
 
 class ActionResult(PhantomActionResult):
+    """Use this to simply indicate whether an action succeeded or failed.
+
+    ActionResult also optionally supports attaching an action result message and parameters used by the action. It does not support
+    advanced use cases like datapaths, example values and more complex output schemas. For that take a look at ActionOutput.
+
+
+    Args:
+        status: Boolean indicating whether the action succeeded (True) or failed (False).
+        message: Descriptive message about the action result, typically explaining
+            what happened or why an action failed.
+        param: Optional dictionary containing the parameters that were passed to
+            the action, useful for debugging and logging.
+
+    Example:
+        >>> from soar_sdk.action_results import ActionResult
+        >>> @app.action()
+        ... def example_action(
+        ...     params: Params, client: SOARClient, asset: Asset
+        ... ) -> ActionResult:
+        ...     return ActionResult(True, "Successfully executed action")
+    """
+
     def __init__(
         self, status: bool, message: str, param: Optional[dict] = None
     ) -> None:
+        """Initialize an ActionResult with status, message, and optional parameters.
+
+        Args:
+            status: Boolean indicating success (True) or failure (False).
+            message: Descriptive message about the action outcome.
+            param: Optional dictionary of parameters passed to the action.
+        """
         super().__init__(param)
         self.set_status(status, message)
 
 
 class SuccessActionResult(ActionResult):
+    """Convenience class for creating successful action results.
+
+    This class provides a simplified way to create ActionResult instances
+    for successful actions, automatically setting the status to True.
+
+    Args:
+        message: Descriptive message about the successful action.
+        param: Optional dictionary of parameters passed to the action.
+
+    Example:
+        >>> from soar_sdk.action_results import SuuccessActionResult
+        >>> @app.action()
+        ... def successfull_action(
+        ...     params: Params, client: SOARClient, asset: Asset
+        ... ) -> SuccessActionResult:
+        ...     return SuccessActionResult("Successfully executed action")
+    """
+
     def __init__(self, message: str, param: Optional[dict] = None) -> None:
+        """Initialize a successful ActionResult.
+
+        Args:
+            message: Descriptive message about the successful action.
+            param: Optional dictionary of parameters passed to the action.
+        """
         super().__init__(True, message, param)
 
 
 class ErrorActionResult(ActionResult):
+    """Convenience class for creating failed action results.
+
+    This class provides a simplified way to create ActionResult instances
+    for failed actions, automatically setting the status to False.
+
+    Args:
+        message: Descriptive message about the action failure, typically
+            explaining what went wrong.
+        param: Optional dictionary of parameters passed to the action.
+
+    Example:
+        >>> from soar_sdk.action_results import ErrorActionResult
+        >>> @app.action()
+        ... def failed_action(
+        ...     params: Params, client: SOARClient, asset: Asset
+        ... ) -> ErrorActionResult:
+        ...     return ErrorActionResult("Failed to execute action")
+    """
+
     def __init__(self, message: str, param: Optional[dict] = None) -> None:
+        """Initialize a failed ActionResult.
+
+        Args:
+            message: Descriptive message about the action failure.
+            param: Optional dictionary of parameters passed to the action.
+        """
         super().__init__(False, message, param)
 
 
 class OutputFieldSpecification(TypedDict):
+    """Type specification for action output field metadata.
+
+    This TypedDict defines the structure for describing action output fields
+    in SOAR. It's used internally to generate JSON schemas and provide metadata about
+    the data that actions produce.
+
+    Attributes:
+        data_path: The dot-notation path where this field appears in the action
+            output data (e.g., "summary.total_objects", "data.*.ip").
+        data_type: The expected data type for this field. Common values include
+            "string", "numeric", "boolean".
+        contains: Optional list of CEF (Common Event Format) field types that
+            this field represents (e.g., ["ip", "domain", "hash"]).
+        example_values: Optional list of example values that demonstrate what
+            this field might contain, used for documentation and testing.
+
+    Example:
+        >>> field_spec: OutputFieldSpecification = {
+        ...     "data_path": "data.*.ip_address",
+        ...     "data_type": "string",
+        ...     "contains": ["ip"],
+        ...     "example_values": ["192.168.1.1", "10.0.0.1"],
+        ... }
+    """
+
     data_path: str
     data_type: str
     contains: NotRequired[list[str]]
@@ -43,6 +146,30 @@ def OutputField(
     example_values: Optional[list[Union[str, float, bool]]] = None,
     alias: Optional[str] = None,
 ) -> Any:  # noqa: ANN401
+    """Define metadata for an action output field.
+
+    This function creates field metadata that is used to describe how action
+    output fields should look like, including CEF mapping and example values
+    for documentation and validation.
+
+    Args:
+        cef_types: Optional list of CEF (Common Event Format) field names that
+            this output field maps to. Used for integration with SIEM systems.
+        example_values: Optional list of example values for this field, used
+            in documentation and for testing/validation purposes.
+        alias: Optional alternative name for the field when serialized.
+
+    Returns:
+        A Pydantic Field object with the specified metadata.
+
+    Example:
+        >>> class MyActionOutput(ActionOutput):
+        ...     ip_address: str = OutputField(
+        ...         cef_types=["sourceAddress", "destinationAddress"],
+        ...         example_values=["192.168.1.1", "10.0.0.1"],
+        ...     )
+        ...     count: int = OutputField(example_values=[1, 5, 10])
+    """
     return Field(
         examples=example_values,
         cef_types=cef_types,
@@ -51,18 +178,57 @@ def OutputField(
 
 
 class ActionOutput(BaseModel):
-    """
-    ActionOutput defines the JSON schema that an action is expected to output.
+    """Base class for defining structured action output schemas.
 
-    It is translated into SOAR datapaths, example values, and CEF fields.
+    ActionOutput defines the JSON schema that an action is expected to output.
+    It is translated into datapaths, example values, and CEF fields for
+    integration with the SOAR platform.
+
+    Subclasses should define fields using type annotations and OutputField()
+    for metadata. The schema is automatically converted to SOAR-compatible
+    format for manifest generation and data validation.
+
+    For more information take a look at the dedicated :doc:`ActionOutput documentation </actions/action_outputs>`:
+
+    Example:
+        >>> class MyActionOutput(ActionOutput):
+        ...     hostname: str = OutputField(
+        ...         cef_types=["destinationHostName"],
+        ...         example_values=["server1.example.com"],
+        ...     )
+        ...     port: int = OutputField(example_values=[80, 443, 8080])
+        ...     is_secure: bool  # Automatically gets True/False examples
+
+    Note:
+        Fields cannot be Union or Optional types. Use specific types only.
+        Nested ActionOutput classes are supported for complex data structures.
     """
 
     @classmethod
     def _to_json_schema(
         cls, parent_datapath: str = "action_result.data.*"
     ) -> Iterator[OutputFieldSpecification]:
-        """
-        Converts the ActionOutput class to a JSON schema.
+        """Convert the ActionOutput class to SOAR-compatible JSON schema.
+
+        This method analyzes the class fields and their types to generate
+        OutputFieldSpecification objects that describe the data structure
+        for SOAR's manifest and data processing systems.
+
+        Args:
+            parent_datapath: The base datapath for fields in this output.
+                Defaults to "action_result.data.*" for top-level outputs.
+
+        Yields:
+            OutputFieldSpecification objects describing each field in the schema.
+
+        Raises:
+            TypeError: If a field type cannot be serialized, is Union/Optional,
+                or if a nested ActionOutput type is encountered incorrectly.
+
+        Note:
+            List types are automatically handled with ".*" datapath suffixes.
+            Nested ActionOutput classes are recursively processed.
+            Boolean fields automatically get [True, False] example values.
         """
         for field_name, field in cls.__fields__.items():
             field_type = field.annotation
