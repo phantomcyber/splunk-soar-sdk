@@ -4,6 +4,7 @@ import typer
 from typer.testing import CliRunner
 
 from soar_sdk.cli import cli
+from soar_sdk.paths import SDK_ROOT
 
 
 # Create a test runner
@@ -57,3 +58,15 @@ def test_install_command_help():
     # Assert that the help text contains the expected arguments and options
     assert "app_tarball" in result.output
     assert "soar_instance" in result.output
+
+
+def test_cli_version_command():
+    """Test the version command outputs the correct version and path."""
+    result = runner.invoke(cli.app, ["version"])
+
+    # Check if the command executed successfully
+    assert result.exit_code == 0
+
+    # Check if the output contains the version and installation path
+    assert f"Splunk SOAR SDK version: {cli.__version__}" in result.output
+    assert f"Installed in: {SDK_ROOT}" in result.output
