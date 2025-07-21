@@ -8,4 +8,4 @@ SDK_TEMPLATES = SDK_ROOT / "templates"
 # App's templates
 APP_TEMPLATES = Path("templates")
 
-APP_INIT_TEMPLATES = SDK_ROOT.parent.parent / "app_templates"
+APP_INIT_TEMPLATES = SDK_ROOT / "app_templates"
