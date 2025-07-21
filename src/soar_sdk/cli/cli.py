@@ -1,5 +1,7 @@
 import typer
 
+from soar_sdk import __version__
+from soar_sdk.paths import SDK_ROOT
 from soar_sdk.cli.manifests.cli import manifests
 from soar_sdk.cli.package.cli import package
 from soar_sdk.cli.init.cli import init, convert
@@ -18,7 +20,15 @@ app.add_typer(init, name="init")
 app.add_typer(convert, name="convert")
 
 
+@app.command("version")
+def version() -> None:
+    """Display the version of the SOAR SDK."""
+    typer.echo(f"Splunk SOAR SDK version: {__version__}")
+    typer.echo(f"Installed in: {SDK_ROOT}")
+
+
 def main() -> None:
+    """Main entry point for the CLI."""
     app()
 
 
