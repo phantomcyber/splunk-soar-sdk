@@ -16,17 +16,20 @@ def test_init_app_creates_directory_structure(runner, tmp_path):
     """Test that init command creates the expected directory structure and files."""
     app_dir = tmp_path / "test_app"
 
-    result = runner.invoke(
-        init,
-        [
-            "--name",
-            "Test App",
-            "--description",
-            "A test app",
-            "--app-dir",
-            str(app_dir),
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+            ],
+        )
 
     assert result.exit_code == 0
     assert app_dir.exists()
@@ -47,21 +50,24 @@ def test_init_app_uses_provided_logos(runner, tmp_path):
     logo.write_text("<svg>Logo</svg>")
     logo_dark.write_text("<svg>Dark Logo</svg>")
 
-    result = runner.invoke(
-        init,
-        [
-            "--name",
-            "Test App",
-            "--description",
-            "A test app",
-            "--app-dir",
-            str(app_dir),
-            "--logo",
-            str(logo),
-            "--logo-dark",
-            str(logo_dark),
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+                "--logo",
+                str(logo),
+                "--logo-dark",
+                str(logo_dark),
+            ],
+        )
 
     assert result.exit_code == 0
     assert app_dir.exists()
@@ -82,17 +88,20 @@ def test_init_app_fails_on_non_empty_directory_without_overwrite(runner, tmp_pat
     app_dir.mkdir()
     (app_dir / "existing_file.txt").touch()
 
-    result = runner.invoke(
-        init,
-        [
-            "--name",
-            "Test App",
-            "--description",
-            "A test app",
-            "--app-dir",
-            str(app_dir),
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+            ],
+        )
 
     assert result.exit_code == 1
     assert "not empty" in result.stdout
@@ -105,24 +114,71 @@ def test_init_app_overwrites_existing_directory_with_overwrite_flag(runner, tmp_
     existing_file = app_dir / "existing_file.txt"
     existing_file.write_text("existing content")
 
-    result = runner.invoke(
-        init,
-        [
-            "--name",
-            "Test App",
-            "--description",
-            "A test app",
-            "--app-dir",
-            str(app_dir),
-            "--overwrite",
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+                "--overwrite",
+            ],
+        )
 
     assert result.exit_code == 0
     assert app_dir.exists()
     assert not existing_file.exists()
     assert (app_dir / "src" / "app.py").exists()
     assert (app_dir / "pyproject.toml").exists()
+
+
+def test_init_without_git_installed_fails(runner, tmp_path):
+    """Test that init command fails if git is not installed."""
+    app_dir = tmp_path / "test_app"
+
+    with patch("shutil.which") as mock_which:
+        mock_which.side_effect = lambda x: None if x == "git" else "/usr/bin/example"
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+            ],
+        )
+
+    assert result.exit_code != 0
+    assert "git command not found" in result.stdout
+
+
+def test_init_without_uv_installed_fails(runner, tmp_path):
+    """Test that init command fails if uv is not installed."""
+    app_dir = tmp_path / "test_app"
+
+    with patch("shutil.which") as mock_which:
+        mock_which.side_effect = lambda x: None if x == "uv" else "/usr/bin/example"
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+            ],
+        )
+
+    assert result.exit_code != 0
+    assert "uv command not found" in result.stdout
 
 
 def test_resolve_dependencies(tmp_path):

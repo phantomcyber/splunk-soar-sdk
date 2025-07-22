@@ -162,6 +162,11 @@ def init_sdk_app(
         APP_INIT_TEMPLATES / "basic_app/.gitignore",
         app_dir / ".gitignore",
     )
+    shutil.copytree(
+        APP_INIT_TEMPLATES / "basic_app/tests",
+        app_dir / "tests",
+        dirs_exist_ok=True,
+    )
 
     # Use Jinja2 to render the pyproject.toml file
     rprint("[blue]Creating pyproject.toml")
@@ -204,8 +209,11 @@ def init_sdk_app(
         fips_compliant=fips_compliant,
     )
 
-    if app_content is not None:
+    if app_content is None:
+        app_context.app_content = [ActionRenderer.AST_STUBS["test connectivity"]]
+    else:
         app_context.app_content = app_content
+
     if asset_class is not None:
         app_context.asset_cls = asset_class
 
@@ -213,6 +221,34 @@ def init_sdk_app(
     app_module = ast.fix_missing_locations(app_module)
     app_text = ast.unparse(app_module)
     (app_dir / "src/app.py").write_text(app_text)
+
+    uv_path = shutil.which("uv")
+    if not uv_path:
+        rprint("[red]uv command not found. Please install uv to continue.[/]")
+        # This should never happen, since this command will be running from within uv, but we have to null check anyways
+        raise typer.Exit(code=1)
+
+    git_path = shutil.which("git")
+    if not git_path:
+        rprint("[red]git command not found. Please install git to continue.[/]")
+        raise typer.Exit(code=1)
+
+    rprint("[blue]Initializing git repository")
+    subprocess.run([git_path, "init"], check=True, cwd=app_dir)  # noqa: S603
+
+    rprint("[blue]Installing SOAR SDK")
+    subprocess.run([uv_path, "add", "splunk-soar-sdk"], check=True, cwd=app_dir)  # noqa: S603
+
+    rprint("[blue]Installing pre-commit and ruff")
+    subprocess.run(  # noqa: S603
+        [uv_path, "add", "--dev", "pre-commit", "ruff"], check=True, cwd=app_dir
+    )
+
+    rprint("[blue]Installing pre-commit hooks")
+    subprocess.run([uv_path, "run", "pre-commit", "install"], check=True, cwd=app_dir)  # noqa: S603
+
+    rprint("[blue]Running ruff format on the app code")
+    subprocess.run([uv_path, "run", "ruff", "format"], check=True, cwd=app_dir)  # noqa: S603
 
     rprint(f"[green]Successfully created app at[/] {app_dir}")
 
@@ -307,8 +343,6 @@ def convert_connector_to_sdk(
         rprint(
             "[yellow]The app has Webhooks defined. You will need to manually re-implement these in the new app.[/]"
         )
-
-    subprocess.run(["ruff", "format", output_dir], check=True)  # noqa: S603, S607
 
     console.print(
         Panel(
