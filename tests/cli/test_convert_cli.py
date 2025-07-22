@@ -1,3 +1,4 @@
+from unittest.mock import patch
 import pytest
 from pathlib import Path
 import ast
@@ -23,7 +24,7 @@ asset_dir = parent_dir / "test_assets" / "converted_app"
 @pytest.fixture
 def app_meta():
     return AppMeta(
-        name="Test App",
+        name="test_app",
         description="A test app",
         app_version="1.0.0",
         package_name="test_app",
@@ -143,13 +144,16 @@ def test_convert_cli(runner, tmp_path, app_meta):
 
     output_dir = tmp_path / "output"
 
-    result = runner.invoke(
-        cli.convert,
-        [
-            str(app_dir),
-            str(output_dir),
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            cli.convert,
+            [
+                str(app_dir),
+                str(output_dir),
+            ],
+        )
 
     print(result.output)  # For debugging purposes
 
@@ -182,10 +186,13 @@ def test_convert_cli_with_default_output(runner, tmp_path, app_meta):
 
     output_dir = app_dir / "sdk_app"
 
-    result = runner.invoke(
-        cli.convert,
-        [str(app_dir)],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            cli.convert,
+            [str(app_dir)],
+        )
 
     print(result.output)  # For debugging purposes
 
@@ -224,13 +231,16 @@ def test_convert_cli_with_custom_view(runner, tmp_path, app_meta):
 
     output_dir = tmp_path / "output"
 
-    result = runner.invoke(
-        cli.convert,
-        [
-            str(app_dir),
-            str(output_dir),
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            cli.convert,
+            [
+                str(app_dir),
+                str(output_dir),
+            ],
+        )
 
     print(result.output)  # For debugging purposes
 
@@ -254,13 +264,16 @@ def test_convert_cli_with_rest_handler(runner, tmp_path, app_meta):
 
     output_dir = tmp_path / "output"
 
-    result = runner.invoke(
-        cli.convert,
-        [
-            str(app_dir),
-            str(output_dir),
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            cli.convert,
+            [
+                str(app_dir),
+                str(output_dir),
+            ],
+        )
 
     print(result.output)  # For debugging purposes
 
@@ -284,13 +297,16 @@ def test_convert_cli_with_webhooks(runner, tmp_path, app_meta):
 
     output_dir = tmp_path / "output"
 
-    result = runner.invoke(
-        cli.convert,
-        [
-            str(app_dir),
-            str(output_dir),
-        ],
-    )
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            cli.convert,
+            [
+                str(app_dir),
+                str(output_dir),
+            ],
+        )
 
     print(result.output)  # For debugging purposes
 

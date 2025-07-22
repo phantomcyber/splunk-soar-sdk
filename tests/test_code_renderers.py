@@ -48,7 +48,7 @@ def mock_jinja_env():
 
 def test_app_renderer():
     context = app_renderer.AppContext(
-        name="Test App",
+        name="test_app",
         app_type="ingestion",
         logo="logo.png",
         logo_dark="logo_dark.png",
@@ -95,7 +95,7 @@ def test_app_renderer():
 
 def test_toml_renderer(mock_jinja_env):
     context = toml_renderer.TomlContext(
-        name="Test App",
+        name="test_app",
         version="1.0.0",
         description="A test application",
         copyright="2023 Test Company",
