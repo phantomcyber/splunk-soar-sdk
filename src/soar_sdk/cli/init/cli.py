@@ -88,6 +88,7 @@ def init_callback(
     fips_compliant: bool = False,
     overwrite: bool = False,
 ) -> None:
+    """Initialize a new SOAR app."""
     init_sdk_app(
         name,
         description,
@@ -131,9 +132,7 @@ def init_sdk_app(
     app_content: Optional[list[ast.stmt]] = None,
     asset_class: Optional[ast.ClassDef] = None,
 ) -> None:
-    """
-    Initialize a new SOAR app in the specified directory.
-    """
+    """Initialize a new SOAR app in the specified directory."""
     app_dir.mkdir(exist_ok=True)
 
     if next(app_dir.iterdir(), None) is not None:
@@ -282,8 +281,7 @@ def convert_connector_to_sdk(
     ] = None,
     overwrite: bool = False,
 ) -> None:
-    """
-    Convert a SOAR connector to a SOAR SDK app.
+    """Convert a SOAR connector to a SOAR SDK app.
 
     This command will convert a SOAR connector directory into a SOAR SDK app directory.
     The connector directory should contain the necessary files and structure for conversion.
@@ -353,9 +351,7 @@ def convert_connector_to_sdk(
 
 
 def resolve_dependencies(app_dir: Path, output_dir: Path) -> None:
-    """
-    Write the app metadata to a pyproject.toml file in the output directory.
-    """
+    """Write the app metadata to a pyproject.toml file in the output directory."""
     validated_deps = {"splunk-soar-sdk"}
 
     if (req_txt := app_dir / "requirements.txt").exists():
@@ -381,8 +377,7 @@ def resolve_dependencies(app_dir: Path, output_dir: Path) -> None:
 
 
 def get_app_json(app_dir: Path) -> Path:
-    """
-    Find the app's JSON metadata file in the given directory
+    """Find the app's JSON metadata file in the given directory.
 
     Args:
         app_dir (Path): The directory to search for app.json.
@@ -413,8 +408,10 @@ def get_app_json(app_dir: Path) -> Path:
 
 def generate_asset_definition_ast(app_meta: AppMeta) -> ast.ClassDef:
     """Generate the asset definition AST from the app metadata.
+
     Args:
         app_meta (AppMeta): The app metadata containing configuration specifications.
+
     Returns:
         ast.stmt: The AST node representing the Asset class with its fields.
     """
@@ -441,9 +438,7 @@ def generate_asset_definition_ast(app_meta: AppMeta) -> ast.ClassDef:
 
 
 def generate_action_definitions_ast(app_meta: AppMeta) -> list[ast.stmt]:
-    """
-    Generate action definitions from the app metadata and return them as a list of AST statements.
-    """
+    """Generate action definitions from the app metadata and return them as a list of AST statements."""
     action_defs: list[ast.stmt] = []
 
     for action_meta in app_meta.actions:
