@@ -3,9 +3,11 @@ from pydantic import BaseModel, Field, validator
 from typing import Literal, Optional, Any
 import random
 
+from soar_sdk.shims.phantom.encryption_helper import encryption_helper
+
 
 def id_factory() -> int:
-    """Generate a random database ID"""
+    """Generate a random database ID."""
     return random.randint(1, 1000000)  # noqa: S311
 
 
@@ -27,6 +29,8 @@ class AppConfig(BaseModel):
 
     # NOTE: Inputs will intermix the keys of the asset config with the keys here
     class Config:
+        """Configuration for the AppConfig model."""
+
         extra = "allow"
 
     def get_asset_config(self) -> dict[str, Any]:
@@ -64,6 +68,8 @@ class ActionParameter(BaseModel):
 
     # Additional keys are action-specific and not predictable here.
     class Config:
+        """Configuration for the ActionParameter model."""
+
         extra = "allow"
 
 
@@ -76,11 +82,23 @@ class SoarAuth(BaseModel):
 
     @validator("phantom_url")
     def validate_phantom_url(cls, value: str) -> str:
+        """Ensure the URL starts with http:// or https://."""
         return (
             f"https://{value}"
             if not value.startswith(("http://", "https://"))
             else value
         )
+
+
+class AppConfigParameter(BaseModel):
+    """Defines the data type of a parameter in the app configuration."""
+
+    data_type: Literal["string", "password", "numeric", "boolean"]
+
+    class Config:
+        """Configuration for the AppConfigParameter model."""
+
+        extra = "allow"
 
 
 class InputSpecification(BaseModel):
@@ -134,7 +152,7 @@ class InputSpecification(BaseModel):
 
     action: str
     action_run_id: int = Field(default_factory=id_factory)
-    app_config: Optional[Any] = None
+    app_config: dict[str, AppConfigParameter] = {}
     asset_id: str = Field(default_factory=lambda: str(id_factory()))
     config: AppConfig
     connector_run_id: int = Field(default_factory=id_factory)
@@ -146,3 +164,13 @@ class InputSpecification(BaseModel):
     parameters: list[ActionParameter] = Field(default_factory=lambda: [{}])
     user_session_token: str = ""
     soar_auth: Optional[SoarAuth] = None
+
+    def get_decrypted_asset_config(self) -> dict[str, Any]:
+        """Get the decrypted asset configuration."""
+        config = self.config.get_asset_config()
+        for key, value in config.items():
+            if (
+                field_config := self.app_config.get(key)
+            ) and field_config.data_type == "password":
+                config[key] = encryption_helper.decrypt(value, self.asset_id)
+        return config
