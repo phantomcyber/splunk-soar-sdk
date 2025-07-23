@@ -144,7 +144,7 @@ class App:
         In versions of SOAR >6.4.1, handle will not be passed to the app.
         """
         input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
-        self._raw_asset_config = input_data.config.get_asset_config()
+        self._raw_asset_config = input_data.get_decrypted_asset_config()
         self.__logger.handler.set_handle(handle)
         soar_auth = App.create_soar_client_auth_object(input_data)
         self.soar_client.update_client(soar_auth, input_data.asset_id)

@@ -9,10 +9,16 @@ from soar_sdk.asset import BaseAsset
 from soar_sdk.compat import PythonVersion
 from soar_sdk.app_client import AppClient
 from soar_sdk.abstract import SOARClientAuth
-from soar_sdk.input_spec import AppConfig, InputSpecification, SoarAuth
+from soar_sdk.input_spec import (
+    AppConfig,
+    InputSpecification,
+    SoarAuth,
+    AppConfigParameter,
+)
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+from soar_sdk.crypto import encrypt
 from tests.stubs import SampleActionParams
 from pathlib import Path
 from httpx import Response
@@ -24,6 +30,7 @@ APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
 
 @pytest.fixture
 def example_app() -> App:
+    """Create an example app for testing."""
     app = App(
         name="example_app",
         appid=APP_ID,
@@ -46,16 +53,19 @@ def example_app() -> App:
 
 @pytest.fixture
 def example_provider(example_app: App) -> ActionsManager:
+    """Create an example actions manager for testing."""
     return example_app.actions_manager
 
 
 @pytest.fixture
 def default_args():
+    """Create default arguments for testing."""
     return mock.Mock(username="user", password="<PASSWORD>", input_test_json="{}")
 
 
 @pytest.fixture
 def simple_app() -> App:
+    """Create a simple app instance for testing."""
     return App(
         name="simple_app",
         appid=APP_ID,
@@ -70,6 +80,7 @@ def simple_app() -> App:
 
 @pytest.fixture
 def app_connector() -> AppClient:
+    """Create an app connector for testing."""
     connector = AppClient()
     connector.client.headers.update({"X-CSRFToken": "fake-token"})
     return connector
@@ -97,7 +108,7 @@ def app_with_action() -> App:
         verbose="Test action verbose description",
     )
     def test_action(params: SampleActionParams) -> ActionOutput:
-        """Test action description"""
+        """Test action description."""
         return ActionOutput()
 
     return app
@@ -123,7 +134,7 @@ def app_with_asset_action() -> App:
         description="Test action that requires an asset",
     )
     def test_action_with_asset(params: SampleActionParams, asset: dict) -> ActionOutput:
-        """Test action that requires an asset"""
+        """Test action that requires an asset."""
         return ActionOutput()
 
     return app
@@ -131,6 +142,8 @@ def app_with_asset_action() -> App:
 
 @pytest.fixture
 def app_with_simple_asset() -> App:
+    """Create an app with a simple asset class for testing."""
+
     class Asset(BaseAsset):
         base_url: str
 
@@ -206,28 +219,40 @@ def app_with_client_webhook() -> App:
 
 @pytest.fixture
 def simple_connector(simple_app: App) -> AppClient:
+    """Create a simple app connector for testing."""
     return simple_app.soar_client
 
 
 @pytest.fixture
 def app_actions_manager(simple_app: App) -> AppClient:
+    """Create an app actions manager for testing."""
     return simple_app.actions_manager
 
 
 @pytest.fixture
 def simple_action_input() -> InputSpecification:
+    """Create a simple action input specification for testing."""
     return InputSpecification(
         asset_id="1",
         identifier="test_action",
         action="test_action",
+        app_config={
+            "client_id": AppConfigParameter(data_type="string"),
+            "client_secret": AppConfigParameter(data_type="password"),
+        },
         config=AppConfig(
-            app_version="1.0.0", directory=".", main_module="example_connector.py"
+            app_version="1.0.0",
+            directory=".",
+            main_module="example_connector.py",
+            client_id="test_client_id",
+            client_secret=encrypt("test_client_secret", "1"),
         ),
     )
 
 
 @pytest.fixture
 def auth_action_input() -> InputSpecification:
+    """Create an action input specification that uses SOAR authentication."""
     return InputSpecification(
         asset_id="1",
         identifier="test_action",
@@ -245,6 +270,7 @@ def auth_action_input() -> InputSpecification:
 
 @pytest.fixture
 def auth_token_input() -> InputSpecification:
+    """Create an action input specification that uses SOAR authentication with a token."""
     return InputSpecification(
         asset_id="1",
         identifier="test_action",
@@ -269,10 +295,7 @@ def fake_wheel() -> UvWheel:
 @pytest.fixture
 @pytest.mark.respx(base_url="https://files.pythonhosted.org/packages")
 def wheel_resp_mock(respx_mock):
-    """
-    Fixture that automatically mocks requests to download wheels.
-    Useful for keeping tests for package builds fast and reliable.
-    """
+    """Fixture that automatically mocks requests to download wheels. Useful for keeping tests for package builds fast and reliable."""
     # Create the mock route for wheel downloads
     mock_route = respx_mock.get(url__regex=r".+/.+\.whl")
     mock_route.respond(content=b"dummy wheel content")
@@ -301,6 +324,7 @@ def mock_install_client(respx_mock):
 
 @pytest.fixture
 def app_tarball(tmp_path: Path) -> Path:
+    """Create a dummy app tarball for testing."""
     tarball_path = tmp_path / "example.tgz"
     tarball_path.touch()
     return tarball_path
@@ -308,6 +332,7 @@ def app_tarball(tmp_path: Path) -> Path:
 
 @pytest.fixture
 def soar_client_auth() -> SOARClientAuth:
+    """Create a SOARClientAuth object for testing."""
     return SOARClientAuth(
         base_url="https://10.34.5.6",
         username="soar_local_admin",
@@ -317,6 +342,7 @@ def soar_client_auth() -> SOARClientAuth:
 
 @pytest.fixture
 def soar_client_auth_token() -> SOARClientAuth:
+    """Create a SOARClientAuth object for testing with a user session token."""
     return SOARClientAuth(
         base_url="https://10.34.5.6",
         user_session_token="example_token",
@@ -326,6 +352,7 @@ def soar_client_auth_token() -> SOARClientAuth:
 @pytest.fixture
 @pytest.mark.respx
 def mock_post_artifact(respx_mock):
+    """Fixture to mock POST requests to create artifacts."""
     mock_route = respx_mock.post(re.compile(r".*/rest/artifact/?$")).mock(
         return_value=Response(201, json={"message": "Mocked artifact created", "id": 1})
     )
@@ -335,6 +362,7 @@ def mock_post_artifact(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_get_any_soar_call(respx_mock):
+    """Fixture to mock GET requests to any SOAR endpoint."""
     mock_route = respx_mock.get(re.compile(r".*")).mock(
         return_value=Response(
             200,
@@ -348,6 +376,7 @@ def mock_get_any_soar_call(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_put_any_call(respx_mock):
+    """Fixture to mock PUT requests to any SOAR endpoint."""
     mock_route = respx_mock.put(re.compile(r".*")).mock(
         return_value=Response(200, json={"message": "Mocked PUT response"})
     )
@@ -357,6 +386,7 @@ def mock_put_any_call(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_post_any_soar_call(respx_mock):
+    """Fixture to mock POST requests to any SOAR endpoint."""
     mock_route = respx_mock.post(re.compile(r".*")).mock(
         return_value=Response(
             200,
@@ -370,6 +400,7 @@ def mock_post_any_soar_call(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_delete_any_soar_call(respx_mock):
+    """Fixture to mock DELETE requests to any SOAR endpoint."""
     mock_route = respx_mock.delete(re.compile(r".*")).mock(
         return_value=Response(
             200,
@@ -383,6 +414,7 @@ def mock_delete_any_soar_call(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_post_container(respx_mock):
+    """Fixture to mock POST requests to create containers."""
     mock_route = respx_mock.post(re.compile(r".*/rest/container/?$")).mock(
         return_value=Response(
             201, json={"message": "Mocked container created", "id": 1}
@@ -394,6 +426,7 @@ def mock_post_container(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_post_vault(respx_mock):
+    """Fixture to mock POST requests to add attachments to vault."""
     mock_route = respx_mock.post(re.compile(r".*/rest/container_attachment/?$")).mock(
         return_value=Response(201, json={"message": "Attachment added", "id": 1})
     )
@@ -403,6 +436,7 @@ def mock_post_vault(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_get_vault(respx_mock):
+    """Fixture to mock GET requests to retrieve attachments from vault."""
     mock_route = respx_mock.get(re.compile(r".*/rest/container_attachment.*")).mock(
         return_value=Response(
             201,
@@ -421,6 +455,7 @@ def mock_get_vault(respx_mock):
 @pytest.fixture
 @pytest.mark.respx
 def mock_delete_vault(respx_mock):
+    """Fixture to mock DELETE requests to remove attachments from vault."""
     mock_route = respx_mock.delete(re.compile(r".*/rest/container_attachment.*")).mock(
         return_value=Response(200, json={"message": "Attachment deleted", "id": 1})
     )

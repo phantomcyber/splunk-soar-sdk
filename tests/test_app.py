@@ -23,6 +23,8 @@ def test_handle(example_app: App, simple_action_input: InputSpecification):
         example_app.handle(simple_action_input.json())
 
     mock_handle.assert_called_once()
+    # Ensure that the encrypted asset configs get decrypted correctly
+    assert example_app._raw_asset_config.get("client_secret") == "test_client_secret"
 
 
 def test_get_actions(example_app: App):
