@@ -10,6 +10,9 @@ from soar_sdk.compat import (
     PythonVersion,
 )
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
+from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
+    platform_encryption_backend,
+)
 from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_manager import ActionsManager
@@ -23,7 +26,6 @@ from soar_sdk.types import Action
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.exceptions import ActionRegistrationError
-from soar_sdk.crypto import decrypt
 
 import uuid
 from soar_sdk.decorators import (
@@ -151,8 +153,8 @@ class App:
         asset_id = input_data.asset_id
         for field in self.asset_cls.fields_requiring_decryption():
             if field in self._raw_asset_config:
-                self._raw_asset_config[field] = decrypt(
-                    self._raw_asset_config[field], asset_id
+                self._raw_asset_config[field] = platform_encryption_backend.decrypt(
+                    self._raw_asset_config[field], str(asset_id)
                 )
 
         self.__logger.handler.set_handle(handle)
