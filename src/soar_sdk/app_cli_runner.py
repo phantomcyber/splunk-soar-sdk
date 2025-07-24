@@ -22,8 +22,8 @@ if typing.TYPE_CHECKING:
 
 
 class AppCliRunner:
-    """
-    Runner for local run of the actions handling with the app.
+    """Runner for local run of the actions handling with the app.
+
     Generates subparsers for each action, which take in JSON files for parameters and assets.
     """
 
@@ -31,6 +31,7 @@ class AppCliRunner:
         self.app = app
 
     def parse_args(self, argv: Optional[list[str]] = None) -> argparse.Namespace:
+        """Parse command line arguments for the app CLI runner."""
         root_parser = argparse.ArgumentParser()
         root_parser.add_argument(
             "--soar-url",
@@ -254,6 +255,7 @@ class AppCliRunner:
         print(f"Parsed webhook request: {args.webhook_request}")
 
     def run(self) -> None:
+        """Run the app CLI."""
         args = self.parse_args()
 
         logger = PhantomLogger()
