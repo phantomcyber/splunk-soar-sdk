@@ -6,12 +6,14 @@ import pytest
 from collections.abc import Iterator
 from typing import TextIO
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.app_cli_runner import AppCliRunner
 import os
 
+from soar_sdk.params import Params
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
-from soar_sdk.asset import BaseAsset
+from soar_sdk.asset import AssetField, BaseAsset
 
 
 class Asset(BaseAsset):
@@ -461,6 +463,60 @@ def test_run_action_cli(app_with_action: App):
 
     # Verify the result
     app_with_action.handle.assert_called_once_with(args.raw_input_data)
+
+
+def test_run_action_cli_with_encrypted_asset(
+    simple_app: App, tmp_asset_and_param_files: tuple[Path, Path]
+):
+    """Test running an action with an encrypted asset via CLI."""
+
+    class EncryptedAsset(BaseAsset):
+        client_id: str
+        client_secret: str = AssetField(sensitive=True)
+
+    simple_app.asset_cls = EncryptedAsset
+
+    credentials_sink = mock.Mock()
+
+    @simple_app.action()
+    def test_encrypted_asset(params: Params, asset: EncryptedAsset) -> ActionOutput:
+        credentials_sink(
+            client_id=asset.client_id,
+            client_secret=asset.client_secret,
+        )
+
+    asset_file, param_file = tmp_asset_and_param_files
+
+    json.dump(
+        {"client_id": "test_client_id", "client_secret": "test_client_secret"},
+        asset_file,
+    )
+    asset_file.flush()
+
+    json.dump({}, param_file)
+    param_file.flush()
+
+    runner = AppCliRunner(simple_app)
+
+    args = runner.parse_args(
+        [
+            "action",
+            "test_encrypted_asset",
+            "--asset-file",
+            asset_file.name,
+            "--param-file",
+            param_file.name,
+        ]
+    )
+    runner.parse_args = mock.Mock(return_value=args)
+
+    # Run the action
+    runner.run()
+
+    credentials_sink.assert_called_once_with(
+        client_id="test_client_id",
+        client_secret="test_client_secret",
+    )
 
 
 def test_run_webhook_cli(

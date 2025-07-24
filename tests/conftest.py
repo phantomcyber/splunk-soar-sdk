@@ -13,12 +13,10 @@ from soar_sdk.input_spec import (
     AppConfig,
     InputSpecification,
     SoarAuth,
-    AppConfigParameter,
 )
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import UvWheel
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
-from soar_sdk.crypto import encrypt
 from tests.stubs import SampleActionParams
 from pathlib import Path
 from httpx import Response
@@ -236,16 +234,8 @@ def simple_action_input() -> InputSpecification:
         asset_id="1",
         identifier="test_action",
         action="test_action",
-        app_config={
-            "client_id": AppConfigParameter(data_type="string"),
-            "client_secret": AppConfigParameter(data_type="password"),
-        },
         config=AppConfig(
-            app_version="1.0.0",
-            directory=".",
-            main_module="example_connector.py",
-            client_id="test_client_id",
-            client_secret=encrypt("test_client_secret", "1"),
+            app_version="1.0.0", directory=".", main_module="example_connector.py"
         ),
     )
 
