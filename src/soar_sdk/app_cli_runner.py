@@ -9,13 +9,14 @@ from pydantic import ValidationError
 from urllib.parse import urlparse, parse_qs
 
 from soar_sdk.input_spec import ActionParameter, AppConfig, InputSpecification, SoarAuth
+from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
+    platform_encryption_backend,
+)
 from soar_sdk.types import Action
 from soar_sdk.webhooks.models import WebhookRequest
 from soar_sdk.logging import PhantomLogger
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClientAuth
-
-from soar_sdk.crypto import encrypt
 
 if typing.TYPE_CHECKING:
     from .app import App
@@ -185,7 +186,9 @@ class AppCliRunner:
         fields_to_encrypt = self.app.asset_cls.fields_requiring_decryption()
         for field, value in asset_json.items():
             if field in fields_to_encrypt:
-                asset_json[field] = encrypt(value, input_data.asset_id)
+                asset_json[field] = platform_encryption_backend.encrypt(
+                    value, str(input_data.asset_id)
+                )
 
         input_data.config = AppConfig(
             **input_data.config.dict(),
