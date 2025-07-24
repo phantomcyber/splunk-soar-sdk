@@ -229,3 +229,17 @@ class BaseAsset(BaseModel):
             params[field_name] = params_field
 
         return params
+
+    @classmethod
+    def fields_requiring_decryption(cls) -> set[str]:
+        """Set of fields that require decryption.
+
+        Returns:
+            A set of field names that are marked as sensitive and need
+            decryption before use.
+        """
+        return {
+            field_name
+            for field_name, field in cls.__fields__.items()
+            if field.field_info.extra.get("sensitive", False)
+        }

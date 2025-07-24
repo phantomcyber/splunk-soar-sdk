@@ -2,6 +2,7 @@ from unittest import mock
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
+from soar_sdk.crypto import encrypt
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.params import Params
 import pytest
@@ -9,6 +10,7 @@ import pytest
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClientAuth, SOARClient
+from soar_sdk.asset import BaseAsset, AssetField
 
 
 def test_app_run(example_app):
@@ -19,12 +21,53 @@ def test_app_run(example_app):
 
 
 def test_handle(example_app: App, simple_action_input: InputSpecification):
+    class TestAsset(BaseAsset):
+        client_id: str
+        client_secret: str = AssetField(sensitive=True)
+
+    example_app.asset_cls = TestAsset
+
+    simple_action_input.config = {
+        "app_version": "1.0.0",
+        "directory": ".",
+        "main_module": "example_connector.py",
+        "client_id": "test_client_id",
+        "client_secret": encrypt("test_client_secret", simple_action_input.asset_id),
+    }
+
     with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
         example_app.handle(simple_action_input.json())
 
     mock_handle.assert_called_once()
     # Ensure that the encrypted asset configs get decrypted correctly
+    assert example_app._raw_asset_config.get("client_id") == "test_client_id"
     assert example_app._raw_asset_config.get("client_secret") == "test_client_secret"
+
+
+def test_decrypted_field_not_present(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class TestAsset(BaseAsset):
+        client_id: str
+        client_secret: str = AssetField(sensitive=True)
+
+    example_app.asset_cls = TestAsset
+
+    simple_action_input.config = {
+        "app_version": "1.0.0",
+        "directory": ".",
+        "main_module": "example_connector.py",
+        "client_id": "test_client_id",
+        # client_secret is not provided, so it should not be decrypted
+    }
+
+    with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
+        example_app.handle(simple_action_input.json())
+
+    mock_handle.assert_called_once()
+    # Ensure that the encrypted asset configs get decrypted correctly
+    assert example_app._raw_asset_config.get("client_id") == "test_client_id"
+    assert "client_secret" not in example_app._raw_asset_config
 
 
 def test_get_actions(example_app: App):

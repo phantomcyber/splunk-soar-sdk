@@ -69,3 +69,15 @@ def test_bad_datatype():
 
     with pytest.raises(TypeError, match="Unsupported field type: list"):
         BadDatatype.to_json_schema()
+
+
+def test_fields_requiring_decryption():
+    """
+    Test that fields requiring decryption are correctly identified.
+    """
+
+    class AssetWithSensitiveFields(BaseAsset):
+        sensitive_field: str = AssetField(sensitive=True)
+        normal_field: str = AssetField()
+
+    assert AssetWithSensitiveFields.fields_requiring_decryption() == {"sensitive_field"}

@@ -3,8 +3,6 @@ from pydantic import BaseModel, Field, validator
 from typing import Literal, Optional, Any
 import random
 
-from soar_sdk.shims.phantom.encryption_helper import encryption_helper
-
 
 def id_factory() -> int:
     """Generate a random database ID."""
@@ -90,17 +88,6 @@ class SoarAuth(BaseModel):
         )
 
 
-class AppConfigParameter(BaseModel):
-    """Defines the data type of a parameter in the app configuration."""
-
-    data_type: Literal["string", "password", "numeric", "boolean"]
-
-    class Config:
-        """Configuration for the AppConfigParameter model."""
-
-        extra = "allow"
-
-
 class InputSpecification(BaseModel):
     """Input specification for SOAR app _handle_action() method.
 
@@ -152,7 +139,7 @@ class InputSpecification(BaseModel):
 
     action: str
     action_run_id: int = Field(default_factory=id_factory)
-    app_config: dict[str, AppConfigParameter] = {}
+    app_config: Optional[Any] = None
     asset_id: str = Field(default_factory=lambda: str(id_factory()))
     config: AppConfig
     connector_run_id: int = Field(default_factory=id_factory)
@@ -164,13 +151,3 @@ class InputSpecification(BaseModel):
     parameters: list[ActionParameter] = Field(default_factory=lambda: [{}])
     user_session_token: str = ""
     soar_auth: Optional[SoarAuth] = None
-
-    def get_decrypted_asset_config(self) -> dict[str, Any]:
-        """Get the decrypted asset configuration."""
-        config = self.config.get_asset_config()
-        for key, value in config.items():
-            if (
-                field_config := self.app_config.get(key)
-            ) and field_config.data_type == "password":
-                config[key] = encryption_helper.decrypt(value, self.asset_id)
-        return config

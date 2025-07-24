@@ -15,6 +15,8 @@ from soar_sdk.logging import PhantomLogger
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.abstract import SOARClientAuth
 
+from soar_sdk.crypto import encrypt
+
 if typing.TYPE_CHECKING:
     from .app import App
 
@@ -174,9 +176,19 @@ class AppCliRunner:
                 app_version="1.0.0",
                 directory=".",
                 main_module="example_connector.py",
-                **asset_json,
             ),
             parameters=parameter_list,
+        )
+
+        # If any the asset fields are sensitive, encrypt them with the fake encyption_helper, since that's what the handler is expecting.
+        fields_to_encrypt = self.app.asset_cls.fields_requiring_decryption()
+        for field, value in asset_json.items():
+            if field in fields_to_encrypt:
+                asset_json[field] = encrypt(value, input_data.asset_id)
+
+        input_data.config = AppConfig(
+            **input_data.config.dict(),
+            **asset_json,  # Merge asset JSON into config
         )
 
         soar_args = (args.soar_url, args.soar_user, args.soar_password)

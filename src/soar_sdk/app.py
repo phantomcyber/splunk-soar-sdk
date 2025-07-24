@@ -23,6 +23,7 @@ from soar_sdk.types import Action
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.exceptions import ActionRegistrationError
+from soar_sdk.crypto import decrypt
 
 import uuid
 from soar_sdk.decorators import (
@@ -144,7 +145,16 @@ class App:
         In versions of SOAR >6.4.1, handle will not be passed to the app.
         """
         input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
-        self._raw_asset_config = input_data.get_decrypted_asset_config()
+        self._raw_asset_config = input_data.config.get_asset_config()
+
+        # Decrypt sensitive fields in the asset configuration
+        asset_id = input_data.asset_id
+        for field in self.asset_cls.fields_requiring_decryption():
+            if field in self._raw_asset_config:
+                self._raw_asset_config[field] = decrypt(
+                    self._raw_asset_config[field], asset_id
+                )
+
         self.__logger.handler.set_handle(handle)
         soar_auth = App.create_soar_client_auth_object(input_data)
         self.soar_client.update_client(soar_auth, input_data.asset_id)
