@@ -126,6 +126,24 @@ Vault API
    :members: create_attachment, add_attachment, get_attachment, delete_attachment
    :show-inheritance:
 
+Data Models
+-----------
+
+.. autoclass:: soar_sdk.models.artifact.Artifact
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.container.Container
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.vault_attachment.VaultAttachment
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.view.ViewContext
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.view.ResultSummary
+   :exclude-members: Config
+
 Logging
 ----------
 
