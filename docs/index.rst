@@ -46,17 +46,6 @@ API Reference
 
    api_reference
 
-Actions Documentation
-=====================
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Actions:
-   :glob:
-
-   actions/*
-
-
 Custom Views Documentation
 ==========================
 
