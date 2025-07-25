@@ -288,7 +288,7 @@ of the platform.
 You can also do this from the command line:
 
 ```shell
-soarapps package install myapp.tgz soar.example.com -u admin -p mypassword
+soarapps package install myapp.tgz soar.example.com
 ```
 
 # Next steps
