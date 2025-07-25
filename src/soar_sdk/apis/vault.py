@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Optional, Any, Union
+from typing import TYPE_CHECKING, Optional, Union
+from soar_sdk.models.vault_attachment import VaultAttachment
 from soar_sdk.shims.phantom.vault import PhantomVault, VaultBase
 
 if TYPE_CHECKING:
@@ -123,8 +124,7 @@ class Vault:
         vault_id: Optional[str] = None,
         file_name: Optional[str] = None,
         container_id: Optional[int] = None,
-        download_file: bool = True,
-    ) -> list[dict[str, Any]]:
+    ) -> list[VaultAttachment]:
         """Retrieve attachment(s) from the vault.
 
         Retrieves one or more attachments from the vault based on the provided
@@ -138,15 +138,12 @@ class Vault:
                                                file name. Defaults to None.
             container_id (Optional[int], optional): Search for attachments associated
                                                    with this container. Defaults to None.
-            download_file (bool, optional): Whether to download the file content
-                                          along with metadata. If False, only
-                                          metadata is returned. Defaults to True.
 
         Returns:
-            list[dict[str, Any]]: List of attachment dictionaries containing
-                                metadata and optionally file content. Each dictionary
+            list[VaultAttachment]: List of attachment objects containing
+                                metadata and file content. Each object
                                 typically includes keys like 'vault_id', 'name',
-                                'size', 'metadata', and 'path' (if downloaded).
+                                'size', 'metadata', and 'path'.
 
         Example:
             >>> # Get a specific attachment by vault ID
@@ -154,15 +151,13 @@ class Vault:
             >>>
             >>> # Get all attachments for a container
             >>> attachments = vault_api.get_attachment(container_id=123)
-            >>>
-            >>> # Search by filename without downloading
-            >>> attachments = vault_api.get_attachment(
-            ...     file_name="report.pdf", download_file=False
-            ... )
         """
-        return self.phantom_vault.get_attachment(
-            vault_id, file_name, container_id, download_file
-        )
+        return [
+            VaultAttachment(**item)
+            for item in self.phantom_vault.get_attachment(
+                vault_id, file_name, container_id, True
+            )
+        ]
 
     def delete_attachment(
         self,

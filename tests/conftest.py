@@ -434,7 +434,33 @@ def mock_get_vault(respx_mock):
                 "message": "Retrieved attachment",
                 "id": 1,
                 "num_pages": 1,
-                "data": [{"id": 1, "name": "test.txt", "container_id": 1}],
+                "data": [
+                    {
+                        "id": 1,
+                        "created_via": "manual upload",
+                        "container": "test_1",
+                        "task": "",
+                        "create_time": "3 minutes ago",
+                        "name": "test.txt",
+                        "user": "Phantom Admin",
+                        "vault_document": 214,
+                        "mime_type": "text/plain",
+                        "es_attachment_id": None,
+                        "hash": "f1245088566efd873af926569ab5788a8ae280d0",
+                        "vault_id": "f1245088566efd873af926569ab5788a8ae280d0",
+                        "size": 237612,
+                        "path": "/opt/phantom/vault/f1/24/f1245088566efd873af926569ab5788a8ae280d0",
+                        "metadata": {
+                            "sha1": "f1245088566efd873af926569ab5788a8ae280d0",
+                            "size": 237612,
+                            "sha256": "d7116a30339ad6eca05b6abd9f9d9d0002b23704fcf8fc85fa209d0947541b4f",
+                            "contains": ["vault id"],
+                        },
+                        "aka": ["test.txt"],
+                        "container_id": 1,
+                        "contains": ["vault id"],
+                    }
+                ],
             },
         )
     )
