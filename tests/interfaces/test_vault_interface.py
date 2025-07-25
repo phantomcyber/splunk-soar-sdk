@@ -54,9 +54,9 @@ def test_vault_create_attachment_unath_client(app_connector):
         metadata={},
     )
     vault_entry = app_connector.vault.get_attachment(vault_id=vault_id)
-    assert vault_entry[0]["id"] == vault_id
-    assert vault_entry[0]["name"] == "test.txt"
-    assert vault_entry[0]["container_id"] == 1
+    assert vault_entry[0].vault_id == vault_id
+    assert vault_entry[0].name == "test.txt"
+    assert vault_entry[0].container_id == 1
 
 
 def test_vault_add_attachment(app_connector, mock_post_vault):
@@ -80,10 +80,10 @@ def test_vault_add_attachment_unath_client(app_connector):
         metadata={},
     )
     vault_entry = app_connector.vault.get_attachment(vault_id=vault_id)
-    assert vault_entry[0]["id"] == vault_id
-    assert vault_entry[0]["name"] == "test.txt"
-    assert vault_entry[0]["container_id"] == 1
-    assert vault_entry[0]["file_path"] == "/opt/phantom/vault/tmp/test.txt"
+    assert vault_entry[0].vault_id == vault_id
+    assert vault_entry[0].name == "test.txt"
+    assert vault_entry[0].container_id == 1
+    assert vault_entry[0].path == "/opt/phantom/vault/tmp/test.txt"
 
 
 def test_vault_add_attachment_exception(app_connector, mock_post_vault):
@@ -118,7 +118,7 @@ def test_vault_delete_attachment(app_connector):
         file_name="test.txt",
         metadata={},
     )
-    assert app_connector.vault.get_attachment(vault_id=vault_id)[0]["id"] == vault_id
+    assert app_connector.vault.get_attachment(vault_id=vault_id)[0].vault_id == vault_id
     deleted_files = app_connector.vault.delete_attachment(
         vault_id=vault_id,
     )
@@ -201,3 +201,20 @@ def test_get_iter_pages(app_connector, mock_get_vault):
         assert res[0]["name"] == "test.txt"
 
     assert mock_get_vault.called
+
+
+def test_open_vault_attachment(app_connector, tmp_path):
+    app_connector.client.headers.pop("X-CSRFToken")
+
+    tmp_file = tmp_path / "test.txt"
+    tmp_file.write_text("test content")
+
+    vault_id = app_connector.vault.create_attachment(
+        container_id=1,
+        file_content="test content",
+        file_name="test.txt",
+        metadata={},
+    )
+    vault_entry = app_connector.vault.get_attachment(vault_id=vault_id)
+    vault_entry[0].path = str(tmp_file)  # Simulate the file path
+    assert vault_entry[0].open().read() == "test content"

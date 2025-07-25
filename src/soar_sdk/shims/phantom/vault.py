@@ -73,8 +73,7 @@ class VaultBase:
 PhantomVault: type[VaultBase]
 
 try:
-    from phantom.rules import vault_add, vault_delete, vault_info
-    from phantom.vault import Vault
+    from phantom.vault import Vault, vault_add, vault_delete, vault_info
 
     _soar_is_available = True
 except ImportError:
@@ -122,9 +121,12 @@ if _soar_is_available:
             container_id: Optional[int] = None,
             download_file: bool = True,
         ) -> list[dict[str, Any]]:
-            return vault_info(
+            success, _, attachment = vault_info(
                 vault_id, file_name, container_id, download_file=download_file
             )
+            if not success:
+                raise SoarAPIError("Could not retrieve attachment information")
+            return attachment
 
         def delete_attachment(
             self,
@@ -150,23 +152,19 @@ else:
     import tempfile
     from pathlib import Path
     import secrets
-    from dataclasses import dataclass, asdict
+    import random
+    from datetime import datetime, timezone
+    import hashlib
     from soar_sdk.logging import getLogger
+    from soar_sdk.models.vault_attachment import VaultAttachment
 
     VAULT_ENDPOINT = "rest/container_attachment"
     logger = getLogger()
 
-    @dataclass
-    class VaultEntry:
-        id: str
-        file_path: str
-        name: str
-        container_id: int
-
     class PhantomVaultFallback(VaultBase):
         def __init__(self, soar_client: "SOARClient") -> None:
             super().__init__(soar_client)
-            self.__storage: dict[str, VaultEntry] = {}
+            self.__storage: dict[str, VaultAttachment] = {}
 
         def get_vault_tmp_dir(self) -> str:
             return "/opt/phantom/vault/tmp"
@@ -206,12 +204,27 @@ else:
                         file_content = file_content.decode("utf-8")
                     file_path.write_text(file_content)
 
+                db_id = random.randint(1, 1000000)  # noqa: S311, this number is not used in cryptographic operations
+                doc_id = random.randint(1, 1000000)  # noqa: S311, this number is not used in cryptographic operations
                 vault_id = secrets.token_hex(20)
-                self.__storage[vault_id] = VaultEntry(
-                    id=vault_id,
-                    file_path=temp_dir,
+                self.__storage[vault_id] = VaultAttachment(
+                    id=db_id,
                     name=file_name,
                     container_id=container_id,
+                    container="test_container",
+                    created_via="upload",
+                    create_time=datetime.now(timezone.utc).isoformat(),
+                    user="Phantom User",
+                    vault_document=doc_id,
+                    vault_id=vault_id,
+                    mime_type="text/plain",
+                    es_attachment_id=None,
+                    hash=hashlib.sha256(file_content.encode("utf-8")).hexdigest(),
+                    size=len(file_content),
+                    path=str(file_path),
+                    metadata=metadata or {},
+                    aka=[],
+                    contains=[],
                 )
 
             return vault_id
@@ -252,12 +265,28 @@ else:
                     raise SoarAPIError(error_msg)
                 vault_id = resp_json.get("vault_id")
             else:
+                db_id = random.randint(1, 1000000)  # noqa: S311, this number is not used in cryptographic operations
+                doc_id = random.randint(1, 1000000)  # noqa: S311, this number is not used in cryptographic operations
                 vault_id = secrets.token_hex(20)
-                self.__storage[vault_id] = VaultEntry(
-                    id=vault_id,
-                    file_path=file_location,
+                file_content = secrets.token_hex(32)
+                self.__storage[vault_id] = VaultAttachment(
+                    id=db_id,
                     name=file_name,
                     container_id=container_id,
+                    container="test_container",
+                    created_via="upload",
+                    create_time=datetime.now(timezone.utc).isoformat(),
+                    user="Phantom User",
+                    vault_document=doc_id,
+                    vault_id=vault_id,
+                    mime_type="text/plain",
+                    es_attachment_id=None,
+                    hash=hashlib.sha256(file_content.encode("utf-8")).hexdigest(),
+                    size=len(file_content),
+                    path=file_location,
+                    metadata=metadata or {},
+                    aka=[],
+                    contains=[],
                 )
 
             return vault_id
@@ -300,14 +329,14 @@ else:
                 if vault_id:
                     res = self.__storage.get(vault_id)
                     if res:
-                        results.append(asdict(res))
+                        results.append(res.dict())
 
                 if any((container_id, file_name)):
                     for _, res in self.__storage.items():
                         if (
                             file_name and file_name in res.file_path
                         ) or container_id == res.container_id:
-                            results.append(asdict(res))
+                            results.append(res.dict())
 
             return results
 
@@ -326,7 +355,7 @@ else:
             deleted_file_names = []
             is_authenticated = is_client_authenticated(self.soar_client.client)
             for attachment in vault_enteries:
-                attachment_id = attachment["id"]
+                attachment_id = attachment["vault_id"]
                 attachment_name = attachment["name"]
                 if is_authenticated:
                     endpoint = f"{VAULT_ENDPOINT}/{attachment_id}"
