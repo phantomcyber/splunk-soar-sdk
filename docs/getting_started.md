@@ -157,6 +157,10 @@ uv add splunk-soar-sdk
 uv sync
 ```
 
+It's also useful to activate the virtual environment created by uv, so that all your shell commands run in context of your app:
+```shell
+source .venv/bin/activate
+```
 
 ## Creating your first action
 
@@ -252,94 +256,40 @@ the result of successful run.
 
 ## Testing and building the app
 
-### Test your app
+### Running from the command line
 
-In order to run tests (there's only one at the moment) you will use pyest in the shell of the poetry virtual env:
+You can run any of your app's actions directly in your CLI, without installing a full copy of SOAR.
+Simply invoke the Python file that contains your app:
 
-```shell
-poetry run pytest
+```python
+python src/app.py action my-action -p test_params.json -a test_asset.json
 ```
 
-You can also enter the shell first to always work in the context of your virtual env. First run:
+You should provide a parameters file (`-p`) which contains the JSON-encoded parameters for your action.
+The asset file (`-a`) contains the asset config in JSON format.
 
-```shell
-poetry shell
-```
+This command will run your action on your local machine, and print its output to the command line.
 
-From this shell, you will be able to run `soarapps` commands from the SDK CLI. Now you can simply run:
+### Building an app package
 
-```shell
-pytest
-```
+Run `soarapps package build` to generate an app package.
+By default, this creates `<appname>.tgz` in the root directory of your app.
 
-### Generating the Manifest file
+This package contains all the code and metadata for your app.
+It also contains all the dependency wheels for your app, which are sourced from the PyPI CDN based on `uv.lock`.
 
-The manifest file is required by SOAR platform for installation and running apps. It provides basic information
-on the app itself, lists actions with all params so they can be used in the Visual Playbook Editor, and holds
-information of the dependencies along with the paths to their wheel files.
-
-The manifest file should be always generated automatically by using the SDK tools. In order to do so, use the
-SDK CLI command in your project directory:
-
-```shell
-soarapps manifests create my_app.json .
-```
-
-The json file is the target manifest JSON filename to be created. The trailing dot is a context in which the manifest
-should be built. If you run this command in your app directory, the context is current dir (thus `.`).
-
-The command uses `pyproject.toml` meta information on the app, all registered actions and their meta information
-provided in the source files to generate a proper manifest file. You will need to commit this file into your repository
-so it can be used for building the app artifacts.
-
-### Building dependencies wheels
-
-When writing your own app, you will need to use some 3rd party dependencies at some point. Since the app is running
-on the SOAR platform, it provides (via SDK dependencies) some useful libraries compatible with SOAR, which you can
-reuse for your needs. You can check the [SDK pyproject.toml](/pyproject.toml) file to check the available dependencies
-of SDK that you can use. Since you already use SDK as a dependency, the others will be available in your development
-environment as well (and in your configured IDE).
-
-First, make sure you have no `wheels` directory in your app directory. If you do (e.g. from the last build), you need
-to remove it.
-
-**TODO**: We should change the way wheels-building tool works to not require this step.
-
-You may still need to add some specific dependencies for your project. The dependencies must be provided as dedicated
-wheel files, so the app can be installed fully offline. At the moment, the wheels building tool we provide only supports
-requirements.txt file with list of dependencies. In order to build the wheels, you will need
-to convert your dependencies in `pyproject.toml` to `requirements.txt`. You can do this in your app directory with
-a command:
-
-```shell
-poetry export --without-hashes --format=requirements.txt > requirements.txt
-```
-
-Now that you have this file, you can build the wheels. In order to build wheels you will need to have
-[`pre-commit`](https://pre-commit.com/) installed in your machine and install the configuration of your app
-stored in the `.pre-commit-config.yml` file of your app. This hook script will modify your manifest file, so
-make sure to run this **AFTER** creating/updating it (see above):
-
-```shell
-pre-commit run package-app-dependencies --all-files
-```
-
-This command will create a new `wheels` directory and wheel files with dependencies in it. It will also update the
-manifest file with a list of dependencies pointing to the proper wheel files.
-
-### Creating installation package
-
-In order to create an app package that can be installed on SOAR platform, you need to create a `.tgz` tarball of
-your app directory excluding the `.git` directory. Run this command from outside your app directory (or adjust the paths)
-
-```shell
-tar --exclude='.git' -zcvf MY_APP.tgz MY_APP/
-```
+Because of this, you should ensure that your `uv.lock` is always up to date.
 
 ## Installing and running the app
 
 Now you can install the app in your SOAR platform to test how it works. You can do this by using the web interface
 of the platform.
+
+You can also do this from the command line:
+
+```shell
+soarapps package install myapp.tgz soar.example.com -u admin -p mypassword
+```
 
 # Next steps
 
