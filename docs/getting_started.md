@@ -21,6 +21,33 @@ actions.
 The following guide will get you through the process of building your first app, explaining
 its crucial components and functionality.
 
+## Setting up your machine
+
+You will need a Mac or Linux machine. Windows is not supported.
+
+First, install some necessary tools:
+- Git
+- [uv](https://docs.astral.sh/uv/): the Python version and environment manager used by the SDK
+
+Next, install Python 3.9 and 3.13. These are the two versions currently supported for SOAR apps:
+
+```shell
+uv python install 3.9
+uv python install 3.13
+```
+
+Finally, install the SOAR SDK as a command-line tool:
+
+```shell
+uv tool install splunk-soar-sdk
+```
+
+It may also be helpful to install `ruff` and `pre-commit`, as these are used often when building SOAR apps:
+```shell
+uv tool install ruff
+uv tool install pre-commit
+```
+
 ## Creating a new app
 
 To create a new, empty app, simply run:
@@ -28,6 +55,8 @@ To create a new, empty app, simply run:
 ```shell
 soarapps init
 ```
+
+This will create the basic directory structure for your app, which you can open in your editor. See [The app structure](#the-app-structure) below for more information.
 
 ## Migrating an existing app
 
@@ -61,9 +90,6 @@ my_app/
 ├─ src/
 │  ├─ __init__.py
 │  ├─ app.py
-├─ tests/
-│  ├─ __init__.py
-│  ├─ test_app.py
 ├─ .pre-commit-config.yaml
 ├─ logo.svg
 ├─ logo_dark.svg
@@ -90,17 +116,12 @@ Note that the `test_connectivity` action is mandatory for each app. It is used w
 the SOAR platform and checked usually when a new asset is added for the app. This is why it is always provided
 in the app scratch files.
 
-### The `tests` directory and the `test_app.py` file
-
-In this directory you will add unit test files for the app. The sample test file should be present there with at least
-basic tests on the actions you create.
-
-[Read the detailed documentation on the `test_app.py` file contents](/docs/app_structure/test_app.py.md)
-
 ### The `logo*.svg` files
 
-These files are used by SOAR platform to present your application in the web UI. You should always provide
+These files are used by SOAR platform to present your application in the web UI. You should generally provide
 two versions of the logo. The regular one is used for light mode and the `_dark` file is used for the dark mode.
+
+PNG files are also acceptable, but SVGs are preferred because they scale more easily.
 
 ### `pyproject.toml` configuration file
 
@@ -116,17 +137,24 @@ of the app, its version, description, authors, and other params.
 
 Once you have your starting app file structure, you will need to set up your app development environment.
 
-In your app directory install the pre-commit hooks:
+First, set up a Git repository:
+
+```shell
+git init
+```
+
+In your app directory, install the pre-commit hooks:
 
 ```shell
 pre-commit install
 ```
 
-Then you need to set up the environment using poetry. It will set up the virtual environment and install
-necessary dependencies:
+Then you need to set up the environment using uv. It will set up the virtual environment and install
+necessary dependencies. You should also add the SDK to your project:
 
 ```shell
-poetry install
+uv add splunk-soar-sdk
+uv sync
 ```
 
 
