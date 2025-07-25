@@ -12,9 +12,7 @@ class VaultBase:
 
     @abstractmethod
     def get_vault_tmp_dir(self) -> str:
-        """
-        Returns the vault tmp directory.
-        """
+        """Returns the vault tmp directory."""
         pass
 
     @abstractmethod
@@ -25,9 +23,7 @@ class VaultBase:
         file_name: str,
         metadata: Optional[dict[str, str]] = None,
     ) -> str:
-        """
-        Creates a vault attachment from file content. This differs from add_attachment because it doesn't require the file to exist locally.
-        """
+        """Creates a vault attachment from file content. This differs from add_attachment because it doesn't require the file to exist locally."""
         pass
 
     @abstractmethod
@@ -38,9 +34,7 @@ class VaultBase:
         file_name: str,
         metadata: Optional[dict[str, str]] = None,
     ) -> str:
-        """
-        Add an attachment to vault. This requires the file to exist locally.
-        """
+        """Add an attachment to vault. This requires the file to exist locally."""
         pass
 
     @abstractmethod
@@ -51,9 +45,7 @@ class VaultBase:
         container_id: Optional[int] = None,
         download_file: bool = True,
     ) -> list[dict[str, Any]]:
-        """
-        Returns vault attachments based on the provided query parameters
-        """
+        """Returns vault attachments based on the provided query parameters."""
         pass
 
     @abstractmethod
@@ -64,9 +56,7 @@ class VaultBase:
         container_id: Optional[int] = None,
         remove_all: bool = False,
     ) -> list[str]:
-        """
-        Deletes vault attachments based on the provided query parameters
-        """
+        """Deletes vault attachments based on the provided query parameters."""
         pass
 
 
