@@ -91,50 +91,41 @@ For a full list of Param options, see the ``Params`` class and ``Param`` functio
 Action Outputs
 ~~~~~~~~~~~~
 
-Basic Return Types
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Action outputs are defined in Pydantic models, which extend the ``soar_sdk.action_results.ActionOutput`` class.
 
-Actions in the SOAR SDK can return values in several simple formats for basic success/failure reporting:
-
-**Boolean Return (`bool`)**
-
-The simplest return type. Actions can return just `True` for success or `False` for failure:
+Much like parameters, outputs can have simple data types such as ``str`` or ``int``, or be annotated with the ``OutputField`` function to add extra metadata.
 
 .. code-block:: python
 
-   @app.action()
-   def simple_action(params: Params, client: SOARClient, asset: Asset) -> bool:
-       # Perform some operation
-       if operation_successful:
-           return True
-       return False
+   from soar_sdk.action_results import ActionOutput, OutputField
 
-**Tuple Return (`tuple[bool, str]`)**
+   class CreateUserOutput(ActionOutput):
+      uid: int = OutputField(cef_types=["user id"])
+      create_date: str
 
-For more descriptive results, actions can return a tuple with a boolean status and a message:
+Output models can be nested, allowing you to create complex data structures:
 
 .. code-block:: python
 
-   @app.action()
-   def descriptive_action(params: Params, client: SOARClient, asset: Asset) -> tuple[bool, str]:
-       try:
-           # Perform operation
-           return True, "Operation completed successfully"
-       except Exception as e:
-           return False, f"Operation failed: {str(e)}"
+   from soar_sdk.action_results import ActionOutput, OutputField
 
-**ActionResult Classes**
+   class UserDetails(ActionOutput):
+      uid: int = OutputField(cef_types=["user id"])
+      username: str
+      email: str
 
-For more control over action results, use these result classes:
+   class CreateUserOutput(ActionOutput):
+      user_details: UserDetails
+      create_date: str
 
-.. autoclass:: soar_sdk.action_results.ActionResult
-   :show-inheritance:
+   class ListUsersOutput(ActionOutput):
+      users: list[UserDetails]
 
-.. autoclass:: soar_sdk.action_results.SuccessActionResult
-   :show-inheritance:
+For more details, see the ``ActionOutput`` class and the ``OutputField`` function below:
 
-.. autoclass:: soar_sdk.action_results.ErrorActionResult
-   :show-inheritance:
+.. autoclass:: soar_sdk.action_results.ActionOutput
+
+.. autofunction:: soar_sdk.action_results.OutputField
 
 Customizable Output Classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
