@@ -127,18 +127,6 @@ For more details, see the ``ActionOutput`` class and the ``OutputField`` functio
 
 .. autofunction:: soar_sdk.action_results.OutputField
 
-Customizable Output Classes
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-To provide more detailed action output, you can use the ActionOutput class:
-
-.. autoclass:: soar_sdk.action_results.OutputField
-   :show-inheritance:
-
-.. autoclass:: soar_sdk.action_results.ActionOutput
-   :show-inheritance:
-   :exclude-members: to_json_schema
-
 APIs
 ----
 

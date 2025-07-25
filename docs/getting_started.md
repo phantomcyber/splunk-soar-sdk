@@ -296,7 +296,6 @@ soarapps package install myapp.tgz soar.example.com -u admin -p mypassword
 Now that you have a working app, you can start its development. Here's what you can check next when working
 with the app you create:
 
-- [writing the tests](/docs/testing/index.md)
-- [defining action params](/docs/actions/action_params.md)
-- [defining and using the action output](/docs/actions/action_outputs.md)
-- [configuring the app assets](/docs/app_configuration.md)
+- [configuring the app assets](api_reference.rst#asset-configuration)
+- [defining action params](api_reference.rst#action-parameters)
+- [defining and using the action output](api_reference.rst#action-outputs)
