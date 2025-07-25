@@ -42,6 +42,52 @@ BaseAsset
    :show-inheritance:
    :exclude-members: validate_no_reserved_fields
 
+
+Action Parameters
+~~~~~~~~~~~~
+
+Action parameters are defined in Pydantic models, which extend the `soar_sdk.params.Params` class.
+At their most basic, parameters can have a simple data type such as `str` or `int`.
+
+.. code-block:: python
+
+   from soar_sdk.params import Params
+
+
+   class CreateUserParams(Params):
+      username: str
+      first_name: str
+      last_name: str
+      email: str
+      is_admin: bool
+      uid: int
+
+
+Adding extra metadata
+^^^^^^^^^^^^^^^^^^^^^^
+
+You can use the `Param` function to add extra information to a parameter type.
+For example, let's give the `uid` field a Common Event Format (CEF) type and make it optional.
+
+.. code-block:: python
+
+   from soar_sdk.params import Params, Param
+
+
+   class CreateUserParams(Params):
+      username: str
+      first_name: str
+      last_name: str
+      email: str
+      is_admin: bool
+      uid: int = Param(required=False, cef_types=["user id"])
+
+For a full list of Param options, see the `Params` class and `Param` function below:
+
+.. autoclass:: soar_sdk.params.Params
+
+.. autofunction:: soar_sdk.params.Param
+
 Action Outputs
 ~~~~~~~~~~~~
 
