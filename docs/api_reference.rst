@@ -46,8 +46,8 @@ BaseAsset
 Action Parameters
 ~~~~~~~~~~~~
 
-Action parameters are defined in Pydantic models, which extend the `soar_sdk.params.Params` class.
-At their most basic, parameters can have a simple data type such as `str` or `int`.
+Action parameters are defined in Pydantic models, which extend the ``soar_sdk.params.Params`` class.
+At their most basic, parameters can have a simple data type such as ``str`` or ``int``.
 
 .. code-block:: python
 
@@ -66,8 +66,8 @@ At their most basic, parameters can have a simple data type such as `str` or `in
 Adding extra metadata
 ^^^^^^^^^^^^^^^^^^^^^^
 
-You can use the `Param` function to add extra information to a parameter type.
-For example, let's give the `uid` field a Common Event Format (CEF) type and make it optional.
+You can use the ``Param`` function to add extra information to a parameter type.
+For example, let's give the ``uid`` field a Common Event Format (CEF) type and make it optional.
 
 .. code-block:: python
 
@@ -82,7 +82,7 @@ For example, let's give the `uid` field a Common Event Format (CEF) type and mak
       is_admin: bool
       uid: int = Param(required=False, cef_types=["user id"])
 
-For a full list of Param options, see the `Params` class and `Param` function below:
+For a full list of Param options, see the ``Params`` class and ``Param`` function below:
 
 .. autoclass:: soar_sdk.params.Params
 
