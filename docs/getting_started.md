@@ -174,9 +174,9 @@ Here's the code of the simplest action you can create:
 
 ```python
 @app.action()
-def my_action(params: Params, client: SOARClient):
-    """This is the first custom action in the app"""
-    return True, "Action run successful"
+def my_action(params: Params, asset: BaseAsset) -> ActionOutput:
+    """This is the first custom action in the app. It doesn't really do anything yet."""
+    return ActionOutput()
 ```
 
 Let's break down this example to explain what happens here.
@@ -202,26 +202,27 @@ For more, [read the doc page dedicated to the `App.action` decorator](/docs/acti
 ### The action declaration
 
 ```python
-def my_action(params: Params, client: SOARClient):
+def my_action(params: Params, asset: BaseAsset) -> ActionOutput:
 ```
 
 `my_action` is the identifier of the action and as such it will be visible later in the SOAR platform.
 `App.action` decorator automatically converts this to _"my action"_ string name that will be used when generating
 the app Manifest file and the documentation.
 
-Each action should accept and define `params` and `client` arguments with proper typehints.
+Each action should accept and define `params` and `asset` arguments with proper typehints.
 
 The `params` argument should always be of the class type inherited from `soar_sdk.params.Params`.
 You can [read more on defining the action params in the separate docs page](/docs/actions/action_params.md).
+If your action takes no parameters, it's fine to use the `Params` base class here.
 
-The `client` is automatically injected into your action function run and should not be passed when manually
-calling the decorated function. You can pass it though, if you want to mock the `SOARClient` instance in your tests.
-[Read more on testing the actions](/docs/testing/actions.md)
+The `asset` argument contains your asset configuration, which is discussed further in [the `Asset` documentation](/docs/app_configuration.md). It should be of a type that inherits from `soar_sdk.asset.BaseAsset`, and should be the same type that is specified as the `asset_cls` of your app.
+
+Your action must have a return type that extends from `soar_sdk.action_results.ActionOutput`. This is discussed further in [the Action Output documentation](/docs/actions/action_outputs.md). The return type must be hinted.
 
 ### The action description docstring
 
 ```python
-    """This is the first custom action in the app"""
+    """This is the first custom action in the app. It doesn't really do anything yet."""
 ```
 
 You should always provide the docstring for your action. It makes your code easier to understand and maintain, but
@@ -233,16 +234,16 @@ The description should be kept short and simple, explaining what the action does
 ### The action result
 
 ```python
-    return True, "Action run successful"
+    return ActionOutput()
 ```
 
 Each action must return at least one action result. While you can create multiple instances of the action result
 and pass more than one values, the one that is most important is the general action result.
 
 Prior to SDK, the connectors had to define and create their own `ActionResult` instances. This is simplified now
-in SDK. Simply return a two-element tuple. The first value should be a `boolean` of `True` if action run was successful,
-or `False` otherwise. The second tuple element is the result comment which can be useful for logging the action runs
-and debugging.
+in SDK. If your action succeeds, it should return an instance of your output class. If it fails, it should raise an exception.
+
+Our example action simply returns the `ActionOutput` base class, as it does not yet generate any results.
 
 [Read more on action results and outputs for actions](/docs/actions/action_outputs.md)
 
