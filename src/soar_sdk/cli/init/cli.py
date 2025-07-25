@@ -161,11 +161,6 @@ def init_sdk_app(
         APP_INIT_TEMPLATES / "basic_app/.gitignore",
         app_dir / ".gitignore",
     )
-    shutil.copytree(
-        APP_INIT_TEMPLATES / "basic_app/tests",
-        app_dir / "tests",
-        dirs_exist_ok=True,
-    )
 
     # Use Jinja2 to render the pyproject.toml file
     rprint("[blue]Creating pyproject.toml")
