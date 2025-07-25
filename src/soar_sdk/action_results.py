@@ -188,8 +188,6 @@ class ActionOutput(BaseModel):
     for metadata. The schema is automatically converted to SOAR-compatible
     format for manifest generation and data validation.
 
-    For more information take a look at the dedicated :doc:`ActionOutput documentation </actions/action_outputs>`:
-
     Example:
         >>> class MyActionOutput(ActionOutput):
         ...     hostname: str = OutputField(
