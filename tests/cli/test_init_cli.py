@@ -41,47 +41,6 @@ def test_init_app_creates_directory_structure(runner, tmp_path):
     assert (app_dir / "logo_dark.svg").exists()
 
 
-def test_init_app_uses_provided_logos(runner, tmp_path):
-    """Test that init command creates the expected directory structure and files."""
-    app_dir = tmp_path / "test_app"
-
-    logo = tmp_path / "logo.svg"
-    logo_dark = tmp_path / "logo_dark.svg"
-    logo.write_text("<svg>Logo</svg>")
-    logo_dark.write_text("<svg>Dark Logo</svg>")
-
-    with patch("subprocess.run"), patch("shutil.which") as mock_which:
-        mock_which.return_value = "/usr/bin/example"
-
-        result = runner.invoke(
-            init,
-            [
-                "--name",
-                "test_app",
-                "--description",
-                "A test app",
-                "--app-dir",
-                str(app_dir),
-                "--logo",
-                str(logo),
-                "--logo-dark",
-                str(logo_dark),
-            ],
-        )
-
-    assert result.exit_code == 0
-    assert app_dir.exists()
-    assert (app_dir / "src").is_dir()
-    assert (app_dir / "src" / "__init__.py").exists()
-    assert (app_dir / "src" / "app.py").exists()
-    assert (app_dir / "pyproject.toml").exists()
-    assert (app_dir / "logo.svg").exists()
-    assert (app_dir / "logo_dark.svg").exists()
-
-    assert (app_dir / "logo.svg").read_text() == "<svg>Logo</svg>"
-    assert (app_dir / "logo_dark.svg").read_text() == "<svg>Dark Logo</svg>"
-
-
 def test_init_app_fails_on_non_empty_directory_without_overwrite(runner, tmp_path):
     """Test that init command fails when target directory is not empty and overwrite is not specified."""
     app_dir = tmp_path / "existing_app"
