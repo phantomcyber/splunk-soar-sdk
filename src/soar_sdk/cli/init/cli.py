@@ -64,26 +64,6 @@ def init_callback(
     type: str = "generic",  # noqa: A002
     vendor: str = "Splunk Inc.",
     publisher: str = "Splunk Inc.",
-    logo: Annotated[
-        Optional[Path],
-        typer.Option(
-            exists=True,
-            file_okay=True,
-            dir_okay=False,
-            readable=True,
-            resolve_path=True,
-        ),
-    ] = None,
-    logo_dark: Annotated[
-        Optional[Path],
-        typer.Option(
-            exists=True,
-            file_okay=True,
-            dir_okay=False,
-            readable=True,
-            resolve_path=True,
-        ),
-    ] = None,
     product: Optional[str] = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
@@ -102,8 +82,8 @@ def init_callback(
         type,
         vendor,
         publisher,
-        logo,
-        logo_dark,
+        APP_INIT_TEMPLATES / "basic_app/logo.svg",
+        APP_INIT_TEMPLATES / "basic_app/logo_dark.svg",
         product,
         fips_compliant,
         overwrite,
@@ -117,15 +97,15 @@ def init_sdk_app(
     python_versions: list[PythonVersion],
     dependencies: list[str],
     appid: uuid.UUID,
-    app_dir: Path = WORK_DIR,
-    copyright: str = "Copyright (c) {year} Splunk Inc.",  # noqa: A002
-    version: str = "1.0.0",
+    app_dir: Path,
+    copyright: str,  # noqa: A002
+    version: str,
     # TODO: Enum for app types
-    type: str = "generic",  # noqa: A002
-    vendor: str = "Splunk Inc.",
-    publisher: str = "Splunk Inc.",
-    logo: Optional[Path] = None,
-    logo_dark: Optional[Path] = None,
+    type: str,  # noqa: A002
+    vendor: str,
+    publisher: str,
+    logo: Path,
+    logo_dark: Path,
     product: Optional[str] = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
@@ -180,13 +160,6 @@ def init_sdk_app(
 
     # Copy app logos
     rprint("[blue]Copying app logos")
-    if not logo:
-        rprint("[dim]No logo provided. Using default")
-        logo = APP_INIT_TEMPLATES / "basic_app/logo.svg"
-    if not logo_dark:
-        rprint("[dim]No dark logo provided. Using default")
-        logo_dark = APP_INIT_TEMPLATES / "basic_app/logo_dark.svg"
-
     shutil.copy(logo, app_dir / logo.name)
     shutil.copy(logo_dark, app_dir / logo_dark.name)
 
