@@ -131,7 +131,7 @@ def init_sdk_app(
     rprint("[blue]Creating app directory structure")
     src_dir = app_dir / "src"
     src_dir.mkdir()
-    (src_dir / "__init__.py").touch()
+    (src_dir / "__init__.py").write_text("from . import app\n\n__ALL__ = [app]\n")
 
     shutil.copy(
         APP_INIT_TEMPLATES / "basic_app/.pre-commit-config.yml",
