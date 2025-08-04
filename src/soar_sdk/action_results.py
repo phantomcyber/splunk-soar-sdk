@@ -143,6 +143,17 @@ class ActionOutput(BaseModel):
         Nested ActionOutput classes are supported for complex data structures.
     """
 
+    def generate_action_summary_message(self) -> str:
+        """Generate a summary message for the action output.
+
+        This method provides a human-readable summary of the action results,
+        which appears when running the action in a SOAR playbook or container.
+
+        Returns:
+            A string summarizing the action output.
+        """
+        return "Action completed successfully."
+
     @classmethod
     def _to_json_schema(
         cls, parent_datapath: str = "action_result.data.*"

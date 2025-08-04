@@ -12,6 +12,7 @@ if TYPE_CHECKING or not _soar_is_available:
     class ActionResult:  # type: ignore[no-redef]
         def __init__(self, param: Optional[dict] = None) -> None:
             self.status = False
+            self.message = ""
 
             if param is None:
                 self.param = {}
@@ -27,6 +28,7 @@ if TYPE_CHECKING or not _soar_is_available:
             _exception: Optional[Exception] = None,
         ) -> bool:
             self.status = bool(status_code)
+            self.message = _status_message
             return self.status
 
         def get_status(self) -> bool:
