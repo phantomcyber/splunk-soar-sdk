@@ -103,6 +103,18 @@ Much like parameters, outputs can have simple data types such as ``str`` or ``in
       uid: int = OutputField(cef_types=["user id"])
       create_date: str
 
+By default, your action will display an "Action completed successfully" message in the SOAR UI. To customize this message, you can override the ``generate_action_summary_message`` method in your output class:
+.. code-block:: python
+
+   from soar_sdk.action_results import ActionOutput
+
+   class CreateUserOutput(ActionOutput):
+      uid: int
+      create_date: str
+
+      def generate_action_summary_message(self) -> str:
+         return f"User created with UID: {self.uid} on {self.create_date}"
+
 Output models can be nested, allowing you to create complex data structures:
 
 .. code-block:: python

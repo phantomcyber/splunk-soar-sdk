@@ -11,6 +11,9 @@ class ReverseStringParams(Params):
 
 
 class ReverseStringOutput(ActionOutput):
+    def generate_action_summary_message(self) -> str:
+        return f"Reversed string: {self.reversed_string}"
+
     original_string: str
     reversed_string: str
 

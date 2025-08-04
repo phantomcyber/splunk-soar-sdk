@@ -494,7 +494,7 @@ class App:
             param_dict = action_params.dict() if action_params else None
             result = ActionResult(
                 status=True,
-                message="",
+                message=result.generate_action_summary_message(),
                 param=param_dict,
             )
             result.add_data(output_dict)
