@@ -50,65 +50,6 @@ class ActionResult(PhantomActionResult):
         self.set_status(status, message)
 
 
-class SuccessActionResult(ActionResult):
-    """Convenience class for creating successful action results.
-
-    This class provides a simplified way to create ActionResult instances
-    for successful actions, automatically setting the status to True.
-
-    Args:
-        message: Descriptive message about the successful action.
-        param: Optional dictionary of parameters passed to the action.
-
-    Example:
-        >>> from soar_sdk.action_results import SuuccessActionResult
-        >>> @app.action()
-        ... def successfull_action(
-        ...     params: Params, client: SOARClient, asset: Asset
-        ... ) -> SuccessActionResult:
-        ...     return SuccessActionResult("Successfully executed action")
-    """
-
-    def __init__(self, message: str, param: Optional[dict] = None) -> None:
-        """Initialize a successful ActionResult.
-
-        Args:
-            message: Descriptive message about the successful action.
-            param: Optional dictionary of parameters passed to the action.
-        """
-        super().__init__(True, message, param)
-
-
-class ErrorActionResult(ActionResult):
-    """Convenience class for creating failed action results.
-
-    This class provides a simplified way to create ActionResult instances
-    for failed actions, automatically setting the status to False.
-
-    Args:
-        message: Descriptive message about the action failure, typically
-            explaining what went wrong.
-        param: Optional dictionary of parameters passed to the action.
-
-    Example:
-        >>> from soar_sdk.action_results import ErrorActionResult
-        >>> @app.action()
-        ... def failed_action(
-        ...     params: Params, client: SOARClient, asset: Asset
-        ... ) -> ErrorActionResult:
-        ...     return ErrorActionResult("Failed to execute action")
-    """
-
-    def __init__(self, message: str, param: Optional[dict] = None) -> None:
-        """Initialize a failed ActionResult.
-
-        Args:
-            message: Descriptive message about the action failure.
-            param: Optional dictionary of parameters passed to the action.
-        """
-        super().__init__(False, message, param)
-
-
 class OutputFieldSpecification(TypedDict):
     """Type specification for action output field metadata.
 
