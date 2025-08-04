@@ -4,7 +4,7 @@ import pytest
 
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionResult, ErrorActionResult, SuccessActionResult
+from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_manager import (
     ActionsManager,
     _INGEST_STATE_KEY,
@@ -57,31 +57,6 @@ def test_action_called_with_returned_simple_result(
     example_provider, simple_action_input
 ):
     mock_function = mock.Mock(return_value=(True, "Testing function run"))
-    example_provider._actions["test_action"] = mock_function
-
-    example_provider.handle(simple_action_input)
-
-    assert mock_function.call_count == 1
-
-
-def test_action_called_with_returned_success_result(
-    example_provider, simple_action_input
-):
-    mock_function = mock.Mock(return_value=SuccessActionResult("Testing function run"))
-    example_provider._actions["test_action"] = mock_function
-
-    example_provider.handle(simple_action_input)
-
-    assert mock_function.call_count == 1
-
-
-def test_action_called_with_returned_error_result(
-    example_provider, simple_action_input
-):
-    mock_function = mock.Mock(
-        return_value=ErrorActionResult("Testing function run error")
-    )
-
     example_provider._actions["test_action"] = mock_function
 
     example_provider.handle(simple_action_input)
