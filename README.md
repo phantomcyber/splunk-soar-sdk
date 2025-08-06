@@ -36,6 +36,10 @@ soarapps --help
 
 **Migrate an existing app to the SDK**: Run `soarapps convert myapp`, where `myapp` is your app written using BaseConnector. This will convert asset configuration, action declarations, and inputs and outputs. You'll still need to re-implement your action code, as well as any custom views and webhooks.
 
+## Getting Help
+
+If you need help, please file a GitHub issue at https://github.com/phantomcyber/splunk-soar-sdk/issues.
+
 ## Installing the SDK as an app dependency
 
 When developing a new Splunk SOAR app using the SDK, you should use [uv](https://docs.astral.sh/uv/) as your project management tool:
