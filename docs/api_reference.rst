@@ -3,6 +3,7 @@ API Reference
 
 This section documents the public API of the Splunk SOAR SDK.
 
+.. _api_ref_core_label:
 Core Functionality
 ------------
 
@@ -15,6 +16,7 @@ App
 
 The main class for creating SOAR applications.
 
+.. _api_ref_key_methods_label:
 Key Methods
 ^^^^^^^^^^^
 
@@ -25,6 +27,7 @@ Key Methods
 .. automethod:: soar_sdk.app.App.enable_webhooks
 .. automethod:: soar_sdk.app.App.view_handler
 
+.. _asset-configuration-label:
 Asset Configuration
 ~~~~~~~~~~~~
 
@@ -43,6 +46,7 @@ BaseAsset
    :exclude-members: validate_no_reserved_fields
 
 
+.. _action-param-label:
 Action Parameters
 ~~~~~~~~~~~~
 
@@ -88,6 +92,7 @@ For a full list of Param options, see the ``Params`` class and ``Param`` functio
 
 .. autofunction:: soar_sdk.params.Param
 
+.. _action-output-label:
 Action Outputs
 ~~~~~~~~~~~~
 

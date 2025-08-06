@@ -1,10 +1,11 @@
-# `pyproject.toml` default file contents
+(app-structure-pyproject)=
+# `pyproject.toml`
 
 The `pyproject.toml` file is the core information source on the app and its development.
 It can be [used as usual](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
 when building python packages. For the purposes of the SOAR app development, we are also using poetry
 with this file for managing the dev environment and dependencies. Additionally, the file contains
-section (table) with meta information needed for generating the [SOAR App Manifest](/docs/app_manifest.md).
+section (table) with meta information needed for generating the [SOAR App Manifest](/pyproject.toml.html#soar-app-information-table).
 
 The file contents provide:
 - basic application info (e.g. name, version, description)
@@ -62,7 +63,7 @@ fips_compliant = false
 main_module = "src.app:app"
 ```
 
-# Decomposing file contents
+## Decomposing file contents
 
 Most of the information in the file follow [the standards of writing the `pyproject.toml` file](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/).
 We will focus now on some parts specific to the SDK use.
@@ -92,13 +93,3 @@ for creating Manifest file and then running the app in the SOAR platform.
 
 All the keys provided above for the table are required. You can find their description and possible values
 in the [SOAR documentation page](https://docs.splunk.com/Documentation/SOAR/current/DevelopApps/Metadata)
-
-# Next steps
-
-In the next step, you should get familiar with the [`app.py` application source code file contents](./app.py.md).
-
-# Related pages
-
-- [App configuration](/docs/app_configuration.md)
-- [Continuous Integration for SOAR Apps](/docs/cicd_tools.md)
-- [App Manifest](/docs/app_manifest.md)

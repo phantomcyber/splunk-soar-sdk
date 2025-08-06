@@ -1,4 +1,5 @@
-# `src/app.py` default file contents
+(app-structure-app)=
+# `src/app.py`
 
 This document will dive deeper into the initial structure of the `app.py`
 file when starting working with Apps.
@@ -31,7 +32,7 @@ if __name__ == "__main__":
     app.run()
 ```
 
-# Decomposing the file
+## Decomposing the file
 
 Let's dive deeper into each part of the file above:
 
@@ -102,12 +103,9 @@ prepared JSON file passed as an argument. The lines above provide support for ca
 
 You should always provide these lines to enable app to be run as a script.
 
-# Next step
 
-In the next step we will see [the default contents of the `test_app.py` file with tests for actions](./test_app.py.md).
+## Related pages
 
-# Related pages
-
-- [App configuration](/docs/app_configuration.md)
-- [Actions documentation](/docs/actions/index.md)
-- [Writing tests](/docs/testing/index.md)
+- {ref}`App configuration <configuring-enviornment>`
+- {ref}`Actions documentation <api_ref_key_methods_label>`
+- {ref}`Writing tests <testing-and-building-app>`

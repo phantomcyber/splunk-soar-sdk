@@ -47,6 +47,11 @@ extensions = [
     "myst_parser",
 ]
 
+source_suffix = {
+    ".rst": "restructuredtext",
+    ".md": "markdown",
+}
+
 # Napoleon settings
 napoleon_google_docstring = True
 napoleon_numpy_docstring = True
