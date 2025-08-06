@@ -37,6 +37,16 @@ CI/CD Tools
 .. include:: cicd_tools.md
    :parser: myst_parser.sphinx_
 
+App Structure
+=============
+
+.. toctree::
+   :maxdepth: 4
+   :caption: App Structure:
+   :glob:
+
+   app_structure/*
+
 API Reference
 =============
 

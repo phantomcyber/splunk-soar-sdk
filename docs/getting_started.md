@@ -5,10 +5,7 @@ In this section we will guide you through the basic process of creating your fir
 
 ## Actions philosophy
 
-Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality.
-Each app provides a new set of actions that can be used for the security investigation (also automated one,
-when used in playbooks). Usually, a single app adds actions for one specific tool or 3rd party service
-(e.g. whois lookup or geolocation).
+Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality. Each app provides a new set of actions that can be used for the security investigation (also automated one, when used in playbooks). Usually, a single app adds actions for one specific tool or 3rd party service (e.g. whois lookup or geolocation).
 
 When building your app, you will focus on implementing the actions like sending data to the external service
 or updating the containers on SOAR platform.
@@ -56,7 +53,7 @@ To create a new, empty app, simply run:
 soarapps init
 ```
 
-This will create the basic directory structure for your app, which you can open in your editor. See [The app structure](#the-app-structure) below for more information.
+This will create the basic directory structure for your app, which you can open in your editor. See {ref}`The app structure <app-structure>` below for more information.
 
 ## Migrating an existing app
 
@@ -96,7 +93,7 @@ my_app/
 ├─ pyproject.toml
 ```
 
-We describe and explain each of the files in full in the dedicated [documentation pages about the app structure](/docs/app_structure/index.md).
+We describe and explain each of the files in full in the dedicated {ref}`documentation pages about the app structure <app-structure>`.
 
 For now, let's shortly go over each of the components in the structure, so we can create our first action.
 
@@ -110,7 +107,7 @@ In the `app.py` file we typically create the `App` instance and define actions a
 This module will be used in our `pyproject.toml` app configuration to point the `app` object as `main_module` for
 use in SOAR platform when running actions.
 
-[Read the detailed documentation on the `app.py` file contents](/docs/app_structure/app.py.md)
+Read the detailed documentation on the {ref}`app.py <app-structure-app>` file contents
 
 Note that the `test_connectivity` action is mandatory for each app. It is used when installing the app in
 the SOAR platform and checked usually when a new asset is added for the app. This is why it is always provided
@@ -130,9 +127,9 @@ This file defines the app development parameters, dependencies, and also configu
 In this file you will define poetry dependencies (including this SDK) and basic information like the name
 of the app, its version, description, authors, and other params.
 
-[Read the detailed documentation on the `pyproject.toml` file contents](/docs/app_structure/pyproject.toml.md)
+Read the detailed documentation on the {ref}`pyproject.toml <app-structure-pyproject>` file contents
 
-
+(configuring-enviornment)=
 ## Configuring the environment
 
 Once you have your starting app file structure, you will need to set up your app development environment.
@@ -166,7 +163,7 @@ source .venv/bin/activate
 
 Your app should already have the `app` object instance created in the `app.py` file. In the future you will
 initialize it with extra arguments, like the asset configuration, to specify the asset data. You can read more on
-[how to initialize the app on the dedicated docs page](/docs/app_configuration.md).
+how to initialize the app in the {ref}`App Configuration <asset-configuration-label>` documentation.
 
 For now let's focus on creating a very simple action and see the basics of its structure. You should already have
 one action defined in your `app.py` file called `test_connectivity` which must be created in every app. You can check
@@ -201,7 +198,7 @@ focus on developing the action. Here are some things it takes care of:
 - checks if the action params are provided, valid and of the proper type
 - inspects your action arguments types and validates them
 
-For more, [read the doc page dedicated to the `App.action` decorator](/docs/actions/action_decorator.md).
+For more information about the `App.action` decorator, see the {ref}`API Reference <api_ref_key_methods_label>`.
 
 ### The action declaration
 
@@ -216,12 +213,12 @@ the app Manifest file and the documentation.
 Each action should accept and define `params` and `asset` arguments with proper typehints.
 
 The `params` argument should always be of the class type inherited from `soar_sdk.params.Params`.
-You can [read more on defining the action params in the separate docs page](/docs/actions/action_params.md).
+You can read more on defining action params in the {ref}`API Reference <action-param-label>`.
 If your action takes no parameters, it's fine to use the `Params` base class here.
 
-The `asset` argument contains your asset configuration, which is discussed further in [the `Asset` documentation](/docs/app_configuration.md). It should be of a type that inherits from `soar_sdk.asset.BaseAsset`, and should be the same type that is specified as the `asset_cls` of your app.
+The `asset` argument contains your asset configuration, which is discussed further in the {ref}`App Configuration <asset-configuration-label>` documentation. It should be of a type that inherits from `soar_sdk.asset.BaseAsset`, and should be the same type that is specified as the `asset_cls` of your app.
 
-Your action must have a return type that extends from `soar_sdk.action_results.ActionOutput`. This is discussed further in [the Action Output documentation](/docs/actions/action_outputs.md). The return type must be hinted.
+Your action must have a return type that extends from `soar_sdk.action_results.ActionOutput`. This is discussed further in the {ref}`Action Outputs <action-output-label>` documentation. The return type must be hinted.
 
 ### The action description docstring
 
@@ -249,11 +246,12 @@ in SDK. If your action succeeds, it should return an instance of your output cla
 
 Our example action simply returns the `ActionOutput` base class, as it does not yet generate any results.
 
-[Read more on action results and outputs for actions](/docs/actions/action_outputs.md)
+Read more on action results and outputs in the {ref}`Action Outputs <action-output-label>` section of the API Reference.
 
 As you can see, this simple action is taking bare `Params` object, so with no defined params and simply returns
 the result of successful run.
 
+(testing-and-building-app)=
 ## Testing and building the app
 
 ### Running from the command line
@@ -300,6 +298,6 @@ If you need help, please file a GitHub issue at https://github.com/phantomcyber/
 Now that you have a working app, you can start its development. Here's what you can check next when working
 with the app you create:
 
-- [configuring the app assets](api_reference.rst#asset-configuration)
-- [defining action params](api_reference.rst#action-parameters)
-- [defining and using the action output](api_reference.rst#action-outputs)
+- {ref}`Asset Configuration <asset-configuration-label>`
+- {ref}`Action Parameters <action-param-label>`
+- {ref}`Action Outputs <action-output-label>`
