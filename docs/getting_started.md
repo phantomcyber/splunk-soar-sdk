@@ -1,5 +1,5 @@
 
-# Getting Started
+# Getting started
 
 In this section we will guide you through the basic process of creating your first draft of the SOAR App.
 
@@ -290,6 +290,10 @@ You can also do this from the command line:
 ```shell
 soarapps package install myapp.tgz soar.example.com
 ```
+
+# Getting help
+
+If you need help, please file a GitHub issue at https://github.com/phantomcyber/splunk-soar-sdk/issues.
 
 # Next steps
 
