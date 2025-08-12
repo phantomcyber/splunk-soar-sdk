@@ -291,7 +291,7 @@ soarapps package install myapp.tgz soar.example.com
 
 # Getting help
 
-If you need help, please file a GitHub issue at https://github.com/phantomcyber/splunk-soar-sdk/issues.
+If you need help, please file a GitHub issue at <https://github.com/phantomcyber/splunk-soar-sdk/issues>.
 
 # Next steps
 
