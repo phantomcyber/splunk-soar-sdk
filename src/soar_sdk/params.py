@@ -171,3 +171,45 @@ class OnPollParams(Params):
         required=False,
         allow_list=True,
     )
+
+
+class GenericActionParams(Params):
+    """
+    Parameters for generic actions.
+    """
+
+    http_method: str = Param(
+        description="The HTTP method to use for the request.",
+        required=True,
+        value_list=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+    )
+
+    endpoint: str = Param(
+        description="The endpoint to send the request to.",
+        required=True,
+    )
+
+    headers: dict[str, str] = Param(
+        description="The headers to send with the request.",
+        required=False,
+    )
+
+    query_params: dict[str, str] = Param(
+        description="The query parameters to send with the request.",
+        required=False,
+    )
+
+    body: dict[str, Any] = Param(
+        description="The body to send with the request.",
+        required=False,
+    )
+
+    timeout: int = Param(
+        description="The timeout for the request.",
+        required=False,
+    )
+
+    verify_ssl: bool = Param(
+        description="Whether to verify the SSL certificate.",
+        required=False,
+    )
