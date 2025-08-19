@@ -34,6 +34,7 @@ from soar_sdk.decorators import (
     ViewHandlerDecorator,
     OnPollDecorator,
     WebhookDecorator,
+    GenericActionDecorator,
 )
 
 
@@ -402,6 +403,13 @@ class App:
             ...     )
         """
         return ViewHandlerDecorator(self, template=template)
+
+    def generic_action(self) -> GenericActionDecorator:
+        """Decorator for registering a generic action function.
+
+        This decorator marks a function as a generic action for the app.
+        """
+        return GenericActionDecorator(self)
 
     @staticmethod
     def _validate_params_class(
