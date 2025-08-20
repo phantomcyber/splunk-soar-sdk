@@ -15,7 +15,7 @@ from soar_sdk.input_spec import (
     SoarAuth,
 )
 from soar_sdk.action_results import ActionOutput
-from soar_sdk.meta.dependencies import UvWheel
+from soar_sdk.meta.dependencies import UvPackage, UvWheel, UvLock, UvDependency
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from tests.stubs import SampleActionParams
 from pathlib import Path
@@ -279,6 +279,23 @@ def fake_wheel() -> UvWheel:
         url="https://files.pythonhosted.org/packages/fakepkg-1.0.0-py3-none-any.whl",
         hash="sha256:3c7937d9ce42399210771a60640e3b35e35644b376f854a8da1de8b99fa02fe5",
         size=19,
+    )
+
+
+@pytest.fixture
+def fake_uv_lockfile(fake_wheel) -> UvLock:
+    """Create a fake UvLock object for testing."""
+    return UvLock(
+        package=[
+            UvPackage(
+                name="example-app",
+                version="1.0.0",
+                dependencies=[
+                    UvDependency(name="fakepkg"),
+                ],
+            ),
+            UvPackage(name="fakepkg", version="1.0.0", wheels=[fake_wheel]),
+        ]
     )
 
 

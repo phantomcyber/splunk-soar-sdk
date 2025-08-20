@@ -40,6 +40,8 @@ DEPENDENCIES_TO_REJECT = {
 
 
 class UvWheel(BaseModel):
+    """Represents a Python wheel file with metadata and methods to fetch and validate it."""
+
     url: str
     hash: str
     size: Optional[int] = None
@@ -49,6 +51,7 @@ class UvWheel(BaseModel):
     # We can parse this to determine which configurations it supports.
     @property
     def basename(self) -> str:
+        """The base name of the wheel file."""
         remove_when_soar_newer_than(
             "6.4.0",
             "We should be able to adopt pydantic 2 now, and turn this into a cached property.",
@@ -58,14 +61,17 @@ class UvWheel(BaseModel):
 
     @property
     def distribution(self) -> str:
+        """The distribution name (aka "package name") of the wheel."""
         return self.basename.split("-")[0]
 
     @property
     def version(self) -> str:
+        """The version number of the wheel."""
         return self.basename.split("-")[1]
 
     @property
     def build_tag(self) -> Optional[str]:
+        """An optional build tag for the wheel."""
         split = self.basename.split("-")
         if len(split) == 6:
             return split[2]
@@ -73,17 +79,21 @@ class UvWheel(BaseModel):
 
     @property
     def python_tags(self) -> list[str]:
+        """The Python version tags (cp39, pp313, etc.) for the wheel."""
         return self.basename.split("-")[-3].split(".")
 
     @property
     def abi_tags(self) -> list[str]:
+        """The ABI tags (none, cp39, etc.) for the wheel."""
         return self.basename.split("-")[-2].split(".")
 
     @property
     def platform_tags(self) -> list[str]:
+        """The platform tags (manylinux_2_28_x86_64, any, etc.) for the wheel."""
         return self.basename.split("-")[-1].split(".")
 
     def validate_hash(self, wheel: bytes) -> None:
+        """Validate the hash of the downloaded wheel against the expected hash."""
         algorithm, expected_digest = self.hash.split(":")
         actual_digest = hashlib.new(algorithm, wheel).hexdigest()
         if expected_digest != actual_digest:
@@ -92,6 +102,7 @@ class UvWheel(BaseModel):
             )
 
     async def fetch(self) -> bytes:
+        """Download the wheel file from the specified URL."""
         async with httpx.AsyncClient() as client:
             response = await client.get(self.url, timeout=10)
             response.raise_for_status()
@@ -101,6 +112,8 @@ class UvWheel(BaseModel):
 
 
 class DependencyWheel(BaseModel):
+    """Represents a Python package dependency with all the information required to fetch its wheel(s) from the CDN."""
+
     module: str
     input_file: str
     input_file_aarch64: Optional[str] = None
@@ -109,6 +122,7 @@ class DependencyWheel(BaseModel):
     wheel_aarch64: Optional[UvWheel] = Field(exclude=True, default=None)
 
     async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes], None]:
+        """Collect a list of wheel files to fetch for this dependency across all platforms."""
         wheel_bytes = await self.wheel.fetch()
         yield (self.input_file, wheel_bytes)
 
@@ -121,23 +135,31 @@ class DependencyWheel(BaseModel):
             yield (self.input_file_aarch64, wheel_aarch64_bytes)
 
     def add_platform_prefix(self, prefix: str) -> None:
+        """Add a platform prefix to the input file paths."""
         self.input_file = f"wheels/{prefix}/{self.input_file}"
         if self.input_file_aarch64:
             self.input_file_aarch64 = f"wheels/{prefix}/{self.input_file_aarch64}"
 
     def __hash__(self) -> int:
+        """Compute a hash for the dependency wheel so we can dedupe wheel files in a later step."""
         return hash((type(self), *tuple(self.dict().items())))
 
 
 class DependencyList(BaseModel):
+    """Represents a list of Python package dependencies for the app."""
+
     wheel: list[DependencyWheel] = Field(default_factory=list)
 
 
 class UvDependency(BaseModel):
+    """Represents a Python dependency relationship loaded from the uv lock."""
+
     name: str
 
 
 class UvPackage(BaseModel):
+    """Represents a Python package loaded from the uv lock."""
+
     name: str
     version: str
     dependencies: list[UvDependency] = []
@@ -152,8 +174,8 @@ class UvPackage(BaseModel):
         python_precedence: list[str],
         platform_precedence: list[str],
     ) -> UvWheel:
-        """
-        Search the list of wheels in uv.lock for the given package and return the first one that matches the given constraints.
+        """Search the list of wheels in uv.lock for the given package and return the first one that matches the given constraints.
+
         Constraints are evaluated in the order: ABI tag -> Python tag -> platform tag.
         If multiple wheels match a given triple, the first one in uv.lock is returned.
         If no wheel satisfies the given constraints, a FileNotFoundError is raised.
@@ -194,6 +216,7 @@ class UvPackage(BaseModel):
     def _resolve(
         self, abi_precedence: list[str], python_precedence: list[str]
     ) -> DependencyWheel:
+        """Resolve the dependency wheel for the given ABI and Python version."""
         wheel_x86_64 = self._find_wheel(
             abi_precedence, python_precedence, self.platform_precedence_x86_64
         )
@@ -218,6 +241,7 @@ class UvPackage(BaseModel):
         return wheel
 
     def resolve_py39(self) -> DependencyWheel:
+        """Resolve the dependency wheel for Python 3.9."""
         return self._resolve(
             abi_precedence=[
                 "cp39",  # Python 3.9-specific ABI
@@ -232,6 +256,7 @@ class UvPackage(BaseModel):
         )
 
     def resolve_py313(self) -> DependencyWheel:
+        """Resolve the dependency wheel for Python 3.13."""
         return self._resolve(
             abi_precedence=[
                 "cp313",  # Python 3.13-specific ABI
@@ -247,15 +272,32 @@ class UvPackage(BaseModel):
 
 
 class UvLock(BaseModel):
+    """Represents the structure of the uv lock file."""
+
     package: list[UvPackage]
 
+    @staticmethod
+    def normalize_package_name(name: str) -> str:
+        """Normalize the package name by converting it to lowercase and replacing hyphens with underscores.
+
+        Python treats package names as case-insensitive and doesn't differentiate between hyphens and
+        underscores, so "my_awesome_package" is equivalent to "mY_aWeSoMe-pAcKaGe".
+        """
+        return name.lower().replace("-", "_")
+
     def get_package_entry(self, name: str) -> UvPackage:
-        package = next((p for p in self.package if p.name == name), None)
+        """Find the lock entry for a given package name (ignoring differences in case and punctuation)."""
+        name = self.normalize_package_name(name)
+        package = next(
+            (p for p in self.package if self.normalize_package_name(p.name) == name),
+            None,
+        )
         if package is None:
             raise LookupError(f"No package '{name}' found in uv.lock")
         return package
 
     def build_package_list(self, root_package_name: str) -> list[UvPackage]:
+        """Build a list of all packages required by the root package."""
         packages = {root_package_name: self.get_package_entry(root_package_name)}
 
         new_packages_added = True
@@ -295,6 +337,7 @@ class UvLock(BaseModel):
     def resolve_dependencies(
         packages: list[UvPackage],
     ) -> tuple[DependencyList, DependencyList]:
+        """Resolve the dependencies for the given packages."""
         py39_wheels: list[DependencyWheel] = []
         py313_wheels: list[DependencyWheel] = []
 
