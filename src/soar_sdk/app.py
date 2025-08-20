@@ -404,7 +404,9 @@ class App:
         """
         return ViewHandlerDecorator(self, template=template)
 
-    def generic_action(self) -> GenericActionDecorator:
+    def generic_action(
+        self, output_class: Optional[type[ActionOutput]] = None
+    ) -> GenericActionDecorator:
         """Decorator for registering a generic action function.
 
         This decorator marks a function as the generic action for the app. Generic action is used to call any endpoint of the underlying API service this app implements.
@@ -428,7 +430,7 @@ class App:
         Note:
             The generic action function should return either a GenericActionOutput object or an output class derived from ActionOutput/GenericActionOutput.
         """
-        return GenericActionDecorator(self)
+        return GenericActionDecorator(self, output_class=output_class)
 
     @staticmethod
     def _validate_params_class(
