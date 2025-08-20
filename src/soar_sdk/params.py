@@ -176,6 +176,8 @@ class OnPollParams(Params):
 class GenericActionParams(Params):
     """
     Parameters for generic actions.
+
+    Used to define the specific parameters for the generic action.
     """
 
     http_method: str = Param(

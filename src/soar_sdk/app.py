@@ -407,7 +407,26 @@ class App:
     def generic_action(self) -> GenericActionDecorator:
         """Decorator for registering a generic action function.
 
-        This decorator marks a function as a generic action for the app.
+        This decorator marks a function as the generic action for the app. Generic action is used to call any endpoint of the underlying API service this app implements.
+        Only one generic action is allowed per app. The function you define needs to accept at least one parameter of type GenericActionParams and can accept any other parameters you need.
+        Other useful parameters to accept are the SOARClient and the asset.
+
+        Returns:
+            GenericActionDecorator: A decorator instance that handles generic action registration.
+
+        Example:
+            >>> @app.generic_action()
+            ... def http_action(
+            ...     self, params: GenericActionParams, asset: Asset
+            ... ) -> GenericActionOutput:
+            ...     logger.info(f"testing connectivity against {asset.base_url}")
+            ...     return GenericActionOutput(
+            ...         status_code=200,
+            ...         response_body=f"Base url is {asset.base_url}",
+            ...     )
+
+        Note:
+            The generic action function should return either a GenericActionOutput object or an output class derived from ActionOutput/GenericActionOutput.
         """
         return GenericActionDecorator(self)
 
