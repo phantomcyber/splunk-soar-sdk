@@ -145,27 +145,29 @@ class TestUvLock:
         with pytest.raises(LookupError, match="No package 'requests' found in uv.lock"):
             lock.get_package_entry("requests")
 
-    def test_rejected_dependency(self, wheel_resp_mock, fake_wheel: UvWheel):
-        lock = UvLock(
-            package=[
-                UvPackage(
-                    name="example-app",
-                    version="1.0.0",
-                    dependencies=[
-                        UvDependency(name="fakepkg"),
-                        UvDependency(name="simplejson"),
-                    ],
-                ),
-                UvPackage(name="fakepkg", version="1.0.0", wheels=[fake_wheel]),
-                UvPackage(name="simplejson", version="3.20.1", wheels=[fake_wheel]),
-            ]
+    def test_build_package_list(self, fake_uv_lockfile: UvLock):
+        packages = fake_uv_lockfile.build_package_list("example-app")
+        assert len(packages) == 1
+        assert packages[0].name == "fakepkg"
+
+    def test_build_package_list_with_equivalent_name(self, fake_uv_lockfile: UvLock):
+        packages = fake_uv_lockfile.build_package_list("eXaMpLe_ApP")
+        assert len(packages) == 1
+        assert packages[0].name == "fakepkg"
+
+    def test_rejected_dependency(
+        self, wheel_resp_mock, fake_wheel: UvWheel, fake_uv_lockfile: UvLock
+    ):
+        fake_uv_lockfile.package.append(
+            UvPackage(name="simplejson", version="3.20.1", wheels=[fake_wheel])
         )
+        fake_uv_lockfile.package[0].dependencies.append(UvDependency(name="simplejson"))
 
         with pytest.raises(
             ValueError,
             match="The 'simplejson' package is not allowed in a SOAR connector. Please remove it from your app's dependencies.",
         ):
-            lock.build_package_list("example-app")
+            fake_uv_lockfile.build_package_list("example-app")
 
 
 class TestDependencyWheel:

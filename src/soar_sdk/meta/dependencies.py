@@ -249,8 +249,20 @@ class UvPackage(BaseModel):
 class UvLock(BaseModel):
     package: list[UvPackage]
 
+    @staticmethod
+    def normalize_package_name(name: str) -> str:
+        """Normalize the package name by converting it to lowercase and replacing hyphens with underscores.
+
+        Python treats package names as case-insensitive and doesn't differentiate between hyphens and
+        underscores, so "my_awesome_package" is equivalent to "mY_aWeSoMe-pAcKaGe"."""
+        return name.lower().replace("-", "_")
+
     def get_package_entry(self, name: str) -> UvPackage:
-        package = next((p for p in self.package if p.name == name), None)
+        name = self.normalize_package_name(name)
+        package = next(
+            (p for p in self.package if self.normalize_package_name(p.name) == name),
+            None,
+        )
         if package is None:
             raise LookupError(f"No package '{name}' found in uv.lock")
         return package
