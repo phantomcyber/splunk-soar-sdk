@@ -21,6 +21,10 @@ The Splunk SOAR SDK is available as [a package on PyPI](https://pypi.org/project
 
 The recommended installation method is via [uv](https://docs.astral.sh/uv/).
 
+## Find us at .conf25
+
+To learn more about the SDK, check out our presentation at [.conf25](https://conf.splunk.com/sessions/catalog.html?search=DEV1495#/)!
+
 ## Installing the SDK as a tool
 
 This package defines the `soarapps` command line interface. To use it, [install as a uv tool](https://docs.astral.sh/uv/guides/tools/):
