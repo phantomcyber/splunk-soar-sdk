@@ -67,8 +67,12 @@ app.register_action(
 
 
 @app.generic_action()
-def http_action(params: GenericActionParams) -> GenericActionOutput:
+def http_action(params: GenericActionParams, asset: Asset) -> GenericActionOutput:
     logger.info(f"HTTP action triggered with params: {params}")
+    return GenericActionOutput(
+        status_code=200,
+        response_body=f"Base url is {asset.base_url}",
+    )
 
 
 @app.on_poll()
