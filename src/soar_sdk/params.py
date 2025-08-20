@@ -189,18 +189,18 @@ class GenericActionParams(Params):
         required=True,
     )
 
-    headers: dict[str, str] = Param(
-        description="The headers to send with the request.",
+    headers: str = Param(
+        description="The headers to send with the request (JSON object).",
         required=False,
     )
 
-    query_params: dict[str, str] = Param(
-        description="The query parameters to send with the request.",
+    query_params: str = Param(
+        description="The query string to send with the request.",
         required=False,
     )
 
-    body: dict[str, Any] = Param(
-        description="The body to send with the request.",
+    body: str = Param(
+        description="The body to send with the request (JSON object).",
         required=False,
     )
 

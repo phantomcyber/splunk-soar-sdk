@@ -222,3 +222,8 @@ class ActionOutput(BaseModel):
                 schema_field["example_values"] = [True, False]
 
             yield schema_field
+
+
+class GenericActionOutput(ActionOutput):
+    status_code: int = OutputField(example_values=[200, 404, 500])
+    response_body: str = OutputField(example_values=['{"key": "value"}'])
