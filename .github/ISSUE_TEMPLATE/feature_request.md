@@ -1,7 +1,7 @@
 ---
 name: Feature request
 about: Suggest a new feature for the SDK
-title: 'Feature: '
+title: 'Feature: <summary of new feature>'
 labels: ''
 assignees: ''
 
