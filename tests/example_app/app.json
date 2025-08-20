@@ -177,6 +177,147 @@
             }
         },
         {
+            "action": "generic action",
+            "identifier": "generic_action",
+            "description": "generic action",
+            "type": "generic",
+            "read_only": false,
+            "versions": "EQ(*)",
+            "verbose": "Generic action for the app.",
+            "parameters": {
+                "http_method": {
+                    "order": 0,
+                    "name": "http_method",
+                    "description": "The HTTP method to use for the request.",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false,
+                    "value_list": [
+                        "GET",
+                        "POST",
+                        "PUT",
+                        "DELETE",
+                        "PATCH",
+                        "HEAD",
+                        "OPTIONS"
+                    ]
+                },
+                "endpoint": {
+                    "order": 1,
+                    "name": "endpoint",
+                    "description": "The endpoint to send the request to.",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "headers": {
+                    "order": 2,
+                    "name": "headers",
+                    "description": "The headers to send with the request (JSON object).",
+                    "data_type": "string",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "query_params": {
+                    "order": 3,
+                    "name": "query_params",
+                    "description": "The query string to send with the request.",
+                    "data_type": "string",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "body": {
+                    "order": 4,
+                    "name": "body",
+                    "description": "The body to send with the request (JSON object).",
+                    "data_type": "string",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "timeout": {
+                    "order": 5,
+                    "name": "timeout",
+                    "description": "The timeout for the request.",
+                    "data_type": "numeric",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "verify_ssl": {
+                    "order": 6,
+                    "name": "verify_ssl",
+                    "description": "Whether to verify the SSL certificate.",
+                    "data_type": "boolean",
+                    "required": false,
+                    "primary": false,
+                    "allow_list": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.http_method",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.endpoint",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.headers",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.query_params",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.body",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.timeout",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.parameter.verify_ssl",
+                    "data_type": "boolean"
+                },
+                {
+                    "data_path": "action_result.data.*.status_code",
+                    "data_type": "numeric",
+                    "example_values": [
+                        200,
+                        404,
+                        500
+                    ]
+                },
+                {
+                    "data_path": "action_result.data.*.response_body",
+                    "data_type": "string",
+                    "example_values": [
+                        "{\"key\": \"value\"}"
+                    ]
+                }
+            ]
+        },
+        {
             "action": "on poll",
             "identifier": "on_poll",
             "description": "on poll",
