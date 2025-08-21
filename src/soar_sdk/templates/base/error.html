@@ -1,0 +1,31 @@
+{% extends 'base/header.html' %}
+
+{% block title %}View Function Error{% endblock %}
+
+{% block widget_content %}
+<div style="display: flex; align-items: center; height: 100%; padding: 20px;">
+  <div style="width: 100%;">
+
+    <!-- Error Message -->
+    <div style="margin-bottom: 15px; padding: 10px; border-radius: 4px; border-left: 4px solid #dc3545;">
+      <strong><i class="fa fa-exclamation-circle"></i> Error Message:</strong>
+      <div style="font-family: monospace; margin-top: 5px; word-break: break-word;">
+        {{ error_message }}
+      </div>
+    </div>
+
+    <!-- Function Context -->
+    {% if function_name %}
+    <div style="margin-bottom: 15px; padding: 10px; border-radius: 4px; border-left: 4px solid #ffc107;">
+      <strong><i class="fa fa-info-circle"></i> Function Context:</strong>
+      <div style="margin-top: 5px; font-size: 13px;">
+        <strong>Function:</strong> <code>{{ function_name }}</code><br>
+        {% if template_name %}<strong>Template:</strong> <code>{{ template_name }}</code><br>{% endif %}
+        {% if templates_dir %}<strong>Templates Directory:</strong> <code>{{ templates_dir }}</code>{% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

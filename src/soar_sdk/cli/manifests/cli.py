@@ -10,7 +10,7 @@ manifests = typer.Typer()
 
 @manifests.command()
 def display(filename: str) -> None:
-    with open(filename, "r") as f:
+    with open(filename) as f:
         meta = json.load(f)
 
     pprint(meta)

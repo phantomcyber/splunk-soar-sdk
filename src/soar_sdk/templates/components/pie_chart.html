@@ -1,0 +1,117 @@
+<!-- Example pie chart component -->
+
+{% extends 'base/logo_header.html' %}
+
+{% block widget_content %}
+<div style="display: flex; flex-direction: column; height: 100%; position: relative;">
+  <div style="flex: 1; display: flex; justify-content: center; align-items: center;">
+    <canvas id="pie-chart-{{ widget_uuid() }}"></canvas>
+  </div>
+
+  <div id="tooltip" style="position: absolute; background: rgba(0,0,0,0.8); color: white; padding: 8px 12px; border-radius: 4px; font-size: 12px; pointer-events: none; opacity: 0; z-index: 1000;"></div>
+
+  <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 10px;">
+    {% for i in range(labels|length) %}
+    <div style="display: flex; align-items: center; margin: 2px 10px;">
+      <div style="width: 12px; height: 12px; background-color: {{ colors[i] }}; margin-right: 5px; border-radius: 2px;"></div>
+      <span style="font-size: 12px;">{{ labels[i] }}: {{ values[i] }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+(function() {
+  const canvas = document.querySelector('canvas[id^="pie-chart-"]');
+  const tooltip = document.getElementById('tooltip');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const labels = {{ labels | to_json | safe }};
+  const values = {{ values | to_json | safe }};
+  const colors = {{ colors | to_json | safe }};
+
+  const container = canvas.parentElement;
+  const size = Math.min(container.clientWidth - 40, container.clientHeight - 40, 300);
+  canvas.width = size;
+  canvas.height = size;
+
+  const total = values.reduce((sum, value) => sum + value, 0);
+  if (total === 0) return;
+
+  const centerX = size / 2;
+  const centerY = size / 2;
+  const radius = Math.min(centerX, centerY) - 10;
+
+  let currentAngle = -Math.PI / 2;
+  const slices = [];
+
+  // Draw pie chart
+  values.forEach((value, index) => {
+    const sliceAngle = (value / total) * 2 * Math.PI;
+
+    slices.push({
+      startAngle: currentAngle,
+      endAngle: currentAngle + sliceAngle,
+      color: colors[index],
+      label: labels[index],
+      value: value
+    });
+
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY);
+    ctx.arc(centerX, centerY, radius, currentAngle, currentAngle + sliceAngle);
+    ctx.closePath();
+    ctx.fillStyle = colors[index];
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    currentAngle += sliceAngle;
+  });
+
+  // Hover
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    const dx = x - centerX;
+    const dy = y - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance <= radius) {
+      let angle = Math.atan2(dy, dx) + Math.PI / 2;
+      if (angle < 0) angle += 2 * Math.PI;
+
+      const slice = slices.find(s => {
+        let start = s.startAngle + Math.PI / 2;
+        let end = s.endAngle + Math.PI / 2;
+        if (start < 0) start += 2 * Math.PI;
+        if (end < 0) end += 2 * Math.PI;
+        return start > end ? (angle >= start || angle <= end) : (angle >= start && angle <= end);
+      });
+
+      if (slice) {
+        canvas.style.cursor = 'pointer';
+        tooltip.textContent = `${slice.label}: ${slice.value}`;
+        tooltip.style.opacity = '1';
+        const containerRect = canvas.parentElement.parentElement.getBoundingClientRect();
+        tooltip.style.left = (rect.left - containerRect.left + x + 10) + 'px';
+        tooltip.style.top = (rect.top - containerRect.top + y - 10) + 'px';
+        return;
+      }
+    }
+
+    canvas.style.cursor = 'default';
+    tooltip.style.opacity = '0';
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    canvas.style.cursor = 'default';
+    tooltip.style.opacity = '0';
+  });
+})();
+</script>
+{% endblock %}

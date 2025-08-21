@@ -1,28 +1,62 @@
 [project]
-name = "soar_sdk"
-version = "0.1.0"
-description = "A framework for developing and testing the Splunk SOAR Apps"
+name = "splunk-soar-sdk"
+version = "1.0.0-beta.57"
+description = "The official framework for developing and testing Splunk SOAR Apps"
 readme = "README.md"
-requires-python = ">=3.9, <3.13"
+requires-python = ">=3.9, <3.14"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = [
+    "cisco",
+    "splunk",
+    "soar",
+    "phantom",
+    "app",
+    "connector",
+    "sdk",
+]
+
 authors = [
     { name = "Jacob Davis", email = "jacobd@splunk.com" },
+    { name = "Tapish Jain", email = "tapishj@splunk.com" },
     { name = "Janusz Kamieński", email = "jkamienski@splunk.com" },
+    { name = "Michael Nordby", email = "mnordby@splunk.com" },
     { name = "Scott Odle", email = "sodle@splunk.com" },
-    { name = "Michał Posłuszny", email = "mposluszny@splunk.com" }
+    { name = "Michał Posłuszny", email = "mposluszny@splunk.com" },
+    { name = "Ian Rokas", email = "grokas@splunk.com" }
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
 ]
 dependencies = [
     "toml>=0.10.2, <1",
     "typer>=0.12.5, <1",
-
+    "click>=8.0.0, <8.2.0",
     # SOAR phantom lib dependencies
     "beautifulsoup4==4.10.0",
     "distro==1.8.0",
-    "pydantic==1.10.13",
-    "pytest==7.4.2",
-    "requests==2.32.3",
+    "pydantic<2",
+    "requests<3",
     "responses==0.22.0",
-    "simplejson==3.17.2",
+    "httpx>=0.28.1",
+    "tqdm>=4.67.1",
+    "humanize>=4.12.2",
+    # Template engine and related
+    "jinja2>=3.1.0",
+    "bleach>=6.2.0",
+    "packaging>=25.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/phantomcyber/splunk-soar-sdk"
+Documentation = "https://github.com/phantomcyber/splunk-soar-sdk"
+Repository = "https://github.com/phantomcyber/splunk-soar-sdk"
 
 [project.scripts]
 soarapps = "soar_sdk.cli.cli:main"
@@ -31,35 +65,176 @@ soarapps = "soar_sdk.cli.cli:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/soar_sdk"]
+
 [dependency-groups]
 dev = [
     "coverage>=7.6.7,<8",
     "ipdb>=0.13.13,<1",
-    "ipython==8.18.1",
-    "mypy==1.2.0",
-    "pre-commit==3.7.0",
+    "ipython>=8.18.1,<9",
+    "mypy>=1.2,<2",
+    "pre-commit>=4.2.0,<5",
+    "pydocstyle>=6.3.0",
+    "pytest>=7.4.2,<8",
+    "pytest-asyncio>=0.23.8",
     "pytest-cov>=5,<6",
     "pytest-mock>=3.14.0,<4",
-    "pytest-watch>=4.2.0,<5",
+    "pytest-watcher>=0.4.3",
+    "pytest-xdist>=3.6.1",
+    "respx>=0.22.0",
     "ruff>=0.7.4,<1",
+    "tomlkit>=0.13.2",
     "types-beautifulsoup4>=4.12.0.5,<5",
     "types-requests>=2.31.0.1,<3",
+    "types-tqdm>=4.67.0.20250417",
     "types-urllib3>=1.26.25.13,<2",
 ]
 
+docs = [
+    "sphinx>=7.0.0,<8",
+    "sphinx-autodoc-typehints>=2.0.0,<3",
+    "sphinx-rtd-theme>=2.0.0,<3",
+    "myst-parser>=3.0.0,<4",
+]
+
+[[tool.uv.index]]
+url = "https://pypi.python.org/simple"
+
+[tool.uv]
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.13'",
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+]
+
 [tool.pytest.ini_options]
-addopts = "--ignore=app_templates --cov"  # TODO: Remove demo_app ignore, once it's no longer used
+addopts = "--ignore=src/soar_sdk/app_templates --ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail --durations=5"
 
 [tool.coverage.run]
+branch = true
+concurrency = [
+    "multiprocessing",
+]
 source = [
-    "soar_sdk"]
+    "src/soar_sdk"
+]
 omit = [
-    "soar_sdk/cli/cli.py",
-    "soar_sdk/cli/manifests/cli.py",
-    "soar_sdk/api_callers.py"]  # moved 1:1 from App Wizard, not re-designed yet
+    "src/soar_sdk/api_callers.py",  # moved 1:1 from App Wizard, not re-designed yet
+    "src/soar_sdk/shims/*",  # shims for BaseConnector, should not need testing
+    "src/soar_sdk/views/components/*",  # reusable components, testing deferred till actual usage
+    "src/soar_sdk/views/template_filters.py", # ported from platform, need to decide what we're keeping
+    "src/soar_sdk/code_renderers/templates/*"  # jinja templates, not code
+]
 
 [tool.coverage.report]
 show_missing = true
 exclude_lines = [
-    "# pragma: no cover",
-    "if typing.TYPE_CHECKING:"]  # ignore type checks import blocks
+    '# pragma: no cover',
+    'if (typing\.)?TYPE_CHECKING:',  # ignore type checking blocks
+    'if __name__ == "__main__":',    # ignore main blocks
+    'raise NotImplementedError',     # ignore NotImplementedError
+    '^ *(pass|\.\.\.)( *#.+)?$',     # ignore pass and ...
+    '^ *def .+: \.\.\.( *#.+)?$',    # ignore def f(): ...
+]
+
+
+[tool.ruff]
+output-format = "full"  # <full|concise>
+fix = true
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "ERA",  # commented out code
+    "YTT",  # bad use of sys.version_info
+    "ANN",  # type annotations
+    "S",    # security issues
+    "B",    # bugbear
+    "A",    # builtins
+    "DTZ",  # datetime footguns
+    "T10",  # breakpoints
+    "ISC",  # implicit string concatenation
+    "PT",   # pytest style
+    "SIM",  # simplify
+    "PTH",  # use pathlib
+    "E",    # pycodestyle errors
+    "F",    # pyflakes
+    "W",    # pycodestyle warnings
+    "PL",   # pylint
+    "UP",   # pyupgrade
+    "RUF",  # ruff's own rules
+]
+ignore = [
+    "E402",    # Module level import not at top of file.
+    "E501",    # Line too long. Format covers this.
+    "PT006",   # Opinions about types for pytest.parametrize
+    "PT007",   # Opinions about types for pytest.parametrize
+    "PTH123",  # Allow builtin open()
+    "PLR",     # pylint refactors
+]
+
+# Allow unused variables when underscore-prefixed.
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*" = [
+    "ANN",  # Disable flake8-annotations rules for test files
+    "S",    # Disable flake8-bandit rules for test files
+]
+"src/**/*" = [
+    "PT",  # Disable pytest rules for src files
+]
+
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+# This is necessary since we rely on runtime type annotations in our code and in pydantic
+keep-runtime-typing = true
+
+[tool.ruff.format]
+docstring-code-format = true
+
+
+[tool.mypy]
+pretty = true
+color_output = true
+show_error_codes = true
+disallow_any_generics = false
+disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+no_implicit_optional = true
+show_error_context = true
+strict_equality = true
+check_untyped_defs = true
+exclude = [
+    'tests/.*',
+    'dist/.*',
+]
+
+[[tool.mypy.overrides]]
+module = "phantom.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "phantom_common.*"
+ignore_missing_imports = true
+
+[tool.pydocstyle]
+convention = "google"
+# Ignore missing docstrings for modules, packages, magic methods, and __init__ methods
+add-ignore = ["D100", "D104", "D105", "D107"]
+# Match patterns for files to check
+match = "(?!test_).*\\.py"
+# Don't check docstrings in test files
+match-dir = "(?!tests|__pycache__|build|dist).*"

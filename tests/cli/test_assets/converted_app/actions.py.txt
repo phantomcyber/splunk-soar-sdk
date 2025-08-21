@@ -1,0 +1,9 @@
+@app.test_connectivity()
+def test_connectivity(soar: SOARClient, asset: Asset) -> None:
+    raise NotImplementedError()
+
+@app.action(description='Send a message', action_type='test', read_only=False, verbose='This is a test action')
+def send_message(params: Params, soar: SOARClient, asset: Asset) -> ActionOutput:
+    raise NotImplementedError()
+
+if __name__ == "__main__":

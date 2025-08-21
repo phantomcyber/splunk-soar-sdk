@@ -1,5 +1,7 @@
+from typing import ClassVar
 from unittest import mock
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.params import Param, Params
 
 
@@ -8,7 +10,7 @@ class SampleActionParams(Params):
 
 
 class BaseConnectorMock(mock.Mock):
-    mocked_methods = [
+    mocked_methods: ClassVar[list[str]] = [
         "_get_phantom_base_url",
         "_set_csrf_info",
         "handle_action",
@@ -19,6 +21,7 @@ class BaseConnectorMock(mock.Mock):
         "get_action_results",
         "save_progress",
         "debug_print",
+        "get_product_installation_id",
     ]
 
     def __init__(self, *args, **kwargs):
@@ -27,3 +30,15 @@ class BaseConnectorMock(mock.Mock):
         # mocking all BaseConnector methods
         for method_name in self.mocked_methods:
             setattr(self, method_name, mock.MagicMock())
+
+
+class SampleNestedOutput(ActionOutput):
+    bool_value: bool
+
+
+class SampleOutput(ActionOutput):
+    string_value: str
+    int_value: int
+    list_value: list[str]
+    bool_value: bool
+    nested_value: SampleNestedOutput

@@ -1,0 +1,37 @@
+{
+  "branches": [
+    "main",
+    {
+      "name": "alpha",
+      "prerelease": true
+    },
+    {
+      "name": "beta",
+      "prerelease": true
+    }
+  ],
+  "tagFormat": "${version}",
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/exec",
+      {
+        "prepareCmd": "uv run .github/utils/update_version.py ${nextRelease.version} && uv lock",
+        "verifyReleaseCmd": "echo \"${nextRelease.version}\" > release_version.txt",
+        "generateNotesCmd": "cat >release_notes.txt <<'EOF${nextRelease.gitHead}EOF'\n${nextRelease.notes}\nEOF${nextRelease.gitHead}EOF"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "pyproject.toml",
+          "uv.lock"
+        ],
+        "message": "chore(release): update version to ${nextRelease.version} [skip ci]"
+      }
+    ],
+    "@semantic-release/github"
+  ]
+}

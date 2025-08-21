@@ -1,0 +1,79 @@
+name: Generate and Publish Documentation
+
+on:
+  push:
+    branches:
+      - main
+      - beta
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build docs from (branch, tag, or commit SHA)'
+        required: false
+        default: ''
+        type: string
+      deploy_to_pages:
+        description: 'Deploy to GitHub Pages'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  generate_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: 3.13
+      - name: Install dependencies with docs extras
+        run: uv sync --group docs
+      - name: Build documentation with Sphinx
+        run: |
+          cd docs
+          uv run sphinx-build -b html . _build/html
+          # Create .nojekyll file to allow files starting with underscore
+          touch _build/html/.nojekyll
+      - name: Upload documentation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/_build/html
+          retention-days: 30
+
+  publish_docs:
+    runs-on: ubuntu-latest
+    needs: generate_docs
+    if: ${{ github.event_name == 'push' || inputs.deploy_to_pages == true }}
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Download documentation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation
+          path: docs/_build/html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/_build/html
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          enablement: true

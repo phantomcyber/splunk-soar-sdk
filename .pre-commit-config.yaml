@@ -1,35 +1,59 @@
 # By default, run each hook only in the standard pre-commit stage
-default_stages: [commit]
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
 
 # Pre-commit hooks.   Configuration examples at https://pre-commit.com/
 repos:
-  - repo: https://github.com/ivellios/pre_ticket
-    rev: v1.1.0
-    hooks:
-      - id: pre_ticket
-        language_version: python3.9
-        stages: [commit-msg]
-        args: ['--regex=[a-zA-Z]+/(?P<ticket>\w+-\d+)-.*', '--format={ticket} - {message}']
-
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
+      - id: end-of-file-fixer
       - id: check-merge-conflict
       - id: check-yaml
         args:
           - --unsafe
-      - id: end-of-file-fixer
+      - id: check-json
+      - id: check-toml
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: 'v0.7.0'
+    rev: 'v0.11.6'
     hooks:
       - id: ruff
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.12.1
+  - repo: https://github.com/pycqa/pydocstyle
+    rev: 6.3.0
     hooks:
-    - id: mypy
-      language: system
-      exclude: .*tests/.*
+      - id: pydocstyle
+        name: pydocstyle (warning only)
+        args:
+          - --convention=google
+          - --add-ignore=D100,D104,D105,D107
+        additional_dependencies: [tomli]
+        verbose: true
+        # Override the command to make it non-blocking
+        entry: bash -c 'pydocstyle "$@" || true' --
+
+  - repo: local
+    hooks:
+      - id: uv-lock
+        name: uv-lock
+        language: system
+        entry: uv lock
+        files: ^pyproject\.toml$
+        pass_filenames: false
+      - id: mypy
+        name: mypy
+        language: system
+        entry: uv run mypy .
+        types: [python]
+        pass_filenames: false
+
+  - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
+    rev: v9.22.0
+    hooks:
+      - id: commitlint
+        stages: [commit-msg]
+        language_version: '22.15.0'
+        additional_dependencies: ['@commitlint/config-conventional']

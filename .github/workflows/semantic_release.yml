@@ -1,0 +1,58 @@
+name: Run Semantic Release
+on:
+  push:
+    branches:
+      - main
+      - beta
+
+jobs:
+  semantic_release:
+    runs-on: ubuntu-latest
+    concurrency:
+      # Guarantee only one ongoing release job per branch at a time
+      group: pypi-${{ github.ref }}
+    environment:
+      name: pypi
+      url: https://pypi.org/project/splunk-soar-sdk/
+    permissions:
+      contents: write  # Required for semantic-release to create release tags
+      pull-requests: write  # Required for semantic-release to comment on PRs in release
+      id-token: write  # Required for trusted publishing
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.SEMANTIC_RELEASE_APP_ID }}
+          private-key: ${{ secrets.SEMANTIC_RELEASE_PRIVATE_KEY }}
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: 3.13
+      - name: Install semantic-release dependencies
+        run: npm install --global semantic-release @semantic-release/exec @semantic-release/git
+      - name: Run Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: semantic-release
+      - name: Check out the newly-created tag
+        run: git fetch --tags && git checkout "$(cat release_version.txt)"
+      - name: Build package
+        run: uv build
+      - name: Publish to PyPI
+        run: uv publish
+      - name: Find the GitHub release and upload the artifacts to it
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { uploadReleaseArtifacts } = await import('${{ github.workspace }}/.github/utils/github.js');
+            uploadReleaseArtifacts({github, context, core});
+          github-token: ${{ steps.app-token.outputs.token }}

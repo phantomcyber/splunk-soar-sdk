@@ -1,0 +1,98 @@
+{% set this_widget_uuid = widget_uuid() %}
+
+<div class="no-padding fill-space {% block extra_classes %}{% endblock %}"
+     data-uuid="{{ this_widget_uuid }}"
+     data-update-type="{% block update_type %}{% endblock %}">
+
+  <script>
+    document.getElementById("widget-tool-menu").addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        e.target.click();
+      }
+    })
+  </script>
+
+  <div class="grid fill-space">
+    <div class="grid-title widget-title">
+      <span tabindex="0" data-drag-source="true" class="pull-left">
+        <i class="fa fa-th"></i>
+      </span>
+
+      <span class="widget-title-bg">
+        {% if title_logo %}
+          <span class="dark-widget-logo widget-logo-wrapper {% if dark_title_logo == title_logo %} white-frame{% endif %}">
+            <img src="/app_resource/{{ dark_title_logo }}" alt="{{ dark_title_logo_name or '' }}" class="widget-logo">
+          </span>
+          <span class="light-widget-logo widget-logo-wrapper white-frame">
+            <img src="/app_resource/{{ title_logo }}" alt="{{ title_logo_name or '' }}" class="widget-logo">
+          </span>
+        {% endif %}
+      </span>
+
+      <span id="{{ this_widget_uuid }}" class="widget-title-text"
+            style="color: {% block title_text_color %}{% endblock %};">
+        {% block title %}{% endblock %}
+        <span class="semi-bold">{% block subtitle %}{% endblock %}</span>
+      </span>
+
+      <span id="widget-tools-menu-wrapper" class="tools dropdown pull-right">
+        <span tabindex="0" onclick="on_tool_menu(this);"
+              data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+              id="widget-tool-menu" class="keyboard-focus--parent">
+          <i class="fa fa-gear keyboard-focus--child" tabindex="-1"></i>
+        </span>
+
+        <ul class="dropdown-menu" role="menu" aria-labelledby="widget-tool-menu">
+          {% block custom_tools %}
+            {% if not disable_resize %}
+              {% include 'widgets/widget_resize_snippet.html' %}
+            {% endif %}
+          {% endblock %}
+
+          <li onclick="collapse_widget(this);"
+              onkeydown="if(event.key === 'Enter') collapse_widget(this)"
+              tabindex="0" class="widget-menu-item">
+            <span class="menu-text">Collapse</span>
+          </li>
+
+          <li onclick="remove_widget(this, true);"
+              onkeydown="if(event.key === 'Enter') remove_widget(this, true)"
+              tabindex="0" class="widget-menu-item">
+            <span class="menu-text">Remove</span>
+          </li>
+
+          {% if not disable_jsonview %}
+          <li onclick="toggle_jsonview(this);"
+              onkeydown="if(event.key === 'Enter') toggle_jsonview(this)"
+              tabindex="0" class="widget-menu-item">
+            <span class="menu-text">Toggle JSON view</span>
+          </li>
+          {% endif %}
+        </ul>
+      </span>
+
+      <span id="refresh_button" onclick="reload_widget(this);" class="fa fa-refresh hidden"></span>
+
+      {% if dateRangeTestId %}
+        <span data-testid="{{ dateRangeTestId or '' }}-date-range"
+              class="pull-right widget-date-range-text">{{ date_range or "" }}</span>
+      {% else %}
+        <span class="pull-right widget-date-range-text">{{ date_range or "" }}</span>
+      {% endif %}
+    </div>
+
+    <div class="grid-body widget-body no-border fill-space">
+      <div class="scoller scrollbar-hidden">
+        {% if is_widget_disabled %}
+          <div>
+            <div class="empty-state-widgets"></div>
+            <div style="text-align:center">Widget disabled</div>
+          </div>
+        {% else %}
+          {% block widget_content %}
+          {% endblock %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+name: Commit Hygiene
+on:
+  pull_request:
+    branches:
+      - main
+      - beta
+
+jobs:
+  commitlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install commitlint
+        run: npm i -g @commitlint/cli @commitlint/config-conventional
+      - name: Commitlint
+        run: commitlint --from "origin/${{ github.base_ref }}" --to "origin/${{ github.head_ref }}"
+
+  semantic_release_dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - name: Install semantic-release dependencies
+        run: npm install --global semantic-release @semantic-release/exec @semantic-release/git
+      - name: Check out the target branch and merge onto it
+        run: |
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+          git fetch origin ${{ github.head_ref }}:${{ github.head_ref }}
+          git checkout ${{ github.base_ref }}
+          git merge --ff-only ${{ github.head_ref }}
+      - name: Run Semantic Release as a dry run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          unset GITHUB_ACTIONS GITHUB_REF GITHUB_EVENT_NAME
+          semantic-release --dry-run --no-ci
+      - name: Comment release notes on the PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { commentReleaseNotes } = await import('${{ github.workspace }}/.github/utils/github.js');
+            await commentReleaseNotes({github, context, core});
