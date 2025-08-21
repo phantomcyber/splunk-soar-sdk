@@ -410,7 +410,7 @@ class App:
         """Decorator for registering a generic action function.
 
         This decorator marks a function as the generic action for the app. Generic action is used to call any endpoint of the underlying API service this app implements.
-        Only one generic action is allowed per app. The function you define needs to accept at least one parameter of type GenericActionParams and can accept any other parameters you need.
+        Only one generic action is allowed per app. The function you define needs to accept at least one parameter of type `GenericActionParams` and can accept any other parameters you need.
         Other useful parameters to accept are the SOARClient and the asset.
 
         Returns:

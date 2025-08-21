@@ -228,7 +228,7 @@ class GenericActionOutput(ActionOutput):
     """
     Output class for generic actions.
 
-    This class extends the ActionOutput class and adds a status_code and response_body field. You can use this class as is or extend it to add more fields.
+    This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class as is or extend it to add more fields.
 
     Example:
         >>> class CustomGenericActionOutput(GenericActionOutput):
