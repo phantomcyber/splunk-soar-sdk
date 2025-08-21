@@ -95,13 +95,13 @@ For a full list of Param options, see the ``Params`` class and ``Param`` functio
 
 Parameters for on poll
 ^^^^^^^^^^^^^^^^^^^^^^
-On poll functions require a specfic paramter class called OnPollParams. You should not override this class and use it as is.
+On poll functions require a specific parameter class called `OnPollParams`. YYou should use this class as-is, instead of overriding it.
 
 .. autoclass:: soar_sdk.params.OnPollParams
 
 Parameters for generic action
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Generic action functions require a specfic paramter class called GenericActionParams. You should not override this class and use it as is.
+Generic action functions require a specific parameter class called `GenericActionParams`. You should use this class as-is, instead of overriding it.
 
 .. autoclass:: soar_sdk.params.GenericActionParams
 
@@ -160,7 +160,7 @@ For more details, see the ``ActionOutput`` class and the ``OutputField`` functio
 
 Generic Action Output
 ^^^^^^^^^^^^^^^^^^^^^
-For generic action functions we have provided a convinience class called GenericActionOutput. This class extends the ActionOutput class and adds a status_code and response_body field. You can use this class to return the response from the generic action.
+For generic action functions we have provided a convenience class called `GenericActionOutput`. This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class to return the response from the generic action.
 
 .. autoclass:: soar_sdk.action_results.GenericActionOutput
 
