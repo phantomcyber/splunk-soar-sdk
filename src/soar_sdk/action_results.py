@@ -222,3 +222,22 @@ class ActionOutput(BaseModel):
                 schema_field["example_values"] = [True, False]
 
             yield schema_field
+
+
+class GenericActionOutput(ActionOutput):
+    """
+    Output class for generic actions.
+
+    This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class as is or extend it to add more fields.
+
+    Example:
+        >>> class CustomGenericActionOutput(GenericActionOutput):
+        ...     error: str = OutputField(example_values=["Invalid credentials"])
+
+    Note:
+        The status_code field is used to return the HTTP status code of the response.
+        The response_body field is used to return the response body of the response.
+    """
+
+    status_code: int = OutputField(example_values=[200, 404, 500])
+    response_body: str = OutputField(example_values=['{"key": "value"}'])

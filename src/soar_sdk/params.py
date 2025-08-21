@@ -171,3 +171,47 @@ class OnPollParams(Params):
         required=False,
         allow_list=True,
     )
+
+
+class GenericActionParams(Params):
+    """
+    Parameters for generic actions.
+
+    Used to define the specific parameters for the generic action.
+    """
+
+    http_method: str = Param(
+        description="The HTTP method to use for the request.",
+        required=True,
+        value_list=["GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"],
+    )
+
+    endpoint: str = Param(
+        description="The endpoint to send the request to.",
+        required=True,
+    )
+
+    headers: str = Param(
+        description="The headers to send with the request (JSON object).",
+        required=False,
+    )
+
+    query_params: str = Param(
+        description="The query string to send with the request.",
+        required=False,
+    )
+
+    body: str = Param(
+        description="The body to send with the request (JSON object).",
+        required=False,
+    )
+
+    timeout: int = Param(
+        description="The timeout for the request.",
+        required=False,
+    )
+
+    verify_ssl: bool = Param(
+        description="Whether to verify the SSL certificate.",
+        required=False,
+    )

@@ -4,10 +4,11 @@ from datetime import datetime, timezone
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.params import OnPollParams
+from soar_sdk.params import OnPollParams, GenericActionParams
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.logging import getLogger
+from soar_sdk.action_results import GenericActionOutput
 
 logger = getLogger()
 
@@ -63,6 +64,15 @@ app.register_action(
     verbose="Generate statistics with pie chart reusable component.",
     view_handler=render_statistics_chart,
 )
+
+
+@app.generic_action()
+def http_action(params: GenericActionParams, asset: Asset) -> GenericActionOutput:
+    logger.info(f"HTTP action triggered with params: {params}")
+    return GenericActionOutput(
+        status_code=200,
+        response_body=f"Base url is {asset.base_url}",
+    )
 
 
 @app.on_poll()

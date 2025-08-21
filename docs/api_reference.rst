@@ -26,6 +26,7 @@ Key Methods
 .. automethod:: soar_sdk.app.App.register_action
 .. automethod:: soar_sdk.app.App.enable_webhooks
 .. automethod:: soar_sdk.app.App.view_handler
+.. automethod:: soar_sdk.app.App.generic_action
 
 .. _asset-configuration-label:
 Asset Configuration
@@ -92,6 +93,19 @@ For a full list of Param options, see the ``Params`` class and ``Param`` functio
 
 .. autofunction:: soar_sdk.params.Param
 
+Parameters for on poll
+^^^^^^^^^^^^^^^^^^^^^^
+On poll functions require a specific parameter class called `OnPollParams`. YYou should use this class as-is, instead of overriding it.
+
+.. autoclass:: soar_sdk.params.OnPollParams
+
+Parameters for generic action
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Generic action functions require a specific parameter class called `GenericActionParams`. You should use this class as-is, instead of overriding it.
+
+.. autoclass:: soar_sdk.params.GenericActionParams
+
+
 .. _action-output-label:
 Action Outputs
 ~~~~~~~~~~~~
@@ -143,6 +157,12 @@ For more details, see the ``ActionOutput`` class and the ``OutputField`` functio
 .. autoclass:: soar_sdk.action_results.ActionOutput
 
 .. autofunction:: soar_sdk.action_results.OutputField
+
+Generic Action Output
+^^^^^^^^^^^^^^^^^^^^^
+For generic action functions we have provided a convenience class called `GenericActionOutput`. This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class to return the response from the generic action.
+
+.. autoclass:: soar_sdk.action_results.GenericActionOutput
 
 APIs
 ----
