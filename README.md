@@ -2,7 +2,7 @@
 
 <!-- NOTE: Coverage is not dynamically generated, but it is true because CI fails below 100% coverage -->
 [![GitHub top language](https://img.shields.io/github/languages/top/phantomcyber/splunk-soar-sdk)](https://github.com/phantomcyber/splunk-soar-sdk)
-[![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fphantomcyber%2Fsplunk-soar-sdk%2Fbeta%2Fpyproject.toml)](https://github.com/phantomcyber/splunk-soar-sdk)
+[![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fphantomcyber%2Fsplunk-soar-sdk%2Fmain%2Fpyproject.toml)](https://github.com/phantomcyber/splunk-soar-sdk)
 [![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/phantomcyber/splunk-soar-sdk/semantic_release.yml)](https://github.com/phantomcyber/splunk-soar-sdk/deployments)
 [![Code Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com/phantomcyber/splunk-soar-sdk)
 [![GitHub Release](https://img.shields.io/github/v/release/phantomcyber/splunk-soar-sdk?include_prereleases)](https://github.com/phantomcyber/splunk-soar-sdk/releases)
