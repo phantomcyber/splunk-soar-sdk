@@ -1,8 +1,10 @@
 from unittest import mock
+from zoneinfo import ZoneInfo
 
 import pytest
 
-from soar_sdk.input_spec import InputSpecification
+from soar_sdk.asset import AssetField, BaseAsset
+from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.actions_manager import (
@@ -110,6 +112,39 @@ def test_action_called_with_custom_message_set(
 
     assert len(example_app.actions_manager.get_results()) == 1
     assert example_app.actions_manager.get_results()[0].message == "The result is 42"
+
+
+def test_action_called_with_timezone_asset(example_app: App):
+    class AssetWithTimezones(BaseAsset):
+        timezone: ZoneInfo
+        timezone_with_default: ZoneInfo = AssetField(default=ZoneInfo("UTC"))
+
+    example_app.asset_cls = AssetWithTimezones
+
+    @example_app.action()
+    def test_action(params: Params, asset: AssetWithTimezones) -> ActionOutput:
+        assert asset.timezone == ZoneInfo("America/Denver")
+        assert asset.timezone_with_default == ZoneInfo("UTC")
+        return ActionOutput()
+
+    action_input = InputSpecification(
+        asset_id="1",
+        identifier="test_action",
+        action="test_action",
+        config=AppConfig(
+            app_version="1.0.0",
+            directory=".",
+            main_module="example_connector.py",
+            timezone="America/Denver",
+        ),
+    )
+    example_app.handle(action_input.json())
+
+    assert len(example_app.actions_manager.get_results()) == 1
+    assert (
+        example_app.actions_manager.get_results()[0].message
+        == "Action completed successfully."
+    )
 
 
 def test_actions_provider_running_undefined_action(

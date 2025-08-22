@@ -1,4 +1,5 @@
 from typing import Any, Optional, Union
+from zoneinfo import ZoneInfo
 from pydantic import BaseModel, root_validator
 from pydantic.fields import Field, Undefined
 
@@ -102,6 +103,15 @@ class BaseAsset(BaseModel):
         Field names cannot start with "_reserved_" or use names reserved by
         the SOAR platform to avoid conflicts with internal fields.
     """
+
+    class Config:
+        """Pydantic configuration for BaseAsset.
+
+        Note that we are using the `arbitrary_types_allowed` setting, which is generally not recommended.
+        However, we are checking all of the field types via `soar_sdk.datatypes.as_datatype`, so we have confidence in their validity.
+        """
+
+        arbitrary_types_allowed = True
 
     @root_validator(pre=True)
     def validate_no_reserved_fields(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -222,7 +232,10 @@ class BaseAsset(BaseModel):
             )
 
             if (default := field.field_info.default) and default != Undefined:
-                params_field["default"] = default
+                if isinstance(default, ZoneInfo):
+                    params_field["default"] = default.key
+                else:
+                    params_field["default"] = default
             if value_list := field.field_info.extra.get("value_list"):
                 params_field["value_list"] = value_list
 
@@ -242,4 +255,17 @@ class BaseAsset(BaseModel):
             field_name
             for field_name, field in cls.__fields__.items()
             if field.field_info.extra.get("sensitive", False)
+        }
+
+    @classmethod
+    def timezone_fields(cls) -> set[str]:
+        """Set of fields that use the ZoneInfo type.
+
+        Returns:
+            A set of field names that use the ZoneInfo type.
+        """
+        return {
+            field_name
+            for field_name, field in cls.__fields__.items()
+            if field.annotation is ZoneInfo
         }

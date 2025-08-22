@@ -1,6 +1,7 @@
 from typing import Union
 from collections.abc import Iterator
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
@@ -21,6 +22,8 @@ class Asset(BaseAsset):
         value_list=["Authorization", "X-API-Key"],
         description="Header for API key authentication",
     )
+    timezone: ZoneInfo
+    timezone_with_default: ZoneInfo = AssetField(default=ZoneInfo("America/Denver"))
 
 
 app = App(
@@ -122,7 +125,6 @@ app.register_action(
     action_type="investigate",
     verbose="Processes a message synchronously with sequential HTTP requests.",
 )
-
 
 if __name__ == "__main__":
     app.cli()

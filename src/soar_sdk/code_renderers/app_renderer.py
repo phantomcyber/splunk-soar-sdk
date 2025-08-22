@@ -5,8 +5,7 @@ from collections.abc import Iterator
 
 
 def create_default_asset_cls() -> ast.ClassDef:
-    """
-    Create a default Asset class definition.
+    """Create a default Asset class definition.
 
     Returns:
         ast.ClassDef: The AST node representing the Asset class.
@@ -22,6 +21,8 @@ def create_default_asset_cls() -> ast.ClassDef:
 
 @dataclasses.dataclass
 class AppContext:
+    """Represents the context for rendering an app's Python code."""
+
     name: str
     app_type: str
     logo: str
@@ -38,13 +39,10 @@ class AppContext:
 
 
 class AppRenderer:
-    """
-    A class to render an app.py module using ASTs.
-    """
+    """A class to render an app.py module using ASTs."""
 
     def __init__(self, context: AppContext) -> None:
-        """
-        Initialize the AppRenderer with the given context.
+        """Initialize the AppRenderer with the given context.
 
         Args:
             context (AppContext): The context containing app details.
@@ -53,8 +51,7 @@ class AppRenderer:
 
     @staticmethod
     def create_default_imports() -> Iterator[Union[ast.Import, ast.ImportFrom]]:
-        """
-        Create default imports for the App module.
+        """Create default imports for the App module.
 
         Returns:
             Iterator[ast.Import]: An iterator of Import nodes.
@@ -66,6 +63,9 @@ class AppRenderer:
             module="collections.abc",
             names=[ast.alias(name="Iterator", asname=None)],
             level=0,
+        )
+        yield ast.ImportFrom(
+            module="zoneinfo", names=[ast.alias(name="ZoneInfo", asname=None)], level=0
         )
         yield ast.ImportFrom(
             module="soar_sdk.abstract",
@@ -117,8 +117,7 @@ class AppRenderer:
         )
 
     def create_app_constructor(self) -> ast.Assign:
-        """
-        Create the App class constructor.
+        """Create the App class constructor.
 
         Returns:
             ast.Assign: The AST node representing the App class instantiation.
@@ -171,8 +170,7 @@ class AppRenderer:
 
     @staticmethod
     def create_main_check() -> ast.If:
-        """
-        Create the main check for the App module.
+        """Create the main check for the App module.
 
         Returns:
             ast.If: The AST node representing the main check.
@@ -200,8 +198,7 @@ class AppRenderer:
         )
 
     def render(self) -> ast.Module:
-        """
-        Render the App module.
+        """Render the App module.
 
         Returns:
             ast.module: The rendered content for the App class.
