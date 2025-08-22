@@ -9,9 +9,7 @@ from soar_sdk.meta.datatypes import to_python_type
 
 @dataclasses.dataclass
 class AssetContext:
-    """
-    Context for rendering individual configuration keys of an Asset class.
-    """
+    """Context for rendering individual configuration keys of an Asset class."""
 
     name: str
     description: Optional[str]
@@ -22,8 +20,7 @@ class AssetContext:
 
     @property
     def is_str(self) -> bool:
-        """
-        Check if the type is a string.
+        """Check if the type is a string.
 
         Returns:
             bool: True if the type is str, False otherwise.
@@ -32,8 +29,7 @@ class AssetContext:
 
     @property
     def py_type(self) -> str:
-        """
-        Get the Python type of the asset field.
+        """Get the Python type of the asset field.
 
         Returns:
             type: The Python type of the asset field.
@@ -42,13 +38,10 @@ class AssetContext:
 
 
 class AssetRenderer(AstRenderer[list[AssetContext]]):
-    """
-    A class to render an app's Asset class using Jinja2 templates.
-    """
+    """A class to render an app's Asset class using Jinja2 templates."""
 
     def render_ast(self) -> Iterator[ast.stmt]:
-        """
-        Render the Asset class by building an AST.
+        """Render the Asset class by building an AST.
 
         Returns:
             str: The rendered code for the Asset class.
@@ -75,12 +68,24 @@ class AssetRenderer(AstRenderer[list[AssetContext]]):
                     )
                 )
             if field.default is not None:
-                field_kwargs.append(
-                    ast.keyword(
-                        arg="default",
-                        value=ast.Constant(value=field.default),
+                if field.data_type == "timezone":
+                    field_kwargs.append(
+                        ast.keyword(
+                            arg="default",
+                            value=ast.Call(
+                                func=ast.Name(id="ZoneInfo", ctx=ast.Load()),
+                                args=[ast.Constant(value=field.default)],
+                                keywords=[],
+                            ),
+                        )
                     )
-                )
+                else:
+                    field_kwargs.append(
+                        ast.keyword(
+                            arg="default",
+                            value=ast.Constant(value=field.default),
+                        )
+                    )
             if field.value_list is not None:
                 field_kwargs.append(
                     ast.keyword(

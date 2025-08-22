@@ -62,6 +62,12 @@ def test_generate_asset_definition(app_meta, tmp_path):
             default="blue",
             value_list=["red", "green", "blue"],
         ),
+        "timezone": AssetFieldSpecification(
+            label="Timezone",
+            required=False,
+            data_type="timezone",
+            default="UTC",
+        ),
     }
     asset_class = cli.generate_asset_definition_ast(app_meta=app_meta)
 
@@ -71,6 +77,7 @@ def test_generate_asset_definition(app_meta, tmp_path):
             "class Asset(BaseAsset):",
             "    username: str = AssetField(required=True, description='The username for the application')",
             "    color: str = AssetField(required=False, default='blue', value_list=['red', 'green', 'blue'])",
+            "    timezone: ZoneInfo = AssetField(required=False, default=ZoneInfo('UTC'))",
         ]
     )
 

@@ -2,6 +2,7 @@ import inspect
 import json
 import sys
 from typing import Any, Optional, Union, Callable
+from zoneinfo import ZoneInfo
 
 from soar_sdk.asset import BaseAsset
 from soar_sdk.input_spec import InputSpecification
@@ -157,6 +158,11 @@ class App:
                 self._raw_asset_config[field] = platform_encryption_backend.decrypt(
                     self._raw_asset_config[field], str(asset_id)
                 )
+
+        # Inflate timezone fields in the asset configuration
+        for field in self.asset_cls.timezone_fields():
+            if field in self._raw_asset_config:
+                self._raw_asset_config[field] = ZoneInfo(self._raw_asset_config[field])
 
         self.__logger.handler.set_handle(handle)
         soar_auth = App.create_soar_client_auth_object(input_data)

@@ -45,6 +45,19 @@
                 "Authorization",
                 "X-API-Key"
             ]
+        },
+        "timezone": {
+            "data_type": "timezone",
+            "required": true,
+            "description": "Timezone",
+            "order": 3
+        },
+        "timezone_with_default": {
+            "data_type": "timezone",
+            "required": true,
+            "description": "Timezone With Default",
+            "order": 4,
+            "default": "America/Denver"
         }
     },
     "actions": [
