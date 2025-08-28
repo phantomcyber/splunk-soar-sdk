@@ -10,6 +10,7 @@ class ExampleInnerData(ActionOutput):
 
 
 class ExampleActionOutput(ActionOutput):
+    under_field: str = OutputField(alias="_under_field")
     stringy_field: str
     list_of_strings: list[str]
     nested_lists: list[list[int]]
@@ -22,6 +23,7 @@ class ExampleActionOutput(ActionOutput):
 
 def test_action_output_to_json_schema():
     expected_schema = [
+        {"data_path": "action_result.data.*._under_field", "data_type": "string"},
         {"data_path": "action_result.data.*.stringy_field", "data_type": "string"},
         {"data_path": "action_result.data.*.list_of_strings.*", "data_type": "string"},
         {"data_path": "action_result.data.*.nested_lists.*.*", "data_type": "numeric"},
@@ -70,6 +72,7 @@ def test_action_output_to_json_schema_bad_type(action_output_class: type[ActionO
 
 def test_parse_action_output():
     raw_data = {
+        "_under_field": "example_value",
         "stringy_field": "example_string",
         "list_of_strings": ["string1", "string2"],
         "nested_lists": [[1, 2], [3, 4]],
@@ -89,3 +92,31 @@ def test_parse_action_output():
     assert len(parsed_data.list_of_types) == 2
     assert parsed_data.list_of_types[0].inner_string == "inner_value_1"
     assert parsed_data.list_of_types[1].inner_string == "inner_value_2"
+
+
+def test_action_output_to_dict():
+    action_output = ExampleActionOutput(
+        _under_field="example_value",
+        stringy_field="example_string",
+        list_of_strings=["string1", "string2"],
+        nested_lists=[[1, 2], [3, 4]],
+        cef_data="42.42.42.42",
+        nested_type=ExampleInnerData(inner_string="inner_value"),
+        list_of_types=[
+            ExampleInnerData(inner_string="inner_value_1"),
+            ExampleInnerData(inner_string="inner_value_2"),
+        ],
+    )
+    expected_dict = {
+        "_under_field": "example_value",
+        "stringy_field": "example_string",
+        "list_of_strings": ["string1", "string2"],
+        "nested_lists": [[1, 2], [3, 4]],
+        "cef_data": "42.42.42.42",
+        "nested_type": {"inner_string": "inner_value"},
+        "list_of_types": [
+            {"inner_string": "inner_value_1"},
+            {"inner_string": "inner_value_2"},
+        ],
+    }
+    assert action_output.dict(by_alias=True) == expected_dict

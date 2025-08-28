@@ -541,7 +541,7 @@ class App:
             return all(statuses)
 
         if isinstance(result, ActionOutput):
-            output_dict = result.dict()
+            output_dict = result.dict(by_alias=True)
             param_dict = action_params.dict() if action_params else None
             result = ActionResult(
                 status=True,

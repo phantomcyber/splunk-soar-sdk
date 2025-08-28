@@ -128,6 +128,10 @@
                 {
                     "data_path": "action_result.data.*.reversed_string",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*._underscored_string",
+                    "data_type": "string"
                 }
             ],
             "render": {
