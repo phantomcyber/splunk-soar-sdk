@@ -220,6 +220,8 @@ The `asset` argument contains your asset configuration, which is discussed furth
 
 Your action must have a return type that extends from `soar_sdk.action_results.ActionOutput`. This is discussed further in the {ref}`Action Outputs <action-output-label>` documentation. The return type must be hinted.
 
+For more advanced use cases, your return type can be a Coroutine that resolves to an ActionOutput; or a list, Iterator or AsyncGenerator that yields multiple ActionOutputs.
+
 ### The action description docstring
 
 ```python

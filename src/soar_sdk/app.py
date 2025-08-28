@@ -2,6 +2,7 @@ import inspect
 import json
 import sys
 from typing import Any, Optional, Union, Callable
+from collections.abc import Iterator
 from zoneinfo import ZoneInfo
 
 from soar_sdk.asset import BaseAsset
@@ -512,7 +513,14 @@ class App:
 
     @staticmethod
     def _adapt_action_result(
-        result: Union[ActionOutput, ActionResult, tuple[bool, str], bool],
+        result: Union[
+            ActionOutput,
+            ActionResult,
+            list[ActionOutput],
+            Iterator[ActionOutput],
+            tuple[bool, str],
+            bool,
+        ],
         actions_manager: ActionsManager,
         action_params: Optional[Params] = None,
     ) -> bool:
@@ -524,6 +532,14 @@ class App:
         For backward compatibility, it also supports returning ActionResult object as
         in the legacy Connectors.
         """
+        if type(result) is list or isinstance(result, Iterator):
+            statuses = []
+            for item in result:
+                statuses.append(
+                    App._adapt_action_result(item, actions_manager, action_params)
+                )
+            return all(statuses)
+
         if isinstance(result, ActionOutput):
             output_dict = result.dict()
             param_dict = action_params.dict() if action_params else None

@@ -1,6 +1,8 @@
 import inspect
 from functools import wraps
-from typing import Callable, Optional, Any
+from collections.abc import Iterator
+from typing import Callable, Optional, Any, Union, get_args, get_origin
+from collections.abc import AsyncGenerator
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult, ActionOutput
@@ -18,9 +20,7 @@ if TYPE_CHECKING:
 
 
 class ActionDecorator:
-    """
-    Class-based decorator for action functionality.
-    """
+    """Class-based decorator for action functionality."""
 
     def __init__(
         self,
@@ -32,7 +32,13 @@ class ActionDecorator:
         action_type: str = "generic",
         read_only: bool = True,
         params_class: Optional[type[Params]] = None,
-        output_class: Optional[type[ActionOutput]] = None,
+        output_class: Union[
+            None,
+            type[ActionOutput],
+            Iterator[type[ActionOutput]],
+            AsyncGenerator[type[ActionOutput]],
+            list[type[ActionOutput]],
+        ] = None,
         view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
     ) -> None:
@@ -49,10 +55,10 @@ class ActionDecorator:
         self.versions = versions
 
     def __call__(self, function: Callable) -> Action:
-        """
-        Decorator for the action handling function. Adds the specific meta
-        information to the action passed to the generator. Validates types used on
-        the action arguments and adapts output for fast and seamless development.
+        """Decorator for the action handling function.
+
+        Adds the specific meta information to the action passed to the generator.
+        Validates types used on the action arguments and adapts output for fast and seamless development.
         """
         action_identifier = self.identifier or function.__name__
         if action_identifier == "test_connectivity":
@@ -81,6 +87,10 @@ class ActionDecorator:
                 "Action function must specify a return type via type hint or output_class parameter"
             )
 
+        origin = get_origin(validated_output_class)
+        if origin in (list, Iterator, AsyncGenerator):
+            validated_output_class = get_args(validated_output_class)[0]
+
         if not issubclass(validated_output_class, ActionOutput):
             raise TypeError(
                 "Return type for action function must be derived from ActionOutput class."
@@ -95,9 +105,7 @@ class ActionDecorator:
             *args: Any,  # noqa: ANN401
             **kwargs: Any,  # noqa: ANN401
         ) -> bool:
-            """
-            Validates input params and adapts the results from the action.
-            """
+            """Validates input params and adapts the results from the action."""
             action_params = self.app._validate_params(params, action_name)
             kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
 

@@ -488,6 +488,34 @@
                     "data_type": "numeric"
                 }
             ]
+        },
+        {
+            "action": "generator action",
+            "identifier": "generator_action",
+            "description": "Generates a sequence of numbers.",
+            "type": "generic",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "verbose": "",
+            "parameters": {},
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.iteration",
+                    "data_type": "numeric"
+                }
+            ]
         }
     ],
     "pip39_dependencies": {
