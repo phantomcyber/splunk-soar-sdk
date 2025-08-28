@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator, Iterator
 from unittest import mock
 from zoneinfo import ZoneInfo
 
@@ -80,6 +81,86 @@ def test_action_called_with_multiple_results_set(
     example_app.handle(simple_action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 3
+
+
+def test_action_called_returning_iterator(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class IteratorOutput(ActionOutput):
+        iteration: int
+
+    @example_app.action()
+    def test_action(params: Params, soar: SOARClient) -> Iterator[IteratorOutput]:
+        for i in range(5):
+            yield IteratorOutput(iteration=i)
+
+    example_app.handle(simple_action_input.json())
+
+    assert len(example_app.actions_manager.get_results()) == 5
+    assert all(
+        "success" in result.message
+        for result in example_app.actions_manager.get_results()
+    )
+
+
+def test_async_action_called_returning_iterator(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class IteratorOutput(ActionOutput):
+        iteration: int
+
+    @example_app.action()
+    async def test_action(
+        params: Params, soar: SOARClient
+    ) -> AsyncGenerator[IteratorOutput]:
+        for i in range(5):
+            yield IteratorOutput(iteration=i)
+
+    example_app.handle(simple_action_input.json())
+
+    assert len(example_app.actions_manager.get_results()) == 5
+    assert all(
+        "success" in result.message
+        for result in example_app.actions_manager.get_results()
+    )
+
+
+def test_action_called_returning_list(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class IteratorOutput(ActionOutput):
+        iteration: int
+
+    @example_app.action()
+    def test_action(params: Params, soar: SOARClient) -> list[IteratorOutput]:
+        return [IteratorOutput(iteration=i) for i in range(5)]
+
+    example_app.handle(simple_action_input.json())
+
+    assert len(example_app.actions_manager.get_results()) == 5
+    assert all(
+        "success" in result.message
+        for result in example_app.actions_manager.get_results()
+    )
+
+
+def test_async_action_called_returning_list(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class IteratorOutput(ActionOutput):
+        iteration: int
+
+    @example_app.action()
+    async def test_action(params: Params, soar: SOARClient) -> list[IteratorOutput]:
+        return [IteratorOutput(iteration=i) for i in range(5)]
+
+    example_app.handle(simple_action_input.json())
+
+    assert len(example_app.actions_manager.get_results()) == 5
+    assert all(
+        "success" in result.message
+        for result in example_app.actions_manager.get_results()
+    )
 
 
 def test_action_called_with_default_message_set(

@@ -5,11 +5,11 @@ from zoneinfo import ZoneInfo
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.params import OnPollParams, GenericActionParams
+from soar_sdk.params import OnPollParams, GenericActionParams, Params
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.logging import getLogger
-from soar_sdk.action_results import GenericActionOutput
+from soar_sdk.action_results import ActionOutput, GenericActionOutput
 
 logger = getLogger()
 
@@ -125,6 +125,21 @@ app.register_action(
     action_type="investigate",
     verbose="Processes a message synchronously with sequential HTTP requests.",
 )
+
+
+class GeneratorActionOutput(ActionOutput):
+    iteration: int
+
+
+@app.action()
+def generator_action(
+    params: Params, soar: SOARClient, asset: Asset
+) -> Iterator[GeneratorActionOutput]:
+    """Generates a sequence of numbers."""
+    logger.info(f"Generator action triggered with params: {params}")
+    for i in range(5):
+        yield GeneratorActionOutput(iteration=i)
+
 
 if __name__ == "__main__":
     app.cli()
