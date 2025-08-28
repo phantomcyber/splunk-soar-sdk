@@ -137,6 +137,10 @@ class ActionOutput(BaseModel):
         ...     )
         ...     port: int = OutputField(example_values=[80, 443, 8080])
         ...     is_secure: bool  # Automatically gets True/False examples
+        ...
+        ...     under_field: str = OutputField(
+        ...         alias="_under_field"
+        ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key
 
     Note:
         Fields cannot be Union or Optional types. Use specific types only.
@@ -180,7 +184,9 @@ class ActionOutput(BaseModel):
             Nested ActionOutput classes are recursively processed.
             Boolean fields automatically get [True, False] example values.
         """
-        for field_name, field in cls.__fields__.items():
+        for _field_name, field in cls.__fields__.items():
+            field_name = alias if (alias := field.alias) else _field_name
+
             field_type = field.annotation
             datapath = parent_datapath + f".{field_name}"
 
@@ -225,8 +231,7 @@ class ActionOutput(BaseModel):
 
 
 class GenericActionOutput(ActionOutput):
-    """
-    Output class for generic actions.
+    """Output class for generic actions.
 
     This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class as is or extend it to add more fields.
 

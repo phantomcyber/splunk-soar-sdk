@@ -1,6 +1,6 @@
 from soar_sdk.logging import getLogger
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
+from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.params import Params
 
 logger = getLogger()
@@ -16,6 +16,7 @@ class ReverseStringOutput(ActionOutput):
 
     original_string: str
     reversed_string: str
+    underscored_string: str = OutputField(alias="_underscored_string")
 
 
 def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStringOutput:
@@ -23,7 +24,9 @@ def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStrin
     reversed_string = param.input_string[::-1]
     logger.debug("reversed_string %s", reversed_string)
     return ReverseStringOutput(
-        original_string=param.input_string, reversed_string=reversed_string
+        original_string=param.input_string,
+        reversed_string=reversed_string,
+        underscored_string=f"{param.input_string}_{reversed_string}",
     )
 
 
