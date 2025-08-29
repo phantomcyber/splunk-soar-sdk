@@ -1,5 +1,13 @@
+import io
+import os
+from pathlib import Path
+import subprocess
+import tarfile
+from tempfile import TemporaryDirectory
+import build
+
 from typing import Optional
-from collections.abc import AsyncGenerator
+from collections.abc import Mapping, Sequence, AsyncGenerator
 from pydantic import BaseModel, Field
 
 from logging import getLogger
@@ -36,6 +44,17 @@ DEPENDENCIES_TO_SKIP = {
 DEPENDENCIES_TO_REJECT = {
     "simplejson",  # no longer needed, please use the built-in `json` module instead
     "django",  # apps should never depend on Django
+}
+
+# These dependencies can be built from a source distribution if no wheel is available.
+# We should keep this list very short, pressure the maintainers of these packages to provide wheels,
+# and remove packages from the list once they're available as wheels.
+remove_when_soar_newer_than(
+    "7.0.0",
+    "If the Splunk SDK is available as a wheel now, remove it, and remove all of the code for building wheels from source.",
+)
+DEPENDENCIES_TO_BUILD = {
+    "splunk_sdk",  # https://github.com/splunk/splunk-sdk-python/pull/656
 }
 
 
@@ -111,18 +130,86 @@ class UvWheel(BaseModel):
             return wheel_bytes
 
 
+class UvSourceDistribution(BaseModel):
+    """Represents a source distribution (sdist) for a Python package."""
+
+    url: str
+    hash: str
+    size: Optional[int] = None
+
+    def validate_hash(self, sdist: bytes) -> None:
+        """Validate the hash of the downloaded sdist against the expected hash."""
+        algorithm, expected_digest = self.hash.split(":")
+        actual_digest = hashlib.new(algorithm, sdist).hexdigest()
+        if expected_digest != actual_digest:
+            raise ValueError(
+                f"Retrieved sdist for {self.url} did not match the expected checksum. {expected_digest=}, {actual_digest=}, {self.url=}"
+            )
+
+    async def fetch_and_build(self) -> tuple[str, bytes]:
+        """Download the source distribution and build a wheel from it."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.url, timeout=10)
+            response.raise_for_status()
+            sdist_bytes: bytes = response.content
+            self.validate_hash(sdist_bytes)
+            return self._build_wheel(sdist_bytes)
+
+    @staticmethod
+    def _builder_runner(
+        cmd: Sequence[str],
+        cwd: Optional[str] = None,
+        extra_environ: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        """Run a command in a subprocess and return its exit code, stdout, and stderr."""
+        proc = subprocess.run(  # noqa: S603
+            cmd, cwd=cwd, env=extra_environ, text=True, check=True, capture_output=True
+        )
+        for line in proc.stdout.splitlines():
+            logger.debug(f"Builder stdout: {line}")
+        for line in proc.stderr.splitlines():
+            logger.debug(f"Builder stderr: {line}")
+
+    def _build_wheel(self, sdist: bytes) -> tuple[str, bytes]:
+        """Build a wheel from the downloaded source distribution."""
+        with (
+            TemporaryDirectory() as extract_dir,
+            tarfile.open(fileobj=io.BytesIO(sdist), mode="r") as tar,
+            TemporaryDirectory() as build_dir,
+        ):
+            top_level_dir = os.path.commonprefix(tar.getnames())
+            tar.extractall(path=extract_dir, filter="data")
+            sdist_path = f"{extract_dir}/{top_level_dir}"
+            builder = build.ProjectBuilder(sdist_path, runner=self._builder_runner)
+            wheel_path = builder.build("wheel", build_dir)
+            with open(wheel_path, "rb") as f:
+                return Path(wheel_path).name, f.read()
+
+
 class DependencyWheel(BaseModel):
     """Represents a Python package dependency with all the information required to fetch its wheel(s) from the CDN."""
 
     module: str
-    input_file: str
+    input_file: str = ""
     input_file_aarch64: Optional[str] = None
 
-    wheel: UvWheel = Field(exclude=True, default=None)
+    wheel: Optional[UvWheel] = Field(exclude=True, default=None)
     wheel_aarch64: Optional[UvWheel] = Field(exclude=True, default=None)
+    sdist: Optional[UvSourceDistribution] = Field(exclude=True, default=None)
 
     async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes], None]:
         """Collect a list of wheel files to fetch for this dependency across all platforms."""
+        if self.wheel is None and self.sdist is not None:
+            logger.info(f"Building sdist for {self.input_file}")
+            wheel_name, wheel_bytes = await self.sdist.fetch_and_build()
+            yield (f"wheels/shared/{wheel_name}", wheel_bytes)
+            return
+
+        if self.wheel is None:
+            raise ValueError(
+                f"Could not find a suitable wheel or source distribution for {self.module} in uv.lock"
+            )
+
         wheel_bytes = await self.wheel.fetch()
         yield (self.input_file, wheel_bytes)
 
@@ -167,6 +254,7 @@ class UvPackage(BaseModel):
         default_factory=dict, alias="optional-dependencies"
     )
     wheels: list[UvWheel] = []
+    sdist: Optional[UvSourceDistribution] = None
 
     def _find_wheel(
         self,
@@ -213,19 +301,38 @@ class UvPackage(BaseModel):
         "any",
     ]
 
+    build_from_source_warning_triggered = False
+
     def _resolve(
         self, abi_precedence: list[str], python_precedence: list[str]
     ) -> DependencyWheel:
         """Resolve the dependency wheel for the given ABI and Python version."""
-        wheel_x86_64 = self._find_wheel(
-            abi_precedence, python_precedence, self.platform_precedence_x86_64
-        )
-
         wheel = DependencyWheel(
             module=self.name,
-            input_file=f"{wheel_x86_64.basename}.whl",
-            wheel=wheel_x86_64,
         )
+
+        if (
+            self.sdist is not None
+            and UvLock.normalize_package_name(self.name) in DEPENDENCIES_TO_BUILD
+        ):
+            wheel.sdist = self.sdist
+
+        try:
+            wheel_x86_64 = self._find_wheel(
+                abi_precedence, python_precedence, self.platform_precedence_x86_64
+            )
+            wheel.input_file = f"{wheel_x86_64.basename}.whl"
+            wheel.wheel = wheel_x86_64
+        except FileNotFoundError as e:
+            if wheel.sdist is None:
+                raise FileNotFoundError(
+                    f"Could not find a suitable x86_64 wheel or source distribution for {self.name}"
+                ) from e
+            elif not self.build_from_source_warning_triggered:
+                logger.warning(
+                    f"Dependency {self.name} will be built from source, as no wheel is available"
+                )
+                self.build_from_source_warning_triggered = True
 
         try:
             wheel_aarch64 = self._find_wheel(
@@ -234,9 +341,10 @@ class UvPackage(BaseModel):
             wheel.input_file_aarch64 = f"{wheel_aarch64.basename}.whl"
             wheel.wheel_aarch64 = wheel_aarch64
         except FileNotFoundError:
-            logger.warning(
-                f"Could not find a suitable aarch64 wheel for {self.name=}, {self.version=}, {abi_precedence=}, {python_precedence=} -- the built package might not work on ARM systems"
-            )
+            if wheel.sdist is None:
+                logger.warning(
+                    f"Could not find a suitable aarch64 wheel for {self.name=}, {self.version=}, {abi_precedence=}, {python_precedence=} -- the built package might not work on ARM systems"
+                )
 
         return wheel
 
