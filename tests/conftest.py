@@ -15,7 +15,13 @@ from soar_sdk.input_spec import (
     SoarAuth,
 )
 from soar_sdk.action_results import ActionOutput
-from soar_sdk.meta.dependencies import UvPackage, UvWheel, UvLock, UvDependency
+from soar_sdk.meta.dependencies import (
+    UvPackage,
+    UvSourceDistribution,
+    UvWheel,
+    UvLock,
+    UvDependency,
+)
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from tests.stubs import SampleActionParams
 from pathlib import Path
@@ -283,6 +289,16 @@ def fake_wheel() -> UvWheel:
 
 
 @pytest.fixture
+def fake_sdist() -> UvSourceDistribution:
+    """Use with sdist_resp_mock to test the source distribution download."""
+    return UvSourceDistribution(
+        url="https://files.pythonhosted.org/packages/splunk-soar-sdk-2.1.0.tar.gz",
+        hash="sha256:63f9a259a7c84d0c3b0b32cae652365b03f0f926acdb894b51456005df74ae21",
+        size=19,
+    )
+
+
+@pytest.fixture
 def fake_uv_lockfile(fake_wheel) -> UvLock:
     """Create a fake UvLock object for testing."""
     return UvLock(
@@ -306,6 +322,20 @@ def wheel_resp_mock(respx_mock):
     # Create the mock route for wheel downloads
     mock_route = respx_mock.get(url__regex=r".+/.+\.whl")
     mock_route.respond(content=b"dummy wheel content")
+
+    # Provide the mock route to the test so it can make assertions
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx(base_url="https://files.pythonhosted.org/packages")
+def sdist_resp_mock(respx_mock):
+    """Fixture that automatically mocks requests to download source distributions. Useful for keeping tests for package builds fast and reliable."""
+    # Create the mock route for source distribution downloads
+    mock_route = respx_mock.get(url__regex=r".+/.+\.tar\.gz")
+
+    with Path("tests/test_assets/splunk-sdk-2.1.0.tar.gz").open("rb") as f:
+        mock_route.respond(content=f.read())
 
     # Provide the mock route to the test so it can make assertions
     return mock_route

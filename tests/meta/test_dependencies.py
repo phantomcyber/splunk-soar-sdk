@@ -1,5 +1,8 @@
+import logging
+from unittest import mock
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.dependencies import (
+    UvSourceDistribution,
     UvWheel,
     UvPackage,
     UvLock,
@@ -137,6 +140,55 @@ class TestUvPackage:
         )
         assert wheel.input_file_aarch64 is None
 
+    def test_resolve_sdist(self):
+        package = UvPackage(
+            name="splunk-sdk",
+            version="2.1.0",
+            sdist=UvSourceDistribution(
+                url="https://example.com/splunk-sdk-2.1.0.tar.gz",
+                hash="sha256:deadbeef",
+                size=123456,
+            ),
+        )
+
+        wheel = package.resolve_py39()
+        assert wheel.sdist is not None
+
+    def test_resolve_forbidden_sdist_fails(self):
+        package = UvPackage(
+            name="foobar",
+            version="2.1.0",
+            sdist=UvSourceDistribution(
+                url="https://example.com/foobar-0.1.0.tar.gz",
+                hash="sha256:deadbeef",
+                size=123456,
+            ),
+        )
+
+        with pytest.raises(
+            FileNotFoundError,
+            match="Could not find a suitable x86_64 wheel or source distribution",
+        ):
+            package.resolve_py39()
+
+    def test_resolve_sdist_warns_once(self):
+        package = UvPackage(
+            name="splunk-sdk",
+            version="2.1.0",
+            sdist=UvSourceDistribution(
+                url="https://example.com/splunk-sdk-2.1.0.tar.gz",
+                hash="sha256:deadbeef",
+                size=123456,
+            ),
+        )
+
+        logger = logging.getLogger("soar_sdk.meta.dependencies")
+        with mock.patch.object(logger, "warning") as mock_warn:
+            package.resolve_py39()
+            package.resolve_py313()
+
+        mock_warn.assert_called_once()
+
 
 class TestUvLock:
     def test_missing_package_entry(self):
@@ -197,3 +249,50 @@ class TestDependencyWheel:
         )
 
         assert hash(wheel1) == hash(wheel2)
+
+    @pytest.mark.asyncio
+    async def test_collect_sdist(
+        self, sdist_resp_mock, fake_sdist: UvSourceDistribution
+    ):
+        wheel = DependencyWheel(module="splunk_sdk", sdist=fake_sdist)
+
+        results = []
+        async for item in wheel.collect_wheels():
+            results.append(item)
+        assert len(results) == 1
+
+    @pytest.mark.asyncio
+    async def test_collect_wheel_with_no_sources(self):
+        wheel = DependencyWheel(module="broken-pkg")
+
+        with pytest.raises(
+            ValueError, match="Could not find a suitable wheel or source distribution"
+        ):
+            async for _ in wheel.collect_wheels():
+                pass
+
+
+class TestUvSourceDistribution:
+    @pytest.mark.asyncio
+    async def test_fetch_and_build_sdist(
+        self,
+        sdist_resp_mock,
+        fake_sdist: UvSourceDistribution,
+    ):
+        wheel_name, wheel = await fake_sdist.fetch_and_build()
+
+        assert wheel_name == "splunk_sdk-2.1.0-py3-none-any.whl"
+        assert len(wheel) > 0
+
+        assert sdist_resp_mock.called
+
+    @pytest.mark.asyncio
+    async def test_fetch_and_build_sdist_hash_mismatch(
+        self,
+        sdist_resp_mock,
+        fake_sdist: UvSourceDistribution,
+    ):
+        fake_sdist.hash = "sha256:deadbeef"
+
+        with pytest.raises(ValueError, match="did not match the expected checksum"):
+            await fake_sdist.fetch_and_build()

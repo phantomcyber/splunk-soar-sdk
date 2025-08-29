@@ -107,3 +107,5 @@ dmypy.json
 # built connector packages
 *.tgz
 *.tar.gz
+
+!tests/test_assets/splunk-sdk-*.tar.gz
