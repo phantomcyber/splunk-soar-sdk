@@ -123,6 +123,7 @@ Much like parameters, outputs can have simple data types such as ``str`` or ``in
       create_date: str
 
 By default, your action will display an "Action completed successfully" message in the SOAR UI. To customize this message, you can override the ``generate_action_summary_message`` method in your output class:
+
 .. code-block:: python
 
    from soar_sdk.action_results import ActionOutput
