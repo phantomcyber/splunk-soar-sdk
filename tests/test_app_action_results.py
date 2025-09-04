@@ -58,3 +58,33 @@ def test_app_action_called_with_more_complex_result_creates_the_result(
             "nested_value": {"bool_value": True},
         }
     ]
+
+
+def test_app_action_summary_and_message_creates_the_result(app_with_action: App):
+    actions_manager_mock = app_with_action.actions_manager
+    actions_manager_mock.add_result = ArgReturnMock()
+
+    class TestActionSummary(ActionOutput):
+        summary_succeeded: bool
+
+    @app_with_action.action(summary_type=TestActionSummary)
+    def action_with_summary(
+        params: SampleActionParams, soar: SOARClient
+    ) -> ActionOutput:
+        soar.set_summary(TestActionSummary(summary_succeeded=True))
+        soar.set_message("Successfully set the action message")
+        return ActionOutput()
+
+    result = action_with_summary(
+        SampleActionParams(field1=5), soar=app_with_action.soar_client
+    )
+
+    assert result is True
+    assert actions_manager_mock.add_result.call_count == 1
+    assert actions_manager_mock.add_result.call_args[0][0].get_summary() == {
+        "summary_succeeded": True
+    }
+    assert (
+        actions_manager_mock.add_result.call_args[0][0].message
+        == "Successfully set the action message"
+    )

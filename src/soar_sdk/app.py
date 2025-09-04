@@ -217,6 +217,7 @@ class App:
         view_handler: Optional[Callable] = None,
         view_template: Optional[str] = None,
         versions: str = "EQ(*)",
+        summary_type: Optional[type[ActionOutput]] = None,
     ) -> Action:
         """Dynamically register an action function defined in another module.
 
@@ -301,6 +302,7 @@ class App:
             output_class=output_class,
             view_handler=view_handler,
             versions=versions,
+            summary_type=summary_type,
         )(action)
 
     def action(
@@ -316,6 +318,7 @@ class App:
         output_class: Optional[type[ActionOutput]] = None,
         view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
+        summary_type: Optional[type[ActionOutput]] = None,
     ) -> ActionDecorator:
         """Decorator for registering an action function.
 
@@ -337,6 +340,7 @@ class App:
             output_class=output_class,
             view_handler=view_handler,
             versions=versions,
+            summary_type=summary_type,
         )
 
     def test_connectivity(self) -> ConnectivityTestDecorator:
@@ -523,6 +527,8 @@ class App:
         ],
         actions_manager: ActionsManager,
         action_params: Optional[Params] = None,
+        message: Optional[str] = None,
+        summary: Optional[ActionOutput] = None,
     ) -> bool:
         """Handles multiple ways of returning response from action.
 
@@ -543,12 +549,18 @@ class App:
         if isinstance(result, ActionOutput):
             output_dict = result.dict(by_alias=True)
             param_dict = action_params.dict() if action_params else None
+
+            if not message:
+                message = result.generate_action_summary_message()
+
             result = ActionResult(
                 status=True,
-                message=result.generate_action_summary_message(),
+                message=message,
                 param=param_dict,
             )
             result.add_data(output_dict)
+            if summary:
+                result.set_summary(summary.dict(by_alias=True))
 
         if isinstance(result, ActionResult):
             actions_manager.add_result(result)

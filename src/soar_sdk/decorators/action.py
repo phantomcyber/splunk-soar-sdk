@@ -41,6 +41,7 @@ class ActionDecorator:
         ] = None,
         view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
+        summary_type: Optional[type[ActionOutput]] = None,
     ) -> None:
         self.app = app
         self.name = name
@@ -53,6 +54,7 @@ class ActionDecorator:
         self.output_class = output_class
         self.view_handler = view_handler
         self.versions = versions
+        self.summary_type = summary_type
 
     def __call__(self, function: Callable) -> Action:
         """Decorator for the action handling function.
@@ -129,7 +131,11 @@ class ActionDecorator:
                 )
 
             return self.app._adapt_action_result(
-                result, self.app.actions_manager, action_params
+                result,
+                self.app.actions_manager,
+                action_params,
+                message=soar.get_message(),
+                summary=soar.get_summary(),
             )
 
         # setting up meta information for the decorated function
@@ -145,6 +151,7 @@ class ActionDecorator:
             output=validated_output_class,
             versions=self.versions,
             view_handler=self.view_handler,
+            summary_type=self.summary_type,
         )
 
         self.app.actions_manager.set_action(action_identifier, inner)
