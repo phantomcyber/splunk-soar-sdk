@@ -9,6 +9,8 @@ from soar_sdk.action_results import ActionOutput
 
 
 class ActionMeta(BaseModel):
+    """Metadata for an action, to be serialized in the manifest."""
+
     action: str
     identifier: str
     description: str
@@ -19,12 +21,14 @@ class ActionMeta(BaseModel):
     parameters: Type[Params] = Field(default=Params)  # noqa: UP006
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
     view_handler: Optional[Callable] = None
+    summary_type: Optional[Type[ActionOutput]] = Field(default=None, exclude=True)  # noqa: UP006
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
+        """Serializes the action metadata to a dictionary."""
         data = super().dict(*args, **kwargs)
         data["parameters"] = ParamsSerializer.serialize_fields_info(self.parameters)
         data["output"] = OutputsSerializer.serialize_datapaths(
-            self.parameters, self.output
+            self.parameters, self.output, summary_class=self.summary_type
         )
 
         if self.view_handler:

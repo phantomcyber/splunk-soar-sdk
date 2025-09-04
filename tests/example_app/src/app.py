@@ -131,14 +131,19 @@ class GeneratorActionOutput(ActionOutput):
     iteration: int
 
 
-@app.action()
+class GeneratorActionSummary(ActionOutput):
+    total_iterations: int
+
+
+@app.action(summary_type=GeneratorActionSummary)
 def generator_action(
-    params: Params, soar: SOARClient, asset: Asset
+    params: Params, soar: SOARClient[GeneratorActionSummary], asset: Asset
 ) -> Iterator[GeneratorActionOutput]:
     """Generates a sequence of numbers."""
     logger.info(f"Generator action triggered with params: {params}")
     for i in range(5):
         yield GeneratorActionOutput(iteration=i)
+    soar.set_summary(GeneratorActionSummary(total_iterations=5))
 
 
 if __name__ == "__main__":

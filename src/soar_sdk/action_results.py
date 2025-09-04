@@ -37,7 +37,10 @@ class ActionResult(PhantomActionResult):
     """
 
     def __init__(
-        self, status: bool, message: str, param: Optional[dict] = None
+        self,
+        status: bool,
+        message: str,
+        param: Optional[dict] = None,
     ) -> None:
         """Initialize an ActionResult with status, message, and optional parameters.
 

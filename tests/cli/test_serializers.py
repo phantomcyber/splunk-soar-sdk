@@ -128,6 +128,16 @@ def test_outputs_serialize_with_defaults():
             "data_path": "action_result.message",
             "data_type": "string",
         },
+        {
+            "data_path": "summary.total_objects",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
+        {
+            "data_path": "summary.total_objects_successful",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
     ]
 
 
@@ -176,6 +186,16 @@ def test_outputs_serialize_output_class():
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
             "example_values": [True, False],
+        },
+        {
+            "data_path": "summary.total_objects",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
+        {
+            "data_path": "summary.total_objects_successful",
+            "data_type": "numeric",
+            "example_values": [1],
         },
     ]
 
@@ -250,5 +270,15 @@ def test_outputs_serialize_with_parameters_class():
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
             "example_values": [True, False],
+        },
+        {
+            "data_path": "summary.total_objects",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
+        {
+            "data_path": "summary.total_objects_successful",
+            "data_type": "numeric",
+            "example_values": [1],
         },
     ]

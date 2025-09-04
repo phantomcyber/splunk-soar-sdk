@@ -5,7 +5,7 @@ try:
 except ImportError:
     _soar_is_available = False
 
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 if TYPE_CHECKING or not _soar_is_available:
 
@@ -13,6 +13,7 @@ if TYPE_CHECKING or not _soar_is_available:
         def __init__(self, param: Optional[dict] = None) -> None:
             self.status = False
             self.message = ""
+            self.summary: dict[str, Any] = {}
 
             if param is None:
                 self.param = {}
@@ -44,6 +45,12 @@ if TYPE_CHECKING or not _soar_is_available:
 
         def get_data(self) -> list[dict]:
             return getattr(self, "_data", [])
+
+        def set_summary(self, summary: dict) -> None:
+            self.summary = summary
+
+        def get_summary(self) -> dict:
+            return self.summary
 
 
 __all__ = ["ActionResult"]
