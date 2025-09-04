@@ -42,25 +42,25 @@ class SOARClient(Generic[SummaryType]):
     @property
     @abstractmethod
     def client(self) -> httpx.Client:
-        """Subclasses must define the client property."""
+        """Generic HTTP client. Subclasses must define."""
         pass
 
     @property
     @abstractmethod
     def vault(self) -> Vault:
-        """Subclasses must define the vault property."""
+        """Object governing interaction with the SOAR Vault API. Subclasses must define."""
         pass
 
     @property
     @abstractmethod
     def artifact(self) -> Artifact:
-        """API interface to manage SOAR artifacts."""
+        """Object governing interaction with the SOAR artifact API. Subclasses must define."""
         pass
 
     @property
     @abstractmethod
     def container(self) -> Container:
-        """API interface to manage SOAR containers."""
+        """Object governing interaction with the SOAR container API. Subclasses must define."""
         pass
 
     def get(
@@ -194,12 +194,12 @@ class SOARClient(Generic[SummaryType]):
         return response
 
     def get_soar_base_url(self) -> str:
-        """Gets the base URL for the SOAR API."""
+        """Get the base URL for the running SOAR system. Example: https://splunk.soar/"""
         return "https://localhost:9999/"
 
     @abstractmethod
     def update_client(self, soar_auth: SOARClientAuth, asset_id: str) -> None:
-        """Updates the client before an actions run with the input data.
+        """Hook to update the SOAR API client before any actions run with the input data.
 
         An example of what this function might do is authenticate the API client.
         """
@@ -207,20 +207,20 @@ class SOARClient(Generic[SummaryType]):
 
     @abstractmethod
     def set_summary(self, summary: SummaryType) -> None:
-        """Sets the summary for the action run."""
+        """Set the custom summary object for the action run."""
         pass
 
     @abstractmethod
     def set_message(self, message: str) -> None:
-        """Sets the summary message for the action run."""
+        """Set the summary message for the action run."""
         pass
 
     @abstractmethod
     def get_summary(self) -> Optional[SummaryType]:
-        """Gets the summary for the action run."""
+        """Get the summary for the action run."""
         pass
 
     @abstractmethod
     def get_message(self) -> Optional[str]:
-        """Gets the summary message for the action run."""
+        """Get the summary message for the action run."""
         pass
