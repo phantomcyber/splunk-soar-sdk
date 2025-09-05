@@ -122,19 +122,6 @@ Much like parameters, outputs can have simple data types such as ``str`` or ``in
       uid: int = OutputField(cef_types=["user id"])
       create_date: str
 
-By default, your action will display an "Action completed successfully" message in the SOAR UI. To customize this message, you can override the ``generate_action_summary_message`` method in your output class:
-
-.. code-block:: python
-
-   from soar_sdk.action_results import ActionOutput
-
-   class CreateUserOutput(ActionOutput):
-      uid: int
-      create_date: str
-
-      def generate_action_summary_message(self) -> str:
-         return f"User created with UID: {self.uid} on {self.create_date}"
-
 Output models can be nested, allowing you to create complex data structures:
 
 .. code-block:: python
@@ -152,6 +139,26 @@ Output models can be nested, allowing you to create complex data structures:
 
    class ListUsersOutput(ActionOutput):
       users: list[UserDetails]
+
+You can add summary data and a result message to your action, by calling `client.set_message` and `client.set_summary`. Summary objects are also subclasses of `ActionOutput`, and you must register them in your action decorator:
+
+.. code-block:: python
+
+   from soar_sdk.action_results import ActionOutput, OutputField
+   from soar_sdk.abstract import SOARClient
+
+   class UserSummary(ActionOutput):
+      total_users: int
+      active_users: int
+      inactive_users: int
+
+   @app.action(summary_type=UserSummary)
+   def list_users(params: ListUsersParams, client: SOARClient[UserSummary]) -> ListUsersOutput:
+       ...
+       client.set_summary(UserSummary(total_users=100, active_users=80, inactive_users=20))
+       client.set_message("Found 100 users")
+       return ListUsersOutput(users=users)
+
 
 For more details, see the ``ActionOutput`` class and the ``OutputField`` function below:
 
