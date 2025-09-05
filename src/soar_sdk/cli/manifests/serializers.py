@@ -1,9 +1,12 @@
 from typing import Any, Optional
 from collections.abc import Iterator
+from logging import getLogger
 
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
+
+logger = getLogger(__name__)
 
 
 class ParamsSerializer:
@@ -45,6 +48,14 @@ class OutputsSerializer:
         summary_class: Optional[type[ActionOutput]] = None,
     ) -> list[OutputFieldSpecification]:
         """Serializes the data paths of an ActionOutput class to JSON schema."""
+        if (
+            outputs_class.generate_action_summary_message
+            != ActionOutput.generate_action_summary_message
+        ):
+            logger.warning(
+                f"Overriding ActionOutput.generate_action_summary_message is deprecated. Please call SOARClient.set_message from your action handler instead. [in {outputs_class.__name__}]"
+            )
+
         status = OutputFieldSpecification(
             data_path="action_result.status",
             data_type="string",
