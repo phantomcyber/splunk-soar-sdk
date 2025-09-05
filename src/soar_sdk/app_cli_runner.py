@@ -281,6 +281,7 @@ class AppCliRunner:
                 logger.info(f"Result data: {data_pretty}")
                 logger.info(f"Result summary: {result.get_summary()}")
                 logger.info(f"Result message: {result.get_message()}")
+                logger.info(f"Objects successful/total: {int(result.get_status())}/1")
 
         if webhook_request := getattr(args, "webhook_request", None):
             soar_rest_client = SoarRestClient(
