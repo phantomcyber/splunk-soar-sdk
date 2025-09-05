@@ -4,7 +4,13 @@ on:
   push:
     branches:
       - main
-      - beta
+      - 'releases/**'
+    paths:
+      - 'docs/**'
+      - '.github/workflows/generate_docs.yml'
+  release:
+    types:
+      - published
   workflow_dispatch:
     inputs:
       ref:
@@ -47,7 +53,7 @@ jobs:
   publish_docs:
     runs-on: ubuntu-latest
     needs: generate_docs
-    if: ${{ github.event_name == 'push' || inputs.deploy_to_pages == true }}
+    if: ${{ github.event_name == 'push' || github.event_name == 'release' || inputs.deploy_to_pages == true }}
     permissions:
       contents: read
       pages: write
@@ -73,5 +79,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        with:
-          enablement: true
