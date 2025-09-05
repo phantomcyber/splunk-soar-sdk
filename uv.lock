@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.9, <3.14"
 resolution-markers = [
     "python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux'",
@@ -24,6 +24,18 @@ supported-markers = [
 required-markers = [
     "python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux'",
     "python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux'",
+]
+
+[[package]]
+name = "accessible-pygments"
+version = "0.0.5"
+source = { registry = "https://pypi.python.org/simple" }
+dependencies = [
+    { name = "pygments", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bc/c1/bbac6a50d02774f91572938964c582fff4270eee73ab822a4aeea4d8b11b/accessible_pygments-0.0.5.tar.gz", hash = "sha256:40918d3e6a2b619ad424cb91e556bd3bd8865443d9f22f1dcdf79e33c8046872", size = 1377899, upload-time = "2024-05-10T11:23:10.216Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/3f/95338030883d8c8b91223b4e21744b04d11b161a3ef117295d8241f50ab4/accessible_pygments-0.0.5-py3-none-any.whl", hash = "sha256:88ae3211e68a1d0b011504b2ffc1691feafce124b845bd072ab6f9f66f34d4b7", size = 1395903, upload-time = "2024-05-10T11:23:08.421Z" },
 ]
 
 [[package]]
@@ -309,6 +321,47 @@ source = { registry = "https://pypi.python.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/0a/10/c23352565a6544bdc5353e0b15fc1c563352101f30e24bf500207a54df9a/filelock-3.18.0.tar.gz", hash = "sha256:adbc88eabb99d2fec8c9c1b229b171f18afa655400173ddc653d5d01501fb9f2", size = 18075, upload-time = "2025-03-14T07:11:40.47Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4d/36/2a115987e2d8c300a974597416d9de88f2444426de9571f4b59b2cca3acc/filelock-3.18.0-py3-none-any.whl", hash = "sha256:c401f4f8377c4464e6db25fff06205fd89bdd83b65eb0488ed1b160f780e21de", size = 16215, upload-time = "2025-03-14T07:11:39.145Z" },
+]
+
+[[package]]
+name = "furo"
+version = "2025.7.19"
+source = { registry = "https://pypi.python.org/simple" }
+dependencies = [
+    { name = "accessible-pygments", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "beautifulsoup4", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "pygments", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "sphinx", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "sphinx-basic-ng", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/69/312cd100fa45ddaea5a588334d2defa331ff427bcb61f5fe2ae61bdc3762/furo-2025.7.19.tar.gz", hash = "sha256:4164b2cafcf4023a59bb3c594e935e2516f6b9d35e9a5ea83d8f6b43808fe91f", size = 1662054, upload-time = "2025-07-19T10:52:09.754Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3a/34/2b07b72bee02a63241d654f5d8af87a2de977c59638eec41ca356ab915cd/furo-2025.7.19-py3-none-any.whl", hash = "sha256:bdea869822dfd2b494ea84c0973937e35d1575af088b6721a29c7f7878adc9e3", size = 342175, upload-time = "2025-07-19T10:52:02.399Z" },
+]
+
+[[package]]
+name = "gitdb"
+version = "4.0.12"
+source = { registry = "https://pypi.python.org/simple" }
+dependencies = [
+    { name = "smmap", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/72/94/63b0fc47eb32792c7ba1fe1b694daec9a63620db1e313033d18140c2320a/gitdb-4.0.12.tar.gz", hash = "sha256:5ef71f855d191a3326fcfbc0d5da835f26b13fbcba60c32c21091c349ffdb571", size = 394684, upload-time = "2025-01-02T07:20:46.413Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a0/61/5c78b91c3143ed5c14207f463aecfc8f9dbb5092fb2869baf37c273b2705/gitdb-4.0.12-py3-none-any.whl", hash = "sha256:67073e15955400952c6565cc3e707c554a4eea2e428946f7a4c162fab9bd9bcf", size = 62794, upload-time = "2025-01-02T07:20:43.624Z" },
+]
+
+[[package]]
+name = "gitpython"
+version = "3.1.45"
+source = { registry = "https://pypi.python.org/simple" }
+dependencies = [
+    { name = "gitdb", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "typing-extensions", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9a/c8/dd58967d119baab745caec2f9d853297cec1989ec1d63f677d3880632b88/gitpython-3.1.45.tar.gz", hash = "sha256:85b0ee964ceddf211c41b9f27a49086010a190fd8132a24e21f362a4b36a791c", size = 215076, upload-time = "2025-07-24T03:45:54.871Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/01/61/d4b89fec821f72385526e1b9d9a3a0385dda4a72b206d28049e2c7cd39b8/gitpython-3.1.45-py3-none-any.whl", hash = "sha256:8908cb2e02fb3b93b7eb0f2827125cb699869470432cc885f019b8fd0fccff77", size = 208168, upload-time = "2025-07-24T03:45:52.517Z" },
 ]
 
 [[package]]
@@ -1000,6 +1053,24 @@ wheels = [
 ]
 
 [[package]]
+name = "six"
+version = "1.17.0"
+source = { registry = "https://pypi.python.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/94/e7/b2c673351809dca68a0e064b6af791aa332cf192da575fd474ed7d6f16a2/six-1.17.0.tar.gz", hash = "sha256:ff70335d468e7eb6ec65b95b99d3a2836546063f63acc5171de367e834932a81", size = 34031, upload-time = "2024-12-04T17:35:28.174Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl", hash = "sha256:4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274", size = 11050, upload-time = "2024-12-04T17:35:26.475Z" },
+]
+
+[[package]]
+name = "smmap"
+version = "5.0.2"
+source = { registry = "https://pypi.python.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/44/cd/a040c4b3119bbe532e5b0732286f805445375489fceaec1f48306068ee3b/smmap-5.0.2.tar.gz", hash = "sha256:26ea65a03958fa0c8a1c7e8c7a58fdc77221b8910f6be2131affade476898ad5", size = 22329, upload-time = "2025-01-02T07:14:40.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/04/be/d09147ad1ec7934636ad912901c5fd7667e1c858e19d355237db0d0cd5e4/smmap-5.0.2-py3-none-any.whl", hash = "sha256:b30115f0def7d7531d22a0fb6502488d879e75b260a9db4d0819cfb25403af5e", size = 24303, upload-time = "2025-01-02T07:14:38.724Z" },
+]
+
+[[package]]
 name = "sniffio"
 version = "1.3.1"
 source = { registry = "https://pypi.python.org/simple" }
@@ -1067,18 +1138,27 @@ wheels = [
 ]
 
 [[package]]
-name = "sphinx-rtd-theme"
-version = "2.0.0"
+name = "sphinx-basic-ng"
+version = "1.0.0b2"
 source = { registry = "https://pypi.python.org/simple" }
 dependencies = [
-    { name = "docutils", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "sphinx", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
-    { name = "sphinxcontrib-jquery", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fe/33/2a35a9cdbfda9086bda11457bcc872173ab3565b16b6d7f6b3efaa6dc3d6/sphinx_rtd_theme-2.0.0.tar.gz", hash = "sha256:bd5d7b80622406762073a04ef8fadc5f9151261563d47027de09910ce03afe6b", size = 2785005, upload-time = "2023-11-28T04:14:03.104Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/98/0b/a866924ded68efec7a1759587a4e478aec7559d8165fac8b2ad1c0e774d6/sphinx_basic_ng-1.0.0b2.tar.gz", hash = "sha256:9ec55a47c90c8c002b5960c57492ec3021f5193cb26cebc2dc4ea226848651c9", size = 20736, upload-time = "2023-07-08T18:40:54.166Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ea/46/00fda84467815c29951a9c91e3ae7503c409ddad04373e7cfc78daad4300/sphinx_rtd_theme-2.0.0-py2.py3-none-any.whl", hash = "sha256:ec93d0856dc280cf3aee9a4c9807c60e027c7f7b461b77aeffed682e68f0e586", size = 2824721, upload-time = "2023-11-28T04:13:59.589Z" },
+    { url = "https://files.pythonhosted.org/packages/3c/dd/018ce05c532a22007ac58d4f45232514cd9d6dd0ee1dc374e309db830983/sphinx_basic_ng-1.0.0b2-py3-none-any.whl", hash = "sha256:eb09aedbabfb650607e9b4b68c9d240b90b1e1be221d6ad71d61c52e29f7932b", size = 22496, upload-time = "2023-07-08T18:40:52.659Z" },
 ]
+
+[[package]]
+name = "sphinx-git"
+version = "11.0.0"
+source = { registry = "https://pypi.python.org/simple" }
+dependencies = [
+    { name = "gitpython", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "six", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "sphinx", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/6e/3c/b8648126dbbc44b34ab05eaec325ebe8c3dd0e69113796ed5d2309224a42/sphinx-git-11.0.0.tar.gz", hash = "sha256:6bf9d837de108c79fb7db585ebd590fd48f4d1f830b540420d0ca675f3b9f800", size = 16578, upload-time = "2019-08-11T12:40:51.136Z" }
 
 [[package]]
 name = "sphinxcontrib-applehelp"
@@ -1108,18 +1188,6 @@ wheels = [
 ]
 
 [[package]]
-name = "sphinxcontrib-jquery"
-version = "4.1"
-source = { registry = "https://pypi.python.org/simple" }
-dependencies = [
-    { name = "sphinx", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/de/f3/aa67467e051df70a6330fe7770894b3e4f09436dea6881ae0b4f3d87cad8/sphinxcontrib-jquery-4.1.tar.gz", hash = "sha256:1620739f04e36a2c779f1a131a2dfd49b2fd07351bf1968ced074365933abc7a", size = 122331, upload-time = "2023-03-14T15:01:01.944Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/76/85/749bd22d1a68db7291c89e2ebca53f4306c3f205853cf31e9de279034c3c/sphinxcontrib_jquery-4.1-py2.py3-none-any.whl", hash = "sha256:f936030d7d0147dd026a4f2b5a57343d233f1fc7b363f68b3d4f1cb0993878ae", size = 121104, upload-time = "2023-03-14T15:01:00.356Z" },
-]
-
-[[package]]
 name = "sphinxcontrib-jsmath"
 version = "1.0.1"
 source = { registry = "https://pypi.python.org/simple" }
@@ -1144,6 +1212,19 @@ source = { registry = "https://pypi.python.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/3b/44/6716b257b0aa6bfd51a1b31665d1c205fb12cb5ad56de752dfa15657de2f/sphinxcontrib_serializinghtml-2.0.0.tar.gz", hash = "sha256:e9d912827f872c029017a53f0ef2180b327c3f7fd23c87229f7a8e8b70031d4d", size = 16080, upload-time = "2024-07-29T01:10:09.332Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/52/a7/d2782e4e3f77c8450f727ba74a8f12756d5ba823d81b941f1b04da9d033a/sphinxcontrib_serializinghtml-2.0.0-py3-none-any.whl", hash = "sha256:6e2cb0eef194e10c27ec0023bfeb25badbbb5868244cf5bc5bdc04e4464bf331", size = 92072, upload-time = "2024-07-29T01:10:08.203Z" },
+]
+
+[[package]]
+name = "sphinxcontrib-typer"
+version = "0.5.1"
+source = { registry = "https://pypi.python.org/simple" }
+dependencies = [
+    { name = "sphinx", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "typer-slim", extra = ["standard"], marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c9/eb/695758b1a85c35c8b7222039d939eeaef68dcb575941c6f1fbe18c14c7c0/sphinxcontrib_typer-0.5.1.tar.gz", hash = "sha256:b455664c5820e5e6748466707fbac63aa864abf2b7006857dff4006772d3bbbf", size = 15982, upload-time = "2024-10-14T04:20:38.649Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/83/452c4b576996125402da7209012bd753501e764d6e2e177c7d497e34df48/sphinxcontrib_typer-0.5.1-py3-none-any.whl", hash = "sha256:74f1416392bfef39ea12c940f074383ff2fb27b3dc0388806012b87b8dae971c", size = 14427, upload-time = "2024-10-14T04:20:37.076Z" },
 ]
 
 [[package]]
@@ -1192,10 +1273,12 @@ dev = [
     { name = "types-urllib3", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
 ]
 docs = [
+    { name = "furo", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "myst-parser", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "sphinx", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "sphinx-autodoc-typehints", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
-    { name = "sphinx-rtd-theme", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "sphinx-git", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "sphinxcontrib-typer", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
 ]
 
 [package.metadata]
@@ -1241,10 +1324,12 @@ dev = [
     { name = "types-urllib3", specifier = ">=1.26.25.13,<2" },
 ]
 docs = [
+    { name = "furo", specifier = ">=2025.7.19" },
     { name = "myst-parser", specifier = ">=3.0.0,<4" },
     { name = "sphinx", specifier = ">=7.0.0,<8" },
     { name = "sphinx-autodoc-typehints", specifier = ">=2.0.0,<3" },
-    { name = "sphinx-rtd-theme", specifier = ">=2.0.0,<3" },
+    { name = "sphinx-git", specifier = ">=11.0.0" },
+    { name = "sphinxcontrib-typer", specifier = ">=0.5.1" },
 ]
 
 [[package]]
@@ -1337,6 +1422,25 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/98/1a/5f36851f439884bcfe8539f6a20ff7516e7b60f319bbaf69a90dc35cc2eb/typer-0.15.3.tar.gz", hash = "sha256:818873625d0569653438316567861899f7e9972f2e6e0c16dab608345ced713c", size = 101641, upload-time = "2025-04-28T21:40:59.204Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/48/20/9d953de6f4367163d23ec823200eb3ecb0050a2609691e512c8b95827a9b/typer-0.15.3-py3-none-any.whl", hash = "sha256:c86a65ad77ca531f03de08d1b9cb67cd09ad02ddddf4b34745b5008f43b239bd", size = 45253, upload-time = "2025-04-28T21:40:56.269Z" },
+]
+
+[[package]]
+name = "typer-slim"
+version = "0.17.3"
+source = { registry = "https://pypi.python.org/simple" }
+dependencies = [
+    { name = "click", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "typing-extensions", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/fc/9b/64d03ce34567476b05f5f026d9b1caaf2fdce2a0dad1bb1a77732186d74a/typer_slim-0.17.3.tar.gz", hash = "sha256:aee6d704e23f45898e83551546aa89d9d9c9a5c22b47f43106fff3ea36f029fd", size = 103613, upload-time = "2025-08-30T12:35:05.361Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/eb/63/b3600071f4ec964573798c86b63d982eb63dd655ccf38310b56577c709fd/typer_slim-0.17.3-py3-none-any.whl", hash = "sha256:692ed0168484206757edb071040c6489857ec49e163acca10c8e32857289732a", size = 46555, upload-time = "2025-08-30T12:35:03.861Z" },
+]
+
+[package.optional-dependencies]
+standard = [
+    { name = "rich", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
+    { name = "shellingham", marker = "(python_full_version < '3.10' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'arm64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'darwin') or (python_full_version < '3.10' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'aarch64' and sys_platform == 'linux') or (python_full_version < '3.10' and platform_machine == 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.13' and platform_machine == 'x86_64' and sys_platform == 'linux')" },
 ]
 
 [[package]]

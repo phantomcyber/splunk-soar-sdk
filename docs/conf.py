@@ -12,6 +12,7 @@ from pathlib import Path
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 sys.path.insert(0, str(Path("../src").resolve()))
+sys.path.insert(0, str(Path("../src/soar_sdk/cli").resolve()))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -43,6 +44,9 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx.ext.intersphinx",
+    "sphinx.ext.githubpages",
+    "sphinxcontrib.typer",
+    "sphinx_git",
     "sphinx_autodoc_typehints",
     "myst_parser",
 ]
@@ -94,21 +98,9 @@ pygments_style = "sphinx"
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 html_theme_options = {
-    "canonical_url": "",
-    "analytics_id": "",
-    "logo_only": False,
-    "display_version": False,
-    "prev_next_buttons_location": "bottom",
-    "style_external_links": False,
-    "style_nav_header_background": "white",
-    # Toc options
-    "collapse_navigation": True,
-    "sticky_navigation": True,
-    "navigation_depth": 4,
-    "includehidden": True,
-    "titles_only": False,
+    "navigation_with_keys": True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -144,6 +136,7 @@ myst_enable_extensions = [
     "substitution",
     "tasklist",
 ]
+myst_heading_anchors = 2
 
 # -- Options for autodoc_typehints ------------------------------------------
 typehints_fully_qualified = False

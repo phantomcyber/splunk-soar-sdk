@@ -323,11 +323,7 @@ class App:
     ) -> ActionDecorator:
         """Decorator for registering an action function.
 
-        This decorator marks a function as an action handler for the app. For more
-        information on how to write action functions, see the follow actions documentation:
-            - :doc:`Action Anatomy </actions/action_anatomy>`
-            - :doc:`Action Parameters </actions/action_params>`
-            - :doc:`Action Outputs </actions/action_outputs>`
+        This decorator marks a function as an action handler for the app.
         """
         return ActionDecorator(
             app=self,

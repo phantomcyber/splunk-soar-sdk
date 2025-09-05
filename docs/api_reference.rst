@@ -4,8 +4,9 @@ API Reference
 This section documents the public API of the Splunk SOAR SDK.
 
 .. _api_ref_core_label:
+
 Core Functionality
-------------
+------------------
 
 App
 ~~~
@@ -17,6 +18,7 @@ App
 The main class for creating SOAR applications.
 
 .. _api_ref_key_methods_label:
+
 Key Methods
 ^^^^^^^^^^^
 
@@ -29,8 +31,9 @@ Key Methods
 .. automethod:: soar_sdk.app.App.generic_action
 
 .. _asset-configuration-label:
+
 Asset Configuration
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 AssetField
 ^^^^^^^^^^
@@ -39,7 +42,7 @@ AssetField
    :noindex:
 
 BaseAsset
-^^^^^^^^^^
+^^^^^^^^^
 
 .. autoclass:: soar_sdk.asset.BaseAsset
    :members: to_json_schema
@@ -48,8 +51,9 @@ BaseAsset
 
 
 .. _action-param-label:
+
 Action Parameters
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 Action parameters are defined in Pydantic models, which extend the ``soar_sdk.params.Params`` class.
 At their most basic, parameters can have a simple data type such as ``str`` or ``int``.
@@ -69,7 +73,7 @@ At their most basic, parameters can have a simple data type such as ``str`` or `
 
 
 Adding extra metadata
-^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^
 
 You can use the ``Param`` function to add extra information to a parameter type.
 For example, let's give the ``uid`` field a Common Event Format (CEF) type and make it optional.
@@ -107,8 +111,9 @@ Generic action functions require a specific parameter class called `GenericActio
 
 
 .. _action-output-label:
+
 Action Outputs
-~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Action outputs are defined in Pydantic models, which extend the ``soar_sdk.action_results.ActionOutput`` class.
 
@@ -215,7 +220,7 @@ Data Models
    :exclude-members: Config
 
 Logging
-----------
+-------
 
 .. autoexception:: soar_sdk.logging.getLogger
    :show-inheritance:

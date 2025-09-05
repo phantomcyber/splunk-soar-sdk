@@ -1,17 +1,13 @@
 
 # Getting started
 
-In this section we will guide you through the basic process of creating your first draft of the SOAR App.
+In this section we will guide you through the basic process of creating your first SOAR App.
 
-## Actions philosophy
+## What is a SOAR app and what are actions?
 
-Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality. Each app provides a new set of actions that can be used for the security investigation (also automated one, when used in playbooks). Usually, a single app adds actions for one specific tool or 3rd party service (e.g. whois lookup or geolocation).
+Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality. Each app provides a new set of actions that can be used to automate security investigations and response. Usually, a single app adds actions which integrate with a specific tool or 3rd party service (e.g. whois lookup or geolocation).
 
-When building your app, you will focus on implementing the actions like sending data to the external service
-or updating the containers on SOAR platform.
-
-This SDK is a set of tools to build, test and run your own app that will extend the SOAR installation by implementing
-actions.
+This SDK is a set of tools to build, test and run your own app that will extend SOAR by implementing actions which integrate with 3rd parties.
 
 # Your first app
 
