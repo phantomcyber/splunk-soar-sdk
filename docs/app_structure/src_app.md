@@ -92,7 +92,7 @@ or failure status (represented by boolean values of `True` or `False`). The acti
 SDK has one Action Result created automatically from the returned tuple consisting
 of boolean result and the result message.
 
-```pthon
+```python
 if __name__ == "__main__":
     app.run()
 ```

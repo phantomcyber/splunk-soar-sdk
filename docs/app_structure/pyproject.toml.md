@@ -5,12 +5,12 @@ The `pyproject.toml` file is the core information source on the app and its deve
 It can be [used as usual](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/)
 when building python packages. For the purposes of the SOAR app development, we are also using poetry
 with this file for managing the dev environment and dependencies. Additionally, the file contains
-section (table) with meta information needed for generating the [SOAR App Manifest](/pyproject.toml.html#soar-app-information-table).
+section (table) with meta information needed for generating the [SOAR App Manifest](#soar-app-information-table).
 
 The file contents provide:
 - basic application info (e.g. name, version, description)
 - dependencies - which SDK uses for building the app dependency wheels
-- soar app Manifest information - the data required for creating the app Manifest (e.g. appid, type )
+- SOAR app manifest information - the data required for creating the app manifest (e.g. appid, type )
 
 Here's the example file contents for starting app:
 
@@ -89,7 +89,7 @@ and keeping your app maintainable:
 ## SOAR App information table
 
 In `[tool.soar.app]` you will put all necessary configuration for the app, which will be mainly used
-for creating Manifest file and then running the app in the SOAR platform.
+for creating manifest file and then running the app in the SOAR platform.
 
 All the keys provided above for the table are required. You can find their description and possible values
-in the [SOAR documentation page](https://docs.splunk.com/Documentation/SOAR/current/DevelopApps/Metadata)
+in the [SOAR documentation page](https://help.splunk.com/Documentation/SOAR/current/DevelopApps/Metadata)

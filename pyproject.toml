@@ -96,8 +96,10 @@ dev = [
 docs = [
     "sphinx>=7.0.0,<8",
     "sphinx-autodoc-typehints>=2.0.0,<3",
-    "sphinx-rtd-theme>=2.0.0,<3",
     "myst-parser>=3.0.0,<4",
+    "furo>=2025.7.19",
+    "sphinxcontrib-typer>=0.5.1",
+    "sphinx-git>=11.0.0",
 ]
 
 [[tool.uv.index]]

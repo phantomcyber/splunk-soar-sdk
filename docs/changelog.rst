@@ -1,0 +1,4 @@
+Changelog
+=========
+
+.. git_changelog::
