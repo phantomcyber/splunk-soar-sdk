@@ -81,7 +81,7 @@ Connect your view handler to an action using the `view_handler` parameter:
     name="scan file",
     view_handler=render_detections
 )
-def scan_file_action(params: ScanParams, client: SOARClient) -> list[DetectionOutput]:
+def scan_file_action(params: ScanParams, soar: SOARClient) -> list[DetectionOutput]:
     # Your action implementation
     return detection_results
 ```

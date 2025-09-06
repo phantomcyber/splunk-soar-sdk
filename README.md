@@ -95,8 +95,8 @@ app = App(name="test_app", asset_cls=Asset, appid="1e1618e7-2f70-4fc0-916a-f96fa
 
 
 @app.test_connectivity()
-def test_connectivity(client: SOARClient, asset: Asset) -> None:
-    client.debug(f"testing connectivity against {asset.base_url}")
+def test_connectivity(soar: SOARClient, asset: Asset) -> None:
+    soar.debug(f"testing connectivity against {asset.base_url}")
 
 
 class ReverseStringParams(Params):
@@ -109,7 +109,7 @@ class ReverseStringOutput(ActionOutput):
 
 @app.action(action_type="test", verbose="Reverses a string.")
 def reverse_string(
-    param: ReverseStringParams, client: SOARClient
+    param: ReverseStringParams, soar: SOARClient
 ) -> ReverseStringOutput:
     reversed_string = param.input_string[::-1]
     return ReverseStringOutput(reversed_string=reversed_string)

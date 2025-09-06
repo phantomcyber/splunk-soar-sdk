@@ -48,9 +48,7 @@ class ReverseStringOutput(ActionOutput):
 
 
 @app.action(action_type="test", verbose="Reverses a string.")
-def reverse_string(
-    param: ReverseStringParams, client: SOARClient
-) -> ReverseStringOutput:
+def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStringOutput:
     logger.debug("params: %s", param)
     reversed_string = param.input_string[::-1]
     logger.debug("reversed_string %s", reversed_string)

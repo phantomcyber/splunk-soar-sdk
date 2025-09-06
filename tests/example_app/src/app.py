@@ -80,7 +80,7 @@ def http_action(params: GenericActionParams, asset: Asset) -> GenericActionOutpu
 
 @app.on_poll()
 def on_poll(
-    params: OnPollParams, client: SOARClient, asset: Asset
+    params: OnPollParams, soar: SOARClient, asset: Asset
 ) -> Iterator[Union[Container, Artifact]]:
     # Create container first for artifacts
     yield Container(

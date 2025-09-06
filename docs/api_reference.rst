@@ -158,10 +158,10 @@ You can add summary data and a result message to your action, by calling `client
       inactive_users: int
 
    @app.action(summary_type=UserSummary)
-   def list_users(params: ListUsersParams, client: SOARClient[UserSummary]) -> ListUsersOutput:
+   def list_users(params: ListUsersParams, soar: SOARClient[UserSummary]) -> ListUsersOutput:
        ...
-       client.set_summary(UserSummary(total_users=100, active_users=80, inactive_users=20))
-       client.set_message("Found 100 users")
+       soar.set_summary(UserSummary(total_users=100, active_users=80, inactive_users=20))
+       soar.set_message("Found 100 users")
        return ListUsersOutput(users=users)
 
 

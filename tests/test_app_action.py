@@ -334,12 +334,12 @@ def test_delete(
             pass
 
     @simple_app.action()
-    def delete_action(params: Params, client: SOARClient) -> ActionOutput:
-        client.delete("/some/delete/endpoint")
+    def delete_action(params: Params, soar: SOARClient) -> ActionOutput:
+        soar.delete("/some/delete/endpoint")
         assert result
         assert ActionOutput()
 
-    result = delete_action(SampleParams(), client=TestClient())
+    result = delete_action(SampleParams(), soar=TestClient())
     assert mock_delete_any_soar_call.call_count == 1
 
 
