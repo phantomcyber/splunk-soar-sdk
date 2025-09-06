@@ -56,12 +56,12 @@ class SOARHandler(logging.Handler):
                     ph_ipc.sendstatus(
                         self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, False
                     )
-            elif record.levelno in (logging.DEBUG, logging.WARNING, logging.ERROR):
+            elif record.levelno in (logging.DEBUG, logging.WARNING):
                 if is_new_soar:
                     ph_ipc.debugprint(message)
                 else:
                     ph_ipc.debugprint(self.__handle, message, 2)
-            elif record.levelno == logging.CRITICAL:
+            elif record.levelno in (logging.ERROR, logging.CRITICAL):
                 if is_new_soar:
                     ph_ipc.errorprint(message)
                 else:

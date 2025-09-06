@@ -8,8 +8,8 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import OnPollParams, GenericActionParams, Params
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.logging import getLogger
 from soar_sdk.action_results import ActionOutput, GenericActionOutput
+from soar_sdk.logging import getLogger
 
 logger = getLogger()
 
