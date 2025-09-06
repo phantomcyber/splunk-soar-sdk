@@ -1,26 +1,36 @@
+.. _api_reference:
+
 API Reference
 =============
 
 This section documents the public API of the Splunk SOAR SDK.
 
-.. _api_ref_core_label:
-
-Core Functionality
+Jump to a section:
 ------------------
 
-App
-~~~
+- :ref:`api_ref_core_label`
+- :ref:`api_ref_key_methods_label`
+- :ref:`asset-configuration-label`
+- :ref:`action-param-label`
+- :ref:`action-output-label`
+- :ref:`api_ref_apis_label`
+- :ref:`api_ref_data_models_label`
+- :ref:`api_ref_logging_label`
+- :ref:`api_ref_exceptions_label`
+
+.. _api_ref_core_label:
+
+The App Class
+-------------
 
 .. autoclass:: soar_sdk.app.App
-   :no-members:
    :show-inheritance:
-
-The main class for creating SOAR applications.
+   :exclude-members: action, test_connectivity, on_poll, register_action, enable_webhooks, view_handler, generic_action
 
 .. _api_ref_key_methods_label:
 
-Key Methods
-^^^^^^^^^^^
+Key App Methods
+~~~~~~~~~~~~~~~
 
 .. automethod:: soar_sdk.app.App.action
 .. automethod:: soar_sdk.app.App.test_connectivity
@@ -39,7 +49,6 @@ AssetField
 ^^^^^^^^^^
 
 .. autofunction:: soar_sdk.asset.AssetField
-   :noindex:
 
 BaseAsset
 ^^^^^^^^^
@@ -177,6 +186,8 @@ For generic action functions we have provided a convenience class called `Generi
 
 .. autoclass:: soar_sdk.action_results.GenericActionOutput
 
+.. _api_ref_apis_label:
+
 APIs
 ----
 
@@ -201,6 +212,8 @@ Vault API
    :members: create_attachment, add_attachment, get_attachment, delete_attachment
    :show-inheritance:
 
+.. _api_ref_data_models_label:
+
 Data Models
 -----------
 
@@ -218,6 +231,8 @@ Data Models
 
 .. autoclass:: soar_sdk.models.view.ResultSummary
    :exclude-members: Config
+
+.. _api_ref_logging_label:
 
 Logging
 -------
@@ -242,6 +257,8 @@ Logging
 
 .. autoexception:: soar_sdk.logging.critical
    :show-inheritance:
+
+.. _api_ref_exceptions_label:
 
 Exceptions
 ----------

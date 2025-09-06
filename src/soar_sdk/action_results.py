@@ -151,13 +151,16 @@ class ActionOutput(BaseModel):
     """
 
     def generate_action_summary_message(self) -> str:
-        """Generate a summary message for the action output.
+        """.. deprecated:: 1.3.0
+
+        Generate a summary message for the action output.
 
         This method provides a human-readable summary of the action results,
         which appears when running the action in a SOAR playbook or container.
 
         Returns:
             A string summarizing the action output.
+
         """
         return "Action completed successfully."
 
