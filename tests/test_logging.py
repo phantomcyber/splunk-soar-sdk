@@ -32,89 +32,97 @@ def test_root_logger():
 def test_logging():
     logger = getLogger()
 
-    logger.info("This is an info message from the test_logging module.")
+    msg = "This is an info message from the test_logging module."
+    logger.info(msg)
     ph_ipc.sendstatus.assert_called_with(
         None,
         1,
-        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m",
+        f"\x1b[0m{msg}\x1b[0m",
         True,
     )
 
-    logger.debug("This is a debug message from the test_logging module.")
-    ph_ipc.debugprint.assert_called_with(
-        None, "\x1b[2mThis is a debug message from the test_logging module.\x1b[0m", 2
-    )
+    msg = "This is a debug message from the test_logging module."
+    logger.debug(msg)
+    ph_ipc.debugprint.assert_called_with(None, f"\x1b[2m{msg}\x1b[0m", 2)
 
-    logger.critical("This is a critical message from the test_logging module.")
+    msg = "This is a critical message from the test_logging module."
+    logger.critical(msg)
     ph_ipc.errorprint.assert_called_with(
         None,
-        "\x1b[1;4;31mThis is a critical message from the test_logging module.\x1b[0m",
+        f"\x1b[1;4;31m{msg}\x1b[0m",
         2,
     )
 
-    logger.progress("This is a progress message from the test_logging module.")
+    msg = "This is a progress message from the test_logging module."
+    logger.progress(msg)
     ph_ipc.sendstatus.assert_called_with(
         None,
         1,
-        "This is a progress message from the test_logging module.\x1b[0m",
+        f"{msg}\x1b[0m",
         False,
     )
 
-    logger.warning("This is a warning message from the test_logging module.")
+    msg = "This is a warning message from the test_logging module."
+    logger.warning(msg)
     ph_ipc.debugprint.assert_called_with(
         None,
-        "\x1b[33mThis is a warning message from the test_logging module.\x1b[0m",
+        f"\x1b[33m{msg}\x1b[0m",
         2,
     )
 
-    logger.error("This is a warning message from the test_logging module.")
-    ph_ipc.debugprint.assert_called_with(
+    msg = "This is an error message from the test_logging module."
+    logger.error(msg)
+    ph_ipc.errorprint.assert_called_with(
         None,
-        "\x1b[1;31mThis is a warning message from the test_logging module.\x1b[0m",
+        f"\x1b[1;31m{msg}\x1b[0m",
         2,
     )
 
 
 def test_standalone_logging():
-    info("This is an info message from the test_logging module.")
+    msg = "This is an info message from the test_logging module."
+    info(msg)
     ph_ipc.sendstatus.assert_called_with(
         None,
         1,
-        "\x1b[0mThis is an info message from the test_logging module.\x1b[0m",
+        f"\x1b[0m{msg}\x1b[0m",
         True,
     )
 
-    debug("This is a debug message from the test_logging module.")
-    ph_ipc.debugprint.assert_called_with(
-        None, "\x1b[2mThis is a debug message from the test_logging module.\x1b[0m", 2
-    )
+    msg = "This is a debug message from the test_logging module."
+    debug(msg)
+    ph_ipc.debugprint.assert_called_with(None, f"\x1b[2m{msg}\x1b[0m", 2)
 
-    critical("This is a critical message from the test_logging module.")
+    msg = "This is a critical message from the test_logging module."
+    critical(msg)
     ph_ipc.errorprint.assert_called_with(
         None,
-        "\x1b[1;4;31mThis is a critical message from the test_logging module.\x1b[0m",
+        f"\x1b[1;4;31m{msg}\x1b[0m",
         2,
     )
 
-    progress("This is a progress message from the test_logging module.")
+    msg = "This is a progress message from the test_logging module."
+    progress(msg)
     ph_ipc.sendstatus.assert_called_with(
         None,
         1,
-        "This is a progress message from the test_logging module.\x1b[0m",
+        f"{msg}\x1b[0m",
         False,
     )
 
-    warning("This is a warning message from the test_logging module.")
+    msg = "This is a warning message from the test_logging module."
+    warning(msg)
     ph_ipc.debugprint.assert_called_with(
         None,
-        "\x1b[33mThis is a warning message from the test_logging module.\x1b[0m",
+        f"\x1b[33m{msg}\x1b[0m",
         2,
     )
 
-    error("This is a warning message from the test_logging module.")
-    ph_ipc.debugprint.assert_called_with(
+    msg = "This is an error message from the test_logging module."
+    error(msg)
+    ph_ipc.errorprint.assert_called_with(
         None,
-        "\x1b[1;31mThis is a warning message from the test_logging module.\x1b[0m",
+        f"\x1b[1;31m{msg}\x1b[0m",
         2,
     )
 

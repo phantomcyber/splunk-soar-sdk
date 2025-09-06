@@ -134,8 +134,8 @@ def init_sdk_app(
     (src_dir / "__init__.py").write_text("from . import app\n\n__ALL__ = [app]\n")
 
     shutil.copy(
-        APP_INIT_TEMPLATES / "basic_app/.pre-commit-config.yml",
-        app_dir / ".pre-commit-config.yml",
+        APP_INIT_TEMPLATES / "basic_app/.pre-commit-config.yaml",
+        app_dir / ".pre-commit-config.yaml",
     )
     shutil.copy(
         APP_INIT_TEMPLATES / "basic_app/.gitignore",

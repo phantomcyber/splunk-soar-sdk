@@ -51,7 +51,7 @@ def test_generic_action_without_generic_action_params(app_with_action: App):
     with pytest.raises(TypeError) as exception_info:
 
         @app_with_action.generic_action()
-        def http_action(client: SOARClient) -> GenericActionOutput:
+        def http_action(soar: SOARClient) -> GenericActionOutput:
             pass
 
     assert (
@@ -62,7 +62,7 @@ def test_generic_action_without_generic_action_params(app_with_action: App):
     with pytest.raises(TypeError) as exception_info:
 
         @app_with_action.generic_action()
-        def http_action(params: Params, client: SOARClient) -> GenericActionOutput:
+        def http_action(params: Params, soar: SOARClient) -> GenericActionOutput:
             pass
 
     assert (

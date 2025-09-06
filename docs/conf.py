@@ -12,7 +12,6 @@ from pathlib import Path
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
 sys.path.insert(0, str(Path("../src").resolve()))
-sys.path.insert(0, str(Path("../src/soar_sdk/cli").resolve()))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -47,7 +46,10 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinxcontrib.typer",
     "sphinx_git",
+    "sphinx_copybutton",
     "sphinx_autodoc_typehints",
+    "sphinx_last_updated_by_git",
+    "sphinx_design",
     "myst_parser",
 ]
 
@@ -103,18 +105,9 @@ html_theme_options = {
     "navigation_with_keys": True,
 }
 
-# Add any paths that contain custom static files (such as style sheets) here,
-# relative to this directory. They are copied after the builtin static files,
-# so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
-
-# Custom CSS files
-html_css_files = [
-    "custom.css",
-]
-
-# Create _static directory if it doesn't exist
-Path("_static").mkdir(parents=True, exist_ok=True)
+html_context = {
+    "display_github": True,
+}
 
 # -- Options for intersphinx extension ---------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/extensions/intersphinx.html#configuration
@@ -142,3 +135,6 @@ myst_heading_anchors = 2
 typehints_fully_qualified = False
 always_document_param_types = True
 typehints_document_rtype = True
+
+
+autodoc_class_signature = "separated"

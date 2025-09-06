@@ -8,8 +8,8 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import OnPollParams, GenericActionParams, Params
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.logging import getLogger
 from soar_sdk.action_results import ActionOutput, GenericActionOutput
+from soar_sdk.logging import getLogger
 
 logger = getLogger()
 
@@ -80,7 +80,7 @@ def http_action(params: GenericActionParams, asset: Asset) -> GenericActionOutpu
 
 @app.on_poll()
 def on_poll(
-    params: OnPollParams, client: SOARClient, asset: Asset
+    params: OnPollParams, soar: SOARClient, asset: Asset
 ) -> Iterator[Union[Container, Artifact]]:
     # Create container first for artifacts
     yield Container(

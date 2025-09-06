@@ -31,7 +31,7 @@ class ActionResult(PhantomActionResult):
         >>> from soar_sdk.action_results import ActionResult
         >>> @app.action()
         ... def example_action(
-        ...     params: Params, client: SOARClient, asset: Asset
+        ...     params: Params, soar: SOARClient, asset: Asset
         ... ) -> ActionResult:
         ...     return ActionResult(True, "Successfully executed action")
     """
@@ -151,13 +151,16 @@ class ActionOutput(BaseModel):
     """
 
     def generate_action_summary_message(self) -> str:
-        """Generate a summary message for the action output.
+        """.. deprecated:: 1.3.0
+
+        Generate a summary message for the action output.
 
         This method provides a human-readable summary of the action results,
         which appears when running the action in a SOAR playbook or container.
 
         Returns:
             A string summarizing the action output.
+
         """
         return "Action completed successfully."
 

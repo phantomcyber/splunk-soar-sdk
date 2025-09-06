@@ -72,7 +72,7 @@ class OnPollDecorator:
         @wraps(function)
         def inner(
             params: OnPollParams,
-            client: SOARClient = self.app.soar_client,
+            soar: SOARClient = self.app.soar_client,
             *args: Any,  # noqa: ANN401
             **kwargs: Any,  # noqa: ANN401
         ) -> bool:
@@ -93,7 +93,7 @@ class OnPollDecorator:
                         self.app.actions_manager,
                     )
 
-                kwargs = self.app._build_magic_args(function, client=client, **kwargs)
+                kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
 
                 result = function(action_params, *args, **kwargs)
                 result = run_async_if_needed(result)

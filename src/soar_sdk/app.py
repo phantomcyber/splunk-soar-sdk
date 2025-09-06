@@ -136,10 +136,29 @@ class App:
         return self.actions_manager.get_actions()
 
     def cli(self) -> None:
-        """This is just a handy shortcut for reducing imports in the main app code.
+        """Create and execute an AppRunner to run an action via command line.
 
-        It uses AppRunner to run locally app the same way as main() in the legacy
-        connectors.
+        Calling this function in your app's main module will allow you to run
+        actions or webhook handlers directly from the command line for testing and debugging.
+
+        Example::
+
+            python app.py --help
+            usage: app.py [-h] [--soar-url SOAR_URL] [--soar-user SOAR_USER] [--soar-password SOAR_PASSWORD] {action,webhook} ...
+
+            positional arguments:
+            {action,webhook}
+                action              Run an action
+                webhook             Invoke a webhook handler
+
+            options:
+            -h, --help            show this help message and exit
+            --soar-url SOAR_URL   SOAR URL to connect to. Can be provided via PHANTOM_BASE_URL environment variable as well.
+            --soar-user SOAR_USER
+                                    Username to connect to SOAR instance. Can be provided via PHANTOM_USER environment variable as well
+            --soar-password SOAR_PASSWORD
+                                    Password to connect to SOAR instance. Can be provided via PHANTOM_PASSWORD environment variable as well
+
         """
         runner = AppCliRunner(self)
         runner.run()
@@ -374,7 +393,7 @@ class App:
         Example:
             >>> @app.on_poll()
             ... def on_poll(
-            ...     params: OnPollParams, client: SOARClient, asset: Asset
+            ...     params: OnPollParams, soar: SOARClient, asset: Asset
             ... ) -> Iterator[Union[Container, Artifact]]:
             ...     yield Container(
             ...         name="Network Alerts",
