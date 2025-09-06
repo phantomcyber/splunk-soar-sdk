@@ -31,7 +31,7 @@ class ActionResult(PhantomActionResult):
         >>> from soar_sdk.action_results import ActionResult
         >>> @app.action()
         ... def example_action(
-        ...     params: Params, client: SOARClient, asset: Asset
+        ...     params: Params, soar: SOARClient, asset: Asset
         ... ) -> ActionResult:
         ...     return ActionResult(True, "Successfully executed action")
     """
