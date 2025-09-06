@@ -15,6 +15,11 @@ dependencies = [
     {% endfor %}
 ]
 
+[tool.soar.app]
+main_module = "src.app:app"
+
+### YOU SHOULD NOT NEED TO TOUCH ANYTHING BELOW THIS LINE ###
+
 [dependency-groups]
 dev = [
     "coverage>=7.6.7,<8",
@@ -25,9 +30,6 @@ dev = [
     "pytest-watch>=4.2.0,<5",
     "ruff>=0.11.6,<1",
 ]
-
-[tool.soar.app]
-main_module = "src.app:app"
 
 [[tool.uv.index]]
 url = "https://pypi.python.org/simple"
