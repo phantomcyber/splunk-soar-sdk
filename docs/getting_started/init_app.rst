@@ -141,7 +141,7 @@ Let's break down this example to explain what happens here.
 
 The decorator registers new action functions against :class:`~soar_sdk.app.App` instances. It is responsible for many things related to running the app under the hood. Here are some things it takes care of:
 
-- registers new action functions, so they are invoked when running the app in SOAR platform
+- registers new action functions, so they are invoked when running the app in Splunk SOAR platform
 - sets the configuration values for the action (which can be defined by providing extra parameters to the decorator)
 - ensures that the action name (by default, derived from the function name) is unique within the app
 - checks if the action params are provided, valid and of the proper type
@@ -204,7 +204,7 @@ Testing and building the app
 Running from the command line
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-You can run any of your app's actions directly in your CLI, without installing a full copy of SOAR. Simply invoke the Python file that contains your app::
+You can run any of your app's actions directly in your CLI, without installing a full copy of Splunk SOAR. Simply invoke the Python file that contains your app::
 
     python src/app.py action my-action -p test_params.json -a test_asset.json
 
@@ -224,7 +224,7 @@ Because of this, you should ensure that your ``uv.lock`` is always up to date.
 Installing and running the app
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Now you can install the app in your SOAR platform to test how it works. You can do this by using the web interface of the platform.
+Now you can install the app in your Splunk SOAR platform to test how it works. You can do this by using the web interface of the platform.
 
 You can also do this from the command line::
 

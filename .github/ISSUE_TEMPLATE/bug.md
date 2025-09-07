@@ -16,7 +16,7 @@ Clear and concise steps to reproduce the issue.
 - If the issue is related to initializing, building, or testing an app from the command line, please include the commands you are running, and any relevant output.
 - If the issue is related to installing or running an app in Splunk SOAR, please provide the following:
   - Splunk SOAR platform version
-  - Is this an on-premises or SOAR Cloud deployment?
+  - Is this an on-premises or Splunk SOAR Cloud deployment?
   - For on-prem deployments, the OS name and version
   - Automation Broker version, if any
 
