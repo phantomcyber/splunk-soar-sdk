@@ -35,7 +35,7 @@
           "GET",
           "POST"
         ],
-        "declaration_lineno": 60,
+        "declaration_lineno": 58,
         "declaration_path": "src/app.py",
         "url_pattern": "test_webhook"
       },
@@ -45,7 +45,7 @@
           "POST",
           "DELETE"
         ],
-        "declaration_lineno": 72,
+        "declaration_lineno": 70,
         "declaration_path": "src/app.py",
         "url_pattern": "test_webhook/<asset_id>"
       },
@@ -54,7 +54,7 @@
           "GET",
           "POST"
         ],
-        "declaration_lineno": 85,
+        "declaration_lineno": 83,
         "declaration_path": "src/app.py",
         "url_pattern": "test_webhook_file"
       }
