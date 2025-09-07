@@ -1,7 +1,7 @@
 Custom Views
 ============
 
-In these documentation pages you will find detailed information on creating custom views for your SOAR app actions.
+In these documentation pages you will find detailed information on creating custom views for your Splunk SOAR app actions.
 
 Dive into the custom views documentation:
 

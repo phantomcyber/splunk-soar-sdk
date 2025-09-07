@@ -1,6 +1,6 @@
 # Templates
 
-Templates are Jinja2 HTML files that define how your action results are displayed. They receive data from view handlers and render it into the final HTML that users see in the SOAR interface.
+Templates are Jinja2 HTML files that define how your action results are displayed. They receive data from view handlers and render it into the final HTML that users see in the Splunk SOAR interface.
 
 For Jinja2 syntax and features, see the [official Jinja2 documentation](https://jinja.palletsprojects.com/en/stable/).
 
@@ -20,7 +20,7 @@ my_app/
 ```
 
 ### SDK-Specific Filters
-The SOAR SDK provides custom filters for common needs:
+The Splunk SOAR SDK provides custom filters for common needs:
 
 ```html
 <!-- Human-readable formatting -->
@@ -39,7 +39,7 @@ const data = {{ json_data|to_json|safe }};
 
 ## Widget Templates
 
-All custom views in SOAR use the widget template system, providing consistent styling and functionality.
+All custom views in Splunk SOAR use the widget template system, providing consistent styling and functionality.
 
 **Note:** You can also create fully custom templates without extending any base should it be desired.
 
@@ -96,7 +96,7 @@ These are base template blocks can be overridden when creating a template:
 - `custom_title_prop` - Custom properties for the title element
 
 ### Theming
-Widgets automatically conform to SOAR's light and dark themes. Background colors, text colors, and logo variants are handled based on theme unless overridden.
+Widgets automatically conform to Splunk SOAR's light and dark themes. Background colors, text colors, and logo variants are handled based on theme unless overridden.
 
 ### Example Template
 

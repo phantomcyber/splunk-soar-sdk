@@ -3,7 +3,7 @@
 Getting Started
 ===============
 
-In this section we will guide you through the basic process of creating your first SOAR App.
+In this section we will guide you through the basic process of creating your first Splunk SOAR App.
 
 .. toctree::
     :maxdepth: 4

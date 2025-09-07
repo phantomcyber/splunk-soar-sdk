@@ -36,12 +36,12 @@ Logger initialization
    :start-at: import getLogger
    :end-at: getLogger()
 
-The SDK provides a logging interface via the :func:`~soar_sdk.logging.getLogger` function. This is a standard Python logger which is pre-configured to work with either the local CLI or the SOAR platform. Within the platform,
+The SDK provides a logging interface via the :func:`~soar_sdk.logging.getLogger` function. This is a standard Python logger which is pre-configured to work with either the local CLI or the Splunk SOAR platform. Within the platform,
 
 - ``logger.debug()`` and ``logger.warning()`` messages are written to the ``spawn.log`` file at ``DEBUG`` level.
 - ``logger.error()`` and ``logger.critical()`` messages are written to the ``spawn.log`` file at ``ERROR`` level.
-- ``logger.info()`` messages are sent to the SOAR platform as persistent action progress messages, visible in the UI.
-- ``logger.progress()`` messages are sent to the SOAR platform as transient action progress messages, visible in the UI, but overwritten by subsequent progress messages.
+- ``logger.info()`` messages are sent to the Splunk SOAR platform as persistent action progress messages, visible in the UI.
+- ``logger.progress()`` messages are sent to the Splunk SOAR platform as transient action progress messages, visible in the UI, but overwritten by subsequent progress messages.
 
 When running locally via the CLI, all log messages are printed to the console, in colors corresponding to their log level.
 
@@ -56,7 +56,7 @@ Asset definition
     :lineno-match:
     :pyobject: Asset
 
-Apps should define an asset class to hold configuration information for the app. The asset class should be a `pydantic model <https://docs.pydantic.dev/1.10/usage/models/#basic-model-usage>`_ that inherits from :class:`~soar_sdk.asset.BaseAsset` and defines the app's configuration fields. Fields requiring metadata should be defined using an instance of :func:`~soar_sdk.asset.AssetField`. The SDK uses this information to generate the asset configuration form in the SOAR platform UI.
+Apps should define an asset class to hold configuration information for the app. The asset class should be a `pydantic model <https://docs.pydantic.dev/1.10/usage/models/#basic-model-usage>`_ that inherits from :class:`~soar_sdk.asset.BaseAsset` and defines the app's configuration fields. Fields requiring metadata should be defined using an instance of :func:`~soar_sdk.asset.AssetField`. The SDK uses this information to generate the asset configuration form in the Splunk SOAR platform UI.
 
 .. _app-structure-app-init:
 
@@ -70,7 +70,7 @@ App initialization
     :start-at: app = App(
     :end-at: )
 
-This is how you initialize the basic :class:`~soar_sdk.app.App` instance. The app object will be used to register actions, views, and/or webhooks. Keep in mind this object variable and its path are referenced by :ref:`pyproject.toml <app-structure-pyproject>` so the SOAR platform knows where the app instance is provided.
+This is how you initialize the basic :class:`~soar_sdk.app.App` instance. The app object will be used to register actions, views, and/or webhooks. Keep in mind this object variable and its path are referenced by :ref:`pyproject.toml <app-structure-pyproject>` so the Splunk SOAR platform knows where the app instance is provided.
 
 .. _app-structure-actions-def:
 
@@ -89,7 +89,7 @@ Actions are defined as standalone functions, which typically take arguments:
 The action's type hints are required by the SDK; the type hint for the ``params`` argument, as well as the action's return type (which must be a `pydantic model <https://docs.pydantic.dev/1.10/usage/models/#basic-model-usage>`_ class inheriting from :class:`~soar_sdk.action_results.ActionOutput`), are used to generate the action's datapaths in the manifest.
 
 
-Similarly, the action function's docstring is used to generate the action's description in the manifest and the SOAR platform UI. Also, the type hints for the ``soar`` and ``asset`` arguments are used at runtime to dynamically inject the appropriate arguments when the action is executed.
+Similarly, the action function's docstring is used to generate the action's description in the manifest and the Splunk SOAR platform UI. Also, the type hints for the ``soar`` and ``asset`` arguments are used at runtime to dynamically inject the appropriate arguments when the action is executed.
 
 test connectivity action
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -117,7 +117,7 @@ on poll action
     :lineno-match:
     :pyobject: on_poll
 
-``on poll`` is another special action that apps may choose to implement. This action always takes an :class:`~soar_sdk.params.OnPollParams` instance as its parameter. If defined, this action will be called in order to ingest new data into the Splunk SOAR platform. The action should yield  :class:`~soar_sdk.models.container.Container` and/or :class:`~soar_sdk.models.artifact.Artifact` instances representing the new data to be ingested. The SDK will handle actually creating the containers and artifacts in the platform.
+``on poll`` is another special action that apps may choose to implement. This action always takes an :class:`~soar_sdk.params.OnPollParams` instance as its parameter. If defined, this action will be called in order to ingest new data into the Splunk Splunk SOAR platform. The action should yield  :class:`~soar_sdk.models.container.Container` and/or :class:`~soar_sdk.models.artifact.Artifact` instances representing the new data to be ingested. The SDK will handle actually creating the containers and artifacts in the platform.
 
 generic action
 ^^^^^^^^^^^^^^
