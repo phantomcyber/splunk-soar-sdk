@@ -19,9 +19,7 @@ if TYPE_CHECKING:
 
 
 class GenericActionDecorator:
-    """
-    Class-based decorator for generic action functionality.
-    """
+    """Class-based decorator for generic action functionality."""
 
     def __init__(
         self,
@@ -32,8 +30,7 @@ class GenericActionDecorator:
         self.output_class = output_class
 
     def __call__(self, function: Callable) -> Action:
-        """
-        Decorator for the generic action.
+        """Decorator for the generic HTTP API action.
 
         The decorated function implements a generic action that can be used to call any endpoint of the underlying API service this app implements.
 
@@ -41,7 +38,6 @@ class GenericActionDecorator:
         This decorated function automatically gets all the parameters from the GenericActionParams class and passes them to the function. GenericActionParams represents the parameters required for most http requests.
         You should use your existing asset interface to make this request.
         """
-
         if self.app.actions_manager.get_action("generic_action"):
             raise TypeError(
                 "The 'generic_action' decorator can only be used once per App instance."

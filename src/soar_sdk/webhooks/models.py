@@ -12,6 +12,8 @@ WebhookHandler = Callable[["WebhookRequest"], "WebhookResponse"]
 
 
 class WebhookRequest(BaseModel, Generic[AssetType]):
+    """Canonical format for HTTP requests made to webhook URLs."""
+
     method: str
     headers: dict[str, str]
     path_parts: list[str]
@@ -24,16 +26,20 @@ class WebhookRequest(BaseModel, Generic[AssetType]):
 
     @property
     def path(self) -> str:
+        """URI path for the request."""
         return "/".join(self.path_parts)
 
 
 class WebhookResponse(BaseModel):
+    """Canonical format for HTTP responses from webhook URLs."""
+
     status_code: int
     headers: list[tuple[str, str]] = Field(default_factory=list)
     content: str
     is_base64_encoded: bool = False
 
     def set_header(self, name: str, value: str) -> None:
+        """Sets the response header 'name' to value 'value'."""
         for idx, header in enumerate(self.headers):
             if header[0] == name:
                 self.headers[idx] = (name, value)
@@ -42,10 +48,12 @@ class WebhookResponse(BaseModel):
         self.headers.append((name, value))
 
     def set_headers(self, headers: dict[str, str]) -> None:
+        """Bulk set headers from the provided dictionary."""
         for name, value in headers.items():
             self.set_header(name, value)
 
     def clear_header(self, name: str) -> None:
+        """Empty the HTTP response of headers."""
         for idx, header in enumerate(self.headers):
             if header[0] == name:
                 self.headers.pop(idx)
@@ -59,6 +67,10 @@ class WebhookResponse(BaseModel):
         status_code: int = 200,
         extra_headers: Optional[dict[str, Any]] = None,
     ) -> "WebhookResponse":
+        """Build a WebhookResponse object given raw textual content.
+
+        Produces an HTTP response with a 'text/plain' content type.
+        """
         response = WebhookResponse(
             content=content,
             status_code=status_code,
@@ -73,6 +85,10 @@ class WebhookResponse(BaseModel):
         status_code: int = 200,
         extra_headers: Optional[dict[str, Any]] = None,
     ) -> "WebhookResponse":
+        """Build a WebhookResponse object given a dictionary, to be interpreted as JSON.
+
+        Produces an HTTP response with an 'application/json' content type.
+        """
         response = WebhookResponse(
             content=json.dumps(content),
             status_code=status_code,
@@ -89,6 +105,13 @@ class WebhookResponse(BaseModel):
         status_code: int = 200,
         extra_headers: Optional[dict[str, Any]] = None,
     ) -> "WebhookResponse":
+        """Build a webhook response using the data in a given open file-like object.
+
+        Produces an HTTP response with the appropriate content type for the given file,
+        based on a buest-guess at the file's MIME type. If the file's MIME type cannot be
+        determined, a ValueError will be raised. If the file is open in 'bytes' mode,
+        the contents will be base64 encoded in the resulting HTTP response.
+        """
         is_base64_encoded = False
 
         content = fd.read()

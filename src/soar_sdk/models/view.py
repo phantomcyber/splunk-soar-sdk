@@ -18,6 +18,8 @@ class ViewContext(BaseModel):
     html_content: Optional[str] = None
 
     class Config:
+        """Pydantic config."""
+
         extra = "allow"
 
 

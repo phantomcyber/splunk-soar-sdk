@@ -30,7 +30,8 @@ repos:
         args:
           - --convention=google
           - --add-ignore=D100,D104,D105,D107
-        exclude: ^(tests/example_app*/|src/soar_sdk/shims/)
+        files: ^(src/soar_sdk/)
+        exclude: ^(src/soar_sdk/shims/)
         additional_dependencies: [tomli]
         verbose: true
         # Override the command to make it non-blocking

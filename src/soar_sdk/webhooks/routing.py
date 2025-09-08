@@ -1,5 +1,4 @@
-"""
-URL routing functionality for webhooks.
+"""URL routing functionality for webhooks.
 
 This module provides a router for mapping URL patterns to handler functions.
 """
@@ -19,6 +18,8 @@ class RouteConflictError(Exception):
 
 @dataclass
 class Route:
+    """Model of the metadata required for a webhook route."""
+
     string_pattern: str
     regex_pattern: re.Pattern
     methods: list[str]
@@ -30,8 +31,7 @@ AssetType = TypeVar("AssetType", bound=BaseAsset)
 
 
 class Router(Generic[AssetType]):
-    """
-    A router for mapping URL patterns to handler functions.
+    """A router for mapping URL patterns to handler functions.
 
     URL patterns can include literal components and parameters in the form of <param_name>.
     For example: "/models/<model_id>/properties" would match "/models/123/properties"
@@ -47,8 +47,7 @@ class Router(Generic[AssetType]):
         handler: Callable[[WebhookRequest], WebhookResponse],
         methods: Optional[Sequence[str]] = None,
     ) -> None:
-        """
-        Register a new route with the router.
+        """Register a new route with the router.
 
         Args:
             pattern: The URL pattern to match, e.g., "/models/<model_id>/properties"
@@ -89,8 +88,7 @@ class Router(Generic[AssetType]):
         )
 
     def handle_request(self, request: WebhookRequest[AssetType]) -> WebhookResponse:
-        """
-        Find a matching route for the request and invoke its handler.
+        """Find a matching route for the request and invoke its handler.
 
         Args:
             request: The webhook request to handle
@@ -127,8 +125,7 @@ class Router(Generic[AssetType]):
         return WebhookResponse.json_response({"error": "Not found"}, status_code=404)
 
     def _patterns_conflict(self, pattern1: str, pattern2: str) -> bool:
-        """
-        Check if two URL patterns conflict with each other.
+        """Check if two URL patterns conflict with each other.
 
         Patterns conflict if they have the same structure (same number of segments
         and the same segments are parameters vs literals), regardless of parameter names.
@@ -140,7 +137,6 @@ class Router(Generic[AssetType]):
         Returns:
             True if the patterns conflict, False otherwise
         """
-
         # Split into parts
         parts1 = pattern1.removeprefix("/").removesuffix("/").split("/")
         parts2 = pattern2.removeprefix("/").removesuffix("/").split("/")
@@ -166,8 +162,7 @@ class Router(Generic[AssetType]):
         return True
 
     def _pattern_to_regex(self, pattern: str) -> tuple[re.Pattern, dict[int, str]]:
-        """
-        Convert a URL pattern to a regex pattern and extract parameter names.
+        """Convert a URL pattern to a regex pattern and extract parameter names.
 
         Args:
             pattern: The URL pattern to convert

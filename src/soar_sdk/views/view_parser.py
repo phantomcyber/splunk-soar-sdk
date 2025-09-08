@@ -53,6 +53,11 @@ class ViewFunctionParser(Generic[T]):
         )
 
     def parse_action_results(self, all_app_runs: AllAppRuns) -> list[T]:
+        """Given a list of AppRun data in JSON, return a list of ActionOutput models.
+
+        The specific subclass of ActionOutput that is used for parsing is determined by
+        the type hints of the function given to the ViewFunctionParser at init time.
+        """
         parsed_outputs: list[T] = []
 
         for app_run_data in all_app_runs:
@@ -81,6 +86,12 @@ class ViewFunctionParser(Generic[T]):
         *args: Any,  # noqa: ANN401
         **kwargs: Any,  # noqa: ANN401
     ) -> Union[str, dict, BaseModel]:
+        """Wrapper around the object's view function which massages platform inputs as necessary.
+
+        Takes the JSON list of AppRun results provided by Splunk SOAR, parses that into
+        the appropriate list of Pydantic models for the specific view handler, and executes
+        that view handler (either sync or async depending on the handler's signature).
+        """
         # Parse outputs
         parsed_outputs = self.parse_action_results(raw_all_app_runs)
 

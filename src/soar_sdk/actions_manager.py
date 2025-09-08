@@ -18,9 +18,7 @@ logger = getLogger()
 
 
 class ActionsManager(BaseConnector):
-    """
-    Manages the execution of an action.
-    """
+    """Manages the execution of an action."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -31,17 +29,24 @@ class ActionsManager(BaseConnector):
         self.asset_cache: dict = {}
 
     def get_action(self, identifier: str) -> Optional[Action]:
+        """Convenience method for getting an Action callable from its identifier.
+
+        Returns None if there are no actions managed by this object matching the given
+        identifier.
+        """
         return self.get_actions().get(identifier)
 
     def get_actions(self) -> dict[str, Action]:
+        """Get a dictionary mapping from identifier to Action callables."""
         return self._actions
 
     def get_actions_meta_list(self) -> list[ActionMeta]:
+        """Get a list of the ActionMeta objects associated with this object's Actions."""
         return [action.meta for action in self.get_actions().values()]
 
     def set_action(self, action_identifier: str, wrapped_function: Action) -> None:
-        """
-        Sets the handler for the function that can be called by the BaseConnector.
+        """Sets the handler for the function that can be called by the BaseConnector.
+
         The wrapped function called by the BaseConnector will be called using the old
         backward-compatible declaration.
 
@@ -55,9 +60,7 @@ class ActionsManager(BaseConnector):
     def handle(
         self, input_data: InputSpecification, handle: Optional[int] = None
     ) -> str:
-        """
-        Runs handling of the input data on connector
-        """
+        """Runs handling of the input data on connector."""
         action_id = input_data.identifier
         if self.get_action(action_id):
             self.print_progress_message = True
@@ -68,6 +71,12 @@ class ActionsManager(BaseConnector):
             )  # TODO: replace with a valid lack of action handling
 
     def handle_action(self, param: dict[str, Any]) -> None:
+        """The central action execution function BaseConnector expects to be overriden.
+
+        Given the input parameter dictionary from Splunk SOAR, find the Action function
+        referred to by the input, parse the parameters into the appropriate Pydantic model,
+        and execute the action.
+        """
         # Get the action that we are supposed to execute for this App Run
         action_id = self.get_action_identifier()
         logger.debug(f"action_id {action_id}")

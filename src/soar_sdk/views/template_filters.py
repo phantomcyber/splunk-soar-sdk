@@ -1,4 +1,7 @@
-"""Jinja filters and functions for SOAR SDK templates. (ported and modified from platform custom_template.py)"""
+"""Jinja filters and functions for Splunk SOAR SDK templates.
+
+Ported from platform's custom_template.py.
+"""
 
 import hashlib
 import json

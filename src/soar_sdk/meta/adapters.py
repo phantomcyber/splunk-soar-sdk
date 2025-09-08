@@ -4,8 +4,11 @@ from .app import AppMeta
 
 
 class TOMLDataAdapter:
+    """Parses app metadata from a pyproject.toml file into an AppMeta object."""
+
     @staticmethod
     def load_data(filepath: str) -> AppMeta:
+        """Load the app metadata from the given path to a pyproject.toml into an AppMeta."""
         with open(filepath) as f:
             toml_data = toml.load(f)
 

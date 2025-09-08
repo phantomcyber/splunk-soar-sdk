@@ -4,9 +4,7 @@ from typing import Optional
 
 
 class WebhookRouteMeta(BaseModel):
-    """
-    Metadata for a webhook route, including the handler function and its properties.
-    """
+    """Metadata for a webhook route, including the handler function and its properties."""
 
     url_pattern: str
     allowed_methods: list[str] = Field(default_factory=lambda: ["GET", "POST"])
@@ -15,6 +13,8 @@ class WebhookRouteMeta(BaseModel):
 
 
 class WebhookMeta(BaseModel):
+    """Metadata for a complex webhook definition which may contain multiple routes."""
+
     handler: Optional[str]
     requires_auth: bool = True
     allowed_headers: list[str] = Field(default_factory=list)
@@ -23,6 +23,7 @@ class WebhookMeta(BaseModel):
 
     @validator("ip_allowlist", each_item=True)
     def validate_ip_allowlist(cls, value: str) -> str:
+        """Enforces all values of the 'ip_allowlist' field are valid IPv4 or IPv6 CIDRs."""
         try:
             ip_network(value)
         except ValueError as e:

@@ -6,6 +6,8 @@ from soar_sdk.compat import PythonVersion
 
 @dataclasses.dataclass
 class TomlContext:
+    """Model representing context required to render a pyproject.toml Jinja template."""
+
     name: str
     version: str
     description: str
@@ -15,8 +17,7 @@ class TomlContext:
     dependencies: list[str] = dataclasses.field(default_factory=list)
 
     def to_dict(self) -> dict:
-        """
-        Convert the TomlContext to a dictionary suitable for Jinja2 templating.
+        """Convert the TomlContext to a dictionary suitable for Jinja2 templating.
 
         Returns:
             dict: A dictionary representation of the TomlContext.
@@ -34,13 +35,10 @@ class TomlContext:
 
 
 class TomlRenderer(Renderer[TomlContext]):
-    """
-    A class to render a pyproject.toml file using Jinja2 templates.
-    """
+    """A class to render a pyproject.toml file using Jinja2 templates."""
 
     def render(self) -> str:
-        """
-        Render the pyproject.toml file using Jinja2.
+        """Render the pyproject.toml file using Jinja2.
 
         Returns:
             str: The rendered content for the pyproject.toml file.

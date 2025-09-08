@@ -4,9 +4,7 @@ from collections.abc import Generator
 
 
 def is_client_authenticated(client: httpx.Client) -> bool:
-    """
-    Check wether the httpx client is authenticated to SOAR
-    """
+    """Check whether the httpx client is authenticated to Splunk SOAR via CSRFToken."""
     return client.headers.get("X-CSRFToken") is not None
 
 
@@ -16,9 +14,7 @@ def get_request_iter_pages(
     params: Optional[dict] = None,
     page_size: int = 50,
 ) -> Generator[Any, None, None]:
-    """
-    Iterate through REST JSON results using the provided paging.
-    """
+    """Iterate through REST JSON results using the provided paging."""
     params = params or {}
 
     params["page_size"] = page_size
