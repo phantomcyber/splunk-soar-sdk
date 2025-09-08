@@ -9,6 +9,12 @@ MIN_PHANTOM_VERSION = "6.4.0"
 def remove_when_soar_newer_than(
     version: str, message: str = "", *, base_version: str = MIN_PHANTOM_VERSION
 ) -> None:
+    """Tracks when blocks of code should be deleted as older versions of Splunk SOAR are dropped.
+
+    This function is a no-op, but may begin to fail when the SDK-wide MIN_PHANTOM_VERSION
+    constant is changed. Failures in this function indicate the need to remove blocks of
+    code that have been rendered unnecessary by newer versions of Splunk SOAR.
+    """
     if not message:
         message = "This code should be removed!"
 
@@ -17,23 +23,19 @@ def remove_when_soar_newer_than(
 
 
 class PythonVersion(str, Enum):
-    """
-    Enum to represent supported Python versions.
-    """
+    """Enum to represent supported Python versions."""
 
     PY_3_9 = "3.9"
     PY_3_13 = "3.13"
 
     def __str__(self) -> str:
-        """
-        Returns the string representation of the Python version.
-        """
+        """Returns the string representation of the Python version."""
         return self.value
 
     @classmethod
     def from_str(cls, version_str: str) -> "PythonVersion":
-        """
-        Returns the PythonVersion enum member corresponding to the given string.
+        """Returns the PythonVersion enum member corresponding to the given string.
+
         Raises ValueError if the version is not supported.
         """
         # "3" is a special case for connectors that don't properly define their Python version
@@ -46,8 +48,8 @@ class PythonVersion(str, Enum):
 
     @classmethod
     def from_csv(cls, version_csv: str) -> list["PythonVersion"]:
-        """
-        Parses a comma-separated string of Python versions and returns a list of PythonVersion enum members.
+        """Parses a comma-separated string of Python versions to a list of PythonVersion enums.
+
         Raises ValueError if any version is not supported.
         """
         versions = version_csv.split(",")
@@ -57,16 +59,12 @@ class PythonVersion(str, Enum):
 
     @classmethod
     def all(cls) -> list["PythonVersion"]:
-        """
-        Returns a list of all supported Python versions.
-        """
+        """Returns a list of all supported Python versions."""
         return [cls.PY_3_9, cls.PY_3_13]
 
     @classmethod
     def to_requires_python(cls, versions: list["PythonVersion"]) -> str:
-        """
-        Converts a list of PythonVersion enum members to a PEP-508 compatible requires-python string.
-        """
+        """Converts a list of PythonVersions to a PEP-508 compatible requires-python string."""
         versions = versions or cls.all()
         py_versions = sorted(Version(str(py)) for py in versions)
         next_version = f"{py_versions[-1].major}.{py_versions[-1].minor + 1}"

@@ -1,4 +1,11 @@
 class ANSIColor:
+    """Maps special shell color sequences to their corresponding color names.
+
+    This class is used for logging to console, to easily switch color formatting on and
+    off, as well as provide plain-English color names to logging formatters instead of
+    esoteric control character sequences.
+    """
+
     def __init__(self, color_enabled: bool) -> None:
         self._color_enabled: bool = color_enabled
         self._colors: dict[str, str] = {

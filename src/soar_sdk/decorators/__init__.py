@@ -1,8 +1,4 @@
-"""
-SOAR SDK Decorators
-
-This module provides class-based decorators for SOAR app development.
-"""
+"""This module provides class-based decorators for SOAR app development."""
 
 from .action import ActionDecorator
 from .test_connectivity import ConnectivityTestDecorator

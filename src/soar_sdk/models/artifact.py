@@ -3,13 +3,14 @@ from pydantic import BaseModel
 
 
 class Artifact(BaseModel):
-    """
-    Represents an artifact to be created during on_poll.
+    """Represents an artifact to be created during on_poll.
 
-    This class allows users to create and configure artifacts when yielding from an on_poll function.
+    This class allows users to create artifacts when yielding from an 'on poll' action.
     """
 
     class Config:
+        """Pydantic config. Unknown keys are disallowed in this model."""
+
         extra = "forbid"
 
     name: Optional[str] = None
@@ -31,7 +32,5 @@ class Artifact(BaseModel):
     kill_chain: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
-        """
-        Convert the artifact to a dictionary (needed for save_artifact).
-        """
+        """Convert the artifact to a dictionary (needed for save_artifact)."""
         return self.dict(exclude_none=True)

@@ -5,9 +5,7 @@ import re
 
 @dataclasses.dataclass
 class NormalizationResult:
-    """
-    A named tuple to hold the results of field name normalization.
-    """
+    """A named tuple to hold the results of field name normalization."""
 
     original: str
     normalized: str
@@ -15,10 +13,11 @@ class NormalizationResult:
 
 
 def normalize_field_name(field_name: str) -> NormalizationResult:
-    """
-    Converts a field name to a valid Python identifier
+    """Converts a field name to a valid Python identifier.
+
     Args:
         field_name (str): The field name to normalize.
+
     Returns:
         NormalizationResult: A dataclass containing the original field name,
             the normalized field name, and whether it was modified.

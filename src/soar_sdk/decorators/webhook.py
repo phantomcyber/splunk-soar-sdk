@@ -16,9 +16,7 @@ if TYPE_CHECKING:
 
 
 class WebhookDecorator:
-    """
-    Class-based decorator for webhook functionality.
-    """
+    """Class-based decorator for webhook functionality."""
 
     def __init__(
         self, app: "App", url_pattern: str, allowed_methods: Optional[list[str]] = None
@@ -28,10 +26,10 @@ class WebhookDecorator:
         self.allowed_methods = allowed_methods
 
     def __call__(self, function: WebhookHandler) -> WebhookHandler:
-        """
-        Decorator for the webhook handler function. Adds the specific meta
-        information to the action passed to the generator. Validates types used on
-        the action arguments and adapts output for fast and seamless development.
+        """Decorator for the webhook handler function.
+
+        Adds the specific meta information to the action passed to the generator.
+        Validates types used on the action arguments and adapts output for fast and seamless development.
         """
         if self.app.webhook_router is None or self.app.webhook_meta is None:
             raise RuntimeError("Webhooks are not enabled for this app.")

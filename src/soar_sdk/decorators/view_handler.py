@@ -21,9 +21,7 @@ if TYPE_CHECKING:
 
 
 class ViewHandlerDecorator:
-    """
-    Class-based decorator for view handler functionality.
-    """
+    """Class-based decorator for view handler functionality."""
 
     def __init__(self, app: "App", *, template: Optional[str] = None) -> None:
         self.app = app
@@ -69,8 +67,7 @@ class ViewHandlerDecorator:
         )
 
     def __call__(self, function: Callable) -> Callable:
-        """
-        Decorator for custom view functions with output parsing and template rendering.
+        """Decorator for custom view functions with output parsing and template rendering.
 
         The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering, HTML string, or component data model.
         If a template is provided, dict results will be rendered using the template. Component type is automatically inferred from the return type annotation.

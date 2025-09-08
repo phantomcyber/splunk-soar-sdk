@@ -12,9 +12,7 @@ from soar_sdk.params import Params
 
 
 class ActionRenderer(AstRenderer[ActionMeta]):
-    """
-    Generates code for actions in the Soar SDK.
-    """
+    """Generates code for actions in the Splunk SOAR SDK."""
 
     # These actions are the same for all apps, so we use stubs instead of templates.
     AST_STUBS: ClassVar[dict[str, ast.FunctionDef]] = {
@@ -108,16 +106,16 @@ class ActionRenderer(AstRenderer[ActionMeta]):
 
     @property
     def action_meta(self) -> ActionMeta:
-        """
-        Returns the action metadata.
+        """Returns the action metadata.
+
         Returns:
             ActionMeta: The metadata for the action.
         """
         return self.context
 
     def render_ast(self) -> Iterator[ast.stmt]:
-        """
-        Generates the AST for the action.
+        """Generates the AST for the action.
+
         Returns:
             Iterator[ast.AST]: An iterator of AST nodes representing the action, its parameters, and its outputs.
         """
@@ -205,8 +203,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
     def render_outputs_ast(
         self, model: Optional[type[ActionOutput]] = None
     ) -> Iterator[ast.ClassDef]:
-        """
-        Generates the AST for the action outputs.
+        """Generates the AST for the action outputs.
 
         Args:
             model (Type[ActionOutput]): The Pydantic model class to print.
@@ -304,8 +301,8 @@ class ActionRenderer(AstRenderer[ActionMeta]):
         yield from model_tree.values()
 
     def render_params_ast(self) -> ast.ClassDef:
-        """
-        Generates the AST for the action parameters.
+        """Generates the AST for the action parameters.
+
         Returns:
             ast.ClassDef: The AST representation of the action parameters.
         """

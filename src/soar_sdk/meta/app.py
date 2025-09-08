@@ -10,10 +10,14 @@ from .webhooks import WebhookMeta
 
 
 class AppContributor(BaseModel):
+    """Canonical format for the 'contributors' object in the app manifest."""
+
     name: str
 
 
 class AppMeta(BaseModel):
+    """Model for an app's core metadata, which makes up much of its manifest."""
+
     name: str = ""
     description: str
     appid: str = "1e1618e7-2f70-4fc0-916a-f96facc2d2e4"  # placeholder value to pass inital validation
@@ -44,7 +48,5 @@ class AppMeta(BaseModel):
     webhook: Optional[WebhookMeta]
 
     def to_json_manifest(self) -> dict:
-        """
-        Converts the AppMeta instance to a JSON-compatible dictionary.
-        """
+        """Converts the AppMeta instance to a JSON-compatible dictionary."""
         return self.dict(exclude_none=True)

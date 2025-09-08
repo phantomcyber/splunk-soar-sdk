@@ -7,8 +7,11 @@ from collections.abc import Iterator
 
 @contextmanager
 def add_to_path(path: Path) -> Iterator[None]:
-    """
-    Add the path to sys.path temporarily
+    """Temporarily add the given path to the head of sys.path.
+
+    .. note:
+        Any changes made to sys.path outside of this function will be reverted when this
+        context manager exits.
     """
     original_sys_path = sys.path[:]
     sys.path.insert(0, path.as_posix())  # Insert at the start for priority
@@ -21,9 +24,10 @@ def add_to_path(path: Path) -> Iterator[None]:
 
 @contextmanager
 def context_directory(path: Path) -> Iterator[None]:
-    """
-    Temporarily change the current working directory and add it to path
-    as if the code inside was running directly from the given path.
+    """Temporarily change the current directory and add it to path.
+
+    This context manager effectively makes it as if the code inside was running directly
+    from the given path.
     """
     original_dir = Path.cwd().as_posix()
     try:
@@ -35,7 +39,5 @@ def context_directory(path: Path) -> Iterator[None]:
 
 
 def relative_to_cwd(path: Path) -> str:
-    """
-    Get the path relative to the current working directory.
-    """
+    """Reinterpret the given path as relative to the current working directory."""
     return path.relative_to(Path.cwd()).as_posix()

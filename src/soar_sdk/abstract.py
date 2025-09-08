@@ -194,7 +194,11 @@ class SOARClient(Generic[SummaryType]):
         return response
 
     def get_soar_base_url(self) -> str:
-        """Get the base URL for the running SOAR system. Example: https://splunk.soar/"""
+        """Get the base URL for the running SOAR system.
+
+        Example:
+            https://splunk.soar/
+        """
         return "https://localhost:9999/"
 
     @abstractmethod

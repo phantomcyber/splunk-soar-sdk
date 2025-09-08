@@ -9,9 +9,7 @@ ContextT = TypeVar("ContextT")
 
 
 class Renderer(Generic[ContextT], abc.ABC):
-    """
-    Abstract base class for rendering code using Jinja2 templates.
-    """
+    """Abstract base class for rendering code using Jinja2 templates."""
 
     def __init__(
         self, context: ContextT, jinja_env: Optional[j2.Environment] = None
@@ -27,23 +25,17 @@ class Renderer(Generic[ContextT], abc.ABC):
 
     @abc.abstractmethod
     def render(self) -> str:
-        """
-        Render the code using the provided context and Jinja2 templates.
-        """
+        """Render the code using the provided context and Jinja2 templates."""
         pass
 
 
 class AstRenderer(Generic[ContextT], abc.ABC):
-    """
-    Abstract base class for rendering code as an AST (Abstract Syntax Tree).
-    """
+    """Abstract base class for rendering code as an AST (Abstract Syntax Tree)."""
 
     def __init__(self, context: ContextT) -> None:
         self.context = context
 
     @abc.abstractmethod
     def render_ast(self) -> Iterator[ast.stmt]:
-        """
-        Generate a list of AST nodes for the code to be rendered.
-        """
+        """Generate a list of AST nodes for the code to be rendered."""
         pass

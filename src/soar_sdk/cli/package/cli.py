@@ -28,9 +28,7 @@ console = Console()  # For printing lots of pretty colors and stuff
 
 
 async def collect_all_wheels(wheels: set[DependencyWheel]) -> list[tuple[str, bytes]]:
-    """
-    Asynchronously collect all wheels from the given set of DependencyWheel objects.
-    """
+    """Asynchronously collect all wheels from the given set of DependencyWheel objects."""
     # Create progress bar for tracking wheel collection
     progress = tqdm(
         total=len(wheels),
@@ -81,11 +79,12 @@ def build(
         ),
     ] = None,
 ) -> None:
-    """
-    Build a SOAR app package.
+    """Build a SOAR app package in TGZ format.
 
     Args:
         project_context: Path to the app project directory
+        output_file: Path where the app TGZ should be created
+        with_sdk_wheel_from: Optional path in which to find a wheel for this SDK
     Options:
         --output-file, -o: Path where the packaged app will be saved
     """
@@ -209,9 +208,7 @@ def build(
 async def upload_app(
     soar_instance: str, username: str, password: str, app_tarball: Path
 ) -> httpx.Response:
-    """
-    Asynchronously install the app on a SOAR instance
-    """
+    """Asynchronously upload an app tgz to a Splunk SOAR system, via REST API."""
     base_url = (
         soar_instance
         if soar_instance.startswith("https://")
@@ -226,8 +223,11 @@ async def upload_app(
 
 @package.command()
 def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
-    """
-    Install the app tarball to the specified SOAR instance. Note to authenticate with your SOAR instance you can either set the PHANTOM_PASSWORD environment variable or enter the password when prompted.
+    """Install the app tgz to the specified Splunk SOAR system.
+
+    ..note:
+        To authenticate with Splunk SOAR, you can either set the PHANTOM_PASSWORD
+        environment variable, or enter the password when prompted.
     """
     app_tarball = app_tarball.resolve()
     if not app_tarball.exists():

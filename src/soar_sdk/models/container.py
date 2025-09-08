@@ -3,13 +3,14 @@ from typing import Optional, Any, Union
 
 
 class Container(BaseModel):
-    """
-    Represents a container to be created during on_poll.
+    """Represents a container to be created during on_poll.
 
     This class allows users to specify container properties when yielding from an on_poll function.
     """
 
     class Config:
+        """Pydantic config."""
+
         extra = "forbid"
 
     name: str
@@ -42,7 +43,5 @@ class Container(BaseModel):
     container_id: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
-        """
-        Convert the container to a dictionary (needed for save_container).
-        """
+        """Convert the container to a dictionary (needed for save_container)."""
         return self.dict(exclude_none=True)
