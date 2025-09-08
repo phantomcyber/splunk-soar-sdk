@@ -6,7 +6,7 @@ import pydantic
 
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification, OutputField
 from soar_sdk.cli.utils import normalize_field_name, NormalizationResult
-from soar_sdk.compat import PythonVersion
+from soar_sdk.compat import PythonVersion, remove_when_soar_newer_than
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.params import Params, Param
@@ -63,6 +63,21 @@ class AppMetaDeserializer:
             if action.has_custom_view
         ]
         app_meta = AppMeta(project_name=json_path.parent.name, **manifest)
+
+        remove_when_soar_newer_than(
+            "7.1.0",
+            "Revisit this after upgrading to Pydantic 2.x. If the issue is still present, we might need to consider making `AssetFieldSpecification` a Pydantic model instead of a TypedDict, but that's a pretty big change.",
+        )
+        # Pydantic converts the default value into a string for some reason, even for non-string types.
+        # We will go through and convert it back.
+        # This has the side effect of implicitly validating that the default value matches the type.
+        for _, spec in app_meta.configuration.items():
+            if "default" not in spec:
+                continue
+            if spec["data_type"] == "numeric":
+                spec["default"] = float(spec["default"])
+            if spec["data_type"] == "boolean":
+                spec["default"] = bool(spec["default"])
 
         has_rest_handlers = isinstance(manifest.get("rest_handler"), str)
         has_webhooks = isinstance(manifest.get("webhooks"), dict)
