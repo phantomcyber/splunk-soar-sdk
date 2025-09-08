@@ -278,7 +278,21 @@ def test_from_app_json_complex_example(create_app_json):
                 "required": True,
                 "description": "Base Url",
                 "order": 0,
-            }
+            },
+            "port": {
+                "data_type": "numeric",
+                "required": False,
+                "description": "Port Number",
+                "default": 8080,
+                "order": 1,
+            },
+            "verify": {
+                "data_type": "boolean",
+                "required": False,
+                "description": "Verify",
+                "default": True,
+                "order": 2,
+            },
         },
         "actions": [
             {
@@ -313,6 +327,9 @@ def test_from_app_json_complex_example(create_app_json):
         assert len(result.actions) == 1
         assert result.fips_compliant is False
         assert result.configuration["base_url"]["data_type"] == "string"
+        assert result.configuration["port"]["default"] == 8080
+        assert type(result.configuration["verify"]["default"]) is bool
+        assert result.configuration["verify"]["default"]
 
 
 @pytest.mark.parametrize(
@@ -406,7 +423,19 @@ def test_from_action_json_with_parameters_and_output(mock_action_deserializer):
                 "data_type": "string",
                 "required": True,
                 "description": "Test parameter",
-            }
+            },
+            "param2": {
+                "data_type": "numeric",
+                "required": False,
+                "description": "Another parameter",
+                "default": 42,
+            },
+            "param3": {
+                "data_type": "boolean",
+                "required": False,
+                "description": "Yet another parameter",
+                "default": True,
+            },
         },
         "output": [
             {"data_path": "action_result.data.*.result"},
@@ -427,6 +456,23 @@ def test_from_action_json_with_parameters_and_output(mock_action_deserializer):
         "custom action", original_parameters
     )
     mocks["parse_output"].assert_called_once_with("custom action", original_output)
+    assert original_parameters["param1"] == {
+        "data_type": "string",
+        "description": "Test parameter",
+        "required": True,
+    }
+    assert original_parameters["param2"] == {
+        "data_type": "numeric",
+        "description": "Another parameter",
+        "required": False,
+        "default": 42,
+    }
+    assert original_parameters["param3"] == {
+        "data_type": "boolean",
+        "description": "Yet another parameter",
+        "required": False,
+        "default": True,
+    }
 
 
 def test_from_action_json_missing_optional_fields(mock_action_deserializer):

@@ -68,6 +68,15 @@ def test_generate_asset_definition(app_meta, tmp_path):
             data_type="timezone",
             default="UTC",
         ),
+        "number": AssetFieldSpecification(
+            label="Number",
+            required=False,
+            data_type="numeric",
+            default=42,
+        ),
+        "boolean": AssetFieldSpecification(
+            label="boolean", required=False, data_type="boolean", default=True
+        ),
     }
     asset_class = cli.generate_asset_definition_ast(app_meta=app_meta)
 
@@ -78,6 +87,8 @@ def test_generate_asset_definition(app_meta, tmp_path):
             "    username: str = AssetField(required=True, description='The username for the application')",
             "    color: str = AssetField(required=False, default='blue', value_list=['red', 'green', 'blue'])",
             "    timezone: ZoneInfo = AssetField(required=False, default=ZoneInfo('UTC'))",
+            "    number: float = AssetField(required=False, default=42)",
+            "    boolean: bool = AssetField(required=False, default=True)",
         ]
     )
 
