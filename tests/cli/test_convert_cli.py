@@ -6,6 +6,7 @@ import json
 
 from typer.testing import CliRunner
 
+from soar_sdk.compat import PythonVersion
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.meta.app import AppMeta, AssetFieldSpecification
 
@@ -182,6 +183,50 @@ def test_convert_cli(runner, tmp_path, app_meta):
     assert (output_dir / "pyproject.toml").exists()
     assert (output_dir / "logo.svg").exists()
     assert (output_dir / "logo_dark.svg").exists()
+
+
+def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
+    """Test that convert command generates the expected app structure."""
+
+    app_meta.configuration = {
+        "username": AssetFieldSpecification(
+            label="Username",
+            description="The username for the application",
+            required=True,
+            data_type="string",
+        )
+    }
+
+    app_meta.python_version = [PythonVersion.PY_3_9]
+
+    app_dir = tmp_path / "test_app"
+    app_dir.mkdir()
+    (app_dir / "app.json").write_text(app_meta.json())
+    (app_dir / app_meta.logo).touch()
+    (app_dir / app_meta.logo_dark).touch()
+
+    output_dir = tmp_path / "output"
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            cli.convert,
+            [
+                str(app_dir),
+                str(output_dir),
+            ],
+        )
+
+    print(result.output)  # For debugging purposes
+
+    assert result.exit_code == 0
+    assert "declares support for Python versions ['3.9']" in result.output
+    assert "will support the default versions ['3.9', '3.13']" in result.output
+    assert (
+        'requires-python = ">=3.9, <3.14"'
+        in (output_dir / "pyproject.toml").read_text()
+    )
 
 
 def test_convert_cli_with_default_output(runner, tmp_path, app_meta):

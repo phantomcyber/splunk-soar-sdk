@@ -31,6 +31,10 @@ WORK_DIR = Path.cwd()
 init = typer.Typer(invoke_without_command=True)
 
 
+def _default_python_versions() -> list[PythonVersion]:
+    return PythonVersion.all()
+
+
 @init.callback()
 def init_callback(
     name: Annotated[str, typer.Option(prompt="App name")],
@@ -42,7 +46,7 @@ def init_callback(
             "--python-version",
             "-p",
             help="Supported Python versions for the app.",
-            default_factory=lambda: [str(py) for py in PythonVersion.all()],
+            default_factory=_default_python_versions,
         ),
     ],
     dependencies: Annotated[list[str], typer.Option(default_factory=list)],
@@ -268,11 +272,21 @@ def convert_connector_to_sdk(
     # Convert the main module path to the SDK format, but save a reference to the original
     app_meta.main_module = "src.app:app"
 
+    app_python_versions = app_meta.python_version
+    enforced_python_versions = _default_python_versions()
+    if set(app_python_versions) != set(enforced_python_versions):
+        rprint(
+            f"[yellow]The provided app declares support for Python versions {[str(v) for v in app_python_versions]}.[/]"
+        )
+        rprint(
+            f"[yellow]The converted app will support the default versions {[str(v) for v in enforced_python_versions]}.[/]"
+        )
+
     init_sdk_app(
         name=app_meta.project_name,
         description=app_meta.description,
         authors=[author.name for author in app_meta.contributors],
-        python_versions=app_meta.python_version,
+        python_versions=enforced_python_versions,
         dependencies=[],
         app_dir=output_dir,
         copyright=app_meta.license,
