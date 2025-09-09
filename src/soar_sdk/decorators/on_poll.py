@@ -20,16 +20,13 @@ if TYPE_CHECKING:
 
 
 class OnPollDecorator:
-    """
-    Class-based decorator for on_poll functionality.
-    """
+    """Class-based decorator for tagging a function as the special 'on poll' action."""
 
     def __init__(self, app: "App") -> None:
         self.app = app
 
     def __call__(self, function: Callable) -> Action:
-        """
-        Decorator for the on_poll action.
+        """Decorator for the 'on poll' action.
 
         The decorated function must be a generator (using yield) or return an Iterator that yields Container and/or Artifact objects. Only one on_poll action is allowed per app.
 

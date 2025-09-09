@@ -22,11 +22,10 @@ def Param(
     allow_list: bool = False,
     sensitive: bool = False,
 ) -> Any:  # noqa: ANN401
-    """
-    Representation of the param passed into the action. The param needs extra meta
-    information that is later used for the configuration of the app and use in
-    playbooks. This function takes care of the required information for the manifest
-    JSON file and fills in defaults.
+    """Representation of a single complex action parameter.
+
+    Use this function to define the default value for an action parameter that requires
+    extra metadata for the manifest. This function is a thin wrapper around pydantic.Field.
 
     :param order: The order key, starting at 0, allows the app
       author to control the display order of the controls in the UI.
@@ -69,6 +68,8 @@ def Param(
 
 
 class InputFieldSpecification(TypedDict):
+    """Canonical data format for the JSON dictionary given to action runs by the SOAR platform."""
+
     order: int
     name: str
     description: str
@@ -82,9 +83,9 @@ class InputFieldSpecification(TypedDict):
 
 
 class Params(BaseModel):
-    """
-    Params defines the inputs for an action. It can contain strings, booleans, or numbers -- no lists or dictionaries.
+    """Params defines the full set of inputs for an action.
 
+    It can contain strings, booleans, or numbers -- no lists or dictionaries.
     Params fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in soar_sdk.params.Param.
     """
 
@@ -140,11 +141,7 @@ class Params(BaseModel):
 
 
 class OnPollParams(Params):
-    """
-    Parameters for on_poll.
-
-    Used to define the specific parameters for the on_poll action.
-    """
+    """Canonical parameters for the special 'on poll' action."""
 
     start_time: int = Param(
         description="Start of time range, in epoch time (milliseconds).",
@@ -174,11 +171,7 @@ class OnPollParams(Params):
 
 
 class GenericActionParams(Params):
-    """
-    Parameters for generic actions.
-
-    Used to define the specific parameters for the generic action.
-    """
+    """Canonical parameters for the special generic HTTP actions."""
 
     http_method: str = Param(
         description="The HTTP method to use for the request.",

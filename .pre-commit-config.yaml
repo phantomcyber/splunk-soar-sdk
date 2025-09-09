@@ -26,7 +26,6 @@ repos:
     rev: 6.3.0
     hooks:
       - id: pydocstyle
-        name: pydocstyle (warning only)
         args:
           - --convention=google
           - --add-ignore=D100,D104,D105,D107
@@ -34,8 +33,6 @@ repos:
         exclude: ^(src/soar_sdk/shims/)
         additional_dependencies: [tomli]
         verbose: true
-        # Override the command to make it non-blocking
-        entry: bash -c 'pydocstyle "$@" || true' --
 
   - repo: local
     hooks:

@@ -14,6 +14,11 @@ from soar_sdk.meta.datatypes import to_python_type
 
 
 class DeserializedAppMeta(NamedTuple):
+    """Named tuple containing a deserialized app metadata and related info.
+
+    Used to return multiple values from AppMetaDeserializer.from_app_json.
+    """
+
     app_meta: AppMeta
     actions_with_custom_views: list[str]
     has_rest_handlers: bool
@@ -21,8 +26,19 @@ class DeserializedAppMeta(NamedTuple):
 
 
 class AppMetaDeserializer:
+    """Namespace class responsible for deserializing an AppMeta from a JSON manifest file."""
+
     @staticmethod
     def from_app_json(json_path: Path) -> DeserializedAppMeta:
+        """Deserialize an AppMeta from a JSON manifest file.
+
+        Args:
+            json_path: The path to the JSON manifest file.
+
+        Returns:
+            A DeserializedAppMeta named tuple containing the AppMeta and info
+            about actions with custom views, REST handlers, and webhooks.
+        """
         manifest: dict[str, Any] = json.loads(json_path.read_text())
 
         # Massage the python_version field, which may be a comma-separated string
@@ -60,12 +76,16 @@ class AppMetaDeserializer:
 
 
 class FieldSpec(NamedTuple):
+    """Named tuple representing the metadata required to create a pydantic field specification."""
+
     type_: type
     default: Any
 
 
 @dataclasses.dataclass
 class OutputFieldModel:
+    """Canonical representation of an output field specification in an app manifest."""
+
     data_path: str
     data_type: str
     contains: Optional[list[str]] = None
@@ -75,13 +95,29 @@ class OutputFieldModel:
 
 
 class DeserializedActionMeta(NamedTuple):
+    """Named tuple containing a deserialized action metadata and related info.
+
+    Used to return multiple values from ActionDeserializer.from_app_json.
+    """
+
     action_meta: ActionMeta
     has_custom_view: bool
 
 
 class ActionDeserializer:
+    """Namespace class responsible for deserializing an ActionMeta from a JSON action definition."""
+
     @classmethod
     def from_action_json(cls, action: dict[str, Any]) -> DeserializedActionMeta:
+        """Deserialize an ActionMeta from a JSON action definition.
+
+        Args:
+            action: The JSON dictionary representing the action.
+
+        Returns:
+            A DeserializedActionMeta named tuple containing the ActionMeta and
+            info about whether the action has a custom view.
+        """
         action["parameters"] = cls.parse_parameters(
             action["action"], action.get("parameters", {})
         )
@@ -95,9 +131,7 @@ class ActionDeserializer:
     def parse_parameters(
         cls, action_name: str, parameters: dict[str, Any]
     ) -> type[Params]:
-        """
-        Parses the parameters from a dictionary to generate a Params model class
-        """
+        """Parses the parameters from a dictionary to generate a Params model class."""
         # If no parameters, return base Params class
         if not parameters:
             return Params
@@ -122,9 +156,7 @@ class ActionDeserializer:
 
     @staticmethod
     def _create_param_field(param_spec: dict[str, Any]) -> FieldSpec:
-        """
-        Create a parameter field from a parameter specification.
-        """
+        """Create a parameter field from a parameter specification."""
         # Get the Python type from data_type
         data_type = param_spec.get("data_type", "string")
         python_type = to_python_type(data_type)
@@ -147,9 +179,7 @@ class ActionDeserializer:
     def parse_output(
         cls, action_name: str, output: list[OutputFieldSpecification]
     ) -> type[ActionOutput]:
-        """
-        Parses the output from a list of OutputFieldSpecification to generate an ActionOutput model class
-        """
+        """Parses a list of OutputFieldSpecification to generate an ActionOutput model class."""
         # Filter out automatic fields and extract the action's real output fields
         output_fields = cls._filter_output_fields(output)
 
@@ -173,8 +203,7 @@ class ActionDeserializer:
     def _build_output_structure(
         datapath_specs: dict[str, OutputFieldModel],
     ) -> dict[str, Union[list, dict, OutputFieldModel]]:
-        """
-        Parse a datapath string into a dictionary.
+        """Parse a datapath string into a dictionary.
 
         Args:
             datapath_specs: The set of datapaths and their types to parse.
@@ -261,9 +290,10 @@ class ActionDeserializer:
         action_name: str,
         output_structure: dict[str, Union[dict, list, OutputFieldModel]],
     ) -> type[ActionOutput]:
-        """
-        Recursively (depth-first) build dynamic pydantic models for the action output,
-        from the output data paths definitions.
+        """Build dynamic pydantic models for an action output, from the output data paths.
+
+        This function is part of a depth-first recursive approach to build nested
+        models, in tandem with _build_output_field.
 
         Returns:
             A dynamically created ActionOutput class with nested structure based on the output fields.
@@ -285,6 +315,14 @@ class ActionDeserializer:
     def _build_output_field(
         cls, field_name: str, output_structure: Union[list, dict, OutputFieldModel]
     ) -> tuple[str, FieldSpec]:
+        """Build dynamic specs for an action output field, from an output data path.
+
+        This function is part of a depth-first recursive approach to build nested
+        models, in tandem with _build_output_class.
+
+        Returns:
+            A tuple containing the normalized field name and its FieldSpec.
+        """
         normalized_name = normalize_field_name(field_name)
 
         # Base case: primitive (leaf node) output field
@@ -331,9 +369,7 @@ class ActionDeserializer:
     def _filter_output_fields(
         output: list[OutputFieldSpecification],
     ) -> list[OutputFieldSpecification]:
-        """
-        Filter out automatic fields and extract the action's real output fields.
-        """
+        """Filter out automatic fields and extract the action's real output fields."""
         output_fields: list[OutputFieldSpecification] = []
         for output_spec in output:
             data_path = output_spec["data_path"].removeprefix("action_result.")
