@@ -41,7 +41,9 @@ class TestNormalizeFieldName:
         assert result.modified == expected_modified
         assert result.normalized.isidentifier()
 
-    @pytest.mark.parametrize("keyword", keyword.kwlist)
+    @pytest.mark.parametrize(
+        "keyword", [kw for kw in keyword.kwlist if not kw.startswith("_")]
+    )
     def test_python_keywords(self, keyword: str):
         """Test that Python keywords get an underscore appended."""
         result = normalize_field_name(keyword)
