@@ -179,7 +179,7 @@ class ActionDeserializer:
         # Create Param field with all the metadata
         param_field = Param(
             description=param_spec.get("description"),
-            required=param_spec.get("required", True),
+            required=param_spec.get("required", False),
             primary=param_spec.get("primary", False),
             default=param_spec.get("default"),
             value_list=param_spec.get("value_list"),
