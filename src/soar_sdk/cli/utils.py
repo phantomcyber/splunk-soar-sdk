@@ -32,7 +32,14 @@ def normalize_field_name(field_name: str) -> NormalizationResult:
 
         # Ensure the first character is a letter or underscore
         if field_name[0].isdigit():
-            field_name = f"_{field_name}"
+            field_name = f"n{field_name}"
+
+    # Drop leading underscores to avoid Pydantic marking a field as private
+    try:
+        while field_name[0] == "_":
+            field_name = field_name[1:]
+    except IndexError:
+        raise ValueError("Field name must contain at least one letter") from None
 
     # Finally, ensure the field name is not a Python keyword
     if keyword.iskeyword(field_name):

@@ -13,21 +13,21 @@ class TestNormalizeFieldName:
             # Valid identifiers that shouldn't be modified
             ("valid_name", "valid_name", False),
             ("ValidName", "ValidName", False),
-            ("_private", "_private", False),
             ("name123", "name123", False),
-            ("_", "_", False),
-            ("__dunder__", "__dunder__", False),
+            # Names starting with underscores
+            ("_private", "private", True),
+            ("__dunder__", "dunder__", True),
             # Names starting with digits
-            ("123invalid", "_123invalid", True),
+            ("123invalid", "n123invalid", True),
             # Names with invalid characters
             (
                 "a-b.c d@e$f#g%h!i+j=k/l\\m|n&o*p(q)r[s]t{u}v<w>x:y;z,?'\"",
                 "a_b_c_d_e_f_g_h_i_j_k_l_m_n_o_p_q_r_s_t_u_v_w_x_y_z____",
                 True,
             ),
-            ("🚀rocket-ship🚀", "_rocket_ship_", True),
+            ("🚀rocket-ship🚀", "rocket_ship_", True),
             # Mixed issues: starting with digit and invalid characters
-            ("123field@name", "_123field_name", True),
+            ("123field@name", "n123field_name", True),
         ],
     )
     def test_basic_normalization(
@@ -55,3 +55,6 @@ class TestNormalizeFieldName:
         """Test edge cases and boundary conditions."""
         with pytest.raises(ValueError, match="empty"):
             normalize_field_name("")
+
+        with pytest.raises(ValueError, match="must contain at least one letter"):
+            normalize_field_name("______")
