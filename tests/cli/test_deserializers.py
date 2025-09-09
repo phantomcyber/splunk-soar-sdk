@@ -548,6 +548,18 @@ def test_action_deserializer_parse_parameters(input_data, expects_base_class):
         assert result.__name__ == "TestActionParams"
 
 
+def test_action_deserializer_uses_correct_default_params():
+    """Test ActionDeserializer sets `required`, `primary`, and `allow_list` false when no defaults are provided."""
+    result = ActionDeserializer.parse_parameters(
+        "test_action", {"param1": {"data_type": "string", "description": "test param"}}
+    )
+
+    field = result.__fields__["param1"]
+    assert not field.field_info.extra.get("required")
+    assert not field.field_info.extra.get("primary")
+    assert not field.field_info.extra.get("allow_list")
+
+
 @pytest.mark.parametrize(
     "input_data,expects_base_class",
     [
