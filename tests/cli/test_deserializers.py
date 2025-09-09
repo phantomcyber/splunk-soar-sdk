@@ -560,6 +560,16 @@ def test_action_deserializer_uses_correct_default_params():
     assert not field.field_info.extra.get("allow_list")
 
 
+def test_action_deserializer_with_underscored_params():
+    """Test that the ActionDeserializer handles underscored parameters as expected"""
+    result = ActionDeserializer.parse_parameters(
+        "test_action", {"_underscore": {"data_type": "string"}}
+    )
+
+    field = result.__fields__["underscore"]
+    assert field.alias == "_underscore"
+
+
 @pytest.mark.parametrize(
     "input_data,expects_base_class",
     [
@@ -677,6 +687,12 @@ def test_parse_parameters_with_complex_params():
             "description": "Placeholder parameter",
             "order": 3,
         },
+        "_param5": {
+            "data_type": "string",
+            "required": False,
+            "description": "Placeholder parameter",
+            "order": 3,
+        },
     }
 
     result = ActionDeserializer.parse_parameters("complex_action", complex_params)
@@ -691,6 +707,10 @@ def test_parse_parameters_with_complex_params():
     assert "param1" in result.__annotations__
     assert "param2" in result.__annotations__
     assert "param3" in result.__annotations__
+    assert "param4" not in result.__annotations__
+
+    assert "param5" in result.__fields__
+    assert result.__fields__["param5"].alias == "_param5"
 
 
 def test_complex_output_specification():

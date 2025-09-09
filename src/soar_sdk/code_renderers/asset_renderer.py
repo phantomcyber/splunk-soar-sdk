@@ -17,6 +17,7 @@ class AssetContext:
     default: Union[str, int, float, bool, None]
     data_type: str
     value_list: Optional[list[str]]
+    alias: Optional[str] = None
 
     @property
     def is_str(self) -> bool:
@@ -38,7 +39,7 @@ class AssetContext:
 
 
 class AssetRenderer(AstRenderer[list[AssetContext]]):
-    """A class to render an app's Asset class using Jinja2 templates."""
+    """A class to render an app's Asset class using ASTs."""
 
     def render_ast(self) -> Iterator[ast.stmt]:
         """Render the Asset class by building an AST.
@@ -94,6 +95,11 @@ class AssetRenderer(AstRenderer[list[AssetContext]]):
                             elts=[ast.Constant(value=v) for v in field.value_list]
                         ),
                     )
+                )
+
+            if field.alias is not None:
+                field_kwargs.append(
+                    ast.keyword(arg="alias", value=ast.Constant(value=field.alias))
                 )
 
             field_statement = ast.AnnAssign(
