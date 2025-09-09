@@ -60,6 +60,15 @@ class JinjaTemplateRenderer(TemplateRenderer):
         setup_jinja_env(self.env)
 
     def render_template(self, template_name: str, context: dict[str, Any]) -> str:
+        """Render a template with its name and the given context.
+
+        Args:
+            template_name: The name of the template to render.
+            context: The context dictionary to pass to the Jinja rendering engine.
+
+        Returns:
+            The rendered template as a string.
+        """
         template = self.env.get_template(template_name)
         return template.render(**context)
 
@@ -70,6 +79,17 @@ class JinjaTemplateRenderer(TemplateRenderer):
         function_name: str,
         template_name: str,
     ) -> str:
+        """Render the standard error template with error information.
+
+        Args:
+            error_type: The type or category of the error.
+            error_message: A descriptive error message.
+            function_name: The name of the function where the error occurred.
+            template_name: The name of the template being rendered.
+
+        Returns:
+            The rendered error template as a string.
+        """
         try:
             template = self.env.get_template(ERROR_TEMPLATE_PATH)
 
@@ -89,6 +109,21 @@ class JinjaTemplateRenderer(TemplateRenderer):
 def get_template_renderer(
     engine: Optional[str] = None, templates_dir: Optional[str] = None
 ) -> TemplateRenderer:
+    """Factory function to get the appropriate template renderer.
+
+    Args:
+        engine: The template engine to use (default is "jinja").
+        templates_dir: The directory where templates are located (default is "./templates").
+
+    Returns:
+        An instance of the appropriate TemplateRenderer subclass.
+
+    Raises:
+        ValueError: If an unsupported template engine is specified.
+
+    .. note::
+        Currently, only the Jinja2 template engine is supported.
+    """
     if engine is None:
         engine = DEFAULT_TEMPLATE_ENGINE
 
@@ -102,6 +137,14 @@ def get_template_renderer(
 
 
 def get_templates_dir(function_globals: dict[str, Any]) -> str:
+    """Determine an app's templates directory based on a view handler's file location.
+
+    Args:
+        function_globals: The ``.__globals`` dictionary from a view handler function.
+
+    Returns:
+        The path to the templates directory as a string.
+    """
     caller_file = function_globals.get("__file__")
     if caller_file:
         app_dir = Path(caller_file).parent

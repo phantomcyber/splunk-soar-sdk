@@ -97,8 +97,12 @@ class ActionsManager(BaseConnector):
             raise RuntimeError(f"Action {action_id} not found.")
 
     def initialize(self) -> bool:
-        # Load the state in initialize, use it to store data
-        # that needs to be accessed across actions
+        """Load asset state into memory at initialization, splitting it into 3 categories.
+
+        Asset state is used to store data that needs to be accessed across actions.
+        Chiefly, it is used to store ingestion state, authentication state, and/or
+        used as an asset cache. Returns True only to conform with the BaseConnector interface.
+        """
         state = self.load_state() or {}
         self.ingestion_state = state.get(_INGEST_STATE_KEY, {})
         self.auth_state = state.get(_AUTH_STATE_KEY, {})
@@ -107,6 +111,12 @@ class ActionsManager(BaseConnector):
         return True
 
     def finalize(self) -> bool:
+        """Save asset state from memory into persistent storage at finalization.
+
+        Joins the SDK's 3 categories of asset state into a single dictionary, conforming
+        to the platform's expectations, and saves it.
+        Returns True only to conform with the BaseConnector interface.
+        """
         state = {
             _INGEST_STATE_KEY: self.ingestion_state,
             _AUTH_STATE_KEY: self.auth_state,
@@ -116,12 +126,15 @@ class ActionsManager(BaseConnector):
         return True
 
     def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
+        """Wrapper for BaseConnector's add_action_result method."""
         return self.add_action_result(action_result)
 
     def get_results(self) -> list[PhantomActionResult]:
+        """Wrapper for BaseConnector's get_action_results method."""
         return self.get_action_results()
 
     def add_exception(self, exception: Exception) -> None:
+        """Public method for adding an exception to an app run result set."""
         self._BaseConnector__conn_result.add_exception(exception)
 
     def set_csrf_info(self, token: str, referer: str) -> None:
@@ -130,4 +143,5 @@ class ActionsManager(BaseConnector):
 
     @classmethod
     def get_soar_base_url(cls) -> str:
+        """Get the base URL of the Splunk SOAR instance this app is running on."""
         return cls._get_phantom_base_url()
