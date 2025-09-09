@@ -21,6 +21,7 @@ def Param(
     cef_types: Optional[list] = None,
     allow_list: bool = False,
     sensitive: bool = False,
+    alias: Optional[str] = None,
 ) -> Any:  # noqa: ANN401
     """Representation of a single complex action parameter.
 
@@ -64,6 +65,7 @@ def Param(
         cef_types=cef_types,
         allow_list=allow_list,
         sensitive=sensitive,
+        alias=alias,
     )
 
 
@@ -135,7 +137,7 @@ class Params(BaseModel):
             if value_list := field.field_info.extra.get("value_list"):
                 params_field["value_list"] = value_list
 
-            params[field_name] = params_field
+            params[field.alias] = params_field
 
         return params
 

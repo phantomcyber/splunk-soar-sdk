@@ -157,7 +157,10 @@ class ActionDeserializer:
             if param_spec["data_type"].startswith("ph"):
                 # Skip parameters that are placeholders
                 continue
-            fields[param_name] = cls._create_param_field(param_spec)
+            normalized = normalize_field_name(param_name)
+            if normalized.modified:
+                param_spec["alias"] = normalized.original
+            fields[normalized.normalized] = cls._create_param_field(param_spec)
 
         # Dynamically create a subclass of Params
         action_name = cls._clean_action_name(action_name).normalized
@@ -186,6 +189,7 @@ class ActionDeserializer:
             cef_types=param_spec.get("contains"),  # 'contains' maps to 'cef_types'
             allow_list=param_spec.get("allow_list", False),
             sensitive=(data_type == "password"),
+            alias=param_spec.get("alias"),
         )
 
         return FieldSpec(python_type, param_field)

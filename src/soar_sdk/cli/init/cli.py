@@ -16,6 +16,7 @@ from rich import print as rprint
 from rich.markup import escape as rescape
 
 from soar_sdk.cli.manifests.deserializers import AppMetaDeserializer
+from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.code_renderers.action_renderer import ActionRenderer
 from soar_sdk.code_renderers.app_renderer import AppContext, AppRenderer
 from soar_sdk.code_renderers.asset_renderer import AssetContext, AssetRenderer
@@ -399,18 +400,20 @@ def generate_asset_definition_ast(app_meta: AppMeta) -> ast.ClassDef:
     """
     asset_context: list[AssetContext] = []
     for name, config_spec in app_meta.configuration.items():
+        normalized = normalize_field_name(name)
         if config_spec["data_type"].startswith("ph"):
             # Skip the cosmetic placeholder fields
             continue
 
         asset_context.append(
             AssetContext(
-                name=name,
+                name=normalized.normalized,
                 description=config_spec.get("description"),
                 required=config_spec.get("required", False),
                 default=config_spec.get("default"),
                 data_type=config_spec["data_type"],
                 value_list=config_spec.get("value_list"),
+                alias=normalized.original if normalized.modified else None,
             )
         )
 

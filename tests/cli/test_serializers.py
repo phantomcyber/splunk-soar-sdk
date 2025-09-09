@@ -41,6 +41,7 @@ def test_params_serialize_fields_info():
         send_notifications: bool = Param(default=True)
         platform: str = Param(value_list=["windows", "linux", "mac"])
         api_key: str = Param(sensitive=True)
+        underscored_field: str = Param(alias="_underscored_field")
 
     serialized_params = ParamsSerializer.serialize_fields_info(SampleParams)
 
@@ -112,6 +113,15 @@ def test_params_serialize_fields_info():
             "allow_list": False,
             "order": 6,
         },
+        "_underscored_field": {
+            "name": "underscored_field",
+            "description": "Underscored Field",
+            "data_type": "string",
+            "required": True,
+            "primary": False,
+            "allow_list": False,
+            "order": 7,
+        },
     }
 
     assert serialized_params == expected_params
@@ -152,6 +162,7 @@ def test_outputs_serialize_output_class():
         list_value: list[str]
         cef_value: str = OutputField(cef_types=["ip"], example_values=["1.1.1.1"])
         nested_value: SampleNestedOutput
+        underscored_value: str = OutputField(alias="_underscored_value")
 
     serialized_outputs = OutputsSerializer.serialize_datapaths(Params, SampleOutput)
 
@@ -187,6 +198,10 @@ def test_outputs_serialize_output_class():
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
             "example_values": [True, False],
+        },
+        {
+            "data_path": "action_result.data.*._underscored_value",
+            "data_type": "string",
         },
         {
             "data_path": "summary.total_objects",

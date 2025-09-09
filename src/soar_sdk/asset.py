@@ -21,6 +21,7 @@ def AssetField(
     default: Optional[Any] = None,  # noqa: ANN401
     value_list: Optional[list] = None,
     sensitive: bool = False,
+    alias: Optional[str] = None,
 ) -> Any:  # noqa: ANN401
     """Representation of an asset configuration field.
 
@@ -47,6 +48,7 @@ def AssetField(
         required=required,
         value_list=value_list,
         sensitive=sensitive,
+        alias=alias,
     )
 
 
@@ -239,7 +241,7 @@ class BaseAsset(BaseModel):
             if value_list := field.field_info.extra.get("value_list"):
                 params_field["value_list"] = value_list
 
-            params[field_name] = params_field
+            params[field.alias] = params_field
 
         return params
 
