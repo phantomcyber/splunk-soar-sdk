@@ -63,6 +63,11 @@ class SOARClient(Generic[SummaryType]):
         """Object governing interaction with the SOAR container API. Subclasses must define."""
         pass
 
+    @abstractmethod
+    def get_executing_container_id(self) -> int:
+        """Return the current Container ID passed in the Connector Run Action JSON."""
+        pass
+
     def get(
         self,
         endpoint: str,
@@ -202,7 +207,9 @@ class SOARClient(Generic[SummaryType]):
         return "https://localhost:9999/"
 
     @abstractmethod
-    def update_client(self, soar_auth: SOARClientAuth, asset_id: str) -> None:
+    def update_client(
+        self, soar_auth: SOARClientAuth, asset_id: str, container_id: int = 0
+    ) -> None:
         """Hook to update the SOAR API client before any actions run with the input data.
 
         An example of what this function might do is authenticate the API client.

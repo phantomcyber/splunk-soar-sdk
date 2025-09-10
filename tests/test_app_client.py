@@ -31,3 +31,7 @@ def test_authenticate_soar_client_on_platform(
 ):
     simple_connector.authenticate_soar_client(soar_client_auth_token)
     assert mock_get_any_soar_call.call_count == 1
+
+
+def test_get_executing_container_id(simple_connector: AppClient):
+    assert simple_connector.get_executing_container_id() == 0

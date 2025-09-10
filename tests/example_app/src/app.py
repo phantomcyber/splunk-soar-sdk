@@ -43,6 +43,8 @@ app = App(
 @app.test_connectivity()
 def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     soar.get("rest/version")
+    container_id = soar.get_executing_container_id()
+    logger.info(f"current executing container's container_id is: {container_id}")
     logger.info(f"testing connectivity against {asset.base_url}")
     logger.debug("hello")
     logger.warning("this is a warning")
