@@ -10,3 +10,6 @@ In this section we will guide you through the basic process of creating your fir
 
     installation
     init_app
+    defining_asset
+    first_action
+    testing_and_building

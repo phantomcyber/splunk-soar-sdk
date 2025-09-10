@@ -13,6 +13,7 @@ Jump to a section:
 - :ref:`asset-configuration-label`
 - :ref:`action-param-label`
 - :ref:`action-output-label`
+- :ref:`soar-client-label`
 - :ref:`api_ref_apis_label`
 - :ref:`api_ref_data_models_label`
 - :ref:`api_ref_logging_label`
@@ -64,7 +65,7 @@ BaseAsset
 Action Parameters
 ~~~~~~~~~~~~~~~~~
 
-Action parameters are defined in Pydantic models, which extend the ``soar_sdk.params.Params`` class.
+Action parameters are defined in Pydantic models, which extend the :class:`soar_sdk.params.Params` class.
 At their most basic, parameters can have a simple data type such as ``str`` or ``int``.
 
 .. code-block:: python
@@ -84,7 +85,7 @@ At their most basic, parameters can have a simple data type such as ``str`` or `
 Adding extra metadata
 ^^^^^^^^^^^^^^^^^^^^^
 
-You can use the ``Param`` function to add extra information to a parameter type.
+You can use the :func:`~soar_sdk.params.Param` function to add extra information to a parameter type.
 For example, let's give the ``uid`` field a Common Event Format (CEF) type and make it optional.
 
 .. code-block:: python
@@ -100,7 +101,8 @@ For example, let's give the ``uid`` field a Common Event Format (CEF) type and m
       is_admin: bool
       uid: int = Param(required=False, cef_types=["user id"])
 
-For a full list of Param options, see the ``Params`` class and ``Param`` function below:
+Defining parameters
+^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: soar_sdk.params.Params
 
@@ -124,9 +126,9 @@ Generic action functions require a specific parameter class called `GenericActio
 Action Outputs
 ~~~~~~~~~~~~~~
 
-Action outputs are defined in Pydantic models, which extend the ``soar_sdk.action_results.ActionOutput`` class.
+Action outputs are defined in Pydantic models, which extend the :class:`~soar_sdk.action_results.ActionOutput` class.
 
-Much like parameters, outputs can have simple data types such as ``str`` or ``int``, or be annotated with the ``OutputField`` function to add extra metadata.
+Much like parameters, outputs can have simple data types such as ``str`` or ``int``, or be annotated with the :func:`~soar_sdk.action_results.OutputField` function to add extra metadata.
 
 .. code-block:: python
 
@@ -154,7 +156,7 @@ Output models can be nested, allowing you to create complex data structures:
    class ListUsersOutput(ActionOutput):
       users: list[UserDetails]
 
-You can add summary data and a result message to your action, by calling `client.set_message` and `client.set_summary`. Summary objects are also subclasses of `ActionOutput`, and you must register them in your action decorator:
+You can add summary data and a result message to your action, by calling :func:`soar_sdk.abstract.SOARClient.set_message` and :func:`soar_sdk.abstract.SOARClient.set_summary`. Summary objects are also subclasses of :class:`~soar_sdk.action_results.ActionOutput`, and you must register them in your action decorator:
 
 .. code-block:: python
 
@@ -174,7 +176,8 @@ You can add summary data and a result message to your action, by calling `client
        return ListUsersOutput(users=users)
 
 
-For more details, see the ``ActionOutput`` class and the ``OutputField`` function below:
+Defining action outputs
+^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: soar_sdk.action_results.ActionOutput
 
@@ -185,6 +188,16 @@ Generic Action Output
 For generic action functions we have provided a convenience class called `GenericActionOutput`. This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class to return the response from the generic action.
 
 .. autoclass:: soar_sdk.action_results.GenericActionOutput
+
+.. _soar-client-label:
+
+SOARClient
+~~~~~~~~~~~
+
+The ``SOARClient`` class is an app's gateway to the Splunk SOAR platform APIs. It provides methods for creating and manipulating platform objects such as containers, artifacts, and vault items.
+
+.. autoclass:: soar_sdk.abstract.SOARClient
+   :show-inheritance:
 
 .. _api_ref_apis_label:
 
