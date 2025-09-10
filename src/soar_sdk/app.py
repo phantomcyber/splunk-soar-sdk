@@ -187,7 +187,9 @@ class App:
 
         self.__logger.handler.set_handle(handle)
         soar_auth = App.create_soar_client_auth_object(input_data)
-        self.soar_client.update_client(soar_auth, input_data.asset_id)
+        self.soar_client.update_client(
+            soar_auth, input_data.asset_id, input_data.container_id
+        )
         return self.actions_manager.handle(input_data, handle=handle)
 
     @staticmethod

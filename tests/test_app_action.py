@@ -198,7 +198,8 @@ def test_action_decoration_uses_meta_identifier_for_action_name(simple_app):
 def test_action_with_mocked_client(simple_app, sample_params):
     @simple_app.action()
     def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
-        soar.save_progress("Progress was made")
+        container_id = str(soar.get_executing_container_id())
+        soar.save_progress(f"Container ID is: {container_id}")
 
     client_mock = mock.Mock()
     client_mock.save_progress = mock.Mock()
