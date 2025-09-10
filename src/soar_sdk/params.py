@@ -88,7 +88,7 @@ class Params(BaseModel):
     """Params defines the full set of inputs for an action.
 
     It can contain strings, booleans, or numbers -- no lists or dictionaries.
-    Params fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in soar_sdk.params.Param.
+    Params fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.
     """
 
     @staticmethod

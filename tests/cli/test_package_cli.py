@@ -30,7 +30,7 @@ def test_package_build_command(wheel_resp_mock, tmp_path: Path):
             ],
         )
 
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.stdout
     assert destination.is_file()
     # Verify our mock was called
     assert wheel_resp_mock.called
