@@ -14,7 +14,7 @@ If you find bugs, need help, or have suggestions, please visit the `Splunk SOAR 
 
 
 What is a Splunk SOAR app and what are actions?
-----------------------------------------
+-----------------------------------------------
 
 Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality. Each app provides a new set of actions that can be used to automate security investigations and response. Usually, a single app adds actions which integrate with a specific tool or 3rd party service (e.g. whois lookup or geolocation).
 
