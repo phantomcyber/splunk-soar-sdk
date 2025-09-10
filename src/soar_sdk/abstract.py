@@ -34,10 +34,7 @@ class SOARClientAuth:
 
 
 class SOARClient(Generic[SummaryType]):
-    """A unified API interface for performing actions on SOAR Platform.
-
-    Replaces previously used BaseConnector API interface.
-    """
+    """An API interface for interacting with the Splunk SOAR Platform."""
 
     @property
     @abstractmethod

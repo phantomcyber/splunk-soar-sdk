@@ -7,7 +7,7 @@ from pprint import pprint
 
 from soar_sdk.app import App
 from soar_sdk.cli.path_utils import context_directory
-from soar_sdk.compat import remove_when_soar_newer_than
+from soar_sdk.compat import remove_when_soar_newer_than, UPDATE_TIME_FORMAT
 from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.meta.dependencies import UvLock
@@ -31,7 +31,7 @@ class ManifestProcessor:
         app_meta.configuration = app.asset_cls.to_json_schema()
         app_meta.actions = app.actions_manager.get_actions_meta_list()
         app_meta.utctime_updated = datetime.now(timezone.utc).strftime(
-            "%Y-%m-%dT%H:%M:%S.%fZ"
+            UPDATE_TIME_FORMAT
         )
         for field, value in app.app_meta_info.items():
             setattr(app_meta, field, value)

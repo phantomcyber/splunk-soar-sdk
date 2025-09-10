@@ -4,6 +4,8 @@ from packaging.version import Version
 
 MIN_PHANTOM_VERSION = "6.4.0"
 
+UPDATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
+
 
 @functools.lru_cache(maxsize=32)
 def remove_when_soar_newer_than(

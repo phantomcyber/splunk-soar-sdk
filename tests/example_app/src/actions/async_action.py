@@ -1,10 +1,13 @@
 import asyncio
 import httpx
 import time
+from typing import TYPE_CHECKING
 from soar_sdk.abstract import SOARClient
 from soar_sdk.params import Params, Param
 from soar_sdk.action_results import ActionOutput
-from ..app import Asset
+
+if TYPE_CHECKING:
+    from ..app import Asset
 
 
 class AsyncTestParams(Params):
@@ -20,7 +23,7 @@ class AsyncTestOutput(ActionOutput):
 
 
 async def async_process(
-    params: AsyncTestParams, soar: SOARClient, asset: Asset
+    params: AsyncTestParams, soar: SOARClient, asset: "Asset"
 ) -> AsyncTestOutput:
     start_time = time.time()
 
@@ -60,7 +63,7 @@ class SyncTestOutput(ActionOutput):
 
 
 def sync_process(
-    params: SyncTestParams, soar: SOARClient, asset: Asset
+    params: SyncTestParams, soar: SOARClient, asset: "Asset"
 ) -> SyncTestOutput:
     start_time = time.time()
 

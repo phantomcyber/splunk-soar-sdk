@@ -1,6 +1,10 @@
 from unittest import mock
+from uuid import uuid4
 
 import pytest
+import inspect
+import sys
+import types
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
@@ -8,7 +12,6 @@ from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
-from tests.mocks.importable_action import importable_action, importable_view_handler
 import httpx
 
 
@@ -354,6 +357,8 @@ def test_direct_action_registration(simple_app: App):
 
 
 def test_register_action_basic(simple_app: App):
+    from tests.mocks.importable_action import importable_action
+
     registered_action = simple_app.register_action(
         importable_action,
         name="Importable Action",
@@ -378,10 +383,43 @@ def test_register_action_basic(simple_app: App):
     assert actions["importable_action"] == registered_action
 
 
+@pytest.mark.parametrize(
+    "action_import",
+    (
+        "mocks.importable_action.importable_action",
+        "mocks.importable_action:importable_action",
+        "mocks/importable_action.py:importable_action",
+    ),
+)
+def test_import_path_action_registration(action_import: str, simple_app: App):
+    action_id = str(uuid4())
+    simple_app.register_action(
+        action_import,
+        identifier=action_id,
+    )
+    actions = simple_app.actions_manager.get_actions()
+    assert action_id in actions
+
+
+@pytest.mark.parametrize(
+    "action_import",
+    (
+        "abcd.efgh:importable_action",
+        "abcd.efgh.importable_action",
+        "tuv/wxyz:importable_action",
+        "tuv/wxyz.py:importable_action",
+        "mocks.importable_action:abcdef",
+        "mocks.importable_action.ghijkl",
+        "mocks/importable_action.py:mnopqr",
+    ),
+)
+def test_action_bad_path(action_import: str, simple_app: App):
+    with pytest.raises(ActionRegistrationError):
+        simple_app.register_action(action_import)
+
+
 def test_register_action_with_view_handler(simple_app: App):
-    import inspect
-    import sys
-    import types
+    from tests.mocks.importable_action import importable_action, importable_view_handler
 
     original_signature = inspect.signature(importable_view_handler)
     assert len(original_signature.parameters) == 1
@@ -418,7 +456,26 @@ def test_register_action_with_view_handler(simple_app: App):
     assert "importable_action" in actions
 
 
+def test_register_action_with_view_handler_str(simple_app: App):
+    # Register the importable action with view handler
+    registered_action = simple_app.register_action(
+        "mocks.importable_action:importable_action",
+        name="Importable Action with View",
+        view_handler="mocks.importable_action:importable_view_handler",
+        view_template="sample_template.html",
+    )
+
+    # Verify the action was registered with view handler
+    assert registered_action.meta.view_handler is not None
+
+    # Additional verification: the action should be properly registered
+    actions = simple_app.get_actions()
+    assert "importable_action" in actions
+
+
 def test_register_action_with_view_handler_empty_module(simple_app: App):
+    from tests.mocks.importable_action import importable_action, importable_view_handler
+
     importable_view_handler.__module__ = ""
 
     registered_action = simple_app.register_action(
@@ -432,6 +489,8 @@ def test_register_action_with_view_handler_empty_module(simple_app: App):
 
 
 def test_register_action_with_view_handler_module_not_in_sys_modules(simple_app: App):
+    from tests.mocks.importable_action import importable_action
+
     # Create a view handler with a fake module name
     def fake_module_view_handler(output: list[ActionOutput]) -> dict:
         return {"data": "test"}
