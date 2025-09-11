@@ -1,6 +1,6 @@
 .. _app-structure:
 
-App structure
+App Structure
 =============
 
 In these documentation pages you will find detailed information on the contents of the basic/default app files.

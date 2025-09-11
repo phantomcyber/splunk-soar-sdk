@@ -1,9 +1,9 @@
-Creating your first actions
+Creating Your First Actions
 ===========================
 
 All actions are defined as standalone functions, which are then registered with the :class:`~soar_sdk.app.App` object. Further, all apps are expected to implement a special ``test connectivity`` action, which is used to verify that the app can connect and authenticate to its external service.
 
-The ``test connectivity`` action
+The ``test connectivity`` Action
 --------------------------------
 
 Every app must implement a ``test connectivity`` action. This action takes no parameters, and is used to verify that the app and its associated asset configuration are working correctly. Running ``test connectivity`` on the Splunk SOAR platform should answer the questions:
@@ -31,7 +31,7 @@ For example:
 
         logger.info("Connectivity test succeeded")
 
-Your first action
+Your First Action
 -----------------
 
 Actions can be registered in multiple ways, with advantages and trade-offs to each. For a smaller app, the easiest method is to use the :func:`~soar_sdk.app.App.action` decorator directly on a function.
@@ -49,7 +49,7 @@ The simplest action to create would look like this::
 
 Let's break down this example to explain what happens here.
 
-:func:`~soar_sdk.app.App.action` decorator
+:func:`~soar_sdk.app.App.action` Decorator
 ------------------------------------------
 
 .. code-block:: python
@@ -70,7 +70,7 @@ The decorator registers new action functions against :class:`~soar_sdk.app.App` 
 
     For more information about action registration, see the :ref:`App structure <app-structure-actions-def>` or :ref:`API Reference <api_ref_key_methods_label>` docs.
 
-The action declaration
+The Action Declaration
 ----------------------
 
 .. code-block:: python
@@ -91,7 +91,7 @@ The ``asset`` argument contains an instance of the app's asset configuration. It
 
 Actions must have a return type that resolves to a type which extends from :class:`~soar_sdk.action_results.ActionOutput`. This is discussed further in the :ref:`Action Outputs <action-output-label>` and :ref:`App structure <app-structure-actions-def>` docs. The return type must be hinted.
 
-The action docstring
+The Action Docstring
 --------------------
 
 .. code-block:: python
@@ -102,7 +102,7 @@ All actions should have a docstring. Beyond the general best practice it represe
 
 The description should be kept short and simple, explaining what the action does.
 
-The action result
+The Action Result
 -----------------
 
 .. code-block:: python

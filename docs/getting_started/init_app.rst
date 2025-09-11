@@ -1,7 +1,7 @@
-Building an app
+Building an App
 ===============
 
-Creating the app skeleton
+Creating the App Skeleton
 -------------------------
 
 To build an app with the Splunk SOAR SDK, you can either start from scratch, or migrate an existing app built with the older ``BaseConnector`` framework.
@@ -50,7 +50,7 @@ To build an app with the Splunk SOAR SDK, you can either start from scratch, or 
 
 .. _local_app_structure:
 
-The app structure
+The App Structure
 -----------------
 
 Running the ``soarapps init`` or ``soarapps convert`` commands will create the following directory structure::
@@ -68,7 +68,7 @@ Running the ``soarapps init`` or ``soarapps convert`` commands will create the f
 
     See the dedicated :ref:`app structure documentation<app-structure>` for more details on each of these files and their purposes.
 
-The ``src`` directory and the :ref:`app.py <app-structure-app>` file
+The ``src`` Directory and the :ref:`app.py <app-structure-app>` File
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In this directory you will develop your app source code. Apps typically start with an :ref:`app.py <app-structure-app>` file with the main module code. Larger apps can be split into multiple modules for better organization.
@@ -80,14 +80,14 @@ All apps must create one single :class:`~soar_sdk.app.App` instance. Typically, 
 
 Read the detailed documentation on the :ref:`app.py <app-structure-app>` file contents.
 
-The ``logo*.svg`` files
+The ``logo*.svg`` Files
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 These files are used by the Splunk SOAR platform to present your app in the web UI. You should generally provide two versions of the logo. The regular one is used in light mode and the ``_dark`` file is used in dark mode.
 
 PNG files are acceptable, but SVGs are preferred because they scale more easily.
 
-The :ref:`pyproject.toml <app-structure-pyproject>` configuration file
+The :ref:`pyproject.toml <app-structure-pyproject>` Configuration File
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This file contains critical metadata about your app, like its name, license, version, and dependencies.
@@ -95,7 +95,7 @@ Learn more in the detailed documentation on the :ref:`pyproject.toml <app-struct
 
 .. _configuring-dev-env:
 
-Configuring a development environment
+Configuring a Development Environment
 --------------------------------------
 
 After creating an app skeleton, it's time to set up a development environment.
