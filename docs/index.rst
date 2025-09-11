@@ -13,7 +13,7 @@ If you want to learn more about how to use the SDK, check out the following reso
 If you find bugs, need help, or have suggestions, please visit the `Splunk SOAR SDK GitHub repository <https://github.com/phantomcyber/splunk-soar-sdk>`_ and file an issue.
 
 
-What is a Splunk SOAR app and what are actions?
+What is a Splunk SOAR App and What are Actions?
 -----------------------------------------------
 
 Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform functionality. Each app provides a new set of actions that can be used to automate security investigations and response. Usually, a single app adds actions which integrate with a specific tool or 3rd party service (e.g. whois lookup or geolocation).
@@ -34,7 +34,7 @@ Contents
    changelog
 
 
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`

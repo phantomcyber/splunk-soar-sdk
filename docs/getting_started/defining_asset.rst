@@ -1,4 +1,4 @@
-Defining your app's asset configuration
+Defining Your App's Asset Configuration
 =======================================
 
 

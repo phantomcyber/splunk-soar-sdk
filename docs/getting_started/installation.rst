@@ -17,7 +17,7 @@ Prerequisites
         uv tool install pre-commit --with pre-commit-uv
 
 
-Installing the SDK as a tool
+Installing the SDK as a Tool
 ----------------------------
 
 The SDK can be installed and used as a command-line interface (CLI) tool, accessible via the ``soarapps`` command. This allows you to create, test, and manage Splunk SOAR apps directly from your terminal. To install the CLI tool, use the following command:

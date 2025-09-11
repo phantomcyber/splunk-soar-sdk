@@ -5,7 +5,7 @@ API Reference
 
 This section documents the public API of the Splunk SOAR SDK.
 
-Jump to a section:
+Jump to a Section:
 ------------------
 
 - :ref:`api_ref_core_label`
@@ -82,7 +82,7 @@ At their most basic, parameters can have a simple data type such as ``str`` or `
       uid: int
 
 
-Adding extra metadata
+Adding Extra Metadata
 ^^^^^^^^^^^^^^^^^^^^^
 
 You can use the :func:`~soar_sdk.params.Param` function to add extra information to a parameter type.
@@ -101,21 +101,21 @@ For example, let's give the ``uid`` field a Common Event Format (CEF) type and m
       is_admin: bool
       uid: int = Param(required=False, cef_types=["user id"])
 
-Defining parameters
+Defining Parameters
 ^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: soar_sdk.params.Params
 
 .. autofunction:: soar_sdk.params.Param
 
-Parameters for on poll
-^^^^^^^^^^^^^^^^^^^^^^
+Parameters For ``on poll``
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 On poll functions require a specific parameter class called `OnPollParams`. YYou should use this class as-is, instead of overriding it.
 
 .. autoclass:: soar_sdk.params.OnPollParams
 
-Parameters for generic action
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Parameters for the Generic Action
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Generic action functions require a specific parameter class called `GenericActionParams`. You should use this class as-is, instead of overriding it.
 
 .. autoclass:: soar_sdk.params.GenericActionParams
@@ -176,7 +176,7 @@ You can add summary data and a result message to your action, by calling :func:`
        return ListUsersOutput(users=users)
 
 
-Defining action outputs
+Defining Action Outputs
 ^^^^^^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: soar_sdk.action_results.ActionOutput
