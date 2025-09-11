@@ -84,7 +84,7 @@ Action Metadata
 
 Action definition carry with them important metadata which is used by the Splunk SOAR platform to present the action in the UI, and to generate the app's manifest. Often, this metadata can be derived automatically from the action function's signature:
 
-- The action's "identifier" is, be default, the name of the action function (e.g. ``my_action``).
+- The action's "identifier" is, by default, the name of the action function (e.g. ``my_action``).
 - The action's "name" is, by default, the action function's name with spaces instead of underscores (e.g. ``my action``).
 - The action's "description" is, by default, the action function's docstring.
 - The action's "type" is, by default, ``generic`` unless the action is one of the reserved names like ``test connectivity`` or ``on poll``.
