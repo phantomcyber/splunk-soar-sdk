@@ -11,9 +11,6 @@ class ReverseStringParams(Params):
 
 
 class ReverseStringOutput(ActionOutput):
-    def generate_action_summary_message(self) -> str:
-        return f"Reversed string: {self.reversed_string}"
-
     original_string: str
     reversed_string: str
     underscored_string: str = OutputField(alias="_underscored_string")
@@ -23,6 +20,7 @@ def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStrin
     logger.debug("params: %s", param)
     reversed_string = param.input_string[::-1]
     logger.debug("reversed_string %s", reversed_string)
+    soar.set_message(f"Reversed string: {reversed_string}")
     return ReverseStringOutput(
         original_string=param.input_string,
         reversed_string=reversed_string,
