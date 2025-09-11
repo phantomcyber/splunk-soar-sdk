@@ -246,3 +246,6 @@ add-ignore = ["D100", "D104", "D105", "D107"]
 match = "(?!test_).*\\.py"
 # Don't check docstrings in test files
 match-dir = "(?!tests|__pycache__|build|dist).*"
+
+[tool.codespell]
+ignore-words-list = "MergeT"
