@@ -311,13 +311,11 @@ class App:
                 found in its original module for replacement.
 
         Example:
-            >>> from my_views_module import my_view_handler
-            >>>
             >>> action = app.register_action(
             ...     "action.my_action:my_action_function",
             ...     name="Dynamic Action",
             ...     description="Action imported from another module",
-            ...     view_handler=my_view_handler,
+            ...     view_handler="my_views_module:my_view_handler",
             ...     view_template="custom_template.html",
             ... )
         """
@@ -386,14 +384,22 @@ class App:
         module_name = module_name.removesuffix(".py").replace(".", "/") + ".py"
         module_path = module_root / module_name
 
-        spec = importlib.util.spec_from_file_location(module_path.stem, module_path)
+        module_name = (
+            # Jump up from module -> src -> package root
+            module_path.relative_to(module_root.parent.parent)
+            # Remove .py suffix, convert to dot notation
+            .with_suffix("")
+            .as_posix()
+            .replace("/", ".")
+        )
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
         # Not sure how to actually make spec None,
         # but the type hint says it's technically possible
         if spec is None or spec.loader is None:  # pragma: no cover
             raise ActionRegistrationError(action_func_name)
 
         module = importlib.util.module_from_spec(spec)
-        sys.modules[module_path.stem] = module
+        sys.modules[module_name] = module
         try:
             spec.loader.exec_module(module)
             action_func = getattr(module, action_func_name)
