@@ -20,7 +20,7 @@ class AppMeta(BaseModel):
 
     name: str = ""
     description: str
-    appid: str = "1e1618e7-2f70-4fc0-916a-f96facc2d2e4"  # placeholder value to pass inital validation
+    appid: str = "1e1618e7-2f70-4fc0-916a-f96facc2d2e4"  # placeholder value to pass initial validation
     type: str = ""
     product_vendor: str = ""
     app_version: str

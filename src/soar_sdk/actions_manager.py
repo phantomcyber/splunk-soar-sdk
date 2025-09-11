@@ -71,7 +71,7 @@ class ActionsManager(BaseConnector):
             )  # TODO: replace with a valid lack of action handling
 
     def handle_action(self, param: dict[str, Any]) -> None:
-        """The central action execution function BaseConnector expects to be overriden.
+        """The central action execution function BaseConnector expects to be overridden.
 
         Given the input parameter dictionary from Splunk SOAR, find the Action function
         referred to by the input, parse the parameters into the appropriate Pydantic model,
