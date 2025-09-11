@@ -51,23 +51,19 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.progress("this is a progress message")
 
 
-from .actions.reverse_string import render_reverse_string_view
-
 app.register_action(
     "actions.reverse_string:reverse_string",
     action_type="investigate",
     verbose="Reverses a string.",
     view_template="reverse_string.html",
-    view_handler=render_reverse_string_view,
+    view_handler="actions.reverse_string:render_reverse_string_view",
 )
-
-from .actions.generate_category import render_statistics_chart
 
 app.register_action(
     "actions.generate_category:generate_statistics",
     action_type="investigate",
     verbose="Generate statistics with pie chart reusable component.",
-    view_handler=render_statistics_chart,
+    view_handler="actions.generate_category:render_statistics_chart",
 )
 
 
