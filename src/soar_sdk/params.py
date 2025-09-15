@@ -28,8 +28,6 @@ def Param(
     Use this function to define the default value for an action parameter that requires
     extra metadata for the manifest. This function is a thin wrapper around pydantic.Field.
 
-    :param order: The order key, starting at 0, allows the app
-      author to control the display order of the controls in the UI.
     :param description: A short description of this parameter.
       The description is shown in the user interface when running an action manually.
     :param default: To set the default value of a variable in the UI, use this key.
