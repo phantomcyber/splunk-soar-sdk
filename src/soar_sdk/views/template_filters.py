@@ -10,7 +10,7 @@ import uuid
 import humanize
 import bleach  # type: ignore[import-untyped]
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Optional, TypeVar, Union
 from collections.abc import Iterable
 from collections.abc import Iterator
 from jinja2 import Environment
@@ -47,7 +47,10 @@ def sorteditems(dictionary: dict) -> list:
     return sorted(dictionary.items())
 
 
-def batch(iterable: Iterable, count: int) -> Iterator[list]:
+T = TypeVar("T")
+
+
+def batch(iterable: Iterable[T], count: int) -> Iterator[list[T]]:
     """Batch items into groups of specified count."""
     result = []
     for item in iterable:
