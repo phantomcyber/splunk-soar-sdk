@@ -257,9 +257,9 @@ class AppCliRunner:
         )
         print(f"Parsed webhook request: {args.webhook_request}")
 
-    def run(self) -> None:
+    def run(self, argv: Optional[list[str]] = None) -> None:
         """Run the app CLI."""
-        args = self.parse_args()
+        args = self.parse_args(argv=argv)
 
         logger = PhantomLogger()
 

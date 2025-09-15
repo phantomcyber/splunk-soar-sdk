@@ -84,11 +84,9 @@ class ActionsManager(BaseConnector):
         if handler := self.get_action(action_id):
             try:
                 params = handler.meta.parameters.parse_obj(param)
-            except (ValueError, ValidationError):
-                # FIXME: Consider adding more details to this error, but be aware
-                #  of possible PIIs.
+            except (ValueError, ValidationError) as e:
                 self.save_progress(
-                    "Validation Error - the params data for action could not be parsed"
+                    f"Validation Error - the params data for action could not be parsed: {e!s}"
                 )
                 return
             handler(params)
