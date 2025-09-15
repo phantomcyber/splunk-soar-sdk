@@ -436,7 +436,7 @@ def test_parse_args_webhook_flattens_params(
 def test_run_action_cli(
     app_with_action: App,
     tmp_asset_and_param_files: tuple[Path, Path],
-    mocker: pytest_mock.MockerFixture,
+    capsys: pytest.CaptureFixture[str],
 ):
     """Test running an action via CLI."""
     runner = AppCliRunner(app_with_action)
@@ -444,15 +444,17 @@ def test_run_action_cli(
     _, param_file = tmp_asset_and_param_files
     param_file.write_text(json.dumps({"field1": 123}))
 
-    handle = mocker.patch.object(app_with_action, "handle")
-
     # Run the action
-    args = runner.parse_args(["action", "test_action", "-p", param_file.as_posix()])
-    mocker.patch.object(runner, "parse_args", return_value=args)
-    runner.run()
+    runner.run(["action", "test_action", "-p", param_file.as_posix()])
 
     # Verify the result
-    handle.assert_called_once_with(args.raw_input_data)
+    captured = capsys.readouterr()
+    assert "Action params: " in captured.out
+    assert "Action success: " in captured.out
+    assert "Result data: " in captured.out
+    assert "Result summary: " in captured.out
+    assert "Result message: " in captured.out
+    assert "Objects successful/total: 1/1" in captured.out
 
 
 def test_run_action_cli_with_encrypted_asset(
