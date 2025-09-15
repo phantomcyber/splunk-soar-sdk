@@ -52,5 +52,8 @@ if TYPE_CHECKING or not _soar_is_available:
         def get_summary(self) -> dict:
             return self.summary
 
+        def get_message(self) -> str:
+            return self.message
+
 
 __all__ = ["ActionResult"]
