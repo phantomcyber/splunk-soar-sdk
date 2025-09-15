@@ -4,19 +4,20 @@ from unittest import mock
 import json
 from datetime import datetime
 
+import pytest_mock
+
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.compat import UPDATE_TIME_FORMAT
 
 
-def test_manifest_processor_creating_json_from_meta():
+def test_manifest_processor_creating_json_from_meta(mocker: pytest_mock.MockerFixture):
     processor = ManifestProcessor(
         "example_app.json", project_context="./tests/example_app"
     )
-    processor.save_json_manifest = mock.Mock()
 
+    save_json_manifest = mocker.patch.object(processor, "save_json_manifest")
     processor.create()
-
-    processor.save_json_manifest.assert_called_once()
+    save_json_manifest.assert_called_once()
 
 
 @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="data")

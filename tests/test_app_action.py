@@ -6,6 +6,8 @@ import inspect
 import sys
 import types
 
+import pytest_mock
+
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.params import Param, Params
@@ -115,7 +117,7 @@ def test_action_call_with_params_dict(simple_app, sample_params):
         assert params.pass_value == "<PASSWORD>"
         assert params.bool_value
 
-    client_mock = mock.Mock()
+    client_mock = mock.Mock(spec=SOARClient)
 
     action_function(sample_params, soar=client_mock)
 
@@ -134,7 +136,7 @@ def test_action_call_with_state(simple_app, sample_params):
         soar.auth_state = updated_state
         soar.asset_cache = updated_state
 
-    client_mock = mock.Mock()
+    client_mock = mock.Mock(spec=SOARClient)
 
     client_mock.ingestion_state = initial_state
     client_mock.auth_state = initial_state
@@ -202,14 +204,13 @@ def test_action_with_mocked_client(simple_app, sample_params):
     @simple_app.action()
     def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
         container_id = str(soar.get_executing_container_id())
-        soar.save_progress(f"Container ID is: {container_id}")
+        soar.set_summary(f"Container ID is: {container_id}")
 
-    client_mock = mock.Mock()
-    client_mock.save_progress = mock.Mock()
+    client_mock = mock.Mock(spec=SOARClient)
 
     action_function(sample_params, soar=client_mock)
 
-    assert client_mock.save_progress.call_count == 1
+    assert client_mock.set_summary.call_count == 1
 
 
 def test_action_decoration_fails_without_return_type(simple_app):
@@ -269,17 +270,17 @@ def test_action_decoration_passing_output_type_as_argument(simple_app):
     foo(SampleActionParams())
 
 
-def test_action_failure_raised(simple_app: App):
+def test_action_failure_raised(simple_app: App, mocker: pytest_mock.MockerFixture):
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         raise ActionFailure("Action failed")
 
     # Mock the add_result method
-    simple_app.actions_manager.add_result = mock.Mock()
+    add_result_mock = mocker.patch.object(simple_app.actions_manager, "add_result")
 
     result = action_function(Params(), soar=simple_app.soar_client)
     assert not result
-    assert simple_app.actions_manager.add_result.call_count == 1
+    assert add_result_mock.call_count == 1
 
 
 def test_other_failure_raised(simple_app: App):

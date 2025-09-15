@@ -1,10 +1,10 @@
 from io import BytesIO
+from collections.abc import Iterator
 from unittest import mock
 import json
 from pathlib import Path
 import pytest
-from collections.abc import Iterator
-from typing import TextIO
+import pytest_mock
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
@@ -21,21 +21,23 @@ class Asset(BaseAsset):
 
 
 @pytest.fixture
-def tmp_asset_and_param_files(tmp_path: Path) -> Iterator[TextIO, TextIO]:
+def tmp_asset_and_param_files(tmp_path: Path) -> Iterator[tuple[Path, Path]]:
     """Fixture to create temporary asset and parameter files, already opened for writing."""
     asset_file = tmp_path / "asset.json"
     param_file = tmp_path / "params.json"
 
-    with asset_file.open("w") as af, param_file.open("w") as pf:
-        yield af, pf
+    yield asset_file, param_file
+
+    asset_file.unlink(missing_ok=True)
+    param_file.unlink(missing_ok=True)
 
 
-def test_parse_args_with_no_actions(simple_app: App):
+def test_parse_args_with_no_actions(simple_app: App, mocker: pytest_mock.MockerFixture):
     """Test parsing arguments when app has no actions."""
     runner = AppCliRunner(simple_app)
 
     # Mock get_actions to return an empty dict
-    runner.app.actions_manager.get_actions = mock.Mock(return_value={})
+    mocker.patch.object(runner.app.actions_manager, "get_actions", return_value={})
 
     # Calling parse_args with no argv should raise SystemExit because subparser is required
     with pytest.raises(SystemExit):
@@ -74,12 +76,10 @@ def test_parse_args_with_action_needs_asset(
     asset_file, param_file = tmp_asset_and_param_files
 
     asset_json = {"key": "value"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
+    asset_file.write_text(json.dumps(asset_json))
 
     param_json = {"field1": 42}
-    json.dump(param_json, param_file)
-    param_file.flush()
+    param_file.write_text(json.dumps(param_json))
 
     # Parse args with our action and asset file
     args = runner.parse_args(
@@ -87,9 +87,9 @@ def test_parse_args_with_action_needs_asset(
             "action",
             "test_action_with_asset",
             "--asset-file",
-            asset_file.name,
+            asset_file.as_posix(),
             "--param-file",
-            param_file.name,
+            param_file.as_posix(),
         ]
     )
 
@@ -97,7 +97,7 @@ def test_parse_args_with_action_needs_asset(
     assert args.identifier == "test_action_with_asset"
     assert args.action == action
     assert args.needs_asset
-    assert args.asset_file == Path(asset_file.name)
+    assert args.asset_file == asset_file
 
 
 def test_parse_args_with_action_needs_params(
@@ -113,17 +113,18 @@ def test_parse_args_with_action_needs_params(
     _, param_file = tmp_asset_and_param_files
 
     param_json = {"field1": 42}
-    json.dump(param_json, param_file)
-    param_file.flush()
+    param_file.write_text(json.dumps(param_json))
 
     # Parse args with our action and param file
-    args = runner.parse_args(["action", "test_action", "--param-file", param_file.name])
+    args = runner.parse_args(
+        ["action", "test_action", "--param-file", param_file.as_posix()]
+    )
 
     # Verify the returned args have the expected values
     assert args.identifier == "test_action"
     assert args.action == action
     assert not args.needs_asset
-    assert args.param_file == Path(param_file.name)
+    assert args.param_file == param_file
 
     # Verify that raw_input_data is properly created
     input_data = json.loads(args.raw_input_data)
@@ -147,12 +148,10 @@ def test_parse_args_with_action_needs_asset_and_params(
     asset_file, param_file = tmp_asset_and_param_files
 
     asset_json = {"asset_key": "asset_value"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
+    asset_file.write_text(json.dumps(asset_json))
 
     param_json = {"field1": 99}
-    json.dump(param_json, param_file)
-    param_file.flush()
+    param_file.write_text(json.dumps(param_json))
 
     # Parse args with our action, asset file and param file
     args = runner.parse_args(
@@ -160,9 +159,9 @@ def test_parse_args_with_action_needs_asset_and_params(
             "action",
             "test_action_with_asset",
             "--asset-file",
-            asset_file.name,
+            asset_file.as_posix(),
             "--param-file",
-            param_file.name,
+            param_file.as_posix(),
         ]
     )
 
@@ -170,8 +169,8 @@ def test_parse_args_with_action_needs_asset_and_params(
     assert args.identifier == "test_action_with_asset"
     assert args.action == action
     assert args.needs_asset
-    assert args.asset_file == Path(asset_file.name)
-    assert args.param_file == Path(param_file.name)
+    assert args.asset_file == asset_file
+    assert args.param_file == param_file
 
     # Verify that raw_input_data is properly created with asset data
     input_data = json.loads(args.raw_input_data)
@@ -194,12 +193,13 @@ def test_parse_args_with_invalid_param_file(
     _, param_file = tmp_asset_and_param_files
 
     # Create a temporary param file with invalid JSON content
-    param_file.write("this is not valid json")
-    param_file.flush()
+    param_file.write_text("this is not valid json")
 
     # Parsing args with invalid param file should raise SystemExit
     with pytest.raises(SystemExit):
-        runner.parse_args(["action", "test_action", "--param-file", param_file.name])
+        runner.parse_args(
+            ["action", "test_action", "--param-file", param_file.as_posix()]
+        )
 
 
 def test_parse_args_with_invalid_asset_file(
@@ -211,18 +211,19 @@ def test_parse_args_with_invalid_asset_file(
     asset_file, _ = tmp_asset_and_param_files
 
     # Create a temporary asset file with invalid JSON content
-    asset_file.write("this is not valid json")
-    asset_file.flush()
+    asset_file.write_text("this is not valid json")
 
     # Parsing args with invalid asset file should raise SystemExit
     with pytest.raises(SystemExit):
         runner.parse_args(
-            ["action", "test_action_with_asset", "--asset-file", asset_file.name]
+            ["action", "test_action_with_asset", "--asset-file", asset_file.as_posix()]
         )
 
 
 def test_parse_args_with_malformed_param_values(
-    app_with_action: App, tmp_asset_and_param_files: tuple[Path, Path]
+    app_with_action: App,
+    tmp_asset_and_param_files: tuple[Path, Path],
+    mocker: pytest_mock.MockerFixture,
 ):
     """Test parsing arguments with valid JSON but invalid parameter values."""
     runner = AppCliRunner(app_with_action)
@@ -232,20 +233,17 @@ def test_parse_args_with_malformed_param_values(
     assert action is not None
     assert action.params_class is not None
 
-    # Mock the parse_obj method to raise a validation error
-    validation_error = ValueError("Field 'field1' expected int, got str")
-    action.params_class.parse_obj = mock.Mock(side_effect=validation_error)
-
     param_file, _ = tmp_asset_and_param_files
 
     # Create a temporary param file with valid JSON but incompatible data types
     param_json = {"field1": "not_an_integer"}  # field1 expects an integer
-    json.dump(param_json, param_file)
-    param_file.flush()
+    param_file.write_text(json.dumps(param_json))
 
     # Parsing args with invalid param values should raise SystemExit
     with pytest.raises(SystemExit):
-        runner.parse_args(["action", "test_action", "--param-file", param_file.name])
+        runner.parse_args(
+            ["action", "test_action", "--param-file", param_file.as_posix()]
+        )
 
 
 def test_with_soar_authentication(
@@ -312,15 +310,14 @@ def test_parse_args_webhook(
 
     asset_file, _ = tmp_asset_and_param_files
     asset_json = {"base_url": "https://example.com"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
+    asset_file.write_text(json.dumps(asset_json))
 
     args = runner.parse_args(
         [
             "webhook",
             "test_webhook",
             "--asset-file",
-            asset_file.name,
+            asset_file.as_posix(),
         ]
     )
     assert args.webhook_request == WebhookRequest(
@@ -346,15 +343,14 @@ def test_parse_args_webhook_headers(
 
     # Parsing args with an invalid header should raise SystemExit
     asset_json = {"base_url": "https://example.com"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
+    asset_file.write_text(json.dumps(asset_json))
 
     args = runner.parse_args(
         [
             "webhook",
             "test_webhook",
             "--asset-file",
-            asset_file.name,
+            asset_file.as_posix(),
             "--header",
             "Content-Type=application/json",
             "--asset-id",
@@ -385,18 +381,15 @@ def test_parse_args_webhook_invalid_header(
 
     # Parsing args with an invalid header should raise SystemExit
     asset_json = {"base_url": "https://example.com"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
+    asset_file.write_text(json.dumps(asset_json))
 
-    with (
-        pytest.raises(SystemExit),
-    ):
+    with pytest.raises(SystemExit):
         runner.parse_args(
             [
                 "webhook",
                 "test_webhook",
                 "--asset-file",
-                asset_file.name,
+                asset_file.as_posix(),
                 "--header",
                 "InvalidHeaderFormat",  # Missing '='
             ]
@@ -411,15 +404,14 @@ def test_parse_args_webhook_flattens_params(
 
     asset_file, _ = tmp_asset_and_param_files
     asset_json = {"base_url": "https://example.com"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
+    asset_file.write_text(json.dumps(asset_json))
 
     args = runner.parse_args(
         [
             "webhook",
             "test_webhook?key1=value1&key2=value2&key2=value3",
             "--asset-file",
-            asset_file.name,
+            asset_file.as_posix(),
             "--asset-id",
             "2",
         ]
@@ -441,28 +433,26 @@ def test_parse_args_webhook_flattens_params(
     )
 
 
-def test_run_action_cli(app_with_action: App):
+def test_run_action_cli(
+    app_with_action: App,
+    tmp_asset_and_param_files: tuple[Path, Path],
+    mocker: pytest_mock.MockerFixture,
+):
     """Test running an action via CLI."""
     runner = AppCliRunner(app_with_action)
 
-    # Get the real action from our fixture
-    action = runner.app.actions_manager.get_action("test_action")
-    assert action is not None
+    _, param_file = tmp_asset_and_param_files
+    param_file.write_text(json.dumps({"field1": 123}))
 
-    # Modify the action to not require params
-    action.params_class = None
-
-    # Mock the app's handle method to return a specific result
-    app_with_action.handle = mock.Mock(return_value={"result": "success"})
-
-    args = runner.parse_args(["action", "test_action"])
-    runner.parse_args = mock.Mock(return_value=args)
+    handle = mocker.patch.object(app_with_action, "handle")
 
     # Run the action
+    args = runner.parse_args(["action", "test_action", "-p", param_file.as_posix()])
+    mocker.patch.object(runner, "parse_args", return_value=args)
     runner.run()
 
     # Verify the result
-    app_with_action.handle.assert_called_once_with(args.raw_input_data)
+    handle.assert_called_once_with(args.raw_input_data)
 
 
 def test_run_action_cli_with_encrypted_asset(
@@ -487,31 +477,27 @@ def test_run_action_cli_with_encrypted_asset(
 
     asset_file, param_file = tmp_asset_and_param_files
 
-    json.dump(
-        {"client_id": "test_client_id", "client_secret": "test_client_secret"},
-        asset_file,
+    asset_file.write_text(
+        json.dumps(
+            {"client_id": "test_client_id", "client_secret": "test_client_secret"},
+        )
     )
-    asset_file.flush()
 
-    json.dump({}, param_file)
-    param_file.flush()
+    param_file.write_text(json.dumps({}))
 
     runner = AppCliRunner(simple_app)
 
-    args = runner.parse_args(
+    # Run the action
+    runner.run(
         [
             "action",
             "test_encrypted_asset",
             "--asset-file",
-            asset_file.name,
+            asset_file.as_posix(),
             "--param-file",
-            param_file.name,
+            param_file.as_posix(),
         ]
     )
-    runner.parse_args = mock.Mock(return_value=args)
-
-    # Run the action
-    runner.run()
 
     credentials_sink.assert_called_once_with(
         client_id="test_client_id",
@@ -528,14 +514,10 @@ def test_run_webhook_cli(
     asset_file, _ = tmp_asset_and_param_files
 
     asset_json = {"base_url": "https://example.com"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
-
-    args = runner.parse_args(["webhook", "test_webhook", "-a", asset_file.name])
-    runner.parse_args = mock.Mock(return_value=args)
+    asset_file.write_text(json.dumps(asset_json))
 
     # Run the webhook
-    runner.run()
+    runner.run(["webhook", "test_webhook", "-a", asset_file.as_posix()])
 
 
 def test_run_webhook_cli_base64(
@@ -557,14 +539,10 @@ def test_run_webhook_cli_base64(
     asset_file, _ = tmp_asset_and_param_files
 
     asset_json = {"base_url": "https://example.com"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
-
-    args = runner.parse_args(["webhook", "test_binary_webhook", "-a", asset_file.name])
-    runner.parse_args = mock.Mock(return_value=args)
+    asset_file.write_text(json.dumps(asset_json))
 
     # Run the webhook
-    runner.run()
+    runner.run(["webhook", "test_binary_webhook", "-a", asset_file.as_posix()])
 
 
 def test_webhooks_with_soar_authentication(
@@ -572,14 +550,14 @@ def test_webhooks_with_soar_authentication(
     tmp_asset_and_param_files: tuple[Path, Path],
     mock_get_any_soar_call,
     mock_post_any_soar_call,
+    mocker: pytest_mock.MockerFixture,
 ):
     """Test parsing arguments for an action that requires both asset and parameters."""
     runner = AppCliRunner(app_with_client_webhook)
 
     asset_file, _ = tmp_asset_and_param_files
     asset_json = {"base_url": "https://example.com"}
-    json.dump(asset_json, asset_file)
-    asset_file.flush()
+    asset_file.write_text(json.dumps(asset_json))
 
     args = runner.parse_args(
         [
@@ -592,7 +570,7 @@ def test_webhooks_with_soar_authentication(
             "webhook",
             "test_webhook",
             "--asset-file",
-            asset_file.name,
+            asset_file.as_posix(),
             "--asset-id",
             "2",
         ]
@@ -609,7 +587,7 @@ def test_webhooks_with_soar_authentication(
         soar_auth_token="mocked_session_id",
         asset_id=2,
     )
-    runner.parse_args = mock.Mock(return_value=args)
+    mocker.patch.object(runner, "parse_args", return_value=args)
     runner.run()
 
     assert mock_get_any_soar_call.call_count == 3
