@@ -8,7 +8,13 @@ async def phantom_get_login_session(
     base_url: str, username: str, password: str
 ) -> AsyncGenerator[httpx.AsyncClient, None]:
     """Contextmanager that creates an authenticated client with CSRF token handling."""
-    async with httpx.AsyncClient(base_url=base_url, verify=False) as client:  # noqa: S501
+    # Set longer timeouts for large file uploads
+    timeout = httpx.Timeout(30.0, read=60.0)
+    async with httpx.AsyncClient(
+        base_url=base_url,
+        verify=False,  # noqa: S501
+        timeout=timeout,
+    ) as client:
         # get the cookies from the get method
         response = await client.get("/login")
         response.raise_for_status()
