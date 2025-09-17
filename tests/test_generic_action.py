@@ -1,7 +1,7 @@
 import pytest
+import pytest_mock
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import GenericActionOutput, OutputField
-from unittest import mock
 from soar_sdk.app import App
 from soar_sdk.params import GenericActionParams, Params
 from soar_sdk.exceptions import ActionFailure
@@ -30,7 +30,9 @@ def test_generic_action_decoration_fails_when_used_more_than_once(app_with_actio
     )
 
 
-def test_generic_action_decoration(app_with_action: App):
+def test_generic_action_decoration(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
     @app_with_action.generic_action()
     def http_action(params: GenericActionParams) -> GenericActionOutput:
         """
@@ -41,10 +43,12 @@ def test_generic_action_decoration(app_with_action: App):
             response_body="Hello, world!",
         )
 
-    app_with_action.actions_manager = mock.Mock()
+    manager_mock = mocker.patch.object(
+        app_with_action, "actions_manager", autospec=True
+    )
     result = http_action(params=GenericActionParams(http_method="GET", endpoint="/"))
     assert result
-    assert app_with_action.actions_manager.add_result.call_count == 1
+    assert manager_mock.add_result.call_count == 1
 
 
 def test_generic_action_without_generic_action_params(app_with_action: App):
@@ -84,7 +88,9 @@ def test_invalid_output_type(app_with_action: App):
     )
 
 
-def test_generic_action_output_class(app_with_action: App):
+def test_generic_action_output_class(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
     class CustomGenericActionOutput(GenericActionOutput):
         error: str = OutputField(example_values=["Invalid credentials"])
 
@@ -96,13 +102,15 @@ def test_generic_action_output_class(app_with_action: App):
             error="Invalid credentials",
         )
 
-    app_with_action.actions_manager = mock.Mock()
+    manager_mock = mocker.patch.object(
+        app_with_action, "actions_manager", autospec=True
+    )
     result = http_action(
         params=GenericActionParams(http_method="GET", endpoint="/"),
         asset=ValidAsset(normal_field="test", another_field=42),
     )
     assert result
-    assert app_with_action.actions_manager.add_result.call_count == 1
+    assert manager_mock.add_result.call_count == 1
 
 
 def test_no_output_class(app_with_action: App):
@@ -118,36 +126,36 @@ def test_no_output_class(app_with_action: App):
     )
 
 
-def test_parameter_validation_error(app_with_action: App):
+def test_parameter_validation_error(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
     """Test that parameter validation errors are handled properly (lines 93-95)"""
 
     @app_with_action.generic_action()
     def http_action(params: GenericActionParams) -> GenericActionOutput:
         return GenericActionOutput(status_code=200, response_body="OK")
 
-    app_with_action.actions_manager = mock.Mock()
+    manager_mock = mocker.patch.object(
+        app_with_action, "actions_manager", autospec=True
+    )
 
     invalid_params = "invalid"
 
     result = http_action(params=invalid_params)
 
     assert result is False
-    assert app_with_action.actions_manager.add_result.call_count == 1
+    assert manager_mock.add_result.call_count == 1
 
 
 def test_generic_action_raises_exception_propagates(app_with_action: App):
     """Test that exceptions raised in the generic action function are handled and return False."""
 
     @app_with_action.generic_action()
-    def http_action(params: GenericActionParams, client=None) -> GenericActionOutput:
+    def http_action(params: GenericActionParams) -> GenericActionOutput:
         raise ValueError("error")
         return GenericActionOutput(status_code=200, response_body="OK")
 
-    client_mock = mock.Mock()
-
-    result = http_action(
-        params=GenericActionParams(http_method="GET", endpoint="/"), client=client_mock
-    )
+    result = http_action(params=GenericActionParams(http_method="GET", endpoint="/"))
     assert result is False
 
 

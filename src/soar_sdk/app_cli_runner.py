@@ -257,20 +257,15 @@ class AppCliRunner:
         )
         print(f"Parsed webhook request: {args.webhook_request}")
 
-    def run(self) -> None:
+    def run(self, argv: Optional[list[str]] = None) -> None:
         """Run the app CLI."""
-        args = self.parse_args()
+        args = self.parse_args(argv=argv)
 
         logger = PhantomLogger()
 
         if input_data := getattr(args, "raw_input_data", None):
             self.app.handle(input_data)
-            # FIXME: ActionResult mock isn't quite right. Choosing not to unit test this section
-            # yet, because the test will need to be rewritten. We shouldn't be posting our results
-            # into ActionResult.param...
-            for (
-                result
-            ) in self.app.actions_manager.get_action_results():  # pragma: no cover
+            for result in self.app.actions_manager.get_action_results():
                 params_pretty = json.dumps(result.param, indent=2, ensure_ascii=False)
                 data_pretty = json.dumps(
                     result.get_data(), indent=2, ensure_ascii=False

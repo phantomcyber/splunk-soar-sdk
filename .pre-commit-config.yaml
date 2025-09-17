@@ -34,6 +34,13 @@ repos:
         additional_dependencies: [tomli]
         verbose: true
 
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
+
   - repo: local
     hooks:
       - id: uv-lock

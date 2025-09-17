@@ -6,7 +6,7 @@ from soar_sdk.params import Param, Params
 
 
 class SampleActionParams(Params):
-    field1: int = Param(0, "Some description")
+    field1: int = Param(description="Some description", required=False, default=5)
 
 
 class BaseConnectorMock(mock.Mock):

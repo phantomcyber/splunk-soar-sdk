@@ -2,25 +2,22 @@ import pytest
 from unittest import mock
 
 import json
-from datetime import datetime, timezone
+from datetime import datetime
 
-from typing import TYPE_CHECKING
+import pytest_mock
 
 from soar_sdk.cli.manifests.processors import ManifestProcessor
-
-if TYPE_CHECKING:
-    from datetime import _TzInfo
+from soar_sdk.compat import UPDATE_TIME_FORMAT
 
 
-def test_manifest_processor_creating_json_from_meta():
+def test_manifest_processor_creating_json_from_meta(mocker: pytest_mock.MockerFixture):
     processor = ManifestProcessor(
         "example_app.json", project_context="./tests/example_app"
     )
-    processor.save_json_manifest = mock.Mock()
 
+    save_json_manifest = mocker.patch.object(processor, "save_json_manifest")
     processor.create()
-
-    processor.save_json_manifest.assert_called_once()
+    save_json_manifest.assert_called_once()
 
 
 @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="data")
@@ -50,17 +47,23 @@ def test_get_module_dot_path(main_module, dot_path):
 
 @pytest.mark.parametrize("app", ("example_app", "example_app_with_webhook"))
 def test_build_manifests(app: str):
-    class mock_datetime(datetime):
-        @classmethod
-        def now(cls, tz: "_TzInfo | None" = timezone.utc) -> datetime:
-            return datetime(year=2025, month=4, day=17, hour=12, tzinfo=tz)
-
     test_app = f"tests/{app}"
-    with mock.patch("soar_sdk.cli.manifests.processors.datetime", mock_datetime):
-        processor = ManifestProcessor("example_app.json", project_context=test_app)
-        app_meta = processor.build().to_json_manifest()
+    processor = ManifestProcessor("example_app.json", project_context=test_app)
+    app_meta = processor.build().to_json_manifest()
 
     with open(f"{test_app}/app.json") as expected_json:
         expected_meta = json.load(expected_json)
+
+    # Verify the update time is there and is a valid datetime
+    assert "utctime_updated" in app_meta
+    try:
+        datetime.strptime(  #  noqa: DTZ007
+            app_meta["utctime_updated"], UPDATE_TIME_FORMAT
+        )
+    except Exception as e:
+        pytest.fail(f"utctime_updated is not a valid datetime: {e}")
+
+    # Now, to avoid having to update tests all the time, we set it to a fixed value
+    app_meta["utctime_updated"] = expected_meta["utctime_updated"]
 
     assert app_meta == expected_meta

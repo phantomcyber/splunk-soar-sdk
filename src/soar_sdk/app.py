@@ -1,5 +1,7 @@
+import importlib.util
 import inspect
 import json
+from pathlib import Path
 import sys
 from typing import Any, Optional, Union, Callable
 from collections.abc import Iterator
@@ -226,7 +228,7 @@ class App:
     def register_action(
         self,
         /,
-        action: Callable,
+        action: Union[str, Callable],
         *,
         name: Optional[str] = None,
         identifier: Optional[str] = None,
@@ -236,7 +238,7 @@ class App:
         read_only: bool = True,
         params_class: Optional[type[Params]] = None,
         output_class: Optional[type[ActionOutput]] = None,
-        view_handler: Optional[Callable] = None,
+        view_handler: Union[str, Callable, None] = None,
         view_template: Optional[str] = None,
         versions: str = "EQ(*)",
         summary_type: Optional[type[ActionOutput]] = None,
@@ -248,8 +250,30 @@ class App:
         actions without using decorators directly on the action function.
 
         Args:
-            action: Function import for the action. Must be a callable function that
-                follows SOAR action function conventions and is imported from another module.
+            action: Either an import string to find the function that implements an action, or the imported function itself.
+
+                .. warning::
+                    If you import the function directly, and provide the callable to this function, this sometimes messes with the app's CLI invocation. For example, if you import your function with a relative import, like::
+
+                        from .actions.my_action import my_action_function
+
+                    then executing your app directly, like::
+
+                        python src/app.py action my_action_function
+
+                    will fail, but running as a module, like::
+
+                        python -m src.app action my_action_function
+
+                    will work. By contrast, if you use an absolute import, like::
+
+                        from actions.my_action import my_action_function
+
+                    then the `direct CLI invocation` will work, while the `module invocation` will fail. This is a limitation with Python itself.
+
+                    To avoid this confusion, it is recommended to provide the action as an import string, like ``"actions.my_action:my_action_function"``. This way, both invocation methods will work consistently.
+
+
             name: Human-readable name for the action. If not provided, defaults
                 to the function name with underscores replaced by spaces.
             identifier: Unique identifier for the action. If not provided, defaults
@@ -265,12 +289,19 @@ class App:
                 If not provided, uses generic parameter validation.
             output_class: Pydantic model class for structuring action output.
                 If not provided, uses generic output format.
-            view_handler: Optional raw view handler function to associate with this action.
+            view_handler: Optional import string to a view handler function,
+                or the imported function itself, to associate with this action.
                 Will be automatically decorated with the view_handler decorator.
+
+                .. warning::
+
+                    See the warning above about importing action functions as opposed to using import strings. The same issues apply to view handler functions as well.
+
             view_template: Template name to use with the view handler. Only
                 relevant if view_handler is provided.
             versions: Version constraint string for when this action is available.
                 Defaults to "EQ(*)" (all versions).
+            summary_type: Pydantic model class for structuring action summary output.
 
         Returns:
             The registered Action instance with all metadata and handlers configured.
@@ -280,17 +311,20 @@ class App:
                 found in its original module for replacement.
 
         Example:
-            >>> from my_actions_module import my_action_function
-            >>> from my_views_module import my_view_handler
-            >>>
             >>> action = app.register_action(
-            ...     my_action_function,
+            ...     "action.my_action:my_action_function",
             ...     name="Dynamic Action",
             ...     description="Action imported from another module",
-            ...     view_handler=my_view_handler,
+            ...     view_handler="my_views_module:my_view_handler",
             ...     view_template="custom_template.html",
             ... )
         """
+        if isinstance(action, str):
+            action = self._resolve_function_import(action)
+
+        if isinstance(view_handler, str):
+            view_handler = self._resolve_function_import(view_handler)
+
         if view_handler:
             decorated_view_handler = self.view_handler(template=view_template)(
                 view_handler
@@ -298,8 +332,6 @@ class App:
 
             # Replace the function in its original module with the decorated version
             if hasattr(view_handler, "__module__") and view_handler.__module__:
-                import sys
-
                 if (
                     original_module := sys.modules.get(view_handler.__module__)
                 ) and hasattr(original_module, view_handler.__name__):
@@ -326,6 +358,55 @@ class App:
             versions=versions,
             summary_type=summary_type,
         )(action)
+
+    def _resolve_function_import(self, action_path: str) -> Callable:
+        """Resolves a callable action function from a dot-separated import string.
+
+        This method takes a string representing the full import path of a function,
+        imports the necessary module, and retrieves the function object.
+
+        Args:
+            action_path: Dot-separated string representing the import path of the function.
+                Example: "my_module.my_submodule:my_function"
+
+        Returns:
+            The callable function object.
+
+        Raises:
+            ValueError: If the action_path is not properly formatted or if the
+                module/function cannot be imported.
+        """
+        # Split the action_path into module and function parts,
+        # handling both dot notation and file paths
+        module_root = Path(inspect.stack()[2].filename).parent
+        func_delim = ":" if ":" in action_path else "."
+        module_name, action_func_name = action_path.rsplit(func_delim, 1)
+        module_name = module_name.removesuffix(".py").replace(".", "/") + ".py"
+        module_path = module_root / module_name
+
+        module_name = (
+            # Jump up from module -> src -> package root
+            module_path.relative_to(module_root.parent.parent)
+            # Remove .py suffix, convert to dot notation
+            .with_suffix("")
+            .as_posix()
+            .replace("/", ".")
+        )
+        spec = importlib.util.spec_from_file_location(module_name, module_path)
+        # Not sure how to actually make spec None,
+        # but the type hint says it's technically possible
+        if spec is None or spec.loader is None:  # pragma: no cover
+            raise ActionRegistrationError(action_func_name)
+
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        try:
+            spec.loader.exec_module(module)
+            action_func = getattr(module, action_func_name)
+        except Exception as e:
+            raise ActionRegistrationError(action_func_name) from e
+
+        return action_func
 
     def action(
         self,
@@ -415,7 +496,9 @@ class App:
         The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering, HTML string, or component data model.
         If a template is provided, dict results will be rendered using the template. Component type is automatically inferred from the return type annotation.
 
-        For more information on custom views, see the following :doc:`custom views documentation </custom_views/index>`:
+        .. seealso::
+
+            For more information on custom views, see the following :doc:`custom views documentation </custom_views/index>`:
 
         Example:
             >>> @app.view_handler(template="my_template.html")

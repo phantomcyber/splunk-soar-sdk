@@ -1,8 +1,8 @@
 import pytest
+import pytest_mock
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.exceptions import AssetMisconfiguration
-from unittest import mock
 from soar_sdk.app import App
 
 
@@ -66,31 +66,35 @@ def test_connectivity_returns_not_none(app_with_action):
     )
 
 
-def test_connectivity_raises_with_no_type_hint(app_with_action: App):
+def test_connectivity_raises_with_no_type_hint(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient):
         return ActionOutput(bool=True)
 
-    app_with_action.actions_manager = mock.Mock()
+    actions_manager = mocker.patch.object(app_with_action, "actions_manager")
     result = test_connectivity(soar=app_with_action.soar_client)
     assert not result
-    assert app_with_action.actions_manager.add_result.call_count == 1
+    assert actions_manager.add_result.call_count == 1
 
 
-def test_connectivity_bubbles_up_errors(app_with_action: App):
+def test_connectivity_bubbles_up_errors(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient):
         raise RuntimeError("Test connectivity failed")
 
-    app_with_action.actions_manager = mock.Mock()
+    actions_manager = mocker.patch.object(app_with_action, "actions_manager")
 
     result = test_connectivity(soar=app_with_action.soar_client)
     assert not result
-    assert app_with_action.actions_manager.add_exception.call_count == 1
-    assert app_with_action.actions_manager.add_result.call_count == 1
+    assert actions_manager.add_exception.call_count == 1
+    assert actions_manager.add_result.call_count == 1
 
 
-def test_connectivity_run(app_with_action):
+def test_connectivity_run(app_with_action: App):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient) -> None:
         assert True
@@ -98,12 +102,14 @@ def test_connectivity_run(app_with_action):
     assert test_connectivity()
 
 
-def test_connectivity_action_failed(app_with_action: App):
+def test_connectivity_action_failed(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient) -> None:
         raise AssetMisconfiguration("Test connectivity failed")
 
-    app_with_action.actions_manager = mock.Mock()
+    actions_manager = mocker.patch.object(app_with_action, "actions_manager")
     result = test_connectivity(soar=app_with_action.soar_client)
     assert not result
-    assert app_with_action.actions_manager.add_result.call_count == 1
+    assert actions_manager.add_result.call_count == 1

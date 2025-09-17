@@ -1,4 +1,3 @@
-import json
 from unittest import mock
 
 import pytest
@@ -45,12 +44,6 @@ def example_app() -> App:
         product_name="Example App",
         publisher="Splunk",
     )
-    app.actions_manager._load_app_json = mock.Mock(return_value=True)
-    app.actions_manager.get_state_dir = mock.Mock(return_value="/tmp/")
-    app.actions_manager._load_app_json = mock.Mock(return_value=True)
-
-    with open("tests/example_app/app.json") as app_json:
-        app.actions_manager._BaseConnector__app_json = json.load(app_json)
 
     return app
 

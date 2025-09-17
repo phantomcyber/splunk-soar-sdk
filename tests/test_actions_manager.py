@@ -3,6 +3,7 @@ from unittest import mock
 from zoneinfo import ZoneInfo
 
 import pytest
+import pytest_mock
 
 from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.input_spec import AppConfig, InputSpecification
@@ -238,15 +239,17 @@ def test_actions_provider_running_undefined_action(
 
 
 def test_app_connector_handle_action_runs_app_action(
-    app_actions_manager: ActionsManager,
+    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
 ):
     mocked_handler = mock.Mock()
 
-    app_actions_manager.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
-        return_value="testing_handler"
+    mocker.patch.object(
+        app_actions_manager, "get_action_identifier", return_value="testing_handler"
     )
-    app_actions_manager.get_actions = mock.Mock(
-        return_value={"testing_handler": mocked_handler}
+    mocker.patch.object(
+        app_actions_manager,
+        "get_actions",
+        return_value={"testing_handler": mocked_handler},
     )
 
     app_actions_manager.handle_action({})
@@ -254,9 +257,13 @@ def test_app_connector_handle_action_runs_app_action(
     assert mocked_handler.call_count == 1
 
 
-def test_handle_action_handler_not_existing(app_actions_manager: ActionsManager):
-    app_actions_manager.get_action_identifier = mock.Mock(  # type: ignore[method-assign]
-        return_value="not_existing_handler"
+def test_handle_action_handler_not_existing(
+    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
+):
+    mocker.patch.object(
+        app_actions_manager,
+        "get_action_identifier",
+        return_value="not_existing_handler",
     )
 
     with pytest.raises(RuntimeError):
@@ -264,17 +271,17 @@ def test_handle_action_handler_not_existing(app_actions_manager: ActionsManager)
 
 
 def test_handle_raises_validation_error(
-    app_actions_manager: ActionsManager,
+    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
 ):
     testing_handler = mock.Mock()
     testing_handler.meta.parameters = SampleActionParams
 
-    app_actions_manager.get_action_identifier = mock.Mock()
-    app_actions_manager.get_action = mock.Mock(return_value=testing_handler)
-    app_actions_manager.save_progress = mock.Mock()
+    mocker.patch.object(app_actions_manager, "get_action_identifier")
+    mocker.patch.object(app_actions_manager, "get_action", return_value=testing_handler)
+    save_progress_mock = mocker.patch.object(app_actions_manager, "save_progress")
 
     app_actions_manager.handle_action({"field1": "five"})
-    assert app_actions_manager.save_progress.call_count == 1
+    assert save_progress_mock.call_count == 1
 
 
 def test_app_connector_delegates_get_phantom_base_url():
@@ -286,7 +293,9 @@ def test_app_connector_delegates_get_phantom_base_url():
         assert ActionsManager.get_soar_base_url() == "some_url"
 
 
-def test_app_connector_initialize_loads_state(app_actions_manager: ActionsManager):
+def test_app_connector_initialize_loads_state(
+    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
+):
     """Test that initialize loads the state from load_state method."""
     # Mock the load_state method to return a specific state
     test_state_inner = {"test_key": "test_value"}
@@ -296,7 +305,9 @@ def test_app_connector_initialize_loads_state(app_actions_manager: ActionsManage
         _CACHE_STATE_KEY: test_state_inner,
     }
 
-    app_actions_manager.load_state = mock.Mock(return_value=test_state)
+    load_state = mocker.patch.object(
+        app_actions_manager, "load_state", return_value=test_state
+    )
 
     # Call initialize
     result = app_actions_manager.initialize()
@@ -305,7 +316,7 @@ def test_app_connector_initialize_loads_state(app_actions_manager: ActionsManage
     assert result is True
 
     # Verify load_state was called
-    app_actions_manager.load_state.assert_called_once()
+    load_state.assert_called_once()
 
     # Verify the state was stored correctly
     assert app_actions_manager.ingestion_state == test_state_inner
@@ -314,11 +325,13 @@ def test_app_connector_initialize_loads_state(app_actions_manager: ActionsManage
 
 
 def test_app_connector_initialize_handles_empty_state(
-    app_actions_manager: ActionsManager,
+    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
 ):
     """Test that initialize handles None return from load_state."""
     # Mock the load_state method to return None
-    app_actions_manager.load_state = mock.Mock(return_value=None)
+    load_state = mocker.patch.object(
+        app_actions_manager, "load_state", return_value=None
+    )
 
     # Call initialize
     result = app_actions_manager.initialize()
@@ -327,7 +340,7 @@ def test_app_connector_initialize_handles_empty_state(
     assert result is True
 
     # Verify load_state was called
-    app_actions_manager.load_state.assert_called_once()
+    load_state.assert_called_once()
 
     # Verify the state was initialized to an empty dict
     assert app_actions_manager.ingestion_state == {}
@@ -335,7 +348,9 @@ def test_app_connector_initialize_handles_empty_state(
     assert app_actions_manager.asset_cache == {}
 
 
-def test_app_connector_finalize_saves_state(app_actions_manager: ActionsManager):
+def test_app_connector_finalize_saves_state(
+    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
+):
     """Test that finalize saves the current state using save_state."""
     # Set up a test state
     test_state = {"key1": "value1", "key2": "value2"}
@@ -344,7 +359,7 @@ def test_app_connector_finalize_saves_state(app_actions_manager: ActionsManager)
     app_actions_manager.asset_cache = test_state
 
     # Mock the save_state method
-    app_actions_manager.save_state = mock.Mock()
+    save_state = mocker.patch.object(app_actions_manager, "save_state")
 
     # Call finalize
     result = app_actions_manager.finalize()
@@ -353,7 +368,7 @@ def test_app_connector_finalize_saves_state(app_actions_manager: ActionsManager)
     assert result is True
 
     # Verify save_state was called with the correct state
-    app_actions_manager.save_state.assert_called_once_with(
+    save_state.assert_called_once_with(
         {
             _INGEST_STATE_KEY: test_state,
             _AUTH_STATE_KEY: test_state,
@@ -362,9 +377,11 @@ def test_app_connector_finalize_saves_state(app_actions_manager: ActionsManager)
     )
 
 
-def test_app_connector_delegates_set_csrf_info(app_actions_manager: ActionsManager):
-    app_actions_manager._set_csrf_info = mock.Mock()  # type: ignore[method-assign]
+def test_app_connector_delegates_set_csrf_info(
+    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
+):
+    set_csrf_info = mocker.patch.object(app_actions_manager, "_set_csrf_info")
 
     app_actions_manager.set_csrf_info("", "")
 
-    assert app_actions_manager._set_csrf_info.call_count == 1
+    assert set_csrf_info.call_count == 1

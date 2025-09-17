@@ -51,23 +51,19 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.progress("this is a progress message")
 
 
-from .actions.reverse_string import render_reverse_string_view, reverse_string
-
 app.register_action(
-    reverse_string,
+    "actions.reverse_string:reverse_string",
     action_type="investigate",
     verbose="Reverses a string.",
     view_template="reverse_string.html",
-    view_handler=render_reverse_string_view,
+    view_handler="actions.reverse_string:render_reverse_string_view",
 )
 
-from .actions.generate_category import render_statistics_chart, generate_statistics
-
 app.register_action(
-    generate_statistics,
+    "actions.generate_category:generate_statistics",
     action_type="investigate",
     verbose="Generate statistics with pie chart reusable component.",
-    view_handler=render_statistics_chart,
+    view_handler="actions.generate_category:render_statistics_chart",
 )
 
 
@@ -114,16 +110,14 @@ def on_poll(
         yield artifact
 
 
-from .actions.async_action import async_process, sync_process
-
 app.register_action(
-    async_process,
+    "actions.async_action:async_process",
     action_type="investigate",
     verbose="Processes a message asynchronously with concurrent HTTP requests.",
 )
 
 app.register_action(
-    sync_process,
+    "actions.async_action:sync_process",
     action_type="investigate",
     verbose="Processes a message synchronously with sequential HTTP requests.",
 )

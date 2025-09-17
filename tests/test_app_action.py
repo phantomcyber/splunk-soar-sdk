@@ -1,6 +1,12 @@
 from unittest import mock
+from uuid import uuid4
 
 import pytest
+import inspect
+import sys
+import types
+
+import pytest_mock
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
@@ -8,7 +14,6 @@ from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
-from tests.mocks.importable_action import importable_action, importable_view_handler
 import httpx
 
 
@@ -112,7 +117,7 @@ def test_action_call_with_params_dict(simple_app, sample_params):
         assert params.pass_value == "<PASSWORD>"
         assert params.bool_value
 
-    client_mock = mock.Mock()
+    client_mock = mock.Mock(spec=SOARClient)
 
     action_function(sample_params, soar=client_mock)
 
@@ -131,7 +136,7 @@ def test_action_call_with_state(simple_app, sample_params):
         soar.auth_state = updated_state
         soar.asset_cache = updated_state
 
-    client_mock = mock.Mock()
+    client_mock = mock.Mock(spec=SOARClient)
 
     client_mock.ingestion_state = initial_state
     client_mock.auth_state = initial_state
@@ -199,14 +204,13 @@ def test_action_with_mocked_client(simple_app, sample_params):
     @simple_app.action()
     def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
         container_id = str(soar.get_executing_container_id())
-        soar.save_progress(f"Container ID is: {container_id}")
+        soar.set_summary(f"Container ID is: {container_id}")
 
-    client_mock = mock.Mock()
-    client_mock.save_progress = mock.Mock()
+    client_mock = mock.Mock(spec=SOARClient)
 
     action_function(sample_params, soar=client_mock)
 
-    assert client_mock.save_progress.call_count == 1
+    assert client_mock.set_summary.call_count == 1
 
 
 def test_action_decoration_fails_without_return_type(simple_app):
@@ -266,17 +270,17 @@ def test_action_decoration_passing_output_type_as_argument(simple_app):
     foo(SampleActionParams())
 
 
-def test_action_failure_raised(simple_app: App):
+def test_action_failure_raised(simple_app: App, mocker: pytest_mock.MockerFixture):
     @simple_app.action()
     def action_function(params: Params, soar: SOARClient) -> ActionOutput:
         raise ActionFailure("Action failed")
 
     # Mock the add_result method
-    simple_app.actions_manager.add_result = mock.Mock()
+    add_result_mock = mocker.patch.object(simple_app.actions_manager, "add_result")
 
     result = action_function(Params(), soar=simple_app.soar_client)
     assert not result
-    assert simple_app.actions_manager.add_result.call_count == 1
+    assert add_result_mock.call_count == 1
 
 
 def test_other_failure_raised(simple_app: App):
@@ -354,6 +358,8 @@ def test_direct_action_registration(simple_app: App):
 
 
 def test_register_action_basic(simple_app: App):
+    from tests.mocks.importable_action import importable_action
+
     registered_action = simple_app.register_action(
         importable_action,
         name="Importable Action",
@@ -378,10 +384,43 @@ def test_register_action_basic(simple_app: App):
     assert actions["importable_action"] == registered_action
 
 
+@pytest.mark.parametrize(
+    "action_import",
+    (
+        "mocks.importable_action.importable_action",
+        "mocks.importable_action:importable_action",
+        "mocks/importable_action.py:importable_action",
+    ),
+)
+def test_import_path_action_registration(action_import: str, simple_app: App):
+    action_id = str(uuid4())
+    simple_app.register_action(
+        action_import,
+        identifier=action_id,
+    )
+    actions = simple_app.actions_manager.get_actions()
+    assert action_id in actions
+
+
+@pytest.mark.parametrize(
+    "action_import",
+    (
+        "abcd.efgh:importable_action",
+        "abcd.efgh.importable_action",
+        "tuv/wxyz:importable_action",
+        "tuv/wxyz.py:importable_action",
+        "mocks.importable_action:abcdef",
+        "mocks.importable_action.ghijkl",
+        "mocks/importable_action.py:mnopqr",
+    ),
+)
+def test_action_bad_path(action_import: str, simple_app: App):
+    with pytest.raises(ActionRegistrationError):
+        simple_app.register_action(action_import)
+
+
 def test_register_action_with_view_handler(simple_app: App):
-    import inspect
-    import sys
-    import types
+    from tests.mocks.importable_action import importable_action, importable_view_handler
 
     original_signature = inspect.signature(importable_view_handler)
     assert len(original_signature.parameters) == 1
@@ -418,7 +457,26 @@ def test_register_action_with_view_handler(simple_app: App):
     assert "importable_action" in actions
 
 
+def test_register_action_with_view_handler_str(simple_app: App):
+    # Register the importable action with view handler
+    registered_action = simple_app.register_action(
+        "mocks.importable_action:importable_action",
+        name="Importable Action with View",
+        view_handler="mocks.importable_action:importable_view_handler",
+        view_template="sample_template.html",
+    )
+
+    # Verify the action was registered with view handler
+    assert registered_action.meta.view_handler is not None
+
+    # Additional verification: the action should be properly registered
+    actions = simple_app.get_actions()
+    assert "importable_action" in actions
+
+
 def test_register_action_with_view_handler_empty_module(simple_app: App):
+    from tests.mocks.importable_action import importable_action, importable_view_handler
+
     importable_view_handler.__module__ = ""
 
     registered_action = simple_app.register_action(
@@ -432,6 +490,8 @@ def test_register_action_with_view_handler_empty_module(simple_app: App):
 
 
 def test_register_action_with_view_handler_module_not_in_sys_modules(simple_app: App):
+    from tests.mocks.importable_action import importable_action
+
     # Create a view handler with a fake module name
     def fake_module_view_handler(output: list[ActionOutput]) -> dict:
         return {"data": "test"}

@@ -19,14 +19,14 @@ Here's an example ``app.py`` file which uses a wide variety of the features avai
    :language: python
    :linenos:
 
-Components of the ``app.py`` file
+Components of the ``app.py`` File
 ---------------------------------
 
 Let's dive deeper into each part of the ``app.py`` file above:
 
 .. _app-structure-logger-init:
 
-Logger initialization
+Logger Initialization
 ~~~~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../tests/example_app/src/app.py
@@ -47,7 +47,7 @@ When running locally via the CLI, all log messages are printed to the console, i
 
 .. _app-structure-asset-def:
 
-Asset definition
+Asset Definition
 ~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../tests/example_app/src/app.py
@@ -60,7 +60,7 @@ Apps should define an asset class to hold configuration information for the app.
 
 .. _app-structure-app-init:
 
-App initialization
+App Initialization
 ~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../tests/example_app/src/app.py
@@ -74,25 +74,111 @@ This is how you initialize the basic :class:`~soar_sdk.app.App` instance. The ap
 
 .. _app-structure-actions-def:
 
-Actions definitions
-~~~~~~~~~~~~~~~~~~~
+Action Definitions
+~~~~~~~~~~~~~~~~~~
 
-action anatomy
+Actions are defined as standalone functions, with a few important rules and recommendations.
+
+Action Metadata
+^^^^^^^^^^^^^^^
+
+Action definition carry with them important metadata which is used by the Splunk SOAR platform to present the action in the UI, and to generate the app's manifest. Often, this metadata can be derived automatically from the action function's signature:
+
+- The action's "identifier" is, by default, the name of the action function (e.g. ``my_action``).
+- The action's "name" is, by default, the action function's name with spaces instead of underscores (e.g. ``my action``).
+- The action's "description" is, by default, the action function's docstring.
+- The action's "type" is, by default, ``generic`` unless the action is one of the reserved names like ``test connectivity`` or ``on poll``.
+
+.. note::
+    By convention, action names should be lowercase, with 2-3 words. Keep action names short but descriptive, and avoid using the name of the app or external service in action names. Where feasible, it's recommended to consider reusing action names across different apps (e.g. ``get email``) to provide a more consistent user experience.
+
+.. _app-structure-actions-args:
+
+Action Arguments
+^^^^^^^^^^^^^^^^
+
+There is a magic element, similar to `pytest fixtures <https://docs.pytest.org/en/stable/how-to/fixtures.html#requesting-fixtures>`_, in the action arguments. The type hints for the argument definitions of an action function are critical to this mechanism. The rules are as follows:
+
+- The first positional argument of an action function must be the ``params`` argument, and its type hint must be a `Pydantic model <https://docs.pydantic.dev/1.10/usage/models/#basic-model-usage>`_ inheriting from :class:`~soar_sdk.params.Params`. The position and type of this argument are required. The name ``params`` is a convention, but not strictly required.
+- If an action function has any argument named ``soar``, at runtime the SDK will provide an instance of a :class:`~soar_sdk.abstract.SOARClient` implementation as that argument, which is already authenticated with Splunk SOAR. The type hint for this argument should be :class:`~soar_sdk.abstract.SOARClient`.
+- If an action function has any argument named ``asset``, at runtime the SDK will provide an instance of the app's asset class, populated with the asset configuration for the current action run. The type hint for this argument should be the app's asset class.
+
+.. note::
+    The special actions which define their own decorators have stricter rules about the type of the ``params`` argument. For example, the ``on poll`` action must take an :class:`~soar_sdk.params.OnPollParams` instance as its ``params`` argument, and ``test connectivity`` must take no ``params`` argument at all.
+
+.. _app-structure-action-returns:
+
+Action Returns
 ^^^^^^^^^^^^^^
 
-Actions are defined as standalone functions, which typically take arguments:
+An action's return type annotation is critical for the Splunk SOAR platform to understand, via datapaths, what an action's output looks like. In practice, this means that you must define a class inheriting from :class:`~soar_sdk.action_results.ActionOutput` to represent the action's output, and then return an instance of that class from your action function:
 
-- ``params`` - a `pydantic model <https://docs.pydantic.dev/1.10/usage/models/#basic-model-usage>`_ class inheriting from :class:`~soar_sdk.params.Params`.
-- ``soar`` - Optional, an instance of the :class:`~soar_sdk.abstract.SOARClient` implementation providing APIs for interacting with the Splunk SOAR platform.
-- ``asset`` - Optional, an instance of the app's asset class, populated with the asset configuration for the current action run.
+.. code-block:: python
 
-The action's type hints are required by the SDK; the type hint for the ``params`` argument, as well as the action's return type (which must be a `pydantic model <https://docs.pydantic.dev/1.10/usage/models/#basic-model-usage>`_ class inheriting from :class:`~soar_sdk.action_results.ActionOutput`), are used to generate the action's datapaths in the manifest.
+    from soar_sdk.action_results import ActionOutput
+
+    class MyActionOutput(ActionOutput):
+        field1: str
+        field2: int
+
+    @app.action()
+    def my_action(params: MyActionParams) -> MyActionOutput:
+        # action logic here
+        return MyActionOutput(field1="value", field2=42)
+
+Advanced Return Types
+*********************
+
+For more advanced use cases, an action's return type can be a ``list``, ``Iterator``, or ``AsyncGenerator`` that yields multiple :class:`~soar_sdk.action_results.ActionOutput` objects:
+
+.. tab-set::
+    .. tab-item:: ``list``
+
+        .. code-block:: python
+
+            @app.action()
+            def my_action_list(params: MyActionParams) -> list[MyActionOutput]:
+                # action logic here
+                return [
+                    MyActionOutput(field1="value1", field2=1),
+                    MyActionOutput(field1="value2", field2=2)
+                ]
+
+    .. tab-item:: ``Iterator``
+
+        .. code-block:: python
+
+            from typing import Iterator
+
+            @app.action()
+            def my_action_iterator(params: MyActionParams) -> Iterator[MyActionOutput]:
+                # action logic here
+                yield MyActionOutput(field1="value1", field2=1)
+                yield MyActionOutput(field1="value2", field2=2)
 
 
-Similarly, the action function's docstring is used to generate the action's description in the manifest and the Splunk SOAR platform UI. Also, the type hints for the ``soar`` and ``asset`` arguments are used at runtime to dynamically inject the appropriate arguments when the action is executed.
+    .. tab-item:: ``AsyncGenerator``
 
-test connectivity action
-^^^^^^^^^^^^^^^^^^^^^^^^
+        .. code-block:: python
+
+            from typing import AsyncGenerator
+
+            @app.action()
+            async def my_action_async_generator(
+                params: MyActionParams,
+                asset: Asset,
+            ) -> AsyncGenerator[MyActionOutput]:
+                async with client = httpx.AsyncClient() as client:
+                    async for i in range(10):
+                        response = await client.get(
+                            f"{asset.base_url}/data",
+                            params={"page": i}
+                        )
+                        yield MyActionOutput(**response.json())
+
+
+``test connectivity`` Action
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../tests/example_app/src/app.py
     :caption: Test connectivity action definition
@@ -100,7 +186,7 @@ test connectivity action
     :lineno-match:
     :pyobject: test_connectivity
 
-All apps must register exactly one ``test_connectivity`` action in order to be considered valid by Splunk SOAR. This action takes no parameters, and is used to verify that the app and its associated asset configuration are working correctly. Running ``test connectivity`` on the Splunk SOAR platform should answer the questions:
+All apps must register exactly one ``test connectivity`` action in order to be considered valid by Splunk SOAR. This action takes no parameters, and is used to verify that the app and its associated asset configuration are working correctly. Running ``test connectivity`` on the Splunk SOAR platform should answer the questions:
 
 - Can the app connect to the external service?
 - Can the app authenticate with the external service?
@@ -108,8 +194,8 @@ All apps must register exactly one ``test_connectivity`` action in order to be c
 
 A successful ``test connectivity`` action should return ``None``, and a failure should raise an :class:`~soar_sdk.exceptions.ActionFailure` with a descriptive error message.
 
-on poll action
-^^^^^^^^^^^^^^
+``on poll`` Action
+^^^^^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../tests/example_app/src/app.py
     :caption: on poll action definition
@@ -119,7 +205,7 @@ on poll action
 
 ``on poll`` is another special action that apps may choose to implement. This action always takes an :class:`~soar_sdk.params.OnPollParams` instance as its parameter. If defined, this action will be called in order to ingest new data into the Splunk Splunk SOAR platform. The action should yield  :class:`~soar_sdk.models.container.Container` and/or :class:`~soar_sdk.models.artifact.Artifact` instances representing the new data to be ingested. The SDK will handle actually creating the containers and artifacts in the platform.
 
-generic action
+Generic Action
 ^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../tests/example_app/src/app.py
@@ -134,7 +220,7 @@ We create an action by decorating a function with the ``app.action`` decorator. 
 is ``generic``, so usually you will not have to provide this argument for the decorator. This is not the
 case for the ``test`` action type though, so we provide this type here explicitly.
 
-custom actions
+Custom Actions
 ^^^^^^^^^^^^^^
 
 Actions can be registered one of two ways:
@@ -166,7 +252,7 @@ The two methods are functionally equivalent. The decorator method is often more 
 
 .. _app-structure-app-cli:
 
-App CLI invocation
+App CLI Invocation
 ~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: ../../tests/example_app/src/app.py
