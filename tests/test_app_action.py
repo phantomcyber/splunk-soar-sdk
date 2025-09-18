@@ -204,7 +204,8 @@ def test_action_with_mocked_client(simple_app, sample_params):
     @simple_app.action()
     def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
         container_id = str(soar.get_executing_container_id())
-        soar.set_summary(f"Container ID is: {container_id}")
+        asset_id = soar.get_asset_id()
+        soar.set_summary(f"Asset ID is: {asset_id} and Container ID is: {container_id}")
 
     client_mock = mock.Mock(spec=SOARClient)
 

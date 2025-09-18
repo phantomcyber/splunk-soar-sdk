@@ -46,6 +46,7 @@ class AppClient(SOARClient[SummaryType]):
         self._summary: Optional[SummaryType] = None
         self._message: Optional[str] = None
         self.__container_id: int = 0
+        self.__asset_id: str = ""
 
     @property
     def client(self) -> httpx.Client:
@@ -71,13 +72,18 @@ class AppClient(SOARClient[SummaryType]):
         """Return the current Container ID passed in the Connector Run Action JSON."""
         return self.__container_id
 
+    def get_asset_id(self) -> str:
+        """Return the current Asset ID passed in the Connector Run Action JSON."""
+        return self.__asset_id
+
     def update_client(
-        self, soar_auth: SOARClientAuth, asset_id: str, container_id: int = 0
+        self, soar_auth: SOARClientAuth, asset_id: str = "", container_id: int = 0
     ) -> None:
         """Update the SOAR client with the given authentication and asset ID."""
         self.authenticate_soar_client(soar_auth)
         self._containers_api.set_executing_asset(asset_id)
         self.__container_id = container_id
+        self.__asset_id = asset_id
 
     def authenticate_soar_client(self, soar_auth: SOARClientAuth) -> None:
         """Authenticate the SOAR client with the given authentication credentials."""

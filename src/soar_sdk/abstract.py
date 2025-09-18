@@ -65,6 +65,11 @@ class SOARClient(Generic[SummaryType]):
         """Return the current Container ID passed in the Connector Run Action JSON."""
         pass
 
+    @abstractmethod
+    def get_asset_id(self) -> str:
+        """Return the current Asset ID passed in the Connector Run Action JSON."""
+        pass
+
     def get(
         self,
         endpoint: str,
