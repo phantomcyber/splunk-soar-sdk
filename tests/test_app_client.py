@@ -35,3 +35,7 @@ def test_authenticate_soar_client_on_platform(
 
 def test_get_executing_container_id(simple_connector: AppClient):
     assert simple_connector.get_executing_container_id() == 0
+
+
+def test_get_asset_id(simple_connector: AppClient):
+    assert simple_connector.get_asset_id() == ""
