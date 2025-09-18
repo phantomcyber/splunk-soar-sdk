@@ -245,7 +245,7 @@ Actions can be registered one of two ways:
             :caption: registered action definition
             :language: python
             :lineno-match:
-            :start-at: import render_reverse_string
+            :start-at: "actions.reverse_string:render_reverse_string_view"
             :end-at: )
 
 The two methods are functionally equivalent. The decorator method is often more convenient for simple actions, while the registration method may be preferable for larger apps where actions are defined in separate modules. Apps may use either or both methods to register their actions.

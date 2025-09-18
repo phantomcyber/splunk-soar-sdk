@@ -20,6 +20,25 @@ Apps (aka Connectors) in Splunk SOAR are extensions that enrich the platform fun
 
 This SDK is a set of tools to build, test and run your own app that will extend Splunk SOAR by implementing actions which integrate with 3rd parties.
 
+Splunk SOAR Compatibility
+=========================
+
+The Splunk SOAR SDK codifies its minimum supported Splunk SOAR version under ``soar_sdk.compat.MIN_PHANTOM_VERSION``:
+
+.. literalinclude:: ../src/soar_sdk/compat.py
+    :language: python
+    :start-at: MIN_PHANTOM_VERSION =
+    :end-at: MIN_PHANTOM_VERSION =
+
+
+By default, any Splunk SOAR app developed with this version of the SDK will run on all released Splunk SOAR versions above that minimum*.
+
+Both Splunk SOAR Cloud and Splunk SOAR On-Prem are supported at this defined minimum version and above.
+
+.. note::
+
+   \* Forward-compatibility is not guaranteed, but is strived for. Backward-compatibility is guaranteed down to the ``MIN_PHANTOM_VERSION``
+
 Contents
 ========
 
