@@ -56,7 +56,7 @@ Running the above command will add `splunk-soar-sdk` as a dependency of your Spl
 
 ## Usage
 
-In order to start using SDK and build your first Splunk SOAR App, follow the [Getting Started guide](https://phantomcyber.github.io/splunk-soar-sdk/getting_started.html).
+In order to start using SDK and build your first Splunk SOAR App, follow the [Getting Started guide](https://phantomcyber.github.io/splunk-soar-sdk/getting_started/index.html).
 
 A Splunk SOAR app developed with the SDK will look something like this:
 
