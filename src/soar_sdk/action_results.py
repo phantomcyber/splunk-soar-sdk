@@ -237,13 +237,13 @@ class ActionOutput(BaseModel):
             yield schema_field
 
 
-class GenericActionOutput(ActionOutput):
-    """Output class for generic actions.
+class MakeRequestOutput(ActionOutput):
+    """Output class for make request action.
 
     This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class as is or extend it to add more fields.
 
     Example:
-        >>> class CustomGenericActionOutput(GenericActionOutput):
+        >>> class CustomMakeRequestOutput(MakeRequestOutput):
         ...     error: str = OutputField(example_values=["Invalid credentials"])
 
     Note:

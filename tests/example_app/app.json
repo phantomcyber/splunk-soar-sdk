@@ -236,13 +236,13 @@
             }
         },
         {
-            "action": "generic action",
-            "identifier": "generic_action",
-            "description": "generic action",
+            "action": "make request",
+            "identifier": "make_request",
+            "description": "make request action",
             "type": "generic",
             "read_only": false,
             "versions": "EQ(*)",
-            "verbose": "Generic action for the app.",
+            "verbose": "Make request action for the app.",
             "parameters": {
                 "http_method": {
                     "order": 0,

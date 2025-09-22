@@ -170,8 +170,8 @@ class OnPollParams(Params):
     )
 
 
-class GenericActionParams(Params):
-    """Canonical parameters for the special generic HTTP actions."""
+class MakeRequestParams(Params):
+    """Canonical parameters for the special make request action."""
 
     http_method: str = Param(
         description="The HTTP method to use for the request.",

@@ -5,10 +5,10 @@ from zoneinfo import ZoneInfo
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.params import OnPollParams, GenericActionParams, Params
+from soar_sdk.params import OnPollParams, MakeRequestParams, Params
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.action_results import ActionOutput, GenericActionOutput
+from soar_sdk.action_results import ActionOutput, MakeRequestOutput
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
@@ -45,32 +45,38 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     soar.get("rest/version")
     container_id = soar.get_executing_container_id()
     logger.info(f"current executing container's container_id is: {container_id}")
+    asset_id = soar.get_asset_id()
+    logger.info(f"current executing container's asset_id is: {asset_id}")
     logger.info(f"testing connectivity against {asset.base_url}")
     logger.debug("hello")
     logger.warning("this is a warning")
     logger.progress("this is a progress message")
 
 
+from .actions.reverse_string import render_reverse_string_view, reverse_string
+
 app.register_action(
-    "actions.reverse_string:reverse_string",
+    reverse_string,
     action_type="investigate",
     verbose="Reverses a string.",
     view_template="reverse_string.html",
-    view_handler="actions.reverse_string:render_reverse_string_view",
+    view_handler=render_reverse_string_view,
 )
+
+from .actions.generate_category import render_statistics_chart, generate_statistics
 
 app.register_action(
-    "actions.generate_category:generate_statistics",
+    generate_statistics,
     action_type="investigate",
     verbose="Generate statistics with pie chart reusable component.",
-    view_handler="actions.generate_category:render_statistics_chart",
+    view_handler=render_statistics_chart,
 )
 
 
-@app.generic_action()
-def http_action(params: GenericActionParams, asset: Asset) -> GenericActionOutput:
+@app.make_request()
+def http_action(params: MakeRequestParams, asset: Asset) -> MakeRequestOutput:
     logger.info(f"HTTP action triggered with params: {params}")
-    return GenericActionOutput(
+    return MakeRequestOutput(
         status_code=200,
         response_body=f"Base url is {asset.base_url}",
     )
@@ -110,14 +116,16 @@ def on_poll(
         yield artifact
 
 
+from .actions.async_action import async_process, sync_process
+
 app.register_action(
-    "actions.async_action:async_process",
+    async_process,
     action_type="investigate",
     verbose="Processes a message asynchronously with concurrent HTTP requests.",
 )
 
 app.register_action(
-    "actions.async_action:sync_process",
+    sync_process,
     action_type="investigate",
     verbose="Processes a message synchronously with sequential HTTP requests.",
 )
