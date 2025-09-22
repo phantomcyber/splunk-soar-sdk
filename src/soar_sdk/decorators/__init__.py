@@ -5,12 +5,12 @@ from .test_connectivity import ConnectivityTestDecorator
 from .view_handler import ViewHandlerDecorator
 from .on_poll import OnPollDecorator
 from .webhook import WebhookDecorator
-from .generic_action import GenericActionDecorator
+from .make_request import MakeRequestDecorator
 
 __all__ = [
     "ActionDecorator",
     "ConnectivityTestDecorator",
-    "GenericActionDecorator",
+    "MakeRequestDecorator",
     "OnPollDecorator",
     "ViewHandlerDecorator",
     "WebhookDecorator",

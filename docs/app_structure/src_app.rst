@@ -205,16 +205,16 @@ A successful ``test connectivity`` action should return ``None``, and a failure 
 
 ``on poll`` is another special action that apps may choose to implement. This action always takes an :class:`~soar_sdk.params.OnPollParams` instance as its parameter. If defined, this action will be called in order to ingest new data into the Splunk Splunk SOAR platform. The action should yield  :class:`~soar_sdk.models.container.Container` and/or :class:`~soar_sdk.models.artifact.Artifact` instances representing the new data to be ingested. The SDK will handle actually creating the containers and artifacts in the platform.
 
-Generic Action
+Make Request Action
 ^^^^^^^^^^^^^^
 
 .. literalinclude:: ../../tests/example_app/src/app.py
-    :caption: Generic action definition
+    :caption: Make request action definition
     :language: python
     :lineno-match:
     :pyobject: http_action
 
-Apps may define a special "generic HTTP" action, which can be used to interact with the underlying external service's REST API directly. Having this action available can be useful when there are parts of the REST API that don't have dedicated actions implemented in the app. These
+Apps may define a special "make request" action, which can be used to interact with the underlying external service's REST API directly. Having this action available can be useful when there are parts of the REST API that don't have dedicated actions implemented in the app.
 
 We create an action by decorating a function with the ``app.action`` decorator. The default ``action_type``
 is ``generic``, so usually you will not have to provide this argument for the decorator. This is not the

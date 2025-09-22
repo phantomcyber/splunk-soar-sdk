@@ -2,9 +2,9 @@ import inspect
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
-from soar_sdk.params import GenericActionParams
+from soar_sdk.params import MakeRequestParams
 from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.action_results import ActionOutput, GenericActionOutput
+from soar_sdk.action_results import ActionOutput, MakeRequestOutput
 from soar_sdk.types import Action, action_protocol
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.async_utils import run_async_if_needed
@@ -18,8 +18,8 @@ if TYPE_CHECKING:
     from soar_sdk.app import App
 
 
-class GenericActionDecorator:
-    """Class-based decorator for generic action functionality."""
+class MakeRequestDecorator:
+    """Class-based decorator for make request action functionality."""
 
     def __init__(
         self,
@@ -30,32 +30,32 @@ class GenericActionDecorator:
         self.output_class = output_class
 
     def __call__(self, function: Callable) -> Action:
-        """Decorator for the generic HTTP API action.
+        """Decorator for the make request HTTP API action.
 
-        The decorated function implements a generic action that can be used to call any endpoint of the underlying API service this app implements.
+        The decorated function implements a make request action that can be used to call any endpoint of the underlying API service this app implements.
 
         Usage:
-        This decorated function automatically gets all the parameters from the GenericActionParams class and passes them to the function. GenericActionParams represents the parameters required for most http requests.
+        This decorated function automatically gets all the parameters from the MakeRequestParams class and passes them to the function. MakeRequestParams represents the parameters required for most http requests.
         You should use your existing asset interface to make this request.
         """
-        if self.app.actions_manager.get_action("generic_action"):
+        if self.app.actions_manager.get_action("make_request"):
             raise TypeError(
-                "The 'generic_action' decorator can only be used once per App instance."
+                "The 'make_request' decorator can only be used once per App instance."
             )
 
-        # Validate function signature - must have at least one parameter of type GenericActionParams
+        # Validate function signature - must have at least one parameter of type MakeRequestParams
         signature = inspect.signature(function)
         params = list(signature.parameters.values())
 
-        if not any(param.annotation == GenericActionParams for param in params):
+        if not any(param.annotation == MakeRequestParams for param in params):
             raise TypeError(
-                f"Generic action function must have at least one parameter of type GenericActionParams, got {params[0].annotation}"
+                f"Make request action function must have at least one parameter of type MakeRequestParams, got {params[0].annotation}"
             )
 
-        action_identifier = "generic_action"
-        action_name = "generic action"
-        # for generic action use GenericActionParams
-        validated_params_class = GenericActionParams
+        action_identifier = "make_request"
+        action_name = "make request"
+        # for make request action use MakeRequestParams
+        validated_params_class = MakeRequestParams
 
         return_type = inspect.signature(function).return_annotation
         if return_type is not inspect.Signature.empty:
@@ -68,10 +68,10 @@ class GenericActionDecorator:
             )
 
         if not issubclass(validated_output_class, ActionOutput) and not isinstance(
-            validated_output_class, GenericActionOutput
+            validated_output_class, MakeRequestOutput
         ):
             raise TypeError(
-                "Return type for action function must be either GenericActionOutput or derived from ActionOutput or GenericActionOutput class."
+                "Return type for action function must be either MakeRequestOutput or derived from ActionOutput or MakeRequestOutput class."
             )
 
         logger = getLogger()
@@ -79,7 +79,7 @@ class GenericActionDecorator:
         @action_protocol
         @wraps(function)
         def inner(
-            params: GenericActionParams,
+            params: MakeRequestParams,
             soar: SOARClient = self.app.soar_client,
             *args: Any,  # noqa: ANN401
             **kwargs: Any,  # noqa: ANN401
@@ -122,7 +122,7 @@ class GenericActionDecorator:
             action=action_name,
             identifier=action_identifier,
             description=inspect.getdoc(function) or action_name,
-            verbose="Generic action for the app.",
+            verbose="Make request action for the app.",
             type="generic",
             parameters=validated_params_class,
             output=validated_output_class,

@@ -114,11 +114,11 @@ On poll functions require a specific parameter class called `OnPollParams`. YYou
 
 .. autoclass:: soar_sdk.params.OnPollParams
 
-Parameters for the Generic Action
+Parameters for the Make Request Action
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Generic action functions require a specific parameter class called `GenericActionParams`. You should use this class as-is, instead of overriding it.
+Make Request action functions require a specific parameter class called `MakeRequestParams`. You should use this class as-is, instead of overriding it.
 
-.. autoclass:: soar_sdk.params.GenericActionParams
+.. autoclass:: soar_sdk.params.MakeRequestParams
 
 
 .. _action-output-label:
@@ -183,11 +183,11 @@ Defining Action Outputs
 
 .. autofunction:: soar_sdk.action_results.OutputField
 
-Generic Action Output
+Make Request Action Output
 ^^^^^^^^^^^^^^^^^^^^^
-For generic action functions we have provided a convenience class called `GenericActionOutput`. This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class to return the response from the generic action.
+For make request functions we have provided a convenience class called `MakeRequestOutput`. This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class to return the response from the make request action.
 
-.. autoclass:: soar_sdk.action_results.GenericActionOutput
+.. autoclass:: soar_sdk.action_results.MakeRequestOutput
 
 .. _soar-client-label:
 

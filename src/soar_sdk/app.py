@@ -39,7 +39,7 @@ from soar_sdk.decorators import (
     ViewHandlerDecorator,
     OnPollDecorator,
     WebhookDecorator,
-    GenericActionDecorator,
+    MakeRequestDecorator,
 )
 
 
@@ -516,33 +516,33 @@ class App:
         """
         return ViewHandlerDecorator(self, template=template)
 
-    def generic_action(
+    def make_request(
         self, output_class: Optional[type[ActionOutput]] = None
-    ) -> GenericActionDecorator:
-        """Decorator for registering a generic action function.
+    ) -> MakeRequestDecorator:
+        """Decorator for registering a make request action function.
 
-        This decorator marks a function as the generic action for the app. Generic action is used to call any endpoint of the underlying API service this app implements.
-        Only one generic action is allowed per app. The function you define needs to accept at least one parameter of type `GenericActionParams` and can accept any other parameters you need.
+        This decorator marks a function as the make request action for the app. Make Request is used to call any endpoint of the underlying API service this app implements.
+        Only one make request action is allowed per app. The function you define needs to accept at least one parameter of type `GenericActionParams` and can accept any other parameters you need.
         Other useful parameters to accept are the SOARClient and the asset.
 
         Returns:
-            GenericActionDecorator: A decorator instance that handles generic action registration.
+            MakeRequestActionDecorator: A decorator instance that handles make request action registration.
 
         Example:
-            >>> @app.generic_action()
+            >>> @app.make_request()
             ... def http_action(
-            ...     self, params: GenericActionParams, asset: Asset
-            ... ) -> GenericActionOutput:
+            ...     self, params: MakeRequestParams, asset: Asset
+            ... ) -> MakeRequestOutput:
             ...     logger.info(f"testing connectivity against {asset.base_url}")
-            ...     return GenericActionOutput(
+            ...     return MakeRequestOutput(
             ...         status_code=200,
             ...         response_body=f"Base url is {asset.base_url}",
             ...     )
 
         Note:
-            The generic action function should return either a GenericActionOutput object or an output class derived from ActionOutput/GenericActionOutput.
+            The make request action function should return either a MakeRequestOutput object or an output class derived from ActionOutput/MakeRequestOutput.
         """
-        return GenericActionDecorator(self, output_class=output_class)
+        return MakeRequestDecorator(self, output_class=output_class)
 
     @staticmethod
     def _validate_params_class(
