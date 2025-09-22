@@ -22,6 +22,12 @@ if TYPE_CHECKING or not _soar_is_available:
         @staticmethod
         def decrypt(cipher: str, salt: str) -> str:
             """Simulate the behavior of encryption_helper.decrypt."""
+
+            if len(cipher) == 0:
+                # This isn't exactly what the platform does, but its close enough for our purpose
+                raise ValueError(
+                    "Parameter validation failed: Invalid length for parameter SecretId, value: 0, valid min length: 1"
+                )
             decoded = base64.b64decode(cipher.encode("utf-8")).decode("utf-8")
             plain, decrypted_salt = decoded.split(":", 1)
             if salt != decrypted_salt:

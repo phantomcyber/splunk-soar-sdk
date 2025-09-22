@@ -1,6 +1,7 @@
 import base64
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 from soar_sdk import crypto
+import pytest
 
 
 def test_encryption_helper_not_available():
@@ -16,6 +17,14 @@ def test_encryption_helper_not_available():
         encryption_helper.decrypt(encryption_helper.encrypt("test_string_", ""), "")
         == "test_string_"
     )
+
+
+def test_decrypt_empty_string():
+    with pytest.raises(
+        ValueError,
+        match="Parameter validation failed: Invalid length for parameter SecretId, value: 0, valid min length: 1",
+    ):
+        encryption_helper.decrypt("", "unused")
 
 
 def test_crypto():

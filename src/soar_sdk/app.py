@@ -177,7 +177,7 @@ class App:
         # Decrypt sensitive fields in the asset configuration
         asset_id = input_data.asset_id
         for field in self.asset_cls.fields_requiring_decryption():
-            if field in self._raw_asset_config:
+            if self._raw_asset_config.get(field):
                 self._raw_asset_config[field] = platform_encryption_backend.decrypt(
                     self._raw_asset_config[field], str(asset_id)
                 )
