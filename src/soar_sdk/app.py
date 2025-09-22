@@ -519,14 +519,14 @@ class App:
     def make_request(
         self, output_class: Optional[type[ActionOutput]] = None
     ) -> MakeRequestDecorator:
-        """Decorator for registering a make request action function.
+        """Decorator for registering a ``make request`` action function.
 
-        This decorator marks a function as the make request action for the app. Make Request is used to call any endpoint of the underlying API service this app implements.
-        Only one make request action is allowed per app. The function you define needs to accept at least one parameter of type `GenericActionParams` and can accept any other parameters you need.
+        This decorator marks a function as the ``make request`` action for the app. ``make request`` is used to call any endpoint of the underlying API service this app implements.
+        Only one ``make request`` action is allowed per app. The function you define needs to accept at least one parameter of type :class:`~soar_sdk.params.MakeRequestParams` and can accept any other parameters you need.
         Other useful parameters to accept are the SOARClient and the asset.
 
         Returns:
-            MakeRequestActionDecorator: A decorator instance that handles make request action registration.
+            MakeRequestActionDecorator: A decorator instance that handles ``make request`` action registration.
 
         Example:
             >>> @app.make_request()
@@ -540,7 +540,7 @@ class App:
             ...     )
 
         Note:
-            The make request action function should return either a MakeRequestOutput object or an output class derived from ActionOutput/MakeRequestOutput.
+            The ``make request`` action function should return either a :class:`~soar_sdk.action_results.MakeRequestOutput` object or of an output class derived from it.
         """
         return MakeRequestDecorator(self, output_class=output_class)
 

@@ -238,7 +238,7 @@ class ActionOutput(BaseModel):
 
 
 class MakeRequestOutput(ActionOutput):
-    """Output class for make request action.
+    """Output class for ``make request`` action.
 
     This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class as is or extend it to add more fields.
 

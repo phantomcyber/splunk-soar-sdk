@@ -1,20 +1,12 @@
 [project]
 name = "splunk-soar-sdk"
-version = "1.6.3"
+version = "2.0.0"
 description = "The official framework for developing and testing Splunk SOAR Apps"
 readme = "README.md"
 requires-python = ">=3.9, <3.14"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
-keywords = [
-    "cisco",
-    "splunk",
-    "soar",
-    "phantom",
-    "app",
-    "connector",
-    "sdk",
-]
+keywords = ["cisco", "splunk", "soar", "phantom", "app", "connector", "sdk"]
 
 authors = [
     { name = "Jacob Davis", email = "jacobd@splunk.com" },
@@ -23,7 +15,7 @@ authors = [
     { name = "Michael Nordby", email = "mnordby@splunk.com" },
     { name = "Scott Odle", email = "sodle@splunk.com" },
     { name = "Michał Posłuszny", email = "mposluszny@splunk.com" },
-    { name = "Ian Rokas", email = "grokas@splunk.com" }
+    { name = "Ian Rokas", email = "grokas@splunk.com" },
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -130,26 +122,22 @@ addopts = "--ignore=src/soar_sdk/app_templates --ignore=app_templates --cov-fail
 
 [tool.coverage.run]
 branch = true
-concurrency = [
-    "multiprocessing",
-]
-source = [
-    "src/soar_sdk"
-]
+concurrency = ["multiprocessing"]
+source = ["src/soar_sdk"]
 omit = [
-    "src/soar_sdk/shims/*",  # shims for BaseConnector, should not need testing
-    "src/soar_sdk/code_renderers/templates/*"  # jinja templates, not code
+    "src/soar_sdk/shims/*",                    # shims for BaseConnector, should not need testing
+    "src/soar_sdk/code_renderers/templates/*", # jinja templates, not code
 ]
 
 [tool.coverage.report]
 show_missing = true
 exclude_lines = [
     '# pragma: no cover',
-    'if (typing\.)?TYPE_CHECKING:',  # ignore type checking blocks
-    'if __name__ == "__main__":',    # ignore main blocks
-    'raise NotImplementedError',     # ignore NotImplementedError
-    '^ *(pass|\.\.\.)( *#.+)?$',     # ignore pass and ...
-    '^ *def .+: \.\.\.( *#.+)?$',    # ignore def f(): ...
+    'if (typing\.)?TYPE_CHECKING:', # ignore type checking blocks
+    'if __name__ == "__main__":',   # ignore main blocks
+    'raise NotImplementedError',    # ignore NotImplementedError
+    '^ *(pass|\.\.\.)( *#.+)?$',    # ignore pass and ...
+    '^ *def .+: \.\.\.( *#.+)?$',   # ignore def f(): ...
 ]
 
 
@@ -160,32 +148,32 @@ target-version = "py39"
 
 [tool.ruff.lint]
 select = [
-    "ERA",  # commented out code
-    "YTT",  # bad use of sys.version_info
-    "ANN",  # type annotations
-    "S",    # security issues
-    "B",    # bugbear
-    "A",    # builtins
-    "DTZ",  # datetime footguns
-    "T10",  # breakpoints
-    "ISC",  # implicit string concatenation
-    "PT",   # pytest style
-    "SIM",  # simplify
-    "PTH",  # use pathlib
-    "E",    # pycodestyle errors
-    "F",    # pyflakes
-    "W",    # pycodestyle warnings
-    "PL",   # pylint
-    "UP",   # pyupgrade
-    "RUF",  # ruff's own rules
+    "ERA", # commented out code
+    "YTT", # bad use of sys.version_info
+    "ANN", # type annotations
+    "S",   # security issues
+    "B",   # bugbear
+    "A",   # builtins
+    "DTZ", # datetime footguns
+    "T10", # breakpoints
+    "ISC", # implicit string concatenation
+    "PT",  # pytest style
+    "SIM", # simplify
+    "PTH", # use pathlib
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "PL",  # pylint
+    "UP",  # pyupgrade
+    "RUF", # ruff's own rules
 ]
 ignore = [
-    "E402",    # Module level import not at top of file.
-    "E501",    # Line too long. Format covers this.
-    "PT006",   # Opinions about types for pytest.parametrize
-    "PT007",   # Opinions about types for pytest.parametrize
-    "PTH123",  # Allow builtin open()
-    "PLR",     # pylint refactors
+    "E402",   # Module level import not at top of file.
+    "E501",   # Line too long. Format covers this.
+    "PT006",  # Opinions about types for pytest.parametrize
+    "PT007",  # Opinions about types for pytest.parametrize
+    "PTH123", # Allow builtin open()
+    "PLR",    # pylint refactors
 ]
 
 # Allow unused variables when underscore-prefixed.
@@ -193,11 +181,11 @@ dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*" = [
-    "ANN",  # Disable flake8-annotations rules for test files
-    "S",    # Disable flake8-bandit rules for test files
+    "ANN", # Disable flake8-annotations rules for test files
+    "S",   # Disable flake8-bandit rules for test files
 ]
 "src/**/*" = [
-    "PT",  # Disable pytest rules for src files
+    "PT", # Disable pytest rules for src files
 ]
 
 [tool.ruff.lint.pyupgrade]
@@ -222,10 +210,7 @@ no_implicit_optional = true
 show_error_context = true
 strict_equality = true
 check_untyped_defs = true
-exclude = [
-    'tests/.*',
-    'dist/.*',
-]
+exclude = ['tests/.*', 'dist/.*']
 
 [[tool.mypy.overrides]]
 module = "phantom.*"

@@ -116,7 +116,7 @@ On poll functions require a specific parameter class called `OnPollParams`. YYou
 
 Parameters for the Make Request Action
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Make Request action functions require a specific parameter class called `MakeRequestParams`. You should use this class as-is, instead of overriding it.
+Make Request action functions require a specific parameter class called :class:`~soar_sdk.params.MakeRequestParams`. You should use this class as-is, instead of overriding it.
 
 .. autoclass:: soar_sdk.params.MakeRequestParams
 
@@ -185,7 +185,7 @@ Defining Action Outputs
 
 Make Request Action Output
 ^^^^^^^^^^^^^^^^^^^^^
-For make request functions we have provided a convenience class called `MakeRequestOutput`. This class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class to return the response from the make request action.
+For ``make request`` functions, we have provided a convenience class called :class:`~soar_sdk.action_results.MakeRequestOutput`. This class extends the :class:`~soar_sdk.action_results.ActionOutput` class and adds a ``status_code`` and ``response_body`` field. You can use this class to return the response from the ``make request`` action.
 
 .. autoclass:: soar_sdk.action_results.MakeRequestOutput
 

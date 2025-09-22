@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class MakeRequestDecorator:
-    """Class-based decorator for make request action functionality."""
+    """Class-based decorator for ``make request`` action functionality."""
 
     def __init__(
         self,
@@ -30,12 +30,12 @@ class MakeRequestDecorator:
         self.output_class = output_class
 
     def __call__(self, function: Callable) -> Action:
-        """Decorator for the make request HTTP API action.
+        """Decorator for the ``make request`` HTTP API action.
 
-        The decorated function implements a make request action that can be used to call any endpoint of the underlying API service this app implements.
+        The decorated function implements a ``make request`` action that can be used to call any endpoint of the underlying API service this app implements.
 
         Usage:
-        This decorated function automatically gets all the parameters from the MakeRequestParams class and passes them to the function. MakeRequestParams represents the parameters required for most http requests.
+        This decorated function automatically gets all the parameters from the :class:`~soar_sdk.params.MakeRequestParams` class and passes them to the function. ``MakeRequestParams`` represents the parameters required for most http requests.
         You should use your existing asset interface to make this request.
         """
         if self.app.actions_manager.get_action("make_request"):
