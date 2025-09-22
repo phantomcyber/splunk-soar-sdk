@@ -238,7 +238,7 @@
         {
             "action": "make request",
             "identifier": "make_request",
-            "description": "make request action",
+            "description": "make request",
             "type": "generic",
             "read_only": false,
             "versions": "EQ(*)",
