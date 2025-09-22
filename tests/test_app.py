@@ -70,6 +70,39 @@ def test_decrypted_field_not_present(
     assert "client_secret" not in example_app._raw_asset_config
 
 
+def test_handle_with_sensitive_field_no_errors(
+    example_app: App, simple_action_input: InputSpecification
+):
+    """Test that blank sensitive asset fields work correctly during action execution without throwing errors."""
+
+    class AssetWithSensitive(BaseAsset):
+        username: str = AssetField(description="Username")
+        password: str = AssetField(sensitive=True, description="Password")
+
+    example_app.asset_cls = AssetWithSensitive
+
+    @example_app.action()
+    def test_action(params: Params, asset: AssetWithSensitive) -> ActionOutput:
+        assert asset.username == "test_user"
+        assert asset.password == ""
+
+        return ActionOutput(
+            message="Action completed successfully with sensitive fields"
+        )
+
+    simple_action_input.config = {
+        "app_version": "1.0",
+        "directory": ".",
+        "main_module": "example_connector.py",
+        "username": "test_user",
+        "password": "",
+    }
+
+    # Call handle - this should not throw any errors
+    _ = example_app.handle(simple_action_input.json())
+    assert example_app._raw_asset_config.get("password") == ""
+
+
 def test_get_actions(example_app: App):
     @example_app.action()
     def action_handler(params: Params) -> ActionOutput:
