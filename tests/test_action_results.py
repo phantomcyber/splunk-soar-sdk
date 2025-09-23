@@ -19,6 +19,7 @@ class ExampleActionOutput(ActionOutput):
     )
     nested_type: ExampleInnerData
     list_of_types: list[ExampleInnerData]
+    optional_field: Optional[str] = None
 
 
 def test_action_output_to_json_schema():
@@ -43,6 +44,7 @@ def test_action_output_to_json_schema():
             "data_type": "string",
             "example_values": ["example_value_1", "example_value_2"],
         },
+        {"data_path": "action_result.data.*.optional_field", "data_type": "string"},
     ]
 
     schema = list(ExampleActionOutput._to_json_schema())
@@ -53,20 +55,26 @@ class BadActionOutput(ActionOutput):
     byte_field: bytes
 
 
-class BadOptionalActionOutput(ActionOutput):
-    optional_field: Optional[str] = None
-
-
 class BadUnionActionOutput(ActionOutput):
-    optional_field: Union[str, int]
+    union_field: Union[str, int]
+
+
+class BadOptionalUnionActionOutput(ActionOutput):
+    evil_field: Optional[Union[str, int]]
 
 
 @pytest.mark.parametrize(
-    "action_output_class",
-    (BadActionOutput, BadOptionalActionOutput, BadUnionActionOutput),
+    "action_output_class, expected_message",
+    [
+        (BadActionOutput, "Unsupported field type"),
+        (BadUnionActionOutput, "only valid Union type"),
+        (BadOptionalUnionActionOutput, "only valid Union type"),
+    ],
 )
-def test_action_output_to_json_schema_bad_type(action_output_class: type[ActionOutput]):
-    with pytest.raises(TypeError):
+def test_action_output_to_json_schema_bad_type(
+    action_output_class: type[ActionOutput], expected_message: str
+):
+    with pytest.raises(TypeError, match=expected_message):
         next(action_output_class._to_json_schema())
 
 
@@ -118,5 +126,6 @@ def test_action_output_to_dict():
             {"inner_string": "inner_value_1"},
             {"inner_string": "inner_value_2"},
         ],
+        "optional_field": None,
     }
     assert action_output.dict(by_alias=True) == expected_dict
