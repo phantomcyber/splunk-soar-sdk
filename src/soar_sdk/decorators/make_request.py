@@ -122,7 +122,7 @@ class MakeRequestDecorator:
             action=action_name,
             identifier=action_identifier,
             description=inspect.getdoc(function) or action_name,
-            verbose="Make request action for the app.",
+            verbose="'make request' action for the app. Used to handle arbitrary HTTP requests with the app's asset",
             type="generic",
             parameters=validated_params_class,
             output=validated_output_class,

@@ -242,7 +242,7 @@
             "type": "generic",
             "read_only": false,
             "versions": "EQ(*)",
-            "verbose": "Make request action for the app.",
+            "verbose": "'make request' action for the app. Used to handle arbitrary HTTP requests with the app's asset",
             "parameters": {
                 "http_method": {
                     "order": 0,
