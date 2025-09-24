@@ -177,25 +177,6 @@ def test_action_called_with_default_message_set(
     assert "success" in example_app.actions_manager.get_results()[0].message
 
 
-def test_action_called_with_custom_message_set(
-    example_app: App, simple_action_input: InputSpecification
-):
-    class CustomActionOutput(ActionOutput):
-        result: int
-
-        def generate_action_summary_message(self) -> str:
-            return f"The result is {self.result}"
-
-    @example_app.action()
-    def test_action(params: Params) -> CustomActionOutput:
-        return CustomActionOutput(result=42)
-
-    example_app.handle(simple_action_input.json())
-
-    assert len(example_app.actions_manager.get_results()) == 1
-    assert example_app.actions_manager.get_results()[0].message == "The result is 42"
-
-
 def test_action_called_with_timezone_asset(example_app: App):
     class AssetWithTimezones(BaseAsset):
         timezone: ZoneInfo
@@ -223,10 +204,7 @@ def test_action_called_with_timezone_asset(example_app: App):
     example_app.handle(action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 1
-    assert (
-        example_app.actions_manager.get_results()[0].message
-        == "Action completed successfully."
-    )
+    assert "success" in example_app.actions_manager.get_results()[0].message
 
 
 def test_actions_provider_running_undefined_action(

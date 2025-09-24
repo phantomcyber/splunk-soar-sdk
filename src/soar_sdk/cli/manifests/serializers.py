@@ -47,15 +47,7 @@ class OutputsSerializer:
         outputs_class: type[ActionOutput],
         summary_class: Optional[type[ActionOutput]] = None,
     ) -> list[OutputFieldSpecification]:
-        """Serializes the data paths of an ActionOutput class to JSON schema."""
-        if (
-            outputs_class.generate_action_summary_message
-            != ActionOutput.generate_action_summary_message
-        ):
-            logger.warning(
-                f"Overriding ActionOutput.generate_action_summary_message is deprecated. Please call SOARClient.set_message from your action handler instead. [in {outputs_class.__name__}]"
-            )
-
+        """Serializes the data paths of an action to JSON schema."""
         status = OutputFieldSpecification(
             data_path="action_result.status",
             data_type="string",

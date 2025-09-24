@@ -1,4 +1,3 @@
-import logging
 from soar_sdk.cli.manifests.serializers import ParamsSerializer, OutputsSerializer
 from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput, OutputField
@@ -298,18 +297,3 @@ def test_outputs_serialize_with_parameters_class():
             "example_values": [1],
         },
     ]
-
-
-def test_serializer_with_custom_message_prints_warning(caplog):
-    class CustomOutput(ActionOutput):
-        def generate_action_summary_message(self) -> str:
-            return f"Custom message: {self.result}"
-
-    with caplog.at_level(logging.WARNING):
-        OutputsSerializer.serialize_datapaths(Params, CustomOutput)
-
-    assert (
-        "Overriding ActionOutput.generate_action_summary_message is deprecated."
-        in caplog.text
-    )
-    assert "[in CustomOutput]" in caplog.text
