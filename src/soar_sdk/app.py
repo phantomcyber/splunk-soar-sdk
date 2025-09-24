@@ -12,7 +12,6 @@ from soar_sdk.input_spec import InputSpecification
 from soar_sdk.compat import (
     MIN_PHANTOM_VERSION,
     PythonVersion,
-    remove_when_soar_newer_than,
 )
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
@@ -652,11 +651,7 @@ class App:
             param_dict = action_params.dict() if action_params else None
 
             if not message:
-                remove_when_soar_newer_than(
-                    "7.0.0",
-                    'Setting action_result.message in this way was deprecated in SDK 1.3.0. Developers must use SOARClient.set_message instead. We should replace the following method call with a static "Action succeeded" message.',
-                )
-                message = result.generate_action_summary_message()
+                message = "Action completed successfully"
 
             result = ActionResult(
                 status=True,
