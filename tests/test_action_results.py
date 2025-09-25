@@ -19,7 +19,9 @@ class ExampleActionOutput(ActionOutput):
     )
     nested_type: ExampleInnerData
     list_of_types: list[ExampleInnerData]
-    optional_field: Optional[str] = None
+    optional_field: Optional[str]
+    optional_inner_field: Optional[ExampleInnerData]
+    optional_list_of_types: Optional[list[ExampleInnerData]]
 
 
 def test_action_output_to_json_schema():
@@ -45,6 +47,16 @@ def test_action_output_to_json_schema():
             "example_values": ["example_value_1", "example_value_2"],
         },
         {"data_path": "action_result.data.*.optional_field", "data_type": "string"},
+        {
+            "data_path": "action_result.data.*.optional_inner_field.inner_string",
+            "data_type": "string",
+            "example_values": ["example_value_1", "example_value_2"],
+        },
+        {
+            "data_path": "action_result.data.*.optional_list_of_types.*.inner_string",
+            "data_type": "string",
+            "example_values": ["example_value_1", "example_value_2"],
+        },
     ]
 
     schema = list(ExampleActionOutput._to_json_schema())
@@ -63,12 +75,22 @@ class BadOptionalUnionActionOutput(ActionOutput):
     evil_field: Optional[Union[str, int]]
 
 
+class BadListOfNonesActionOutput(ActionOutput):
+    list_of_nones: list[None]
+
+
+class BadWeirdListActionOutput(ActionOutput):
+    list_of_wat: list[str, int, float, None]
+
+
 @pytest.mark.parametrize(
     "action_output_class, expected_message",
     [
         (BadActionOutput, "Unsupported field type"),
         (BadUnionActionOutput, "only valid Union type"),
         (BadOptionalUnionActionOutput, "only valid Union type"),
+        (BadListOfNonesActionOutput, "must have exactly one"),
+        (BadWeirdListActionOutput, "must have exactly one"),
     ],
 )
 def test_action_output_to_json_schema_bad_type(
@@ -127,5 +149,7 @@ def test_action_output_to_dict():
             {"inner_string": "inner_value_2"},
         ],
         "optional_field": None,
+        "optional_inner_field": None,
+        "optional_list_of_types": None,
     }
     assert action_output.dict(by_alias=True) == expected_dict

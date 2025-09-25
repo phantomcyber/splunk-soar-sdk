@@ -182,20 +182,29 @@ class ActionOutput(BaseModel):
             field_type = field.annotation
             datapath = parent_datapath + f".{field_name}"
 
-            # Handle list types, even nested ones
-            while get_origin(field_type) is list:
-                field_type = get_args(field_type)[0]
-                datapath += ".*"
-
-            if get_origin(field_type) is Union or get_origin(field_type) is Optional:
+            # Handle lists and optional types, even nested ones
+            origin = get_origin(field_type)
+            while origin in [list, Union, Optional]:
                 type_args = [
-                    arg for arg in get_args(field_type) if arg is not type(None)
+                    arg
+                    for arg in get_args(field_type)
+                    if arg is not type(None) and arg is not None
                 ]
-                if len(type_args) > 1:
-                    raise TypeError(
-                        f"Output field {field_name} is invalid: the only valid Union type is Optional, or Union[X, None]."
-                    )
+
+                if origin is list:
+                    if len(type_args) != 1:
+                        raise TypeError(
+                            f"Output field {field_name} is invalid: List types must have exactly one non-null type argument."
+                        )
+                    datapath += ".*"
+                else:
+                    if len(type_args) != 1:
+                        raise TypeError(
+                            f"Output field {field_name} is invalid: the only valid Union type is Optional, or Union[X, None]."
+                        )
+
                 field_type = type_args[0]
+                origin = get_origin(field_type)
 
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema
