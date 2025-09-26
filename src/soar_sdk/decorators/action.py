@@ -42,6 +42,7 @@ class ActionDecorator:
         view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
         summary_type: Optional[type[ActionOutput]] = None,
+        enable_concurrency_lock: bool = False,
     ) -> None:
         self.app = app
         self.name = name
@@ -55,6 +56,7 @@ class ActionDecorator:
         self.view_handler = view_handler
         self.versions = versions
         self.summary_type = summary_type
+        self.enable_concurrency_lock = enable_concurrency_lock
 
     def __call__(self, function: Callable) -> Action:
         """Decorator for the action handling function.
@@ -152,6 +154,7 @@ class ActionDecorator:
             versions=self.versions,
             view_handler=self.view_handler,
             summary_type=self.summary_type,
+            enable_concurrency_lock=self.enable_concurrency_lock,
         )
 
         self.app.actions_manager.set_action(action_identifier, inner)
