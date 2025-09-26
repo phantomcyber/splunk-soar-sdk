@@ -241,6 +241,7 @@ class App:
         view_template: Optional[str] = None,
         versions: str = "EQ(*)",
         summary_type: Optional[type[ActionOutput]] = None,
+        enable_concurrency_lock: bool = False,
     ) -> Action:
         """Dynamically register an action function defined in another module.
 
@@ -301,6 +302,7 @@ class App:
             versions: Version constraint string for when this action is available.
                 Defaults to "EQ(*)" (all versions).
             summary_type: Pydantic model class for structuring action summary output.
+            enable_concurrency_lock: Whether to enable a concurrency lock for this action. Defaults to False.
 
         Returns:
             The registered Action instance with all metadata and handlers configured.
@@ -356,6 +358,7 @@ class App:
             view_handler=view_handler,
             versions=versions,
             summary_type=summary_type,
+            enable_concurrency_lock=enable_concurrency_lock,
         )(action)
 
     def _resolve_function_import(self, action_path: str) -> Callable:
@@ -421,6 +424,7 @@ class App:
         view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
         summary_type: Optional[type[ActionOutput]] = None,
+        enable_concurrency_lock: bool = False,
     ) -> ActionDecorator:
         """Decorator for registering an action function.
 
@@ -439,6 +443,7 @@ class App:
             view_handler=view_handler,
             versions=versions,
             summary_type=summary_type,
+            enable_concurrency_lock=enable_concurrency_lock,
         )
 
     def test_connectivity(self) -> ConnectivityTestDecorator:

@@ -22,6 +22,7 @@ class ActionMeta(BaseModel):
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
     view_handler: Optional[Callable] = None
     summary_type: Optional[Type[ActionOutput]] = Field(default=None, exclude=True)  # noqa: UP006
+    enable_concurrency_lock: bool = False
 
     def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
         """Serializes the action metadata to a dictionary."""
@@ -51,5 +52,9 @@ class ActionMeta(BaseModel):
 
         # Remove view_handler from the output since in render
         data.pop("view_handler", None)
+
+        if self.enable_concurrency_lock:
+            data["lock"] = {"enabled": True}
+        data.pop("enable_concurrency_lock", None)
 
         return data
