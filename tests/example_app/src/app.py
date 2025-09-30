@@ -53,6 +53,25 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.progress("this is a progress message")
 
 
+class ActionOutputSummary(ActionOutput):
+    is_success: bool
+
+
+@app.action()
+def test_summary_with_list_output(
+    params: Params, asset: Asset, soar: SOARClient
+) -> list[ActionOutput]:
+    soar.set_summary(ActionOutputSummary(is_success=True))
+    return [ActionOutput(), ActionOutput()]
+
+
+@app.action()
+def test_empty_list_output(
+    params: Params, asset: Asset, soar: SOARClient
+) -> list[ActionOutput]:
+    return []
+
+
 app.register_action(
     "actions.reverse_string:reverse_string",
     action_type="investigate",
