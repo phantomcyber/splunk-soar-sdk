@@ -100,6 +100,82 @@
             ]
         },
         {
+            "action": "test summary with list output",
+            "description": "test summary with list output",
+            "identifier": "test_summary_with_list_output",
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "parameters": {},
+            "read_only": true,
+            "type": "generic",
+            "verbose": "",
+            "versions": "EQ(*)"
+        },
+        {
+            "action": "test empty list output",
+            "description": "test empty list output",
+            "identifier": "test_empty_list_output",
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "parameters": {},
+            "read_only": true,
+            "type": "generic",
+            "verbose": "",
+            "versions": "EQ(*)"
+        },
+        {
             "action": "reverse string",
             "identifier": "reverse_string",
             "description": "reverse string",

@@ -506,3 +506,26 @@ def test_register_action_with_view_handler_module_not_in_sys_modules(simple_app:
             view_handler=fake_module_view_handler,
             view_template="sample_template.html",
         )
+
+
+def test_empty_list_output(simple_app: App, mocker: pytest_mock.MockerFixture):
+    @simple_app.action()
+    def action_example(params: Params, soar: SOARClient) -> list[ActionOutput]:
+        return []
+
+    add_result_mock = mocker.patch.object(simple_app.actions_manager, "add_result")
+    result = action_example(Params(), soar=simple_app.soar_client)
+    assert result is True
+    assert add_result_mock.call_count == 1
+
+
+def test_list_output_with_summary(simple_app: App, mocker: pytest_mock.MockerFixture):
+    @simple_app.action()
+    def action_example(params: Params, soar: SOARClient) -> list[ActionOutput]:
+        soar.set_summary(ActionOutput())
+        return [ActionOutput()]
+
+    set_summary_mock = mocker.patch.object(simple_app.soar_client, "set_summary")
+    result = action_example(Params(), soar=simple_app.soar_client)
+    assert result is True
+    assert set_summary_mock.call_count == 1

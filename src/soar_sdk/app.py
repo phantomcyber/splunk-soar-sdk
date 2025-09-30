@@ -647,9 +647,17 @@ class App:
             statuses = []
             for item in result:
                 statuses.append(
-                    App._adapt_action_result(item, actions_manager, action_params)
+                    App._adapt_action_result(
+                        item, actions_manager, action_params, message, summary
+                    )
                 )
-            return all(statuses)
+            # Handle empty list/iterator case
+            if not statuses:
+                result = ActionOutput(
+                    status=True, message=message or "Action completed successfully"
+                )
+            else:
+                return all(statuses)
 
         if isinstance(result, ActionOutput):
             output_dict = result.dict(by_alias=True)
