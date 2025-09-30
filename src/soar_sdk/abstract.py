@@ -234,6 +234,6 @@ class SOARClient(Generic[SummaryType]):
         pass
 
     @abstractmethod
-    def get_message(self) -> Optional[str]:
+    def get_message(self) -> str:
         """Get the summary message for the action run."""
         pass

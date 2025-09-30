@@ -98,10 +98,7 @@ def test_action_called_returning_iterator(
     example_app.handle(simple_action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 5
-    assert all(
-        "success" in result.message
-        for result in example_app.actions_manager.get_results()
-    )
+    assert all(result.status for result in example_app.actions_manager.get_results())
 
 
 def test_async_action_called_returning_iterator(
@@ -120,10 +117,7 @@ def test_async_action_called_returning_iterator(
     example_app.handle(simple_action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 5
-    assert all(
-        "success" in result.message
-        for result in example_app.actions_manager.get_results()
-    )
+    assert all(result.status for result in example_app.actions_manager.get_results())
 
 
 def test_action_called_returning_list(
@@ -139,10 +133,7 @@ def test_action_called_returning_list(
     example_app.handle(simple_action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 5
-    assert all(
-        "success" in result.message
-        for result in example_app.actions_manager.get_results()
-    )
+    assert all(result.status for result in example_app.actions_manager.get_results())
 
 
 def test_async_action_called_returning_list(
@@ -158,10 +149,7 @@ def test_async_action_called_returning_list(
     example_app.handle(simple_action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 5
-    assert all(
-        "success" in result.message
-        for result in example_app.actions_manager.get_results()
-    )
+    assert all(result.status for result in example_app.actions_manager.get_results())
 
 
 def test_action_called_with_default_message_set(
@@ -174,7 +162,7 @@ def test_action_called_with_default_message_set(
     example_app.handle(simple_action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 1
-    assert "success" in example_app.actions_manager.get_results()[0].message
+    assert example_app.actions_manager.get_results()[0].status
 
 
 def test_action_called_with_timezone_asset(example_app: App):
@@ -204,7 +192,7 @@ def test_action_called_with_timezone_asset(example_app: App):
     example_app.handle(action_input.json())
 
     assert len(example_app.actions_manager.get_results()) == 1
-    assert "success" in example_app.actions_manager.get_results()[0].message
+    assert example_app.actions_manager.get_results()[0].status
 
 
 def test_actions_provider_running_undefined_action(

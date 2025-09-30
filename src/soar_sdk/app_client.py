@@ -44,7 +44,7 @@ class AppClient(SOARClient[SummaryType]):
         self.basic_auth: Optional[BasicAuth] = None
 
         self._summary: Optional[SummaryType] = None
-        self._message: Optional[str] = None
+        self._message: str = ""
         self.__container_id: int = 0
         self.__asset_id: str = ""
 
@@ -171,6 +171,6 @@ class AppClient(SOARClient[SummaryType]):
         """Get the summary for the action result."""
         return self._summary
 
-    def get_message(self) -> Optional[str]:
+    def get_message(self) -> str:
         """Get the message for the action result."""
         return self._message
