@@ -632,7 +632,7 @@ class App:
         ],
         actions_manager: ActionsManager,
         action_params: Optional[Params] = None,
-        message: Optional[str] = None,
+        message: str = "",
         summary: Optional[ActionOutput] = None,
     ) -> bool:
         """Handles multiple ways of returning response from action.
@@ -653,18 +653,13 @@ class App:
                 )
             # Handle empty list/iterator case
             if not statuses:
-                result = ActionOutput(
-                    status=True, message=message or "Action completed successfully"
-                )
+                result = ActionOutput(status=True, message=message)
             else:
                 return all(statuses)
 
         if isinstance(result, ActionOutput):
             output_dict = result.dict(by_alias=True)
             param_dict = action_params.dict() if action_params else None
-
-            if not message:
-                message = "Action completed successfully"
 
             result = ActionResult(
                 status=True,
