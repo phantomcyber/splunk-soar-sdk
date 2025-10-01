@@ -43,19 +43,31 @@ class MakeRequestDecorator:
                 "The 'make_request' decorator can only be used once per App instance."
             )
 
-        # Validate function signature - must have at least one parameter of type MakeRequestParams
+        # Validate function signature - must have exactly one parameter of type MakeRequestParams
         signature = inspect.signature(function)
         params = list(signature.parameters.values())
 
-        if not any(param.annotation == MakeRequestParams for param in params):
+        make_request_params = [
+            param
+            for param in params
+            if inspect.isclass(param.annotation)
+            and issubclass(param.annotation, MakeRequestParams)
+        ]
+
+        if len(make_request_params) == 0:
             raise TypeError(
-                f"Make request action function must have at least one parameter of type MakeRequestParams, got {params[0].annotation}"
+                "Make request action function must have exactly one parameter of type MakeRequestParams or its subclass."
+            )
+        elif len(make_request_params) > 1:
+            param_names = [p.name for p in make_request_params]
+            raise TypeError(
+                f"Make request action function can only have one MakeRequestParams parameter, "
+                f"but found {len(make_request_params)}: {param_names}"
             )
 
         action_identifier = "make_request"
         action_name = "make request"
-        # for make request action use MakeRequestParams
-        validated_params_class = MakeRequestParams
+        validated_params_class = make_request_params[0].annotation
 
         return_type = inspect.signature(function).return_annotation
         if return_type is not inspect.Signature.empty:
