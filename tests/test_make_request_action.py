@@ -61,7 +61,7 @@ def test_make_request_action_without_make_request_params(app_with_action: App):
             pass
 
     assert (
-        "Make request action function must have at least one parameter of type MakeRequestParams, got <class 'soar_sdk.abstract.SOARClient'>"
+        "Make request action function must have exactly one parameter of type MakeRequestParams or its subclass."
         in str(exception_info)
     )
 
@@ -72,7 +72,22 @@ def test_make_request_action_without_make_request_params(app_with_action: App):
             pass
 
     assert (
-        "Make request action function must have at least one parameter of type MakeRequestParams, got <class 'soar_sdk.params.Params'>"
+        "Make request action function must have exactly one parameter of type MakeRequestParams or its subclass."
+        in str(exception_info)
+    )
+
+
+def test_make_request_action_with_multiple_params(app_with_action: App):
+    with pytest.raises(TypeError) as exception_info:
+
+        @app_with_action.make_request()
+        def http_action(
+            params: MakeRequestParams, params2: MakeRequestParams, asset: ValidAsset
+        ) -> MakeRequestOutput:
+            pass
+
+    assert (
+        "Make request action function can only have one MakeRequestParams parameter, but found 2: ['params', 'params2']"
         in str(exception_info)
     )
 

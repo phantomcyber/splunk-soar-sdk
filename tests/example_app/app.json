@@ -356,7 +356,7 @@
                     "primary": false,
                     "allow_list": false
                 },
-                "query_params": {
+                "query parameters": {
                     "order": 3,
                     "name": "query_params",
                     "description": "The query string to send with the request.",
