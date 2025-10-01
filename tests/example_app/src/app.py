@@ -8,7 +8,7 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import OnPollParams, MakeRequestParams, Params
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.action_results import ActionOutput, MakeRequestOutput
+from soar_sdk.action_results import ActionOutput, MakeRequestOutput, OutputField
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
@@ -70,6 +70,25 @@ def test_empty_list_output(
     params: Params, asset: Asset, soar: SOARClient
 ) -> list[ActionOutput]:
     return []
+
+
+class JsonOutput(ActionOutput):
+    name: str = OutputField(
+        example_values=["John", "Jane", "Jim"], column_name="Name", column_order=0
+    )
+    age: int = OutputField(
+        example_values=[25, 30, 35], column_name="Age", column_order=1
+    )
+
+
+@app.action(render_as="json")
+def test_json_output(params: Params, asset: Asset, soar: SOARClient) -> JsonOutput:
+    return JsonOutput(name="John", age=25)
+
+
+@app.action(render_as="table")
+def test_table_output(params: Params, asset: Asset, soar: SOARClient) -> JsonOutput:
+    return JsonOutput(name="John", age=25)
 
 
 app.register_action(

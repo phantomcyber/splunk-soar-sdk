@@ -83,12 +83,16 @@ class OutputFieldSpecification(TypedDict):
     data_type: str
     contains: NotRequired[list[str]]
     example_values: NotRequired[list[Union[str, float, bool]]]
+    column_name: NotRequired[str]
+    column_order: NotRequired[int]
 
 
 def OutputField(
     cef_types: Optional[list[str]] = None,
     example_values: Optional[list[Union[str, float, bool]]] = None,
     alias: Optional[str] = None,
+    column_name: Optional[str] = None,
+    column_order: Optional[int] = None,
 ) -> Any:  # noqa: ANN401
     """Define metadata for an action output field.
 
@@ -102,6 +106,11 @@ def OutputField(
         example_values: Optional list of example values for this field, used
             in documentation and for testing/validation purposes.
         alias: Optional alternative name for the field when serialized.
+        column_name: Optional name for the field when displayed in a table.
+        column_order: Optional order for the field when displayed in a table (0-indexed).
+
+    Note:
+        Column name and order must be set together, if one is set but the other is not, an error will be raised.
 
     Returns:
         A Pydantic Field object with the specified metadata.
@@ -116,8 +125,10 @@ def OutputField(
     """
     return Field(
         examples=example_values,
-        cef_types=cef_types,
         alias=alias,
+        cef_types=cef_types,
+        column_name=column_name,
+        column_order=column_order,
     )
 
 
@@ -229,6 +240,21 @@ class ActionOutput(BaseModel):
 
             if field_type is bool:
                 schema_field["example_values"] = [True, False]
+
+            # Validate column metadata - both column_name and column_order must be present together
+            column_name = field.field_info.extra.get("column_name")
+            column_order = field.field_info.extra.get("column_order")
+
+            # Check if exactly one is set (XOR condition - invalid)
+            if (column_name is None) != (column_order is None):
+                raise ValueError(
+                    f"Field '{field_name}' must have both 'column_name' and 'column_order' "
+                    f"or neither. Found: column_name={column_name}, column_order={column_order}"
+                )
+
+            if column_name is not None and column_order is not None:
+                schema_field["column_name"] = column_name
+                schema_field["column_order"] = column_order
 
             yield schema_field
 

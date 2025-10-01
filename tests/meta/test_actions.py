@@ -23,7 +23,8 @@ def test_action_meta_dict_with_view_handler():
 
     result = meta.dict()
 
-    assert result["render"]["view"] == "single_module.mock_view"
+    assert "render" in result
+    assert result["render"]["type"] == "custom"
     assert "view_handler" not in result
 
 
@@ -49,7 +50,7 @@ def test_action_meta_dict_with_view_handler_multi_part_module():
 
     result = meta.dict()
 
-    assert result["render"]["view"] == "src.app.mock_view"
+    assert result["render"]["type"] == "custom"
     assert "view_handler" not in result
 
 

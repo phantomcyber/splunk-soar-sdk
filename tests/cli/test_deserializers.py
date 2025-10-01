@@ -438,7 +438,11 @@ def test_from_action_json_with_parameters_and_output(mock_action_deserializer):
             },
         },
         "output": [
-            {"data_path": "action_result.data.*.result"},
+            {
+                "data_path": "action_result.data.*.result",
+                "column_name": "Result",
+                "column_order": 0,
+            },
             {"data_path": "action_result.summary.total_items"},
         ],
     }

@@ -20,6 +20,7 @@ class ActionMeta(BaseModel):
     verbose: str = ""
     parameters: Type[Params] = Field(default=Params)  # noqa: UP006
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
+    render_as: Optional[str] = None
     view_handler: Optional[Callable] = None
     summary_type: Optional[Type[ActionOutput]] = Field(default=None, exclude=True)  # noqa: UP006
     enable_concurrency_lock: bool = False
@@ -31,6 +32,13 @@ class ActionMeta(BaseModel):
         data["output"] = OutputsSerializer.serialize_datapaths(
             self.parameters, self.output, summary_class=self.summary_type
         )
+        if self.view_handler:
+            self.render_as = "custom"
+
+        if self.render_as:
+            data["render"] = {
+                "type": self.render_as,
+            }
 
         if self.view_handler:
             remove_when_soar_newer_than("6.4.1")
@@ -45,13 +53,11 @@ class ActionMeta(BaseModel):
             else:
                 relative_module = module
 
-            data["render"] = {
-                "type": "custom",
-                "view": f"{relative_module}.{self.view_handler.__name__}",
-            }
+            data["render"]["view"] = f"{relative_module}.{self.view_handler.__name__}"
 
         # Remove view_handler from the output since in render
         data.pop("view_handler", None)
+        data.pop("render_as", None)
 
         if self.enable_concurrency_lock:
             data["lock"] = {"enabled": True}

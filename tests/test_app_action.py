@@ -184,6 +184,49 @@ def test_action_decoration_with_meta(simple_app: App):
     assert simple_app.actions_manager.get_action("test_function_id") == foo
 
 
+def test_action_decoration_with_render_as(simple_app: App):
+    @simple_app.action(
+        name="Test Function", identifier="test_function_id", render_as="table"
+    )
+    def foo(params: Params) -> ActionOutput:
+        """
+        This action does nothing for now.
+        """
+        pass
+
+    assert sorted(foo.meta.dict().keys()) == sorted(
+        [
+            "action",
+            "identifier",
+            "description",
+            "verbose",
+            "type",
+            "parameters",
+            "read_only",
+            "output",
+            "versions",
+            "render",
+        ]
+    )
+
+    assert foo.meta.action == "Test Function"
+    assert foo.meta.description == "This action does nothing for now."
+    assert simple_app.actions_manager.get_action("test_function_id") == foo
+
+
+def test_action_with_bad_render_as(simple_app: App):
+    with pytest.raises(
+        ValueError,
+        match="Please only specify render_as as 'table' or 'json' or 'custom'.",
+    ):
+
+        @simple_app.action(
+            name="Test Function", identifier="test_function_id", render_as="bad"
+        )
+        def foo(params: Params) -> ActionOutput:
+            pass
+
+
 def test_action_decoration_uses_function_name_for_action_name(simple_app):
     @simple_app.action()
     def action_function(params: Params) -> ActionOutput:

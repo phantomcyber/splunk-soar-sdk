@@ -153,3 +153,28 @@ def test_action_output_to_dict():
         "optional_list_of_types": None,
     }
     assert action_output.dict(by_alias=True) == expected_dict
+
+
+def test_action_output_to_json_schema_with_column_name_and_column_order():
+    class ExampleActionOutputWithColumnNames(ActionOutput):
+        stringy_field: str = OutputField(column_name="Stringy Field", column_order=0)
+
+    schema = list(ExampleActionOutputWithColumnNames._to_json_schema())
+    assert schema == [
+        {
+            "data_path": "action_result.data.*.stringy_field",
+            "data_type": "string",
+            "column_name": "Stringy Field",
+            "column_order": 0,
+        }
+    ]
+
+
+def test_action_output_to_json_schema_with_column_name_and_column_order_missing():
+    class ExampleActionOutputWithColumnNames(ActionOutput):
+        stringy_field: str = OutputField(column_name="Stringy Field")
+
+    with pytest.raises(
+        ValueError, match="must have both 'column_name' and 'column_order'"
+    ):
+        list(ExampleActionOutputWithColumnNames._to_json_schema())
