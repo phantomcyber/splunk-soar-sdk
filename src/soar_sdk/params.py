@@ -1,4 +1,4 @@
-from typing import Optional, Union, Any
+from typing import Optional, Union, Any, ClassVar
 from typing_extensions import NotRequired, TypedDict
 
 from pydantic.fields import Field, Undefined
@@ -178,6 +178,34 @@ class OnPollParams(Params):
 class MakeRequestParams(Params):
     """Canonical parameters for the special make request action."""
 
+    # Define allowed field names for subclasses
+    _ALLOWED_FIELDS: ClassVar[set[str]] = {
+        "http_method",
+        "endpoint",
+        "headers",
+        "query_parameters",
+        "body",
+        "timeout",
+        "verify_ssl",
+    }
+
+    def __init_subclass__(cls, **kwargs: dict[str, Any]) -> None:
+        """Validate that subclasses only define allowed fields."""
+        super().__init_subclass__(**kwargs)
+        cls._validate_make_request_fields()
+
+    @classmethod
+    def _validate_make_request_fields(cls) -> None:
+        """Ensure subclasses only define allowed MakeRequest fields."""
+        # Check if any fields are not in the allowed set
+        invalid_fields = set(cls.__fields__.keys()) - cls._ALLOWED_FIELDS
+
+        if invalid_fields:
+            raise TypeError(
+                f"MakeRequestParams subclass '{cls.__name__}' can only define these fields: "
+                f"{sorted(cls._ALLOWED_FIELDS)}. Invalid fields: {sorted(invalid_fields)}"
+            )
+
     http_method: str = Param(
         description="The HTTP method to use for the request.",
         required=True,
@@ -194,7 +222,7 @@ class MakeRequestParams(Params):
         required=False,
     )
 
-    query_params: str = Param(
+    query_parameters: str = Param(
         description="The query string to send with the request.",
         required=False,
     )
