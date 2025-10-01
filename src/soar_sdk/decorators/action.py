@@ -39,6 +39,7 @@ class ActionDecorator:
             AsyncGenerator[type[ActionOutput]],
             list[type[ActionOutput]],
         ] = None,
+        render_as: Optional[str] = None,
         view_handler: Optional[Callable] = None,
         versions: str = "EQ(*)",
         summary_type: Optional[type[ActionOutput]] = None,
@@ -53,6 +54,7 @@ class ActionDecorator:
         self.read_only = read_only
         self.params_class = params_class
         self.output_class = output_class
+        self.render_as = render_as
         self.view_handler = view_handler
         self.versions = versions
         self.summary_type = summary_type
@@ -98,6 +100,14 @@ class ActionDecorator:
         if not issubclass(validated_output_class, ActionOutput):
             raise TypeError(
                 "Return type for action function must be derived from ActionOutput class."
+            )
+
+        if self.view_handler:
+            self.render_as = "custom"
+
+        if self.render_as and self.render_as not in ("table", "json", "custom"):
+            raise ValueError(
+                "Please only specify render_as as 'table' or 'json' or 'custom'."
             )
 
         @action_protocol
@@ -152,6 +162,7 @@ class ActionDecorator:
             parameters=validated_params_class,
             output=validated_output_class,
             versions=self.versions,
+            render_as=self.render_as,
             view_handler=self.view_handler,
             summary_type=self.summary_type,
             enable_concurrency_lock=self.enable_concurrency_lock,

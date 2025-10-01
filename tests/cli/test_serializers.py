@@ -153,13 +153,18 @@ def test_outputs_serialize_with_defaults():
 
 def test_outputs_serialize_output_class():
     class SampleNestedOutput(ActionOutput):
-        bool_value: bool
+        bool_value: bool = OutputField(column_name="Nested Value", column_order=1)
 
     class SampleOutput(ActionOutput):
         string_value: str
         int_value: int
         list_value: list[str]
-        cef_value: str = OutputField(cef_types=["ip"], example_values=["1.1.1.1"])
+        cef_value: str = OutputField(
+            cef_types=["ip"],
+            example_values=["1.1.1.1"],
+            column_name="CEF Value",
+            column_order=0,
+        )
         nested_value: SampleNestedOutput
         underscored_value: str = OutputField(alias="_underscored_value")
 
@@ -192,11 +197,15 @@ def test_outputs_serialize_output_class():
             "data_type": "string",
             "contains": ["ip"],
             "example_values": ["1.1.1.1"],
+            "column_name": "CEF Value",
+            "column_order": 0,
         },
         {
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
             "example_values": [True, False],
+            "column_name": "Nested Value",
+            "column_order": 1,
         },
         {
             "data_path": "action_result.data.*._underscored_value",
