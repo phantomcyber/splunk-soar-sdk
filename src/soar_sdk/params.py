@@ -23,7 +23,6 @@ def Param(
     sensitive: bool = False,
     alias: Optional[str] = None,
     column_name: Optional[str] = None,
-    column_order: Optional[int] = None,
 ) -> Any:  # noqa: ANN401
     """Representation of a single complex action parameter.
 
@@ -52,7 +51,6 @@ def Param(
       multiple values as a comma separated string.
     :param kwargs: additional kwargs accepted by pydantic.Field
     :param column_name: Optional name for the parameter when displayed in an output table.
-    :param column_order: Optional order for the parameter when displayed in an output table (0-indexed).
     :return: returns the FieldInfo object as pydantic.Field
     """
     if value_list is None:
@@ -69,7 +67,6 @@ def Param(
         sensitive=sensitive,
         alias=alias,
         column_name=column_name,
-        column_order=column_order,
     )
 
 

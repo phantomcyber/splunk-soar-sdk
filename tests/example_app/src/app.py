@@ -73,18 +73,12 @@ def test_empty_list_output(
 
 
 class JsonOutput(ActionOutput):
-    name: str = OutputField(
-        example_values=["John", "Jane", "Jim"], column_name="Name", column_order=0
-    )
-    age: int = OutputField(
-        example_values=[25, 30, 35], column_name="Age", column_order=1
-    )
+    name: str = OutputField(example_values=["John", "Jane", "Jim"], column_name="Name")
+    age: int = OutputField(example_values=[25, 30, 35], column_name="Age")
 
 
 class TableParams(Params):
-    company_name: str = Param(
-        column_name="Company Name", column_order=2, default="Splunk"
-    )
+    company_name: str = Param(column_name="Company Name", default="Splunk")
 
 
 @app.action(render_as="json")

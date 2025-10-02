@@ -275,7 +275,7 @@
                     "data_path": "action_result.parameter.company_name",
                     "data_type": "string",
                     "column_name": "Company Name",
-                    "column_order": 2
+                    "column_order": 0
                 },
                 {
                     "data_path": "action_result.data.*.name",
@@ -286,7 +286,7 @@
                         "Jim"
                     ],
                     "column_name": "Name",
-                    "column_order": 0
+                    "column_order": 1
                 },
                 {
                     "data_path": "action_result.data.*.age",
@@ -297,7 +297,7 @@
                         35
                     ],
                     "column_name": "Age",
-                    "column_order": 1
+                    "column_order": 2
                 },
                 {
                     "data_path": "summary.total_objects",
