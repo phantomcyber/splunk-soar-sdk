@@ -306,3 +306,71 @@ def test_outputs_serialize_with_parameters_class():
             "example_values": [1],
         },
     ]
+
+
+def test_serilized_datapaths_params():
+    class SampleParams(Params):
+        int_value: int
+        str_value: str
+        bool_value: bool
+        cef_value: str = Param(
+            cef_types=["user name"], column_name="CEF Value", column_order=0
+        )
+
+    serialized_outputs = OutputsSerializer.serialize_datapaths(
+        SampleParams, ActionOutput
+    )
+
+    assert serialized_outputs == [
+        {
+            "data_path": "action_result.status",
+            "data_type": "string",
+            "example_values": ["success", "failure"],
+        },
+        {
+            "data_path": "action_result.message",
+            "data_type": "string",
+        },
+        {
+            "data_path": "action_result.parameter.int_value",
+            "data_type": "numeric",
+        },
+        {
+            "data_path": "action_result.parameter.str_value",
+            "data_type": "string",
+        },
+        {
+            "data_path": "action_result.parameter.bool_value",
+            "data_type": "boolean",
+        },
+        {
+            "data_path": "action_result.parameter.cef_value",
+            "data_type": "string",
+            "contains": ["user name"],
+            "column_name": "CEF Value",
+            "column_order": 0,
+        },
+        {
+            "data_path": "summary.total_objects",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
+        {
+            "data_path": "summary.total_objects_successful",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
+    ]
+
+
+def test_serilized_datapaths_params_raises():
+    class SampleParams(Params):
+        int_value: int
+        str_value: str
+        bool_value: bool
+        cef_value: str = Param(cef_types=["user name"], column_name="CEF Value")
+
+    with pytest.raises(
+        ValueError, match="must have both 'column_name' and 'column_order'"
+    ):
+        OutputsSerializer.serialize_datapaths(SampleParams, ActionOutput)
