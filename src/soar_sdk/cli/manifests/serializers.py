@@ -38,6 +38,20 @@ class OutputsSerializer:
             )
             if cef_types := field.field_info.extra.get("cef_types"):
                 spec["contains"] = cef_types
+
+            column_name = field.field_info.extra.get("column_name")
+            column_order = field.field_info.extra.get("column_order")
+
+            # Check if exactly one is set (XOR condition - invalid)
+            if (column_name is None) != (column_order is None):
+                raise ValueError(
+                    f"Field '{field_name}' must have both 'column_name' and 'column_order' "
+                    f"or neither. Found: column_name={column_name}, column_order={column_order}"
+                )
+
+            if column_name is not None and column_order is not None:
+                spec["column_name"] = column_name
+                spec["column_order"] = column_order
             yield spec
 
     @classmethod

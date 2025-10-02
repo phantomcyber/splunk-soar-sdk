@@ -246,7 +246,18 @@
             "read_only": true,
             "versions": "EQ(*)",
             "verbose": "",
-            "parameters": {},
+            "parameters": {
+                "company_name": {
+                    "order": 0,
+                    "name": "company_name",
+                    "description": "Company Name",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false,
+                    "default": "Splunk"
+                }
+            },
             "output": [
                 {
                     "data_path": "action_result.status",
@@ -259,6 +270,12 @@
                 {
                     "data_path": "action_result.message",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.company_name",
+                    "data_type": "string",
+                    "column_name": "Company Name",
+                    "column_order": 2
                 },
                 {
                     "data_path": "action_result.data.*.name",

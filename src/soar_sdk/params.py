@@ -22,6 +22,8 @@ def Param(
     allow_list: bool = False,
     sensitive: bool = False,
     alias: Optional[str] = None,
+    column_name: Optional[str] = None,
+    column_order: Optional[int] = None,
 ) -> Any:  # noqa: ANN401
     """Representation of a single complex action parameter.
 
@@ -49,6 +51,8 @@ def Param(
     :param allow_list: Use this key to specify if the parameter supports specifying
       multiple values as a comma separated string.
     :param kwargs: additional kwargs accepted by pydantic.Field
+    :param column_name: Optional name for the parameter when displayed in an output table.
+    :param column_order: Optional order for the parameter when displayed in an output table (0-indexed).
     :return: returns the FieldInfo object as pydantic.Field
     """
     if value_list is None:
@@ -64,6 +68,8 @@ def Param(
         allow_list=allow_list,
         sensitive=sensitive,
         alias=alias,
+        column_name=column_name,
+        column_order=column_order,
     )
 
 
@@ -80,6 +86,8 @@ class InputFieldSpecification(TypedDict):
     value_list: NotRequired[list[str]]
     allow_list: bool
     default: NotRequired[Union[str, int, float, bool]]
+    column_name: NotRequired[str]
+    column_order: NotRequired[int]
 
 
 class Params(BaseModel):
