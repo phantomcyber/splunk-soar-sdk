@@ -2,10 +2,10 @@ from typing import Optional, Union, get_origin, get_args, Any
 from collections.abc import Iterator
 from typing_extensions import NotRequired, TypedDict
 from pydantic import BaseModel, Field
+import itertools
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
-
 from soar_sdk.meta.datatypes import as_datatype
 
 remove_when_soar_newer_than(
@@ -83,12 +83,15 @@ class OutputFieldSpecification(TypedDict):
     data_type: str
     contains: NotRequired[list[str]]
     example_values: NotRequired[list[Union[str, float, bool]]]
+    column_name: NotRequired[str]
+    column_order: NotRequired[int]
 
 
 def OutputField(
     cef_types: Optional[list[str]] = None,
     example_values: Optional[list[Union[str, float, bool]]] = None,
     alias: Optional[str] = None,
+    column_name: Optional[str] = None,
 ) -> Any:  # noqa: ANN401
     """Define metadata for an action output field.
 
@@ -102,6 +105,10 @@ def OutputField(
         example_values: Optional list of example values for this field, used
             in documentation and for testing/validation purposes.
         alias: Optional alternative name for the field when serialized.
+        column_name: Optional name for the field when displayed in a table.
+
+    Note:
+        Column name and order must be set together, if one is set but the other is not, an error will be raised.
 
     Returns:
         A Pydantic Field object with the specified metadata.
@@ -116,8 +123,9 @@ def OutputField(
     """
     return Field(
         examples=example_values,
-        cef_types=cef_types,
         alias=alias,
+        cef_types=cef_types,
+        column_name=column_name,
     )
 
 
@@ -152,7 +160,9 @@ class ActionOutput(BaseModel):
 
     @classmethod
     def _to_json_schema(
-        cls, parent_datapath: str = "action_result.data.*"
+        cls,
+        parent_datapath: str = "action_result.data.*",
+        column_order_counter: Optional[itertools.count] = None,
     ) -> Iterator[OutputFieldSpecification]:
         """Convert the ActionOutput class to SOAR-compatible JSON schema.
 
@@ -163,6 +173,8 @@ class ActionOutput(BaseModel):
         Args:
             parent_datapath: The base datapath for fields in this output.
                 Defaults to "action_result.data.*" for top-level outputs.
+            column_order_counter: Iterator for tracking column order across fields.
+                Used internally to maintain sequential column ordering. Defaults to itertools.count().
 
         Yields:
             OutputFieldSpecification objects describing each field in the schema.
@@ -176,6 +188,9 @@ class ActionOutput(BaseModel):
             Nested ActionOutput classes are recursively processed.
             Boolean fields automatically get [True, False] example values.
         """
+        if column_order_counter is None:
+            column_order_counter = itertools.count()
+
         for _field_name, field in cls.__fields__.items():
             field_name = alias if (alias := field.alias) else _field_name
 
@@ -208,7 +223,7 @@ class ActionOutput(BaseModel):
 
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema
-                yield from field_type._to_json_schema(datapath)
+                yield from field_type._to_json_schema(datapath, column_order_counter)
                 continue
             else:
                 try:
@@ -229,6 +244,12 @@ class ActionOutput(BaseModel):
 
             if field_type is bool:
                 schema_field["example_values"] = [True, False]
+
+            column_name = field.field_info.extra.get("column_name")
+
+            if column_name is not None:
+                schema_field["column_name"] = column_name
+                schema_field["column_order"] = next(column_order_counter)
 
             yield schema_field
 

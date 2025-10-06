@@ -1,6 +1,7 @@
 from typing import Any, Optional
 from collections.abc import Iterator
 from logging import getLogger
+import itertools
 
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.params import Params
@@ -29,8 +30,12 @@ class OutputsSerializer:
     @staticmethod
     def serialize_parameter_datapaths(
         params_class: type[Params],
+        column_order_counter: Optional[itertools.count] = None,
     ) -> Iterator[OutputFieldSpecification]:
         """Serializes the parameter data paths of a Params class to JSON schema."""
+        if column_order_counter is None:
+            column_order_counter = itertools.count()
+
         for field_name, field in params_class.__fields__.items():
             spec = OutputFieldSpecification(
                 data_path=f"action_result.parameter.{field_name}",
@@ -38,6 +43,12 @@ class OutputsSerializer:
             )
             if cef_types := field.field_info.extra.get("cef_types"):
                 spec["contains"] = cef_types
+
+            column_name = field.field_info.extra.get("column_name")
+
+            if column_name is not None:
+                spec["column_name"] = column_name
+                spec["column_order"] = next(column_order_counter)
             yield spec
 
     @classmethod
@@ -57,10 +68,13 @@ class OutputsSerializer:
             data_path="action_result.message",
             data_type="string",
         )
-        params = cls.serialize_parameter_datapaths(params_class)
-        outputs = outputs_class._to_json_schema()
+        column_order_counter = itertools.count()
+        params = cls.serialize_parameter_datapaths(params_class, column_order_counter)
+        outputs = outputs_class._to_json_schema(
+            column_order_counter=column_order_counter
+        )
         summary = (
-            summary_class._to_json_schema("action_result.summary")
+            summary_class._to_json_schema("action_result.summary", column_order_counter)
             if summary_class
             else []
         )

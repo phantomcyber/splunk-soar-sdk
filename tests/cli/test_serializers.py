@@ -153,13 +153,17 @@ def test_outputs_serialize_with_defaults():
 
 def test_outputs_serialize_output_class():
     class SampleNestedOutput(ActionOutput):
-        bool_value: bool
+        bool_value: bool = OutputField(column_name="Nested Value")
 
     class SampleOutput(ActionOutput):
         string_value: str
         int_value: int
         list_value: list[str]
-        cef_value: str = OutputField(cef_types=["ip"], example_values=["1.1.1.1"])
+        cef_value: str = OutputField(
+            cef_types=["ip"],
+            example_values=["1.1.1.1"],
+            column_name="CEF Value",
+        )
         nested_value: SampleNestedOutput
         underscored_value: str = OutputField(alias="_underscored_value")
 
@@ -192,11 +196,15 @@ def test_outputs_serialize_output_class():
             "data_type": "string",
             "contains": ["ip"],
             "example_values": ["1.1.1.1"],
+            "column_name": "CEF Value",
+            "column_order": 0,
         },
         {
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
             "example_values": [True, False],
+            "column_name": "Nested Value",
+            "column_order": 1,
         },
         {
             "data_path": "action_result.data.*._underscored_value",
@@ -285,6 +293,87 @@ def test_outputs_serialize_with_parameters_class():
             "data_path": "action_result.data.*.nested_value.bool_value",
             "data_type": "boolean",
             "example_values": [True, False],
+        },
+        {
+            "data_path": "summary.total_objects",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
+        {
+            "data_path": "summary.total_objects_successful",
+            "data_type": "numeric",
+            "example_values": [1],
+        },
+    ]
+
+
+def test_serialize_parameter_datapaths():
+    class SampleParams(Params):
+        cef_value: str = Param(cef_types=["user name"], column_name="CEF Value")
+
+    serialized_parameter_datapaths = list(
+        OutputsSerializer.serialize_parameter_datapaths(SampleParams)
+    )
+
+    assert serialized_parameter_datapaths == [
+        {
+            "data_path": "action_result.parameter.cef_value",
+            "data_type": "string",
+            "contains": ["user name"],
+            "column_name": "CEF Value",
+            "column_order": 0,
+        },
+    ]
+
+
+def test_serilized_datapaths_params():
+    class SampleParams(Params):
+        int_value: int
+        str_value: str
+        bool_value: bool
+        cef_value: str = Param(cef_types=["user name"], column_name="CEF Value")
+
+    class SampleOutput(ActionOutput):
+        string_value: str = OutputField(column_name="String Value")
+
+    serialized_outputs = OutputsSerializer.serialize_datapaths(
+        SampleParams, SampleOutput
+    )
+
+    assert serialized_outputs == [
+        {
+            "data_path": "action_result.status",
+            "data_type": "string",
+            "example_values": ["success", "failure"],
+        },
+        {
+            "data_path": "action_result.message",
+            "data_type": "string",
+        },
+        {
+            "data_path": "action_result.parameter.int_value",
+            "data_type": "numeric",
+        },
+        {
+            "data_path": "action_result.parameter.str_value",
+            "data_type": "string",
+        },
+        {
+            "data_path": "action_result.parameter.bool_value",
+            "data_type": "boolean",
+        },
+        {
+            "data_path": "action_result.parameter.cef_value",
+            "data_type": "string",
+            "contains": ["user name"],
+            "column_name": "CEF Value",
+            "column_order": 0,
+        },
+        {
+            "data_path": "action_result.data.*.string_value",
+            "data_type": "string",
+            "column_name": "String Value",
+            "column_order": 1,
         },
         {
             "data_path": "summary.total_objects",
