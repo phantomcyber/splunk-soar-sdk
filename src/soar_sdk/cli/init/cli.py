@@ -190,6 +190,10 @@ def init_sdk_app(
     app_text = ast.unparse(app_module)
     (app_dir / "src/app.py").write_text(app_text)
 
+    release_notes_dir = app_dir / "release_notes"
+    release_notes_dir.mkdir(exist_ok=True)
+    (release_notes_dir / "unreleased.md").write_text("**Unreleased**\n")
+
     uv_path = shutil.which("uv")
     if not uv_path:
         rprint("[red]uv command not found. Please install uv to continue.[/]")

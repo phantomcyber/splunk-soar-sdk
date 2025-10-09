@@ -1,5 +1,6 @@
 from pathlib import Path
 from unittest.mock import patch
+import shutil
 
 from typer.testing import CliRunner
 
@@ -34,6 +35,27 @@ def test_package_build_command(wheel_resp_mock, tmp_path: Path):
     assert destination.is_file()
     # Verify our mock was called
     assert wheel_resp_mock.called
+
+
+def test_package_build_command_without_release_notes(wheel_resp_mock, tmp_path: Path):
+    example_app_source = Path.cwd() / "tests/example_app"
+    example_app = tmp_path / "example_app"
+
+    # Copy example_app to tmp directory
+    shutil.copytree(example_app_source, example_app)
+
+    # Delete release_notes directory if it exists
+    release_notes_dir = example_app / "release_notes"
+    if release_notes_dir.exists():
+        shutil.rmtree(release_notes_dir)
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(package, ["build", example_app.as_posix()])
+        assert result.exit_code != 0
+        assert "Release notes required" in result.stdout
 
 
 def test_package_build_command_specifying_outdir(wheel_resp_mock, tmp_path: Path):
