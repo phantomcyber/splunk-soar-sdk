@@ -1,11 +1,84 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+
+# By default, run each hook only in the standard pre-commit stage
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+# This is a template for connector pre-commit hooks
 repos:
--   repo: https://github.com/phantomcyber/dev-cicd-tools
-    rev: v1.26
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.1.0
     hooks:
-    -   id: org-hook
-    -   id: package-app-dependencies
--   repo: https://github.com/Yelp/detect-secrets
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [--verbose]
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+        exclude: ^NOTICE$
+        exclude_types: [ markdown ]
+      - id: trailing-whitespace
+        exclude: ^NOTICE$
+        exclude_types: [ markdown ]
+      - id: requirements-txt-fixer
+      - id: check-json
+      - id: check-yaml
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.11.7
+    hooks:
+      - id: ruff
+        args: [ "--fix", "--unsafe-fixes"] # Allow unsafe fixes (ruff pretty strict about what it can fix)
+      - id: ruff-format
+  - repo: https://github.com/djlint/djLint
+    rev: v1.36.4
+    hooks:
+      - id: djlint-reformat-django
+      - id: djlint-django
+  - repo: https://github.com/phantomcyber/soar-app-linter
+    rev: 0.1.0
+    hooks:
+      - id: soar-app-linter
+        args: ["--single-repo", "--message-level", "error"]
+  - repo: https://github.com/hukkin/mdformat
+    rev: 0.7.22
+    hooks:
+      - id: mdformat
+        exclude: "release_notes/.*"
+  - repo: https://github.com/returntocorp/semgrep
+    rev: v1.89.0
+    hooks:
+      - id: semgrep
+  - repo: https://github.com/Yelp/detect-secrets
     rev: v1.5.0
     hooks:
-    -   id: detect-secrets
+      - id: detect-secrets
         args: ['--no-verify']
+        exclude_types: [json]
+        exclude: "README.md"
+  # Central hooks
+  - repo: https://github.com/phantomcyber/dev-cicd-tools
+    rev: v2.1.0
+    hooks:
+      - id: build-docs
+        language: python
+        additional_dependencies: ["local-hooks"]
+        args: ['.']
+      - id: copyright
+        language: python
+        additional_dependencies: ["local-hooks"]
+        args: ['.']
+      - id: notice-file
+        language: python
+        additional_dependencies: ["local-hooks"]
+        args: ['.']
+      - id: release-notes
+        language: python
+        additional_dependencies: ["local-hooks"]
+        args: ['.']
+      - id: static-tests
+        language: python
+        additional_dependencies: ["local-hooks"]
+        args: ['.']
