@@ -12,10 +12,7 @@
     "logo": "logo.svg",
     "logo_dark": "logo_dark.svg",
     "product_name": "Example App",
-    "python_version": [
-        "3.9",
-        "3.13"
-    ],
+    "python_version": "3.9,3.13",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
     "utctime_updated": "2025-09-09T15:29:27.279851Z",

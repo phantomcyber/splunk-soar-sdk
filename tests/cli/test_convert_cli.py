@@ -223,7 +223,7 @@ def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
     print(result.output)  # For debugging purposes
 
     assert result.exit_code == 0
-    assert "declares support for Python versions ['3.9']" in result.output
+    assert "declares support for Python versions '3.9'" in result.output
     assert "will support the default versions ['3.9', '3.13']" in result.output
     assert (
         'requires-python = ">=3.9, <3.14"'

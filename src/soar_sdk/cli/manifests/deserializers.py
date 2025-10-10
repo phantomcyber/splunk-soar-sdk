@@ -6,7 +6,7 @@ import pydantic
 
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification, OutputField
 from soar_sdk.cli.utils import normalize_field_name, NormalizationResult
-from soar_sdk.compat import PythonVersion, remove_when_soar_newer_than
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.params import Params, Param
@@ -40,15 +40,6 @@ class AppMetaDeserializer:
             about actions with custom views, REST handlers, and webhooks.
         """
         manifest: dict[str, Any] = json.loads(json_path.read_text())
-
-        # Massage the python_version field, which may be a comma-separated string
-        python_version = manifest.pop("python_version", None)
-        if isinstance(python_version, str):
-            manifest["python_version"] = PythonVersion.from_csv(python_version)
-        elif isinstance(python_version, list):
-            manifest["python_version"] = [
-                PythonVersion.from_str(py) for py in python_version
-            ]
 
         deserialized_actions = [
             ActionDeserializer.from_action_json(action)

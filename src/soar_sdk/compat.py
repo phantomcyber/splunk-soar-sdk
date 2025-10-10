@@ -60,9 +60,19 @@ class PythonVersion(str, Enum):
         ]
 
     @classmethod
+    def to_csv(cls, versions: list["PythonVersion"]) -> str:
+        """Converts a list of PythonVersion enums to a comma-separated string."""
+        return ",".join(str(v) for v in versions)
+
+    @classmethod
     def all(cls) -> list["PythonVersion"]:
         """Returns a list of all supported Python versions."""
         return [cls.PY_3_9, cls.PY_3_13]
+
+    @classmethod
+    def all_csv(cls) -> str:
+        """Returns a comma-separated string of all supported Python versions."""
+        return ",".join(str(v) for v in cls.all())
 
     @classmethod
     def to_requires_python(cls, versions: list["PythonVersion"]) -> str:

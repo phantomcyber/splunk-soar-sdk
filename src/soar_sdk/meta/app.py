@@ -1,5 +1,5 @@
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, validator
+from typing import Optional, Union
 
 from soar_sdk.asset import AssetFieldSpecification
 from soar_sdk.compat import PythonVersion
@@ -32,7 +32,7 @@ class AppMeta(BaseModel):
     logo: str = ""
     logo_dark: str = ""
     product_name: str = ""
-    python_version: list[PythonVersion] = Field(default_factory=PythonVersion.all)
+    python_version: str = Field(default_factory=PythonVersion.all_csv)
     product_version_regex: str = ".*"
     publisher: str = ""
     utctime_updated: str = ""
@@ -46,6 +46,21 @@ class AppMeta(BaseModel):
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
 
     webhook: Optional[WebhookMeta]
+
+    @validator("python_version", pre=True)
+    def convert_python_version_to_csv(cls, v: Union[list, str]) -> str:
+        """Converts python_version to a comma-separated string if it's a list and validates versions."""
+        if isinstance(v, list):
+            # Validate each version in the list and convert to CSV
+            validated_versions = [PythonVersion.from_str(str(version)) for version in v]
+            return PythonVersion.to_csv(validated_versions)
+        elif isinstance(v, str):
+            # Validate the CSV string by parsing it and convert back to CSV
+            validated_versions = PythonVersion.from_csv(v)
+            return PythonVersion.to_csv(validated_versions)
+        raise ValueError(
+            f"Invalid python_version type must be a list or a comma-separated string: {v}"
+        )
 
     def to_json_manifest(self) -> dict:
         """Converts the AppMeta instance to a JSON-compatible dictionary."""

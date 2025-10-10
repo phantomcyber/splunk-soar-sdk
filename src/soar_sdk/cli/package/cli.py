@@ -152,15 +152,6 @@ def build(
             app_tarball.add(
                 "src", f"{app_name}/src", recursive=True, filter=filter_source_files
             )
-            if Path("release_notes").exists():
-                app_tarball.add(
-                    "release_notes", f"{app_name}/release_notes", recursive=True
-                )
-            else:
-                console.print(
-                    "[bold red]Error:[/] Release notes required. Please add a release_notes directory at the root of the app."
-                )
-                raise typer.Exit(1)
 
             def add_templates_to_package(
                 source_path: Path, message: str, target_base: str = "templates"
