@@ -2,6 +2,7 @@ import pytest
 import keyword
 
 from soar_sdk.cli.utils import normalize_field_name
+from soar_sdk.meta.app import AppMeta
 
 
 class TestNormalizeFieldName:
@@ -60,3 +61,19 @@ class TestNormalizeFieldName:
 
         with pytest.raises(ValueError, match="must contain at least one letter"):
             normalize_field_name("______")
+
+
+def test_bad_python_version_type():
+    """Test that an invalid python_version type raises a ValueError."""
+    with pytest.raises(
+        ValueError,
+        match="Invalid python_version type must be a list or a comma-separated string",
+    ):
+        AppMeta(
+            project_name="test_app",
+            description="Test app",
+            license="Copyright (c) 2025 Splunk Inc.",
+            app_version="1.0.0",
+            package_name="test_app",
+            python_version=123,
+        )

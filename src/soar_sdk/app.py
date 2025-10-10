@@ -101,7 +101,7 @@ class App:
         product_name: str,
         publisher: str,
         appid: str,
-        python_version: Optional[list[PythonVersion]] = None,
+        python_version: Optional[Union[list[PythonVersion], str]] = None,
         min_phantom_version: str = MIN_PHANTOM_VERSION,
         fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
@@ -113,7 +113,7 @@ class App:
             raise ValueError(f"Appid is not a valid uuid: {appid}")
 
         if python_version is None:
-            python_version = PythonVersion.all()
+            python_version = PythonVersion.all_csv()
 
         self.app_meta_info = {
             "name": name,

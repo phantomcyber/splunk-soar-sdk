@@ -100,9 +100,9 @@ def test_from_app_json_basic_deserialization(basic_app_data, create_app_json):
 @pytest.mark.parametrize(
     "python_version_input,expected",
     [
-        ("3.9,3.13", [PythonVersion.PY_3_9, PythonVersion.PY_3_13]),
-        (["3.9", "3.13"], [PythonVersion.PY_3_9, PythonVersion.PY_3_13]),
-        (None, PythonVersion.all()),  # Should use default when None
+        ("3.9,3.13", f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"),
+        (["3.9", "3.13"], f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"),
+        (None, PythonVersion.all_csv()),  # Should use default when None
     ],
 )
 def test_from_app_json_python_version_handling(
@@ -127,7 +127,7 @@ def test_from_app_json_python_version_missing(basic_app_data, create_app_json):
 
     # Should use default from AppMeta model
     result = deserialized_result.app_meta
-    assert result.python_version == PythonVersion.all()
+    assert result.python_version == PythonVersion.all_csv()
 
 
 def test_from_app_json_invalid_python_version(basic_app_data, create_app_json):
@@ -322,7 +322,9 @@ def test_from_app_json_complex_example(create_app_json):
         assert result.name == "example_app"
         assert result.appid == "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
         assert result.product_vendor == "Splunk Inc."
-        assert result.python_version == [PythonVersion.PY_3_9, PythonVersion.PY_3_13]
+        assert (
+            result.python_version == f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"
+        )
         assert result.project_name == "example_app"
         assert len(result.actions) == 1
         assert result.fips_compliant is False

@@ -190,10 +190,6 @@ def init_sdk_app(
     app_text = ast.unparse(app_module)
     (app_dir / "src/app.py").write_text(app_text)
 
-    release_notes_dir = app_dir / "release_notes"
-    release_notes_dir.mkdir(exist_ok=True)
-    (release_notes_dir / "unreleased.md").write_text("**Unreleased**\n")
-
     uv_path = shutil.which("uv")
     if not uv_path:
         rprint("[red]uv command not found. Please install uv to continue.[/]")
@@ -273,11 +269,11 @@ def convert_connector_to_sdk(
     # Convert the main module path to the SDK format, but save a reference to the original
     app_meta.main_module = "src.app:app"
 
-    app_python_versions = app_meta.python_version
+    app_python_versions = PythonVersion.from_csv(app_meta.python_version)
     enforced_python_versions = PythonVersion.all()
     if set(app_python_versions) != set(enforced_python_versions):
         rprint(
-            f"[yellow]The provided app declares support for Python versions {[str(v) for v in app_python_versions]}.[/]"
+            f"[yellow]The provided app declares support for Python versions '{app_meta.python_version}'.[/]"
         )
         rprint(
             f"[yellow]The converted app will support the default versions {[str(v) for v in enforced_python_versions]}.[/]"
