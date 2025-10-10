@@ -218,26 +218,27 @@ class MakeRequestParams(Params):
     )
 
     headers: str = Param(
-        description="The headers to send with the request (JSON object).",
+        description="The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'}",
         required=False,
     )
 
     query_parameters: str = Param(
-        description="The query string to send with the request.",
+        description="Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2",
         required=False,
     )
 
     body: str = Param(
-        description="The body to send with the request (JSON object).",
+        description="The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'}",
         required=False,
     )
 
     timeout: int = Param(
-        description="The timeout for the request.",
+        description="The timeout for the request in seconds.",
         required=False,
     )
 
     verify_ssl: bool = Param(
-        description="Whether to verify the SSL certificate.",
+        description="Whether to verify the SSL certificate. Default is False.",
         required=False,
+        default=False,
     )

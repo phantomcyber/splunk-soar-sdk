@@ -109,8 +109,15 @@ app.register_action(
 )
 
 
+class MakeRequestParamsCustom(MakeRequestParams):
+    endpoint: str = Param(
+        description="The endpoint to send the request to. Base url is already included in the endpoint.",
+        required=True,
+    )
+
+
 @app.make_request()
-def http_action(params: MakeRequestParams, asset: Asset) -> MakeRequestOutput:
+def http_action(params: MakeRequestParamsCustom, asset: Asset) -> MakeRequestOutput:
     logger.info(f"HTTP action triggered with params: {params}")
     return MakeRequestOutput(
         status_code=200,
