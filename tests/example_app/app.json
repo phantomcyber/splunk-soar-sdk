@@ -481,7 +481,7 @@
                 "endpoint": {
                     "order": 1,
                     "name": "endpoint",
-                    "description": "The endpoint to send the request to.",
+                    "description": "The endpoint to send the request to. Base url is already included in the endpoint.",
                     "data_type": "string",
                     "required": true,
                     "primary": false,
@@ -490,7 +490,7 @@
                 "headers": {
                     "order": 2,
                     "name": "headers",
-                    "description": "The headers to send with the request (JSON object).",
+                    "description": "The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'}",
                     "data_type": "string",
                     "required": false,
                     "primary": false,
@@ -499,7 +499,7 @@
                 "query_parameters": {
                     "order": 3,
                     "name": "query_parameters",
-                    "description": "The query string to send with the request.",
+                    "description": "Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2",
                     "data_type": "string",
                     "required": false,
                     "primary": false,
@@ -508,7 +508,7 @@
                 "body": {
                     "order": 4,
                     "name": "body",
-                    "description": "The body to send with the request (JSON object).",
+                    "description": "The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'}",
                     "data_type": "string",
                     "required": false,
                     "primary": false,
@@ -517,7 +517,7 @@
                 "timeout": {
                     "order": 5,
                     "name": "timeout",
-                    "description": "The timeout for the request.",
+                    "description": "The timeout for the request in seconds.",
                     "data_type": "numeric",
                     "required": false,
                     "primary": false,
@@ -526,7 +526,7 @@
                 "verify_ssl": {
                     "order": 6,
                     "name": "verify_ssl",
-                    "description": "Whether to verify the SSL certificate.",
+                    "description": "Whether to verify the SSL certificate. Default is False.",
                     "data_type": "boolean",
                     "required": false,
                     "primary": false,
