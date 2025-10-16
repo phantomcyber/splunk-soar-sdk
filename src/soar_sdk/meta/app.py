@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, Union
 
 from soar_sdk.asset import AssetFieldSpecification
@@ -45,9 +45,10 @@ class AppMeta(BaseModel):
     pip39_dependencies: DependencyList = Field(default_factory=DependencyList)
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
 
-    webhook: Optional[WebhookMeta]
+    webhook: Optional[WebhookMeta] = None
 
-    @validator("python_version", pre=True)
+    @field_validator("python_version", mode="before")
+    @classmethod
     def convert_python_version_to_csv(cls, v: Union[list, str]) -> str:
         """Converts python_version to a comma-separated string if it's a list and validates versions."""
         if isinstance(v, list):
@@ -64,4 +65,8 @@ class AppMeta(BaseModel):
 
     def to_json_manifest(self) -> dict:
         """Converts the AppMeta instance to a JSON-compatible dictionary."""
-        return self.dict(exclude_none=True)
+        data = self.model_dump(exclude_none=True)
+        # In Pydantic v2, nested model_dump() overrides aren't automatically called
+        # So we need to explicitly call model_dump() on each action
+        data["actions"] = [action.model_dump() for action in self.actions]
+        return data

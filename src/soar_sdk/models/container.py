@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import Optional, Any, Union
 
 
@@ -8,10 +8,7 @@ class Container(BaseModel):
     This class allows users to specify container properties when yielding from an on_poll function.
     """
 
-    class Config:
-        """Pydantic config."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
     name: str
     label: Optional[str] = None
@@ -44,4 +41,4 @@ class Container(BaseModel):
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the container to a dictionary (needed for save_container)."""
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)

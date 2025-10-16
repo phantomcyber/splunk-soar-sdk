@@ -80,7 +80,7 @@ class OnPollDecorator:
             try:
                 # Validate poll params
                 try:
-                    action_params = validated_params_class.parse_obj(params)
+                    action_params = validated_params_class.model_validate(params)
                 except Exception as e:
                     logger.info(f"Parameter validation error: {e!s}")
                     return self.app._adapt_action_result(
@@ -177,8 +177,8 @@ class OnPollDecorator:
 
         # Custom ActionMeta class for on_poll (has no output)
         class OnPollActionMeta(ActionMeta):
-            def dict(self, *args: object, **kwargs: object) -> dict[str, Any]:
-                data = super().dict(*args, **kwargs)
+            def model_dump(self, *args: object, **kwargs: object) -> dict[str, Any]:
+                data = super().model_dump(*args, **kwargs)
                 # Poll actions have no output
                 data["output"] = []
                 return data

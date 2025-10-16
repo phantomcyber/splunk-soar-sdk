@@ -121,11 +121,18 @@ def OutputField(
         ...     )
         ...     count: int = OutputField(example_values=[1, 5, 10])
     """
+    json_schema_extra: dict[str, Any] = {}
+    if cef_types is not None:
+        json_schema_extra["cef_types"] = cef_types
+    if example_values is not None:
+        json_schema_extra["examples"] = example_values
+    if column_name is not None:
+        json_schema_extra["column_name"] = column_name
+
     return Field(
-        examples=example_values,
+        default=...,
         alias=alias,
-        cef_types=cef_types,
-        column_name=column_name,
+        json_schema_extra=json_schema_extra if json_schema_extra else None,
     )
 
 
@@ -191,10 +198,13 @@ class ActionOutput(BaseModel):
         if column_order_counter is None:
             column_order_counter = itertools.count()
 
-        for _field_name, field in cls.__fields__.items():
+        for _field_name, field in cls.model_fields.items():
             field_name = alias if (alias := field.alias) else _field_name
 
             field_type = field.annotation
+            if field_type is None:
+                continue
+
             datapath = parent_datapath + f".{field_name}"
 
             # Handle lists and optional types, even nested ones
@@ -221,6 +231,12 @@ class ActionOutput(BaseModel):
                 field_type = type_args[0]
                 origin = get_origin(field_type)
 
+            # Ensure field_type is a valid type after unwrapping
+            if not isinstance(field_type, type):
+                raise TypeError(
+                    f"Output field {field_name} has invalid type annotation: {field_type}"
+                )
+
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema
                 yield from field_type._to_json_schema(datapath, column_order_counter)
@@ -237,17 +253,28 @@ class ActionOutput(BaseModel):
                 data_path=datapath, data_type=type_name
             )
 
-            if cef_types := field.field_info.extra.get("cef_types"):
+            # Get json_schema_extra - in v2 it can be dict or callable
+            json_schema_extra_raw = field.json_schema_extra
+            if callable(json_schema_extra_raw):
+                json_schema_extra: dict[str, Any] = {}
+            else:
+                json_schema_extra = json_schema_extra_raw or {}
+
+            if (cef_types := json_schema_extra.get("cef_types")) and isinstance(
+                cef_types, list
+            ):
                 schema_field["contains"] = cef_types
-            if examples := field.field_info.extra.get("examples"):
+            if (examples := json_schema_extra.get("examples")) and isinstance(
+                examples, list
+            ):
                 schema_field["example_values"] = examples
 
             if field_type is bool:
                 schema_field["example_values"] = [True, False]
 
-            column_name = field.field_info.extra.get("column_name")
+            column_name = json_schema_extra.get("column_name")
 
-            if column_name is not None:
+            if column_name is not None and isinstance(column_name, str):
                 schema_field["column_name"] = column_name
                 schema_field["column_order"] = next(column_order_counter)
 

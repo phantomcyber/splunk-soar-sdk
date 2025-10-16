@@ -1,7 +1,7 @@
 from typing import Any, Optional, Union
 from zoneinfo import ZoneInfo
-from pydantic import BaseModel, root_validator
-from pydantic.fields import Field, Undefined
+from pydantic import BaseModel, model_validator, model_serializer, ConfigDict, Field
+from pydantic_core import PydanticUndefined
 
 from typing_extensions import NotRequired, TypedDict
 
@@ -42,13 +42,22 @@ def AssetField(
     Returns:
         The FieldInfo object as pydantic.Field.
     """
+    json_schema_extra: dict[str, Any] = {}
+    if required is not None:
+        json_schema_extra["required"] = required
+    if value_list is not None:
+        json_schema_extra["value_list"] = value_list
+    if sensitive is not None:
+        json_schema_extra["sensitive"] = sensitive
+
+    # Use ... (Ellipsis) for required fields, None for optional with no default
+    field_default: Any = ... if default is None and required else default
+
     return Field(
-        default=default,
+        default=field_default,
         description=description,
-        required=required,
-        value_list=value_list,
-        sensitive=sensitive,
         alias=alias,
+        json_schema_extra=json_schema_extra if json_schema_extra else None,
     )
 
 
@@ -106,16 +115,23 @@ class BaseAsset(BaseModel):
         the SOAR platform to avoid conflicts with internal fields.
     """
 
-    class Config:
-        """Pydantic configuration for BaseAsset.
+    model_config = ConfigDict(
+        arbitrary_types_allowed=True,
+    )
 
-        Note that we are using the `arbitrary_types_allowed` setting, which is generally not recommended.
-        However, we are checking all of the field types via `soar_sdk.datatypes.as_datatype`, so we have confidence in their validity.
-        """
+    @model_serializer(mode="wrap")
+    def _serialize_model(self, serializer: Any, info: Any) -> dict[str, Any]:  # noqa: ANN401
+        """Custom serializer that converts ZoneInfo to string for JSON serialization."""
+        data = serializer(self)
+        # Convert ZoneInfo objects to strings
+        if isinstance(data, dict):
+            for field_name, value in list(data.items()):
+                if isinstance(value, ZoneInfo):
+                    data[field_name] = value.key
+        return data
 
-        arbitrary_types_allowed = True
-
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def validate_no_reserved_fields(cls, values: dict[str, Any]) -> dict[str, Any]:
         """Prevents subclasses from defining fields starting with "_reserved_".
 
@@ -148,7 +164,7 @@ class BaseAsset(BaseModel):
             # This accounts for some bad behavior by the platform; it injects a few app-related
             # metadata fields directly into asset configuration dictionaries, which can lead to
             # undefined behavior if an asset tries to use the same field names.
-            if field_name in AppConfig.__fields__:
+            if field_name in AppConfig.model_fields:
                 raise ValueError(
                     f"Field name '{field_name}' is reserved by the platform and cannot be used in an asset"
                 )
@@ -206,8 +222,10 @@ class BaseAsset(BaseModel):
         """
         params: dict[str, AssetFieldSpecification] = {}
 
-        for field_order, (field_name, field) in enumerate(cls.__fields__.items()):
+        for field_order, (field_name, field) in enumerate(cls.model_fields.items()):
             field_type = field.annotation
+            if field_type is None:
+                continue
 
             try:
                 type_name = as_datatype(field_type)
@@ -216,32 +234,41 @@ class BaseAsset(BaseModel):
                     f"Failed to serialize asset field {field_name}: {e}"
                 ) from None
 
-            if field.field_info.extra.get("sensitive", False):
+            # Get json_schema_extra - in v2 it can be dict or callable
+            json_schema_extra_raw = field.json_schema_extra
+            if callable(json_schema_extra_raw):
+                json_schema_extra: dict[str, Any] = {}
+            else:
+                json_schema_extra = json_schema_extra_raw or {}
+
+            if json_schema_extra.get("sensitive", False):
                 if field_type is not str:
                     raise TypeError(
                         f"Sensitive parameter {field_name} must be type str, not {field_type.__name__}"
                     )
                 type_name = "password"
 
-            if not (description := field.field_info.description):
+            if not (description := field.description):
                 description = cls._default_field_description(field_name)
 
             params_field = AssetFieldSpecification(
                 data_type=type_name,
-                required=field.field_info.extra.get("required", True),
+                required=bool(json_schema_extra.get("required", True)),
                 description=description,
                 order=field_order,
             )
 
-            if (default := field.field_info.default) and default != Undefined:
+            if (default := field.default) not in (PydanticUndefined, None):
                 if isinstance(default, ZoneInfo):
                     params_field["default"] = default.key
                 else:
                     params_field["default"] = default
-            if value_list := field.field_info.extra.get("value_list"):
+            if (value_list := json_schema_extra.get("value_list")) and isinstance(
+                value_list, list
+            ):
                 params_field["value_list"] = value_list
 
-            params[field.alias] = params_field
+            params[field.alias or field_name] = params_field
 
         return params
 
@@ -255,8 +282,9 @@ class BaseAsset(BaseModel):
         """
         return {
             field_name
-            for field_name, field in cls.__fields__.items()
-            if field.field_info.extra.get("sensitive", False)
+            for field_name, field in cls.model_fields.items()
+            if isinstance(field.json_schema_extra, dict)
+            and field.json_schema_extra.get("sensitive", False)
         }
 
     @classmethod
@@ -268,6 +296,6 @@ class BaseAsset(BaseModel):
         """
         return {
             field_name
-            for field_name, field in cls.__fields__.items()
+            for field_name, field in cls.model_fields.items()
             if field.annotation is ZoneInfo
         }

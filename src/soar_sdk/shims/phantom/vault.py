@@ -319,14 +319,14 @@ else:
                 if vault_id:
                     res = self.__storage.get(vault_id)
                     if res:
-                        results.append(res.dict())
+                        results.append(res.model_dump())
 
                 if any((container_id, file_name)):
                     for _, res in self.__storage.items():
                         if (
                             file_name and file_name in res.file_path
                         ) or container_id == res.container_id:
-                            results.append(res.dict())
+                            results.append(res.model_dump())
 
             return results
 

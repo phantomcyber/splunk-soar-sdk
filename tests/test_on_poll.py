@@ -53,7 +53,7 @@ def test_on_poll_function_called_with_params(
         end_time=1,
         container_count=10,
         artifact_count=100,
-        container_id=1,
+        container_id="1",
     )
 
     result = on_poll_function(params)
@@ -105,7 +105,7 @@ def test_on_poll_empty_iterator(app_with_action: App):
     params = OnPollParams(
         start_time=0,
         end_time=1,
-        container_id=1,
+        container_id="1",
     )
 
     result = on_poll_function(params)
@@ -126,7 +126,7 @@ def test_on_poll_raises_exception_propagates(app_with_action: App):
         end_time=1,
         container_count=10,
         artifact_count=100,
-        container_id=1,
+        container_id="1",
     )
 
     result = on_poll_function(params)
@@ -148,7 +148,7 @@ def test_on_poll_multiple_yields(app_with_action: App):
         end_time=1,
         container_count=10,
         artifact_count=100,
-        container_id=1,
+        container_id="1",
     )
 
     result = on_poll_function(params)
@@ -319,6 +319,6 @@ def test_on_poll_actionmeta_dict_output_empty(app_with_action: App):
         yield Artifact(name="a1")
 
     action = app_with_action.actions_manager.get_action("on_poll")
-    meta_dict = action.meta.dict()
+    meta_dict = action.meta.model_dump()
     assert "output" in meta_dict
     assert meta_dict["output"] == []
