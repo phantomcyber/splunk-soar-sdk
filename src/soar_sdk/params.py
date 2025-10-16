@@ -1,8 +1,9 @@
 from typing import Optional, Union, Any, ClassVar
 from typing_extensions import NotRequired, TypedDict
 
-from pydantic import Field, BaseModel
+from pydantic import Field
 from pydantic_core import PydanticUndefined
+from pydantic.main import BaseModel
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.datatypes import as_datatype
@@ -53,9 +54,6 @@ def Param(
     :param column_name: Optional name for the parameter when displayed in an output table.
     :return: returns the FieldInfo object as pydantic.Field
     """
-    if value_list is None:
-        value_list = []
-
     json_schema_extra: dict[str, Any] = {}
     if required is not None:
         json_schema_extra["required"] = required
@@ -118,8 +116,9 @@ class Params(BaseModel):
 
         for field_order, (field_name, field) in enumerate(cls.model_fields.items()):
             field_type = field.annotation
+
             if field_type is None:
-                continue
+                raise TypeError(f"Parameter {field_name} has no type annotation")
 
             try:
                 type_name = as_datatype(field_type)
@@ -128,7 +127,6 @@ class Params(BaseModel):
                     f"Failed to serialize action parameter {field_name}: {e}"
                 ) from None
 
-            # Get json_schema_extra - in v2 it can be dict or callable
             json_schema_extra_raw = field.json_schema_extra
             if callable(json_schema_extra_raw):
                 json_schema_extra: dict[str, Any] = {}
@@ -218,20 +216,18 @@ class MakeRequestParams(Params):
     def __init_subclass__(cls, **kwargs: Any) -> None:  # noqa: ANN401
         """Validate that subclasses only define allowed fields."""
         super().__init_subclass__(**kwargs)
-        cls._validate_make_request_fields()
 
-    @classmethod
-    def _validate_make_request_fields(cls) -> None:
-        """Ensure subclasses only define allowed MakeRequest fields."""
-        # Use __annotations__ instead of model_fields since it's available earlier in Pydantic v2
-        # Filter out ClassVar fields and private fields
-        field_names = {name for name in cls.__annotations__ if not name.startswith("_")}
-        invalid_fields = field_names - cls._ALLOWED_FIELDS
-
+    def model_post_init(self, __context: Any) -> None:  # noqa: ANN401
+        """Ensure model fields are validated after instance is created."""
+        super().model_post_init(__context)
+        # Check if any fields are not in the allowed set
+        invalid_fields = (
+            set(self.__class__.model_fields.keys()) - self.__class__._ALLOWED_FIELDS
+        )
         if invalid_fields:
             raise TypeError(
-                f"MakeRequestParams subclass '{cls.__name__}' can only define these fields: "
-                f"{sorted(cls._ALLOWED_FIELDS)}. Invalid fields: {sorted(invalid_fields)}"
+                f"MakeRequestParams subclass '{self.__class__.__name__}' can only define these fields: "
+                f"{sorted(self.__class__._ALLOWED_FIELDS)}. Invalid fields: {sorted(invalid_fields)}"
             )
 
     http_method: str = Param(
