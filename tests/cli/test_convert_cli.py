@@ -273,7 +273,7 @@ def test_convert_cli_with_default_output(runner, tmp_path, app_meta):
 def test_convert_cli_with_custom_view(runner, tmp_path, app_meta):
     """Test that convert command handles custom views correctly."""
 
-    app_meta_dict = app_meta.dict()
+    app_meta_dict = app_meta.model_dump()
     app_meta_dict["actions"] = [
         {
             "action": "custom view action",
@@ -318,7 +318,7 @@ def test_convert_cli_with_custom_view(runner, tmp_path, app_meta):
 def test_convert_cli_with_rest_handler(runner, tmp_path, app_meta):
     """Test that convert command handles REST handlers correctly."""
 
-    app_meta_dict = app_meta.dict()
+    app_meta_dict = app_meta.model_dump()
     app_meta_dict["rest_handler"] = "my_connector.rest_handler"
 
     app_dir = tmp_path / "test_app"
@@ -349,7 +349,7 @@ def test_convert_cli_with_rest_handler(runner, tmp_path, app_meta):
 def test_convert_cli_with_webhooks(runner, tmp_path, app_meta):
     """Test that convert command handles webhooks correctly."""
 
-    app_meta_dict = app_meta.dict()
+    app_meta_dict = app_meta.model_dump()
     app_meta_dict["webhooks"] = {
         "handler": "my_connector.webhook_handler",
     }

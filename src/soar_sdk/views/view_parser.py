@@ -68,7 +68,7 @@ class ViewFunctionParser(Generic[T]):
             for result in action_results:
                 for data_item in result.get_data():
                     try:
-                        parsed_output = self.output_class.parse_obj(data_item)
+                        parsed_output = self.output_class.model_validate(data_item)
                         parsed_outputs.append(parsed_output)
                     except Exception as e:
                         output_class_name = self.output_class.__name__

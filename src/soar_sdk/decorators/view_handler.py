@@ -121,12 +121,12 @@ class ViewHandlerDecorator:
                 parser: ViewFunctionParser = ViewFunctionParser(function)
 
                 # Parse context to ViewContext (coming from app_interface)
-                parsed_context = ViewContext.parse_obj(context)
+                parsed_context = ViewContext.model_validate(context)
 
                 # Parse all_app_runs to AllAppRuns (coming from app_interface)
                 parsed_all_app_runs: AllAppRuns = []
                 for app_run_data, action_results in all_app_runs:
-                    result_summary = ResultSummary.parse_obj(app_run_data)
+                    result_summary = ResultSummary.model_validate(app_run_data)
                     parsed_all_app_runs.append((result_summary, action_results))
 
                 result = parser.execute(
@@ -158,7 +158,7 @@ class ViewHandlerDecorator:
 
             # Reusable component
             if isinstance(result, BaseModel):
-                result_dict = result.dict()
+                result_dict = result.model_dump()
                 template_name = f"components/{component_type}.html"
                 err_msg = "Component Rendering Failed"
                 err_context = f"component '{component_type}'"

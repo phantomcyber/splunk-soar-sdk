@@ -6,7 +6,7 @@ import tarfile
 from tempfile import TemporaryDirectory
 import build
 
-from typing import Optional
+from typing import Optional, ClassVar
 from collections.abc import Mapping, Sequence, AsyncGenerator
 from pydantic import BaseModel, Field
 
@@ -61,7 +61,8 @@ DEPENDENCIES_TO_BUILD = {
 class UvWheel(BaseModel):
     """Represents a Python wheel file with metadata and methods to fetch and validate it."""
 
-    url: str
+    url: Optional[str] = None
+    filename: Optional[str] = None
     hash: str
     size: Optional[int] = None
 
@@ -75,8 +76,12 @@ class UvWheel(BaseModel):
             "6.4.0",
             "We should be able to adopt pydantic 2 now, and turn this into a cached property.",
         )
-        filename = self.url.split("/")[-1]
-        return filename.removesuffix(".whl")
+        if self.filename:
+            return self.filename.removesuffix(".whl")
+        if self.url:
+            filename = self.url.split("/")[-1]
+            return filename.removesuffix(".whl")
+        raise ValueError("UvWheel must have either url or filename")
 
     @property
     def distribution(self) -> str:
@@ -122,6 +127,10 @@ class UvWheel(BaseModel):
 
     async def fetch(self) -> bytes:
         """Download the wheel file from the specified URL."""
+        if self.url is None:
+            raise ValueError(
+                f"Cannot fetch wheel {self.filename or 'unknown'}: no URL provided (local file reference?)"
+            )
         async with httpx.AsyncClient() as client:
             response = await client.get(self.url, timeout=10)
             response.raise_for_status()
@@ -229,7 +238,7 @@ class DependencyWheel(BaseModel):
 
     def __hash__(self) -> int:
         """Compute a hash for the dependency wheel so we can dedupe wheel files in a later step."""
-        return hash((type(self), *tuple(self.dict().items())))
+        return hash((type(self), *tuple(self.model_dump().items())))
 
 
 class DependencyList(BaseModel):
@@ -287,21 +296,21 @@ class UvPackage(BaseModel):
             f"Could not find a suitable wheel for {self.name=}, {self.version=}, {abi_precedence=}, {python_precedence=}, {platform_precedence=}"
         )
 
-    _manylinux_precedence = [
+    _manylinux_precedence: ClassVar[list[str]] = [
         "_2_28",  # glibc 2.28, latest stable version, supports Ubuntu 18.10+ and RHEL/Oracle 8+
         "_2_17",  # glibc 2.17, LTS-ish, supports Ubuntu 13.10+ and RHEL/Oracle 7+
         "2014",  # Synonym for _2_17
     ]
-    platform_precedence_x86_64 = [
+    platform_precedence_x86_64: ClassVar[list[str]] = [
         *[f"manylinux{version}_x86_64" for version in _manylinux_precedence],
         "any",
     ]
-    platform_precedence_aarch64 = [
+    platform_precedence_aarch64: ClassVar[list[str]] = [
         *[f"manylinux{version}_aarch64" for version in _manylinux_precedence],
         "any",
     ]
 
-    build_from_source_warning_triggered = False
+    build_from_source_warning_triggered: bool = False
 
     def _resolve(
         self, abi_precedence: list[str], python_precedence: list[str]

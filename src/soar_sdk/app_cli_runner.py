@@ -162,13 +162,13 @@ class AppCliRunner:
                 )
 
             try:
-                param = chosen_action.params_class.parse_obj(params_json)
+                param = chosen_action.params_class.model_validate(params_json)
             except Exception as e:
                 root_parser.error(
                     f"Unable to parse parameter JSON file {params_file}:\n{e}"
                 )
 
-            parameter_list.append(ActionParameter(**param.dict()))
+            parameter_list.append(ActionParameter(**param.model_dump()))
 
         input_data = InputSpecification(
             action=args.identifier,
@@ -191,7 +191,7 @@ class AppCliRunner:
                 )
 
         input_data.config = AppConfig(
-            **input_data.config.dict(),
+            **input_data.config.model_dump(),
             **asset_json,  # Merge asset JSON into config
         )
 
@@ -207,7 +207,7 @@ class AppCliRunner:
             except ValidationError as e:
                 root_parser.error(f"Provided soar auth arguments are invalid: {e}.")
 
-        args.raw_input_data = input_data.json()
+        args.raw_input_data = input_data.model_dump_json()
 
     def _parse_webhook_args(
         self,
@@ -250,7 +250,7 @@ class AppCliRunner:
             path_parts=path_parts,
             query=query,
             body=args.data,
-            asset=self.app.asset_cls.parse_obj(asset_json),
+            asset=self.app.asset_cls.model_validate(asset_json),
             soar_base_url=soar_base_url,
             soar_auth_token=soar_auth_token,
             asset_id=args.asset_id,

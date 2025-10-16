@@ -33,7 +33,7 @@ dependencies = [
     # SOAR phantom lib dependencies
     "beautifulsoup4==4.10.0",
     "distro==1.8.0",
-    "pydantic<2",
+    "pydantic>=2,<3",
     "requests<3",
     "responses==0.22.0",
     "httpx>=0.28.1",
