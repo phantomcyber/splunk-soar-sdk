@@ -129,7 +129,7 @@ class ActionDeserializer:
         )
         action["output"] = cls.parse_output(action["action"], action.get("output", []))
         return DeserializedActionMeta(
-            action_meta=ActionMeta.parse_obj(action),
+            action_meta=ActionMeta.model_validate(action),
             has_custom_view=action.get("render", {}).get("type") == "custom",
         )
 

@@ -1,5 +1,5 @@
 from typing import Optional, Any, Union
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Artifact(BaseModel):
@@ -8,10 +8,7 @@ class Artifact(BaseModel):
     This class allows users to create artifacts when yielding from an 'on poll' action.
     """
 
-    class Config:
-        """Pydantic config. Unknown keys are disallowed in this model."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
     name: Optional[str] = None
     label: Optional[str] = None
@@ -33,4 +30,4 @@ class Artifact(BaseModel):
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the artifact to a dictionary (needed for save_artifact)."""
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)

@@ -36,7 +36,7 @@ def test_handle(example_app: App, simple_action_input: InputSpecification):
     }
 
     with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
-        example_app.handle(simple_action_input.json())
+        example_app.handle(simple_action_input.model_dump_json())
 
     mock_handle.assert_called_once()
     # Ensure that the encrypted asset configs get decrypted correctly
@@ -62,7 +62,7 @@ def test_decrypted_field_not_present(
     }
 
     with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
-        example_app.handle(simple_action_input.json())
+        example_app.handle(simple_action_input.model_dump_json())
 
     mock_handle.assert_called_once()
     # Ensure that the encrypted asset configs get decrypted correctly
@@ -99,7 +99,7 @@ def test_handle_with_sensitive_field_no_errors(
     }
 
     # Call handle - this should not throw any errors
-    _ = example_app.handle(simple_action_input.json())
+    _ = example_app.handle(simple_action_input.model_dump_json())
     assert example_app._raw_asset_config.get("password") == ""
 
 
@@ -163,7 +163,7 @@ def test_enable_webhooks(app_with_simple_asset: App):
         default_ip_allowlist=["10.0.0.0/24"],
     )
 
-    assert app_with_simple_asset.webhook_meta.dict() == {
+    assert app_with_simple_asset.webhook_meta.model_dump() == {
         "handler": None,
         "requires_auth": False,
         "allowed_headers": ["Authorization", "X-Forwarded-For"],

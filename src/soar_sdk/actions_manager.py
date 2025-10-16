@@ -67,7 +67,7 @@ class ActionsManager(BaseConnector):
         action_id = input_data.identifier
         if self.get_action(action_id):
             self.print_progress_message = True
-            return self._handle_action(input_data.json(), handle or 0)
+            return self._handle_action(input_data.model_dump_json(), handle or 0)
         else:
             raise RuntimeError(
                 f"Action {action_id} not recognized"
@@ -86,7 +86,7 @@ class ActionsManager(BaseConnector):
 
         if handler := self.get_action(action_id):
             try:
-                params = handler.meta.parameters.parse_obj(param)
+                params = handler.meta.parameters.model_validate(param)
             except (ValueError, ValidationError) as e:
                 self.save_progress(
                     f"Validation Error - the params data for action could not be parsed: {e!s}"

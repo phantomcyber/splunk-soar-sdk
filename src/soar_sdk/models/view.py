@@ -1,5 +1,5 @@
 from typing import Any, Optional, Union
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from soar_sdk.action_results import ActionResult
 
 
@@ -17,10 +17,7 @@ class ViewContext(BaseModel):
     results: Optional[list[dict[str, Any]]] = None
     html_content: Optional[str] = None
 
-    class Config:
-        """Pydantic config."""
-
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class ResultSummary(BaseModel):

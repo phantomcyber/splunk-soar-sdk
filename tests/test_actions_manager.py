@@ -79,7 +79,7 @@ def test_action_called_with_multiple_results_set(
         example_app.actions_manager.add_result(action_result2)
         return True, "Multiple action results set"
 
-    example_app.handle(simple_action_input.json())
+    example_app.handle(simple_action_input.model_dump_json())
 
     assert len(example_app.actions_manager.get_results()) == 3
 
@@ -95,7 +95,7 @@ def test_action_called_returning_iterator(
         for i in range(5):
             yield IteratorOutput(iteration=i)
 
-    example_app.handle(simple_action_input.json())
+    example_app.handle(simple_action_input.model_dump_json())
 
     assert len(example_app.actions_manager.get_results()) == 5
     assert all(result.status for result in example_app.actions_manager.get_results())
@@ -114,7 +114,7 @@ def test_async_action_called_returning_iterator(
         for i in range(5):
             yield IteratorOutput(iteration=i)
 
-    example_app.handle(simple_action_input.json())
+    example_app.handle(simple_action_input.model_dump_json())
 
     assert len(example_app.actions_manager.get_results()) == 5
     assert all(result.status for result in example_app.actions_manager.get_results())
@@ -130,7 +130,7 @@ def test_action_called_returning_list(
     def test_action(params: Params, soar: SOARClient) -> list[IteratorOutput]:
         return [IteratorOutput(iteration=i) for i in range(5)]
 
-    example_app.handle(simple_action_input.json())
+    example_app.handle(simple_action_input.model_dump_json())
 
     assert len(example_app.actions_manager.get_results()) == 5
     assert all(result.status for result in example_app.actions_manager.get_results())
@@ -146,7 +146,7 @@ def test_async_action_called_returning_list(
     async def test_action(params: Params, soar: SOARClient) -> list[IteratorOutput]:
         return [IteratorOutput(iteration=i) for i in range(5)]
 
-    example_app.handle(simple_action_input.json())
+    example_app.handle(simple_action_input.model_dump_json())
 
     assert len(example_app.actions_manager.get_results()) == 5
     assert all(result.status for result in example_app.actions_manager.get_results())
@@ -159,7 +159,7 @@ def test_action_called_with_default_message_set(
     def test_action(params: Params) -> ActionOutput:
         return ActionOutput()
 
-    example_app.handle(simple_action_input.json())
+    example_app.handle(simple_action_input.model_dump_json())
 
     assert len(example_app.actions_manager.get_results()) == 1
     assert example_app.actions_manager.get_results()[0].status
@@ -189,7 +189,7 @@ def test_action_called_with_timezone_asset(example_app: App):
             timezone="America/Denver",
         ),
     )
-    example_app.handle(action_input.json())
+    example_app.handle(action_input.model_dump_json())
 
     assert len(example_app.actions_manager.get_results()) == 1
     assert example_app.actions_manager.get_results()[0].status
