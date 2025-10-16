@@ -62,17 +62,17 @@ def mock_action_deserializer():
     with (
         patch.object(ActionDeserializer, "parse_parameters") as mock_parse_params,
         patch.object(ActionDeserializer, "parse_output") as mock_parse_output,
-        patch.object(ActionMeta, "parse_obj") as mock_parse_obj,
+        patch.object(ActionMeta, "model_validate") as mock_model_validate,
     ):
         mock_parse_params.return_value = Params
         mock_parse_output.return_value = ActionOutput
         mock_action_meta = Mock(spec=ActionMeta)
-        mock_parse_obj.return_value = mock_action_meta
+        mock_model_validate.return_value = mock_action_meta
 
         yield {
             "parse_parameters": mock_parse_params,
             "parse_output": mock_parse_output,
-            "parse_obj": mock_parse_obj,
+            "model_validate": mock_model_validate,
             "action_meta": mock_action_meta,
         }
 
@@ -560,10 +560,11 @@ def test_action_deserializer_uses_correct_default_params():
         "test_action", {"param1": {"data_type": "string", "description": "test param"}}
     )
 
-    field = result.__fields__["param1"]
-    assert not field.field_info.extra.get("required")
-    assert not field.field_info.extra.get("primary")
-    assert not field.field_info.extra.get("allow_list")
+    field = result.model_fields["param1"]
+    json_schema_extra = field.json_schema_extra or {}
+    assert not json_schema_extra.get("required")
+    assert not json_schema_extra.get("primary")
+    assert not json_schema_extra.get("allow_list")
 
 
 def test_action_deserializer_with_underscored_params():
@@ -770,11 +771,11 @@ def test_complex_output_specification():
             },
         ],
     }
-    expected_output = ComplexActionOutput.parse_obj(raw_output)
+    expected_output = ComplexActionOutput.model_validate(raw_output)
 
     ParsedComplexActionOutput = ActionDeserializer.parse_output(
         "complex_action", complex_output_def
     )
-    actual_output = ParsedComplexActionOutput.parse_obj(raw_output)
+    actual_output = ParsedComplexActionOutput.model_validate(raw_output)
 
-    assert actual_output == expected_output
+    assert actual_output.model_dump() == expected_output.model_dump()

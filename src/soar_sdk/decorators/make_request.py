@@ -97,7 +97,7 @@ class MakeRequestDecorator:
             **kwargs: Any,  # noqa: ANN401
         ) -> bool:
             try:
-                action_params = validated_params_class.parse_obj(params)
+                action_params = validated_params_class.model_validate(params)
             except Exception as e:
                 logger.info(f"Parameter validation error: {e!s}")
                 return self.app._adapt_action_result(

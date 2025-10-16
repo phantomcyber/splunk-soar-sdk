@@ -25,9 +25,9 @@ class ActionMeta(BaseModel):
     summary_type: Optional[Type[ActionOutput]] = Field(default=None, exclude=True)  # noqa: UP006
     enable_concurrency_lock: bool = False
 
-    def dict(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
+    def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
         """Serializes the action metadata to a dictionary."""
-        data = super().dict(*args, **kwargs)
+        data = super().model_dump(*args, **kwargs)
         data["parameters"] = ParamsSerializer.serialize_fields_info(self.parameters)
         data["output"] = OutputsSerializer.serialize_datapaths(
             self.parameters, self.output, summary_class=self.summary_type

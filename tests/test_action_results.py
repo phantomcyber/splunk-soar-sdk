@@ -19,9 +19,9 @@ class ExampleActionOutput(ActionOutput):
     )
     nested_type: ExampleInnerData
     list_of_types: list[ExampleInnerData]
-    optional_field: Optional[str]
-    optional_inner_field: Optional[ExampleInnerData]
-    optional_list_of_types: Optional[list[ExampleInnerData]]
+    optional_field: Optional[str] = None
+    optional_inner_field: Optional[ExampleInnerData] = None
+    optional_list_of_types: Optional[list[ExampleInnerData]] = None
 
 
 def test_action_output_to_json_schema():
@@ -113,7 +113,7 @@ def test_parse_action_output():
             {"inner_string": "inner_value_2"},
         ],
     }
-    parsed_data = ExampleActionOutput.parse_obj(raw_data)
+    parsed_data = ExampleActionOutput.model_validate(raw_data)
     assert parsed_data.stringy_field == "example_string"
     assert parsed_data.list_of_strings == ["string1", "string2"]
     assert parsed_data.nested_lists == [[1, 2], [3, 4]]
@@ -152,7 +152,7 @@ def test_action_output_to_dict():
         "optional_inner_field": None,
         "optional_list_of_types": None,
     }
-    assert action_output.dict(by_alias=True) == expected_dict
+    assert action_output.model_dump(by_alias=True) == expected_dict
 
 
 def test_action_output_to_json_schema_with_column_name_and_column_order():

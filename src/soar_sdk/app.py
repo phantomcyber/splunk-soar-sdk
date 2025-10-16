@@ -170,7 +170,7 @@ class App:
         NOTE: handle is actually a pointer address to spawn's internal state.
         In versions of SOAR >6.4.1, handle will not be passed to the app.
         """
-        input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
+        input_data = InputSpecification.model_validate(json.loads(raw_input_data))
         self._raw_asset_config = input_data.config.get_asset_config()
 
         # Decrypt sensitive fields in the asset configuration
@@ -221,7 +221,7 @@ class App:
     def asset(self) -> BaseAsset:
         """Returns the asset instance for the app."""
         if not hasattr(self, "_asset"):
-            self._asset = self.asset_cls.parse_obj(self._raw_asset_config)
+            self._asset = self.asset_cls.model_validate(self._raw_asset_config)
         return self._asset
 
     def register_action(
@@ -657,13 +657,21 @@ class App:
                 )
             # Handle empty list/iterator case
             if not statuses:
-                result = ActionOutput(status=True, message=message)
+                # Create ActionResult directly for empty list
+                param_dict = action_params.model_dump() if action_params else None
+                result = ActionResult(
+                    status=True,
+                    message=message,
+                    param=param_dict,
+                )
+                if summary:
+                    result.set_summary(summary.model_dump(by_alias=True))
             else:
                 return all(statuses)
 
         if isinstance(result, ActionOutput):
-            output_dict = result.dict(by_alias=True)
-            param_dict = action_params.dict() if action_params else None
+            output_dict = result.model_dump(by_alias=True)
+            param_dict = action_params.model_dump() if action_params else None
 
             result = ActionResult(
                 status=True,
@@ -672,7 +680,7 @@ class App:
             )
             result.add_data(output_dict)
             if summary:
-                result.set_summary(summary.dict(by_alias=True))
+                result.set_summary(summary.model_dump(by_alias=True))
 
         if isinstance(result, ActionResult):
             actions_manager.add_result(result)
@@ -801,4 +809,4 @@ class App:
             raise TypeError(
                 f"Webhook handler must return a WebhookResponse, got {type(response)}"
             )
-        return response.dict()
+        return response.model_dump()

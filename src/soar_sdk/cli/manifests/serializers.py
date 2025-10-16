@@ -16,7 +16,7 @@ class ParamsSerializer:
     @staticmethod
     def get_sorted_fields_keys(params_class: type[Params]) -> list[str]:
         """Lists the fields of a Params class in order of declaration."""
-        return list(params_class.__fields__.keys())
+        return list(params_class.model_fields.keys())
 
     @classmethod
     def serialize_fields_info(cls, params_class: type[Params]) -> dict[str, Any]:
@@ -36,17 +36,31 @@ class OutputsSerializer:
         if column_order_counter is None:
             column_order_counter = itertools.count()
 
-        for field_name, field in params_class.__fields__.items():
+        for field_name, field in params_class.model_fields.items():
+            field_annotation = field.annotation
+            if field_annotation is None:
+                continue
+
             spec = OutputFieldSpecification(
                 data_path=f"action_result.parameter.{field_name}",
-                data_type=as_datatype(field.annotation),
+                data_type=as_datatype(field_annotation),
             )
-            if cef_types := field.field_info.extra.get("cef_types"):
+
+            # Get json_schema_extra - in v2 it can be dict or callable
+            json_schema_extra_raw = field.json_schema_extra
+            if callable(json_schema_extra_raw):
+                json_schema_extra: dict[str, Any] = {}
+            else:
+                json_schema_extra = json_schema_extra_raw or {}
+
+            if (cef_types := json_schema_extra.get("cef_types")) and isinstance(
+                cef_types, list
+            ):
                 spec["contains"] = cef_types
 
-            column_name = field.field_info.extra.get("column_name")
+            column_name = json_schema_extra.get("column_name")
 
-            if column_name is not None:
+            if column_name is not None and isinstance(column_name, str):
                 spec["column_name"] = column_name
                 spec["column_order"] = next(column_order_counter)
             yield spec

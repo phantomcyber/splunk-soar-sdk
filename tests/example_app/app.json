@@ -1,1291 +1,1292 @@
 {
-    "name": "example_app",
-    "description": "This is the basic example SOAR app",
-    "appid": "9b388c08-67de-4ca4-817f-26f8fb7cbf55",
-    "type": "sandbox",
-    "product_vendor": "Splunk Inc.",
-    "app_version": "0.1.0",
-    "license": "Copyright (c) Splunk Inc., 2025",
-    "min_phantom_version": "6.2.2.134",
-    "package_name": "phantom_exampleapp",
-    "main_module": "src.app:app",
-    "logo": "logo.svg",
-    "logo_dark": "logo_dark.svg",
-    "product_name": "Example App",
-    "python_version": "3.9,3.13",
-    "product_version_regex": ".*",
-    "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-09-09T15:29:27.279851Z",
-    "fips_compliant": false,
-    "contributors": [],
-    "configuration": {
-        "base_url": {
-            "data_type": "string",
-            "required": true,
-            "description": "Base Url",
-            "order": 0,
-            "default": "https://example"
-        },
-        "api_key": {
-            "data_type": "password",
-            "required": true,
-            "description": "API key for authentication",
-            "order": 1
-        },
-        "key_header": {
-            "data_type": "string",
-            "required": true,
-            "description": "Header for API key authentication",
-            "order": 2,
-            "default": "Authorization",
-            "value_list": [
-                "Authorization",
-                "X-API-Key"
-            ]
-        },
-        "timezone": {
-            "data_type": "timezone",
-            "required": true,
-            "description": "Timezone",
-            "order": 3
-        },
-        "timezone_with_default": {
-            "data_type": "timezone",
-            "required": true,
-            "description": "Timezone With Default",
-            "order": 4,
-            "default": "America/Denver"
-        }
+  "name": "example_app",
+  "description": "This is the basic example SOAR app",
+  "appid": "9b388c08-67de-4ca4-817f-26f8fb7cbf55",
+  "type": "sandbox",
+  "product_vendor": "Splunk Inc.",
+  "app_version": "0.1.0",
+  "license": "Copyright (c) Splunk Inc., 2025",
+  "min_phantom_version": "6.2.2.134",
+  "package_name": "phantom_exampleapp",
+  "main_module": "src.app:app",
+  "logo": "logo.svg",
+  "logo_dark": "logo_dark.svg",
+  "product_name": "Example App",
+  "python_version": "3.9,3.13",
+  "product_version_regex": ".*",
+  "publisher": "Splunk Inc.",
+  "utctime_updated": "2025-09-09T15:29:27.279851Z",
+  "fips_compliant": false,
+  "contributors": [],
+  "configuration": {
+    "base_url": {
+      "data_type": "string",
+      "required": true,
+      "description": "Base Url",
+      "order": 0,
+      "default": "https://example"
     },
-    "actions": [
-        {
-            "action": "test connectivity",
-            "identifier": "test_connectivity",
-            "description": "test connectivity",
-            "type": "test",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "Basic test for app.",
-            "parameters": {},
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "action": "test summary with list output",
-            "description": "test summary with list output",
-            "identifier": "test_summary_with_list_output",
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ],
-            "parameters": {},
-            "read_only": true,
-            "type": "generic",
-            "verbose": "",
-            "versions": "EQ(*)"
-        },
-        {
-            "action": "test empty list output",
-            "description": "test empty list output",
-            "identifier": "test_empty_list_output",
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ],
-            "parameters": {},
-            "read_only": true,
-            "type": "generic",
-            "verbose": "",
-            "versions": "EQ(*)"
-        },
-        {
-            "action": "test json output",
-            "identifier": "test_json_output",
-            "description": "test json output",
-            "type": "generic",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "",
-            "parameters": {},
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.name",
-                    "data_type": "string",
-                    "example_values": [
-                        "John",
-                        "Jane",
-                        "Jim"
-                    ],
-                    "column_name": "Name",
-                    "column_order": 0
-                },
-                {
-                    "data_path": "action_result.data.*.age",
-                    "data_type": "numeric",
-                    "example_values": [
-                        25,
-                        30,
-                        35
-                    ],
-                    "column_name": "Age",
-                    "column_order": 1
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ],
-            "render": {
-                "type": "json"
-            }
-        },
-        {
-            "action": "test table output",
-            "identifier": "test_table_output",
-            "description": "test table output",
-            "type": "generic",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "",
-            "parameters": {
-                "company_name": {
-                    "order": 0,
-                    "name": "company_name",
-                    "description": "Company Name",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false,
-                    "default": "Splunk"
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.company_name",
-                    "data_type": "string",
-                    "column_name": "Company Name",
-                    "column_order": 0
-                },
-                {
-                    "data_path": "action_result.data.*.name",
-                    "data_type": "string",
-                    "example_values": [
-                        "John",
-                        "Jane",
-                        "Jim"
-                    ],
-                    "column_name": "Name",
-                    "column_order": 1
-                },
-                {
-                    "data_path": "action_result.data.*.age",
-                    "data_type": "numeric",
-                    "example_values": [
-                        25,
-                        30,
-                        35
-                    ],
-                    "column_name": "Age",
-                    "column_order": 2
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ],
-            "render": {
-                "type": "table"
-            }
-        },
-        {
-            "action": "reverse string",
-            "identifier": "reverse_string",
-            "description": "reverse string",
-            "type": "investigate",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "Reverses a string.",
-            "parameters": {
-                "input_string": {
-                    "order": 0,
-                    "name": "input_string",
-                    "description": "Input String",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.input_string",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.original_string",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.reversed_string",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*._underscored_string",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ],
-            "render": {
-                "type": "custom",
-                "view": "src.actions.reverse_string.render_reverse_string_view"
-            }
-        },
-        {
-            "action": "generate statistics",
-            "identifier": "generate_statistics",
-            "description": "generate statistics",
-            "type": "investigate",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "Generate statistics with pie chart reusable component.",
-            "parameters": {
-                "category": {
-                    "order": 0,
-                    "name": "category",
-                    "description": "Category",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.category",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.category",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.labels.*",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.values.*",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ],
-            "render": {
-                "type": "custom",
-                "view": "src.actions.generate_category.render_statistics_chart"
-            }
-        },
-        {
-            "action": "make request",
-            "identifier": "make_request",
-            "description": "make request",
-            "type": "generic",
-            "read_only": false,
-            "versions": "EQ(*)",
-            "verbose": "'make request' action for the app. Used to handle arbitrary HTTP requests with the app's asset",
-            "parameters": {
-                "http_method": {
-                    "order": 0,
-                    "name": "http_method",
-                    "description": "The HTTP method to use for the request.",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false,
-                    "value_list": [
-                        "GET",
-                        "POST",
-                        "PUT",
-                        "DELETE",
-                        "PATCH",
-                        "HEAD",
-                        "OPTIONS"
-                    ]
-                },
-                "endpoint": {
-                    "order": 1,
-                    "name": "endpoint",
-                    "description": "The endpoint to send the request to. Base url is already included in the endpoint.",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "headers": {
-                    "order": 2,
-                    "name": "headers",
-                    "description": "The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'}",
-                    "data_type": "string",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "query_parameters": {
-                    "order": 3,
-                    "name": "query_parameters",
-                    "description": "Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2",
-                    "data_type": "string",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "body": {
-                    "order": 4,
-                    "name": "body",
-                    "description": "The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'}",
-                    "data_type": "string",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "timeout": {
-                    "order": 5,
-                    "name": "timeout",
-                    "description": "The timeout for the request in seconds.",
-                    "data_type": "numeric",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "verify_ssl": {
-                    "order": 6,
-                    "name": "verify_ssl",
-                    "description": "Whether to verify the SSL certificate. Default is False.",
-                    "data_type": "boolean",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.http_method",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.endpoint",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.headers",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.query_parameters",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.body",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.timeout",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.parameter.verify_ssl",
-                    "data_type": "boolean"
-                },
-                {
-                    "data_path": "action_result.data.*.status_code",
-                    "data_type": "numeric",
-                    "example_values": [
-                        200,
-                        404,
-                        500
-                    ]
-                },
-                {
-                    "data_path": "action_result.data.*.response_body",
-                    "data_type": "string",
-                    "example_values": [
-                        "{\"key\": \"value\"}"
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "action": "on poll",
-            "identifier": "on_poll",
-            "description": "on poll",
-            "type": "ingest",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "Callback action for the on_poll ingest functionality",
-            "parameters": {
-                "start_time": {
-                    "order": 0,
-                    "name": "start_time",
-                    "description": "Start of time range, in epoch time (milliseconds).",
-                    "data_type": "numeric",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "end_time": {
-                    "order": 1,
-                    "name": "end_time",
-                    "description": "End of time range, in epoch time (milliseconds).",
-                    "data_type": "numeric",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "container_count": {
-                    "order": 2,
-                    "name": "container_count",
-                    "description": "Maximum number of container records to query for.",
-                    "data_type": "numeric",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "artifact_count": {
-                    "order": 3,
-                    "name": "artifact_count",
-                    "description": "Maximum number of artifact records to query for.",
-                    "data_type": "numeric",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "container_id": {
-                    "order": 4,
-                    "name": "container_id",
-                    "description": "Comma-separated list of container IDs to limit the ingestion to.",
-                    "data_type": "string",
-                    "required": false,
-                    "primary": false,
-                    "allow_list": true
-                }
-            },
-            "output": []
-        },
-        {
-            "action": "async process",
-            "identifier": "async_process",
-            "description": "async process",
-            "type": "investigate",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "Processes a message asynchronously with concurrent HTTP requests.",
-            "parameters": {
-                "num_requests": {
-                    "order": 0,
-                    "name": "num_requests",
-                    "description": "Number of concurrent HTTP requests",
-                    "data_type": "numeric",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false,
-                    "default": 3
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.num_requests",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.execution_time",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.requests_completed",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.status_codes.*",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "action": "sync process",
-            "identifier": "sync_process",
-            "description": "sync process",
-            "type": "investigate",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "Processes a message synchronously with sequential HTTP requests.",
-            "parameters": {
-                "num_requests": {
-                    "order": 0,
-                    "name": "num_requests",
-                    "description": "Number of sequential HTTP requests",
-                    "data_type": "numeric",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false,
-                    "default": 3
-                }
-            },
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.parameter.num_requests",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.execution_time",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.requests_completed",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.data.*.status_codes.*",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ]
-        },
-        {
-            "action": "generator action",
-            "identifier": "generator_action",
-            "description": "Generates a sequence of numbers.",
-            "type": "generic",
-            "read_only": true,
-            "versions": "EQ(*)",
-            "verbose": "",
-            "parameters": {},
-            "output": [
-                {
-                    "data_path": "action_result.status",
-                    "data_type": "string",
-                    "example_values": [
-                        "success",
-                        "failure"
-                    ]
-                },
-                {
-                    "data_path": "action_result.message",
-                    "data_type": "string"
-                },
-                {
-                    "data_path": "action_result.data.*.iteration",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "action_result.summary.total_iterations",
-                    "data_type": "numeric"
-                },
-                {
-                    "data_path": "summary.total_objects",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                },
-                {
-                    "data_path": "summary.total_objects_successful",
-                    "data_type": "numeric",
-                    "example_values": [
-                        1
-                    ]
-                }
-            ]
-        }
-    ],
-    "pip39_dependencies": {
-        "wheel": [
-            {
-                "module": "anyio",
-                "input_file": "wheels/shared/anyio-4.10.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/anyio-4.10.0-py3-none-any.whl"
-            },
-            {
-                "module": "bleach",
-                "input_file": "wheels/shared/bleach-6.2.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/bleach-6.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.40.26-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.40.26-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.40.26-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.40.26-py3-none-any.whl"
-            },
-            {
-                "module": "build",
-                "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
-            },
-            {
-                "module": "click",
-                "input_file": "wheels/shared/click-8.1.8-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/click-8.1.8-py3-none-any.whl"
-            },
-            {
-                "module": "distro",
-                "input_file": "wheels/shared/distro-1.8.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/distro-1.8.0-py3-none-any.whl"
-            },
-            {
-                "module": "exceptiongroup",
-                "input_file": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl"
-            },
-            {
-                "module": "h11",
-                "input_file": "wheels/shared/h11-0.16.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/h11-0.16.0-py3-none-any.whl"
-            },
-            {
-                "module": "h2",
-                "input_file": "wheels/shared/h2-4.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
-            },
-            {
-                "module": "hpack",
-                "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
-            },
-            {
-                "module": "httpcore",
-                "input_file": "wheels/shared/httpcore-1.0.9-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpcore-1.0.9-py3-none-any.whl"
-            },
-            {
-                "module": "httpx",
-                "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
-            },
-            {
-                "module": "humanize",
-                "input_file": "wheels/shared/humanize-4.13.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/humanize-4.13.0-py3-none-any.whl"
-            },
-            {
-                "module": "hyperframe",
-                "input_file": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
-            },
-            {
-                "module": "importlib-metadata",
-                "input_file": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl"
-            },
-            {
-                "module": "jinja2",
-                "input_file": "wheels/shared/jinja2-3.1.6-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
-            },
-            {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
-            },
-            {
-                "module": "markdown-it-py",
-                "input_file": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl"
-            },
-            {
-                "module": "markupsafe",
-                "input_file": "wheels/python39/MarkupSafe-3.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python39/MarkupSafe-3.0.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "mdurl",
-                "input_file": "wheels/shared/mdurl-0.1.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/mdurl-0.1.2-py3-none-any.whl"
-            },
-            {
-                "module": "multidict",
-                "input_file": "wheels/python39/multidict-6.6.4-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python39/multidict-6.6.4-cp39-cp39-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
-            },
-            {
-                "module": "packaging",
-                "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
-            },
-            {
-                "module": "propcache",
-                "input_file": "wheels/python39/propcache-0.3.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python39/propcache-0.3.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "pydantic",
-                "input_file": "wheels/python39/pydantic-1.10.22-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python39/pydantic-1.10.22-py3-none-any.whl"
-            },
-            {
-                "module": "pygments",
-                "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
-            },
-            {
-                "module": "pyproject-hooks",
-                "input_file": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
-                "module": "responses",
-                "input_file": "wheels/shared/responses-0.22.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/responses-0.22.0-py3-none-any.whl"
-            },
-            {
-                "module": "rich",
-                "input_file": "wheels/shared/rich-14.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/rich-14.1.0-py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl"
-            },
-            {
-                "module": "setuptools",
-                "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
-            },
-            {
-                "module": "shellingham",
-                "input_file": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl"
-            },
-            {
-                "module": "sniffio",
-                "input_file": "wheels/shared/sniffio-1.3.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/sniffio-1.3.1-py3-none-any.whl"
-            },
-            {
-                "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl"
-            },
-            {
-                "module": "toml",
-                "input_file": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl"
-            },
-            {
-                "module": "tomli",
-                "input_file": "wheels/python39/tomli-2.2.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/python39/tomli-2.2.1-py3-none-any.whl"
-            },
-            {
-                "module": "tqdm",
-                "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
-            },
-            {
-                "module": "typer",
-                "input_file": "wheels/shared/typer-0.17.4-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typer-0.17.4-py3-none-any.whl"
-            },
-            {
-                "module": "types-toml",
-                "input_file": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl"
-            },
-            {
-                "module": "typing-extensions",
-                "input_file": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl"
-            },
-            {
-                "module": "webencodings",
-                "input_file": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl"
-            },
-            {
-                "module": "yarl",
-                "input_file": "wheels/python39/yarl-1.20.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python39/yarl-1.20.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "zipp",
-                "input_file": "wheels/shared/zipp-3.23.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/zipp-3.23.0-py3-none-any.whl"
-            }
-        ]
+    "api_key": {
+      "data_type": "password",
+      "required": true,
+      "description": "API key for authentication",
+      "order": 1
     },
-    "pip313_dependencies": {
-        "wheel": [
-            {
-                "module": "anyio",
-                "input_file": "wheels/shared/anyio-4.10.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/anyio-4.10.0-py3-none-any.whl"
-            },
-            {
-                "module": "bleach",
-                "input_file": "wheels/shared/bleach-6.2.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/bleach-6.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.40.26-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.40.26-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.40.26-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.40.26-py3-none-any.whl"
-            },
-            {
-                "module": "build",
-                "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
-            },
-            {
-                "module": "click",
-                "input_file": "wheels/shared/click-8.1.8-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/click-8.1.8-py3-none-any.whl"
-            },
-            {
-                "module": "distro",
-                "input_file": "wheels/shared/distro-1.8.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/distro-1.8.0-py3-none-any.whl"
-            },
-            {
-                "module": "exceptiongroup",
-                "input_file": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl"
-            },
-            {
-                "module": "h11",
-                "input_file": "wheels/shared/h11-0.16.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/h11-0.16.0-py3-none-any.whl"
-            },
-            {
-                "module": "h2",
-                "input_file": "wheels/shared/h2-4.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
-            },
-            {
-                "module": "hpack",
-                "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
-            },
-            {
-                "module": "httpcore",
-                "input_file": "wheels/shared/httpcore-1.0.9-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpcore-1.0.9-py3-none-any.whl"
-            },
-            {
-                "module": "httpx",
-                "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
-            },
-            {
-                "module": "humanize",
-                "input_file": "wheels/shared/humanize-4.13.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/humanize-4.13.0-py3-none-any.whl"
-            },
-            {
-                "module": "hyperframe",
-                "input_file": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
-            },
-            {
-                "module": "importlib-metadata",
-                "input_file": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl"
-            },
-            {
-                "module": "jinja2",
-                "input_file": "wheels/shared/jinja2-3.1.6-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
-            },
-            {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
-            },
-            {
-                "module": "markdown-it-py",
-                "input_file": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl"
-            },
-            {
-                "module": "markupsafe",
-                "input_file": "wheels/python313/MarkupSafe-3.0.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/MarkupSafe-3.0.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "mdurl",
-                "input_file": "wheels/shared/mdurl-0.1.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/mdurl-0.1.2-py3-none-any.whl"
-            },
-            {
-                "module": "multidict",
-                "input_file": "wheels/python313/multidict-6.6.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/multidict-6.6.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
-            },
-            {
-                "module": "packaging",
-                "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
-            },
-            {
-                "module": "propcache",
-                "input_file": "wheels/python313/propcache-0.3.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/propcache-0.3.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "pydantic",
-                "input_file": "wheels/python313/pydantic-1.10.22-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/pydantic-1.10.22-py3-none-any.whl"
-            },
-            {
-                "module": "pygments",
-                "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
-            },
-            {
-                "module": "pyproject-hooks",
-                "input_file": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
-                "module": "responses",
-                "input_file": "wheels/shared/responses-0.22.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/responses-0.22.0-py3-none-any.whl"
-            },
-            {
-                "module": "rich",
-                "input_file": "wheels/shared/rich-14.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/rich-14.1.0-py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl"
-            },
-            {
-                "module": "setuptools",
-                "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
-            },
-            {
-                "module": "shellingham",
-                "input_file": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl"
-            },
-            {
-                "module": "sniffio",
-                "input_file": "wheels/shared/sniffio-1.3.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/sniffio-1.3.1-py3-none-any.whl"
-            },
-            {
-                "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl"
-            },
-            {
-                "module": "toml",
-                "input_file": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl"
-            },
-            {
-                "module": "tomli",
-                "input_file": "wheels/python313/tomli-2.2.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/tomli-2.2.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "tqdm",
-                "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
-            },
-            {
-                "module": "typer",
-                "input_file": "wheels/shared/typer-0.17.4-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typer-0.17.4-py3-none-any.whl"
-            },
-            {
-                "module": "types-toml",
-                "input_file": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl"
-            },
-            {
-                "module": "typing-extensions",
-                "input_file": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl"
-            },
-            {
-                "module": "webencodings",
-                "input_file": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl"
-            },
-            {
-                "module": "yarl",
-                "input_file": "wheels/python313/yarl-1.20.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/yarl-1.20.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
-            },
-            {
-                "module": "zipp",
-                "input_file": "wheels/shared/zipp-3.23.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/zipp-3.23.0-py3-none-any.whl"
-            }
-        ]
+    "key_header": {
+      "data_type": "string",
+      "required": true,
+      "description": "Header for API key authentication",
+      "order": 2,
+      "default": "Authorization",
+      "value_list": [
+        "Authorization",
+        "X-API-Key"
+      ]
+    },
+    "timezone": {
+      "data_type": "timezone",
+      "required": true,
+      "description": "Timezone",
+      "order": 3
+    },
+    "timezone_with_default": {
+      "data_type": "timezone",
+      "required": true,
+      "description": "Timezone With Default",
+      "order": 4,
+      "default": "America/Denver"
     }
+  },
+  "actions": [
+    {
+      "action": "test connectivity",
+      "identifier": "test_connectivity",
+      "description": "test connectivity",
+      "type": "test",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "Basic test for app.",
+      "parameters": {},
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "action": "test summary with list output",
+      "description": "test summary with list output",
+      "identifier": "test_summary_with_list_output",
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ],
+      "parameters": {},
+      "read_only": true,
+      "type": "generic",
+      "verbose": "",
+      "versions": "EQ(*)"
+    },
+    {
+      "action": "test empty list output",
+      "description": "test empty list output",
+      "identifier": "test_empty_list_output",
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ],
+      "parameters": {},
+      "read_only": true,
+      "type": "generic",
+      "verbose": "",
+      "versions": "EQ(*)"
+    },
+    {
+      "action": "test json output",
+      "identifier": "test_json_output",
+      "description": "test json output",
+      "type": "generic",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "",
+      "parameters": {},
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*.name",
+          "data_type": "string",
+          "example_values": [
+            "John",
+            "Jane",
+            "Jim"
+          ],
+          "column_name": "Name",
+          "column_order": 0
+        },
+        {
+          "data_path": "action_result.data.*.age",
+          "data_type": "numeric",
+          "example_values": [
+            25,
+            30,
+            35
+          ],
+          "column_name": "Age",
+          "column_order": 1
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ],
+      "render": {
+        "type": "json"
+      }
+    },
+    {
+      "action": "test table output",
+      "identifier": "test_table_output",
+      "description": "test table output",
+      "type": "generic",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "",
+      "parameters": {
+        "company_name": {
+          "order": 0,
+          "name": "company_name",
+          "description": "Company Name",
+          "data_type": "string",
+          "required": true,
+          "primary": false,
+          "allow_list": false,
+          "default": "Splunk"
+        }
+      },
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.company_name",
+          "data_type": "string",
+          "column_name": "Company Name",
+          "column_order": 0
+        },
+        {
+          "data_path": "action_result.data.*.name",
+          "data_type": "string",
+          "example_values": [
+            "John",
+            "Jane",
+            "Jim"
+          ],
+          "column_name": "Name",
+          "column_order": 1
+        },
+        {
+          "data_path": "action_result.data.*.age",
+          "data_type": "numeric",
+          "example_values": [
+            25,
+            30,
+            35
+          ],
+          "column_name": "Age",
+          "column_order": 2
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ],
+      "render": {
+        "type": "table"
+      }
+    },
+    {
+      "action": "reverse string",
+      "identifier": "reverse_string",
+      "description": "reverse string",
+      "type": "investigate",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "Reverses a string.",
+      "parameters": {
+        "input_string": {
+          "order": 0,
+          "name": "input_string",
+          "description": "Input String",
+          "data_type": "string",
+          "required": true,
+          "primary": false,
+          "allow_list": false
+        }
+      },
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.input_string",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*.original_string",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*.reversed_string",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*._underscored_string",
+          "data_type": "string"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ],
+      "render": {
+        "type": "custom",
+        "view": "src.actions.reverse_string.render_reverse_string_view"
+      }
+    },
+    {
+      "action": "generate statistics",
+      "identifier": "generate_statistics",
+      "description": "generate statistics",
+      "type": "investigate",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "Generate statistics with pie chart reusable component.",
+      "parameters": {
+        "category": {
+          "order": 0,
+          "name": "category",
+          "description": "Category",
+          "data_type": "string",
+          "required": true,
+          "primary": false,
+          "allow_list": false
+        }
+      },
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.category",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*.category",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*.labels.*",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*.values.*",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ],
+      "render": {
+        "type": "custom",
+        "view": "src.actions.generate_category.render_statistics_chart"
+      }
+    },
+    {
+      "action": "make request",
+      "identifier": "make_request",
+      "description": "make request",
+      "type": "generic",
+      "read_only": false,
+      "versions": "EQ(*)",
+      "verbose": "'make request' action for the app. Used to handle arbitrary HTTP requests with the app's asset",
+      "parameters": {
+        "http_method": {
+          "order": 0,
+          "name": "http_method",
+          "description": "The HTTP method to use for the request.",
+          "data_type": "string",
+          "required": true,
+          "primary": false,
+          "allow_list": false,
+          "value_list": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "PATCH",
+            "HEAD",
+            "OPTIONS"
+          ]
+        },
+        "endpoint": {
+          "order": 1,
+          "name": "endpoint",
+          "description": "The endpoint to send the request to. Base url is already included in the endpoint.",
+          "data_type": "string",
+          "required": true,
+          "primary": false,
+          "allow_list": false
+        },
+        "headers": {
+          "order": 2,
+          "name": "headers",
+          "description": "The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'}",
+          "data_type": "string",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "query_parameters": {
+          "order": 3,
+          "name": "query_parameters",
+          "description": "Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2",
+          "data_type": "string",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "body": {
+          "order": 4,
+          "name": "body",
+          "description": "The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'}",
+          "data_type": "string",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "timeout": {
+          "order": 5,
+          "name": "timeout",
+          "description": "The timeout for the request in seconds.",
+          "data_type": "numeric",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "verify_ssl": {
+          "order": 6,
+          "name": "verify_ssl",
+          "description": "Whether to verify the SSL certificate. Default is False.",
+          "data_type": "boolean",
+          "required": false,
+          "primary": false,
+          "allow_list": false,
+          "default": false
+        }
+      },
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.http_method",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.endpoint",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.headers",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.query_parameters",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.body",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.timeout",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.parameter.verify_ssl",
+          "data_type": "boolean"
+        },
+        {
+          "data_path": "action_result.data.*.status_code",
+          "data_type": "numeric",
+          "example_values": [
+            200,
+            404,
+            500
+          ]
+        },
+        {
+          "data_path": "action_result.data.*.response_body",
+          "data_type": "string",
+          "example_values": [
+            "{\"key\": \"value\"}"
+          ]
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "action": "on poll",
+      "identifier": "on_poll",
+      "description": "on poll",
+      "type": "ingest",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "Callback action for the on_poll ingest functionality",
+      "parameters": {
+        "start_time": {
+          "order": 0,
+          "name": "start_time",
+          "description": "Start of time range, in epoch time (milliseconds).",
+          "data_type": "numeric",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "end_time": {
+          "order": 1,
+          "name": "end_time",
+          "description": "End of time range, in epoch time (milliseconds).",
+          "data_type": "numeric",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "container_count": {
+          "order": 2,
+          "name": "container_count",
+          "description": "Maximum number of container records to query for.",
+          "data_type": "numeric",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "artifact_count": {
+          "order": 3,
+          "name": "artifact_count",
+          "description": "Maximum number of artifact records to query for.",
+          "data_type": "numeric",
+          "required": false,
+          "primary": false,
+          "allow_list": false
+        },
+        "container_id": {
+          "order": 4,
+          "name": "container_id",
+          "description": "Comma-separated list of container IDs to limit the ingestion to.",
+          "data_type": "string",
+          "required": false,
+          "primary": false,
+          "allow_list": true
+        }
+      },
+      "output": []
+    },
+    {
+      "action": "async process",
+      "identifier": "async_process",
+      "description": "async process",
+      "type": "investigate",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "Processes a message asynchronously with concurrent HTTP requests.",
+      "parameters": {
+        "num_requests": {
+          "order": 0,
+          "name": "num_requests",
+          "description": "Number of concurrent HTTP requests",
+          "data_type": "numeric",
+          "required": true,
+          "primary": false,
+          "allow_list": false,
+          "default": 3
+        }
+      },
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.num_requests",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.data.*.execution_time",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.data.*.requests_completed",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.data.*.status_codes.*",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "action": "sync process",
+      "identifier": "sync_process",
+      "description": "sync process",
+      "type": "investigate",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "Processes a message synchronously with sequential HTTP requests.",
+      "parameters": {
+        "num_requests": {
+          "order": 0,
+          "name": "num_requests",
+          "description": "Number of sequential HTTP requests",
+          "data_type": "numeric",
+          "required": true,
+          "primary": false,
+          "allow_list": false,
+          "default": 3
+        }
+      },
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.parameter.num_requests",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.data.*.execution_time",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.data.*.requests_completed",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.data.*.status_codes.*",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "action": "generator action",
+      "identifier": "generator_action",
+      "description": "Generates a sequence of numbers.",
+      "type": "generic",
+      "read_only": true,
+      "versions": "EQ(*)",
+      "verbose": "",
+      "parameters": {},
+      "output": [
+        {
+          "data_path": "action_result.status",
+          "data_type": "string",
+          "example_values": [
+            "success",
+            "failure"
+          ]
+        },
+        {
+          "data_path": "action_result.message",
+          "data_type": "string"
+        },
+        {
+          "data_path": "action_result.data.*.iteration",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "action_result.summary.total_iterations",
+          "data_type": "numeric"
+        },
+        {
+          "data_path": "summary.total_objects",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        },
+        {
+          "data_path": "summary.total_objects_successful",
+          "data_type": "numeric",
+          "example_values": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "pip39_dependencies": {
+    "wheel": [
+      {
+        "module": "anyio",
+        "input_file": "wheels/shared/anyio-4.10.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/anyio-4.10.0-py3-none-any.whl"
+      },
+      {
+        "module": "bleach",
+        "input_file": "wheels/shared/bleach-6.2.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/bleach-6.2.0-py3-none-any.whl"
+      },
+      {
+        "module": "boto3",
+        "input_file": "wheels/shared/boto3-1.40.26-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/boto3-1.40.26-py3-none-any.whl"
+      },
+      {
+        "module": "botocore",
+        "input_file": "wheels/shared/botocore-1.40.26-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/botocore-1.40.26-py3-none-any.whl"
+      },
+      {
+        "module": "build",
+        "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
+      },
+      {
+        "module": "click",
+        "input_file": "wheels/shared/click-8.1.8-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/click-8.1.8-py3-none-any.whl"
+      },
+      {
+        "module": "distro",
+        "input_file": "wheels/shared/distro-1.8.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/distro-1.8.0-py3-none-any.whl"
+      },
+      {
+        "module": "exceptiongroup",
+        "input_file": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl"
+      },
+      {
+        "module": "h11",
+        "input_file": "wheels/shared/h11-0.16.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/h11-0.16.0-py3-none-any.whl"
+      },
+      {
+        "module": "h2",
+        "input_file": "wheels/shared/h2-4.3.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
+      },
+      {
+        "module": "hpack",
+        "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
+      },
+      {
+        "module": "httpcore",
+        "input_file": "wheels/shared/httpcore-1.0.9-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/httpcore-1.0.9-py3-none-any.whl"
+      },
+      {
+        "module": "httpx",
+        "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
+      },
+      {
+        "module": "humanize",
+        "input_file": "wheels/shared/humanize-4.13.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/humanize-4.13.0-py3-none-any.whl"
+      },
+      {
+        "module": "hyperframe",
+        "input_file": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
+      },
+      {
+        "module": "importlib-metadata",
+        "input_file": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl"
+      },
+      {
+        "module": "jinja2",
+        "input_file": "wheels/shared/jinja2-3.1.6-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
+      },
+      {
+        "module": "jmespath",
+        "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
+      },
+      {
+        "module": "markdown-it-py",
+        "input_file": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl"
+      },
+      {
+        "module": "markupsafe",
+        "input_file": "wheels/python39/MarkupSafe-3.0.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python39/MarkupSafe-3.0.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+      },
+      {
+        "module": "mdurl",
+        "input_file": "wheels/shared/mdurl-0.1.2-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/mdurl-0.1.2-py3-none-any.whl"
+      },
+      {
+        "module": "multidict",
+        "input_file": "wheels/python39/multidict-6.6.4-cp39-cp39-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "input_file_aarch64": "wheels/python39/multidict-6.6.4-cp39-cp39-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+      },
+      {
+        "module": "packaging",
+        "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
+      },
+      {
+        "module": "propcache",
+        "input_file": "wheels/python39/propcache-0.3.2-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python39/propcache-0.3.2-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+      },
+      {
+        "module": "pydantic",
+        "input_file": "wheels/python39/pydantic-1.10.22-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python39/pydantic-1.10.22-py3-none-any.whl"
+      },
+      {
+        "module": "pygments",
+        "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
+      },
+      {
+        "module": "pyproject-hooks",
+        "input_file": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
+      },
+      {
+        "module": "python-dateutil",
+        "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+      },
+      {
+        "module": "responses",
+        "input_file": "wheels/shared/responses-0.22.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/responses-0.22.0-py3-none-any.whl"
+      },
+      {
+        "module": "rich",
+        "input_file": "wheels/shared/rich-14.1.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/rich-14.1.0-py3-none-any.whl"
+      },
+      {
+        "module": "s3transfer",
+        "input_file": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl"
+      },
+      {
+        "module": "setuptools",
+        "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
+      },
+      {
+        "module": "shellingham",
+        "input_file": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl"
+      },
+      {
+        "module": "sniffio",
+        "input_file": "wheels/shared/sniffio-1.3.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/sniffio-1.3.1-py3-none-any.whl"
+      },
+      {
+        "module": "splunk-soar-sdk",
+        "input_file": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl"
+      },
+      {
+        "module": "toml",
+        "input_file": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl"
+      },
+      {
+        "module": "tomli",
+        "input_file": "wheels/python39/tomli-2.2.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/python39/tomli-2.2.1-py3-none-any.whl"
+      },
+      {
+        "module": "tqdm",
+        "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
+      },
+      {
+        "module": "typer",
+        "input_file": "wheels/shared/typer-0.17.4-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/typer-0.17.4-py3-none-any.whl"
+      },
+      {
+        "module": "types-toml",
+        "input_file": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl"
+      },
+      {
+        "module": "typing-extensions",
+        "input_file": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl"
+      },
+      {
+        "module": "webencodings",
+        "input_file": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl"
+      },
+      {
+        "module": "yarl",
+        "input_file": "wheels/python39/yarl-1.20.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python39/yarl-1.20.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+      },
+      {
+        "module": "zipp",
+        "input_file": "wheels/shared/zipp-3.23.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/zipp-3.23.0-py3-none-any.whl"
+      }
+    ]
+  },
+  "pip313_dependencies": {
+    "wheel": [
+      {
+        "module": "anyio",
+        "input_file": "wheels/shared/anyio-4.10.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/anyio-4.10.0-py3-none-any.whl"
+      },
+      {
+        "module": "bleach",
+        "input_file": "wheels/shared/bleach-6.2.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/bleach-6.2.0-py3-none-any.whl"
+      },
+      {
+        "module": "boto3",
+        "input_file": "wheels/shared/boto3-1.40.26-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/boto3-1.40.26-py3-none-any.whl"
+      },
+      {
+        "module": "botocore",
+        "input_file": "wheels/shared/botocore-1.40.26-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/botocore-1.40.26-py3-none-any.whl"
+      },
+      {
+        "module": "build",
+        "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
+      },
+      {
+        "module": "click",
+        "input_file": "wheels/shared/click-8.1.8-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/click-8.1.8-py3-none-any.whl"
+      },
+      {
+        "module": "distro",
+        "input_file": "wheels/shared/distro-1.8.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/distro-1.8.0-py3-none-any.whl"
+      },
+      {
+        "module": "exceptiongroup",
+        "input_file": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/exceptiongroup-1.3.0-py3-none-any.whl"
+      },
+      {
+        "module": "h11",
+        "input_file": "wheels/shared/h11-0.16.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/h11-0.16.0-py3-none-any.whl"
+      },
+      {
+        "module": "h2",
+        "input_file": "wheels/shared/h2-4.3.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
+      },
+      {
+        "module": "hpack",
+        "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
+      },
+      {
+        "module": "httpcore",
+        "input_file": "wheels/shared/httpcore-1.0.9-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/httpcore-1.0.9-py3-none-any.whl"
+      },
+      {
+        "module": "httpx",
+        "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
+      },
+      {
+        "module": "humanize",
+        "input_file": "wheels/shared/humanize-4.13.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/humanize-4.13.0-py3-none-any.whl"
+      },
+      {
+        "module": "hyperframe",
+        "input_file": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/hyperframe-6.1.0-py3-none-any.whl"
+      },
+      {
+        "module": "importlib-metadata",
+        "input_file": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/importlib_metadata-8.7.0-py3-none-any.whl"
+      },
+      {
+        "module": "jinja2",
+        "input_file": "wheels/shared/jinja2-3.1.6-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
+      },
+      {
+        "module": "jmespath",
+        "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
+      },
+      {
+        "module": "markdown-it-py",
+        "input_file": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/markdown_it_py-3.0.0-py3-none-any.whl"
+      },
+      {
+        "module": "markupsafe",
+        "input_file": "wheels/python313/MarkupSafe-3.0.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python313/MarkupSafe-3.0.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+      },
+      {
+        "module": "mdurl",
+        "input_file": "wheels/shared/mdurl-0.1.2-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/mdurl-0.1.2-py3-none-any.whl"
+      },
+      {
+        "module": "multidict",
+        "input_file": "wheels/python313/multidict-6.6.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+        "input_file_aarch64": "wheels/python313/multidict-6.6.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+      },
+      {
+        "module": "packaging",
+        "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
+      },
+      {
+        "module": "propcache",
+        "input_file": "wheels/python313/propcache-0.3.2-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python313/propcache-0.3.2-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+      },
+      {
+        "module": "pydantic",
+        "input_file": "wheels/python313/pydantic-1.10.22-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python313/pydantic-1.10.22-py3-none-any.whl"
+      },
+      {
+        "module": "pygments",
+        "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
+      },
+      {
+        "module": "pyproject-hooks",
+        "input_file": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
+      },
+      {
+        "module": "python-dateutil",
+        "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+      },
+      {
+        "module": "responses",
+        "input_file": "wheels/shared/responses-0.22.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/responses-0.22.0-py3-none-any.whl"
+      },
+      {
+        "module": "rich",
+        "input_file": "wheels/shared/rich-14.1.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/rich-14.1.0-py3-none-any.whl"
+      },
+      {
+        "module": "s3transfer",
+        "input_file": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/s3transfer-0.13.1-py3-none-any.whl"
+      },
+      {
+        "module": "setuptools",
+        "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
+      },
+      {
+        "module": "shellingham",
+        "input_file": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl"
+      },
+      {
+        "module": "sniffio",
+        "input_file": "wheels/shared/sniffio-1.3.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/sniffio-1.3.1-py3-none-any.whl"
+      },
+      {
+        "module": "splunk-soar-sdk",
+        "input_file": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/splunk_soar_sdk-1.3.4-py3-none-any.whl"
+      },
+      {
+        "module": "toml",
+        "input_file": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/toml-0.10.2-py2.py3-none-any.whl"
+      },
+      {
+        "module": "tomli",
+        "input_file": "wheels/python313/tomli-2.2.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python313/tomli-2.2.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+      },
+      {
+        "module": "tqdm",
+        "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
+      },
+      {
+        "module": "typer",
+        "input_file": "wheels/shared/typer-0.17.4-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/typer-0.17.4-py3-none-any.whl"
+      },
+      {
+        "module": "types-toml",
+        "input_file": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/types_toml-0.10.8.20240310-py3-none-any.whl"
+      },
+      {
+        "module": "typing-extensions",
+        "input_file": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl"
+      },
+      {
+        "module": "webencodings",
+        "input_file": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl"
+      },
+      {
+        "module": "yarl",
+        "input_file": "wheels/python313/yarl-1.20.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+        "input_file_aarch64": "wheels/python313/yarl-1.20.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+      },
+      {
+        "module": "zipp",
+        "input_file": "wheels/shared/zipp-3.23.0-py3-none-any.whl",
+        "input_file_aarch64": "wheels/shared/zipp-3.23.0-py3-none-any.whl"
+      }
+    ]
+  }
 }

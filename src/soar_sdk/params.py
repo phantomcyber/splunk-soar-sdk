@@ -1,8 +1,8 @@
 from typing import Optional, Union, Any, ClassVar
 from typing_extensions import NotRequired, TypedDict
 
-from pydantic.fields import Field, Undefined
-from pydantic.main import BaseModel
+from pydantic import Field, BaseModel
+from pydantic_core import PydanticUndefined
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.datatypes import as_datatype
@@ -56,17 +56,30 @@ def Param(
     if value_list is None:
         value_list = []
 
+    json_schema_extra: dict[str, Any] = {}
+    if required is not None:
+        json_schema_extra["required"] = required
+    if primary is not None:
+        json_schema_extra["primary"] = primary
+    if value_list:
+        json_schema_extra["value_list"] = value_list
+    if cef_types is not None:
+        json_schema_extra["cef_types"] = cef_types
+    if allow_list is not None:
+        json_schema_extra["allow_list"] = allow_list
+    if sensitive is not None:
+        json_schema_extra["sensitive"] = sensitive
+    if column_name is not None:
+        json_schema_extra["column_name"] = column_name
+
+    # Use ... (Ellipsis) for required fields, None for optional with no default
+    field_default: Any = ... if default is None and required else default
+
     return Field(
-        default=default,
+        default=field_default,
         description=description,
-        required=required,
-        primary=primary,
-        value_list=value_list,
-        cef_types=cef_types,
-        allow_list=allow_list,
-        sensitive=sensitive,
         alias=alias,
-        column_name=column_name,
+        json_schema_extra=json_schema_extra if json_schema_extra else None,
     )
 
 
@@ -103,8 +116,10 @@ class Params(BaseModel):
     def _to_json_schema(cls) -> dict[str, InputFieldSpecification]:
         params: dict[str, InputFieldSpecification] = {}
 
-        for field_order, (field_name, field) in enumerate(cls.__fields__.items()):
+        for field_order, (field_name, field) in enumerate(cls.model_fields.items()):
             field_type = field.annotation
+            if field_type is None:
+                continue
 
             try:
                 type_name = as_datatype(field_type)
@@ -113,14 +128,21 @@ class Params(BaseModel):
                     f"Failed to serialize action parameter {field_name}: {e}"
                 ) from None
 
-            if field.field_info.extra.get("sensitive", False):
+            # Get json_schema_extra - in v2 it can be dict or callable
+            json_schema_extra_raw = field.json_schema_extra
+            if callable(json_schema_extra_raw):
+                json_schema_extra: dict[str, Any] = {}
+            else:
+                json_schema_extra = json_schema_extra_raw or {}
+
+            if json_schema_extra.get("sensitive", False):
                 if field_type is not str:
                     raise TypeError(
                         f"Sensitive parameter {field_name} must be type str, not {field_type.__name__}"
                     )
                 type_name = "password"
 
-            if not (description := field.field_info.description):
+            if not (description := field.description):
                 description = cls._default_field_description(field_name)
 
             params_field = InputFieldSpecification(
@@ -128,19 +150,23 @@ class Params(BaseModel):
                 name=field_name,
                 description=description,
                 data_type=type_name,
-                required=field.field_info.extra.get("required", True),
-                primary=field.field_info.extra.get("primary", False),
-                allow_list=field.field_info.extra.get("allow_list", False),
+                required=bool(json_schema_extra.get("required", True)),
+                primary=bool(json_schema_extra.get("primary", False)),
+                allow_list=bool(json_schema_extra.get("allow_list", False)),
             )
 
-            if cef_types := field.field_info.extra.get("cef_types"):
+            if (cef_types := json_schema_extra.get("cef_types")) and isinstance(
+                cef_types, list
+            ):
                 params_field["contains"] = cef_types
-            if (default := field.field_info.default) and default != Undefined:
+            if (default := field.default) not in (PydanticUndefined, None):
                 params_field["default"] = default
-            if value_list := field.field_info.extra.get("value_list"):
+            if (value_list := json_schema_extra.get("value_list")) and isinstance(
+                value_list, list
+            ):
                 params_field["value_list"] = value_list
 
-            params[field.alias] = params_field
+            params[field.alias or field_name] = params_field
 
         return params
 
@@ -189,7 +215,7 @@ class MakeRequestParams(Params):
         "verify_ssl",
     }
 
-    def __init_subclass__(cls, **kwargs: dict[str, Any]) -> None:
+    def __init_subclass__(cls, **kwargs: Any) -> None:  # noqa: ANN401
         """Validate that subclasses only define allowed fields."""
         super().__init_subclass__(**kwargs)
         cls._validate_make_request_fields()
@@ -197,8 +223,10 @@ class MakeRequestParams(Params):
     @classmethod
     def _validate_make_request_fields(cls) -> None:
         """Ensure subclasses only define allowed MakeRequest fields."""
-        # Check if any fields are not in the allowed set
-        invalid_fields = set(cls.__fields__.keys()) - cls._ALLOWED_FIELDS
+        # Use __annotations__ instead of model_fields since it's available earlier in Pydantic v2
+        # Filter out ClassVar fields and private fields
+        field_names = {name for name in cls.__annotations__ if not name.startswith("_")}
+        invalid_fields = field_names - cls._ALLOWED_FIELDS
 
         if invalid_fields:
             raise TypeError(

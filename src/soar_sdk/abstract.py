@@ -8,7 +8,7 @@ from soar_sdk.apis.container import Container
 from soar_sdk.action_results import ActionOutput
 import httpx
 from pydantic.dataclasses import dataclass
-from pydantic import validator
+from pydantic import field_validator
 
 JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
 SummaryType = TypeVar("SummaryType", bound=ActionOutput)
@@ -23,7 +23,8 @@ class SOARClientAuth:
     password: str = ""
     user_session_token: str = ""
 
-    @validator("base_url")
+    @field_validator("base_url")
+    @classmethod
     def validate_phantom_url(cls, value: str) -> str:
         """Validate and format the base URL for the SOAR API."""
         return (
