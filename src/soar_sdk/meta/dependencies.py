@@ -61,7 +61,8 @@ DEPENDENCIES_TO_BUILD = {
 class UvWheel(BaseModel):
     """Represents a Python wheel file with metadata and methods to fetch and validate it."""
 
-    url: str
+    url: Optional[str] = None
+    filename: Optional[str] = None
     hash: str
     size: Optional[int] = None
 
@@ -75,8 +76,12 @@ class UvWheel(BaseModel):
             "6.4.0",
             "We should be able to adopt pydantic 2 now, and turn this into a cached property.",
         )
-        filename = self.url.split("/")[-1]
-        return filename.removesuffix(".whl")
+        if self.filename:
+            return self.filename.removesuffix(".whl")
+        if self.url:
+            filename = self.url.split("/")[-1]
+            return filename.removesuffix(".whl")
+        raise ValueError("UvWheel must have either url or filename")
 
     @property
     def distribution(self) -> str:
@@ -122,6 +127,10 @@ class UvWheel(BaseModel):
 
     async def fetch(self) -> bytes:
         """Download the wheel file from the specified URL."""
+        if self.url is None:
+            raise ValueError(
+                f"Cannot fetch wheel {self.filename or 'unknown'}: no URL provided (local file reference?)"
+            )
         async with httpx.AsyncClient() as client:
             response = await client.get(self.url, timeout=10)
             response.raise_for_status()

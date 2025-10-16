@@ -25,6 +25,7 @@ dev = [
     "pytest-mock>=3.14.0,<4",
     "pytest-watch>=4.2.0,<5",
     "ruff>=0.11.6,<1",
+    "splunk-soar-sdk>=1.3.4",
 ]
 
 [tool.soar.app]

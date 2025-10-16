@@ -1,7 +1,7 @@
 from typing import Optional, Union, get_origin, get_args, Any
 from collections.abc import Iterator
 from typing_extensions import NotRequired, TypedDict
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import itertools
 
 from soar_sdk.compat import remove_when_soar_newer_than
@@ -164,6 +164,10 @@ class ActionOutput(BaseModel):
         Fields cannot be Union or Optional types. Use specific types only.
         Nested ActionOutput classes are supported for complex data structures.
     """
+
+    # In Pydantic v2 need to allow instantiation using field names even when aliases are defined
+    # This is required because user code instantiates models with field names like `underscored_string="value"`
+    model_config = ConfigDict(populate_by_name=True)
 
     @classmethod
     def _to_json_schema(
