@@ -66,7 +66,6 @@ class AppMeta(BaseModel):
     def to_json_manifest(self) -> dict:
         """Converts the AppMeta instance to a JSON-compatible dictionary."""
         data = self.model_dump(exclude_none=True)
-        # In Pydantic v2, nested model_dump() overrides aren't automatically called
-        # So we need to explicitly call model_dump() on each action
+        # In Pydantic v2 nested model_dump() overrides aren't automatically called
         data["actions"] = [action.model_dump() for action in self.actions]
         return data
