@@ -267,7 +267,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                     )
             else:
                 keywords = []
-                # Get json_schema_extra - in v2 it can be dict or callable
+                # In Pydantic v2 json_schema_extra can be dict or callable
                 json_schema_extra_raw = field.json_schema_extra
                 if callable(json_schema_extra_raw):
                     extras: dict[str, typing.Any] = {}
@@ -343,7 +343,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 keywords=[],
             )
 
-            # Get json_schema_extra - in v2 it can be dict or callable
+            # In Pydantic v2 json_schema_extra can be dict or callable
             json_schema_extra_raw = field_def.json_schema_extra
             if callable(json_schema_extra_raw):
                 json_schema_extra: dict[str, typing.Any] = {}

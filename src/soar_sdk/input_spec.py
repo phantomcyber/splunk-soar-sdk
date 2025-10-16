@@ -42,8 +42,7 @@ class AppConfig(BaseModel):
 
     def get_asset_config(self) -> dict[str, Any]:
         """Get the asset configuration from the app config."""
-        # In Pydantic v2, extra fields are stored in __pydantic_extra__
-        # Return a copy to avoid external modifications affecting serialization
+        # In Pydantic v2 extra fields are stored in __pydantic_extra__
         return dict(self.__pydantic_extra__) if self.__pydantic_extra__ else {}
 
 
