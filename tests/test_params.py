@@ -22,10 +22,16 @@ def test_sensitive_param_must_be_str():
 
 
 def test_make_request_params_validation():
-    with pytest.raises(TypeError) as e:
+    """Test that MakeRequestParams validates fields on instantiation in Pydantic v2."""
 
-        class BrokenMakeRequestParams(MakeRequestParams):
-            not_allowed: str = Param(description="Not allowed")
+    class BrokenMakeRequestParams(MakeRequestParams):
+        not_allowed: str = Param(description="Not allowed")
+
+    # In Pydantic v2, validation happens on instantiation, not class creation
+    with pytest.raises(TypeError) as e:
+        BrokenMakeRequestParams(
+            http_method="GET", endpoint="/test", not_allowed="value"
+        )
 
     assert (
         str(e.value)
