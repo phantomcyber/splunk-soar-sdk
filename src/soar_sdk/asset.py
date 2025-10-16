@@ -50,7 +50,7 @@ def AssetField(
     if sensitive is not None:
         json_schema_extra["sensitive"] = sensitive
 
-    # Use ... (Ellipsis) for required fields, None for optional with no default
+    # Use ... for required fields
     field_default: Any = ... if default is None and required else default
 
     return Field(
@@ -234,7 +234,7 @@ class BaseAsset(BaseModel):
                     f"Failed to serialize asset field {field_name}: {e}"
                 ) from None
 
-            # Get json_schema_extra - in v2 it can be dict or callable
+            # In Pydantic v2 json_schema_extra can be dict or callable
             json_schema_extra_raw = field.json_schema_extra
             if callable(json_schema_extra_raw):
                 json_schema_extra: dict[str, Any] = {}

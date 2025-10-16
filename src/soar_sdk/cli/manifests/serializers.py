@@ -46,7 +46,7 @@ class OutputsSerializer:
                 data_type=as_datatype(field_annotation),
             )
 
-            # Get json_schema_extra - in v2 it can be dict or callable
+            # In Pydantic v2 json_schema_extra can be dict or callable
             json_schema_extra_raw = field.json_schema_extra
             if callable(json_schema_extra_raw):
                 json_schema_extra: dict[str, Any] = {}

@@ -70,7 +70,7 @@ def Param(
     if column_name is not None:
         json_schema_extra["column_name"] = column_name
 
-    # Use ... (Ellipsis) for required fields, None for optional with no default
+    # Use ... for required fields
     field_default: Any = ... if default is None and required else default
 
     return Field(
