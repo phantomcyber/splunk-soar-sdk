@@ -137,7 +137,7 @@ class InputSpecification(BaseModel):
     }
     """
 
-    action: str
+    action: Optional[str] = None
     action_run_id: int = Field(default_factory=id_factory)
     app_config: Optional[Any] = None
     asset_id: str = Field(default_factory=lambda: str(id_factory()))
