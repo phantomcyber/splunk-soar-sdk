@@ -1,4 +1,5 @@
 from typing import Optional, Any
+import os
 
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.base_connector import BaseConnector
@@ -8,6 +9,11 @@ from soar_sdk.types import Action
 from pydantic import ValidationError
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.logging import getLogger
+
+try:
+    from phantom_common import install_info
+except ImportError:
+    install_info = None
 
 
 _INGEST_STATE_KEY = "ingestion_state"
@@ -138,6 +144,18 @@ class ActionsManager(BaseConnector):
     def set_csrf_info(self, token: str, referer: str) -> None:
         """Public method for setting the CSRF token in connector."""
         self._set_csrf_info(token, referer)
+
+    def get_app_dir(self) -> str:
+        """Override get_app_dir to fix path issue on automation brokers < 7.1.0.
+
+        Returns APP_HOME directly on brokers, which contains the correct SDK app path.
+        """
+        # On AB, APP_HOME is set by spawn to the full app path at runtime
+        if install_info and install_info.is_onprem_broker_install():
+            return os.getenv("APP_HOME", "")
+
+        # For non-broker just proceed as we did before
+        return super().get_app_dir()
 
     @classmethod
     def get_soar_base_url(cls) -> str:
