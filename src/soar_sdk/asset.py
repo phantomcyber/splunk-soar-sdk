@@ -1,6 +1,6 @@
 from typing import Any, Optional, Union
 from zoneinfo import ZoneInfo
-from pydantic import BaseModel, model_validator, model_serializer, ConfigDict, Field
+from pydantic import BaseModel, model_validator, ConfigDict, Field
 from pydantic_core import PydanticUndefined
 
 from typing_extensions import NotRequired, TypedDict
@@ -9,6 +9,7 @@ from typing_extensions import NotRequired, TypedDict
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.input_spec import AppConfig
+from soar_sdk.field_utils import parse_json_schema_extra
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
@@ -119,17 +120,6 @@ class BaseAsset(BaseModel):
         arbitrary_types_allowed=True,
     )
 
-    @model_serializer(mode="wrap")
-    def _serialize_model(self, serializer: Any, info: Any) -> dict[str, Any]:  # noqa: ANN401
-        """Custom serializer that converts ZoneInfo to string for JSON serialization."""
-        data = serializer(self)
-        # Convert ZoneInfo objects to strings
-        if isinstance(data, dict):
-            for field_name, value in list(data.items()):
-                if isinstance(value, ZoneInfo):
-                    data[field_name] = value.key
-        return data
-
     @model_validator(mode="before")
     @classmethod
     def validate_no_reserved_fields(cls, values: dict[str, Any]) -> dict[str, Any]:
@@ -234,12 +224,7 @@ class BaseAsset(BaseModel):
                     f"Failed to serialize asset field {field_name}: {e}"
                 ) from None
 
-            # In Pydantic v2 json_schema_extra can be dict or callable
-            json_schema_extra_raw = field.json_schema_extra
-            if callable(json_schema_extra_raw):
-                json_schema_extra: dict[str, Any] = {}
-            else:
-                json_schema_extra = json_schema_extra_raw or {}
+            json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
 
             if json_schema_extra.get("sensitive", False):
                 if field_type is not str:
@@ -263,9 +248,7 @@ class BaseAsset(BaseModel):
                     params_field["default"] = default.key
                 else:
                     params_field["default"] = default
-            if (value_list := json_schema_extra.get("value_list")) and isinstance(
-                value_list, list
-            ):
+            if value_list := json_schema_extra.get("value_list"):
                 params_field["value_list"] = value_list
 
             params[field.alias or field_name] = params_field
