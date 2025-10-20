@@ -7,6 +7,7 @@ from pydantic.main import BaseModel
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.datatypes import as_datatype
+from soar_sdk.field_utils import parse_json_schema_extra
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
@@ -127,11 +128,7 @@ class Params(BaseModel):
                     f"Failed to serialize action parameter {field_name}: {e}"
                 ) from None
 
-            json_schema_extra_raw = field.json_schema_extra
-            if callable(json_schema_extra_raw):
-                json_schema_extra: dict[str, Any] = {}
-            else:
-                json_schema_extra = json_schema_extra_raw or {}
+            json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
 
             if json_schema_extra.get("sensitive", False):
                 if field_type is not str:
@@ -153,15 +150,11 @@ class Params(BaseModel):
                 allow_list=bool(json_schema_extra.get("allow_list", False)),
             )
 
-            if (cef_types := json_schema_extra.get("cef_types")) and isinstance(
-                cef_types, list
-            ):
+            if cef_types := json_schema_extra.get("cef_types"):
                 params_field["contains"] = cef_types
             if (default := field.default) not in (PydanticUndefined, None):
                 params_field["default"] = default
-            if (value_list := json_schema_extra.get("value_list")) and isinstance(
-                value_list, list
-            ):
+            if value_list := json_schema_extra.get("value_list"):
                 params_field["value_list"] = value_list
 
             params[field.alias or field_name] = params_field

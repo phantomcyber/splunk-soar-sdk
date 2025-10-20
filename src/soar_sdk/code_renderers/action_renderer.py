@@ -9,6 +9,7 @@ from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.code_renderers.renderer import AstRenderer
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
+from soar_sdk.field_utils import parse_json_schema_extra
 
 
 class ActionRenderer(AstRenderer[ActionMeta]):
@@ -267,12 +268,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                     )
             else:
                 keywords = []
-                # In Pydantic v2 json_schema_extra can be dict or callable
-                json_schema_extra_raw = field.json_schema_extra
-                if callable(json_schema_extra_raw):
-                    extras: dict[str, typing.Any] = {}
-                else:
-                    extras = {**(json_schema_extra_raw or {})}
+                extras = {**parse_json_schema_extra(field.json_schema_extra)}
 
                 if extras or field_name.modified:
                     extras["example_values"] = extras.pop("examples", None)
@@ -343,12 +339,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 keywords=[],
             )
 
-            # In Pydantic v2 json_schema_extra can be dict or callable
-            json_schema_extra_raw = field_def.json_schema_extra
-            if callable(json_schema_extra_raw):
-                json_schema_extra: dict[str, typing.Any] = {}
-            else:
-                json_schema_extra = json_schema_extra_raw or {}
+            json_schema_extra = parse_json_schema_extra(field_def.json_schema_extra)
 
             if field_def.description:
                 param.keywords.append(
@@ -372,9 +363,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                         value=ast.Constant(value=field_def.default),
                     )
                 )
-            if (value_list := json_schema_extra.get("value_list")) and isinstance(
-                value_list, list
-            ):
+            if value_list := json_schema_extra.get("value_list"):
                 param.keywords.append(
                     ast.keyword(
                         arg="value_list",
@@ -384,9 +373,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                         ),
                     )
                 )
-            if (cef_types := json_schema_extra.get("cef_types")) and isinstance(
-                cef_types, list
-            ):
+            if cef_types := json_schema_extra.get("cef_types"):
                 param.keywords.append(
                     ast.keyword(
                         arg="cef_types",

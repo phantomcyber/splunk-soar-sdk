@@ -6,6 +6,7 @@ import itertools
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
+from soar_sdk.field_utils import parse_json_schema_extra
 
 logger = getLogger(__name__)
 
@@ -37,30 +38,23 @@ class OutputsSerializer:
             column_order_counter = itertools.count()
 
         for field_name, field in params_class.model_fields.items():
-            field_annotation = field.annotation
-            if field_annotation is None:
+            annotation = field.annotation
+            if annotation is None:
                 continue
 
             spec = OutputFieldSpecification(
                 data_path=f"action_result.parameter.{field_name}",
-                data_type=as_datatype(field_annotation),
+                data_type=as_datatype(annotation),
             )
 
-            # In Pydantic v2 json_schema_extra can be dict or callable
-            json_schema_extra_raw = field.json_schema_extra
-            if callable(json_schema_extra_raw):
-                json_schema_extra: dict[str, Any] = {}
-            else:
-                json_schema_extra = json_schema_extra_raw or {}
+            json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
 
-            if (cef_types := json_schema_extra.get("cef_types")) and isinstance(
-                cef_types, list
-            ):
+            if cef_types := json_schema_extra.get("cef_types"):
                 spec["contains"] = cef_types
 
             column_name = json_schema_extra.get("column_name")
 
-            if column_name is not None and isinstance(column_name, str):
+            if column_name is not None:
                 spec["column_name"] = column_name
                 spec["column_order"] = next(column_order_counter)
             yield spec

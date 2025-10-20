@@ -7,6 +7,7 @@ import itertools
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.meta.datatypes import as_datatype
+from soar_sdk.field_utils import parse_json_schema_extra
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
@@ -257,20 +258,11 @@ class ActionOutput(BaseModel):
                 data_path=datapath, data_type=type_name
             )
 
-            # In Pydantic v2 json_schema_extra can be dict or callable
-            json_schema_extra_raw = field.json_schema_extra
-            if callable(json_schema_extra_raw):
-                json_schema_extra: dict[str, Any] = {}
-            else:
-                json_schema_extra = json_schema_extra_raw or {}
+            json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
 
-            if (cef_types := json_schema_extra.get("cef_types")) and isinstance(
-                cef_types, list
-            ):
+            if cef_types := json_schema_extra.get("cef_types"):
                 schema_field["contains"] = cef_types
-            if (examples := json_schema_extra.get("examples")) and isinstance(
-                examples, list
-            ):
+            if examples := json_schema_extra.get("examples"):
                 schema_field["example_values"] = examples
 
             if field_type is bool:
@@ -278,7 +270,7 @@ class ActionOutput(BaseModel):
 
             column_name = json_schema_extra.get("column_name")
 
-            if column_name is not None and isinstance(column_name, str):
+            if column_name is not None:
                 schema_field["column_name"] = column_name
                 schema_field["column_order"] = next(column_order_counter)
 

@@ -1,6 +1,5 @@
 from uuid import uuid4
-from zoneinfo import ZoneInfo
-from pydantic import BaseModel, Field, field_validator, model_serializer, ConfigDict
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Literal, Optional, Any
 import random
 
@@ -28,17 +27,6 @@ class AppConfig(BaseModel):
 
     # NOTE: Inputs will intermix the keys of the asset config with the keys here
     model_config = ConfigDict(extra="allow")
-
-    @model_serializer(mode="wrap")
-    def _serialize_model(self, serializer: Any, info: Any) -> dict[str, Any]:  # noqa: ANN401
-        """Custom serializer that converts ZoneInfo to string."""
-        data = serializer(self)
-        # Convert ZoneInfo objects to strings
-        if isinstance(data, dict):
-            for field_name, value in list(data.items()):
-                if isinstance(value, ZoneInfo):
-                    data[field_name] = value.key
-        return data
 
     def get_asset_config(self) -> dict[str, Any]:
         """Get the asset configuration from the app config."""
