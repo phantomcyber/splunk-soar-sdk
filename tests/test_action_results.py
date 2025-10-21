@@ -168,3 +168,25 @@ def test_action_output_to_json_schema_with_column_name_and_column_order():
             "column_order": 0,
         }
     ]
+
+
+def test_action_output_with_none_annotation():
+    class OutputWithNoneField(ActionOutput):
+        field_with_annotation: str
+
+    OutputWithNoneField.model_fields["field_with_annotation"].annotation = None
+    schema = list(OutputWithNoneField._to_json_schema())
+    assert schema == []
+
+
+def test_action_output_not_a_type_after_unwrapping():
+    class OutputWithNonType(ActionOutput):
+        weird_field: str
+
+    field_info = OutputWithNonType.model_fields["weird_field"]
+    # Manually set annotation to something that's not a type after unwrapping
+    # Using a string instance instead of a type class
+    field_info.annotation = "not_a_type_class"
+
+    with pytest.raises(TypeError, match="invalid type annotation"):
+        list(OutputWithNonType._to_json_schema())

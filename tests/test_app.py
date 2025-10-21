@@ -1,6 +1,7 @@
 from unittest import mock
 
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.crypto import encrypt
 from soar_sdk.input_spec import InputSpecification
@@ -112,6 +113,22 @@ def test_get_actions(example_app: App):
     assert len(actions) == 1
     assert "action_handler" in actions
     assert actions["action_handler"] == action_handler
+
+
+def test_adapt_action_result_with_empty_list_and_summary():
+    class SummaryOutput(ActionOutput):
+        count: int
+
+    summary = SummaryOutput(count=5)
+    result = App._adapt_action_result(
+        [],
+        ActionsManager(),
+        action_params=Params(),
+        message="test",
+        summary=summary,
+    )
+
+    assert result is True
 
 
 def test_app_asset(app_with_simple_asset: App):

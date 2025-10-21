@@ -92,6 +92,24 @@ class TestUvWheel:
 
         assert wheel_resp_mock.call_count == 1
 
+    def test_basename_from_filename(self):
+        wheel = UvWheel(
+            filename="test-1.0.0-py3-none-any.whl",
+            hash="sha256:abc123",
+        )
+        assert wheel.basename == "test-1.0.0-py3-none-any"
+
+    def test_basename_no_url_or_filename(self):
+        wheel = UvWheel(hash="sha256:abc123")
+        with pytest.raises(ValueError, match="must have either url or filename"):
+            _ = wheel.basename
+
+    @pytest.mark.asyncio
+    async def test_fetch_no_url(self):
+        wheel = UvWheel(filename="test-1.0.0-py3-none-any.whl", hash="sha256:abc123")
+        with pytest.raises(ValueError, match="no URL provided"):
+            await wheel.fetch()
+
 
 class TestUvPackage:
     def test_find_wheel(self):
