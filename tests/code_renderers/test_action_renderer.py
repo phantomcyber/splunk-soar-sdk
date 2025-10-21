@@ -271,3 +271,78 @@ def test_render_on_poll(action_meta) -> None:
     }
 
     assert blocks["on_poll"] == expected_stub
+
+
+def test_render_outputs_with_none_annotation():
+    class OutputWithNoneField(ActionOutput):
+        field_with_type: str
+
+    OutputWithNoneField.model_fields["field_with_type"].annotation = None
+
+    from soar_sdk.meta.actions import ActionMeta
+
+    action_meta = ActionMeta(
+        action="test",
+        identifier="test",
+        description="test",
+        type="generic",
+        read_only=True,
+        parameters=Params,
+        output=OutputWithNoneField,
+    )
+
+    renderer = ActionRenderer(action_meta)
+    output_models = list(renderer.render_outputs_ast())
+
+    assert len(output_models) == 1
+    assert output_models[0].name == "OutputWithNoneField"
+
+
+def test_render_outputs_with_non_type_after_unwrap():
+    class OutputWithWeirdList(ActionOutput):
+        weird_list: list[str]
+
+    OutputWithWeirdList.model_fields["weird_list"].annotation = list[None]
+
+    from soar_sdk.meta.actions import ActionMeta
+
+    action_meta = ActionMeta(
+        action="test",
+        identifier="test",
+        description="test",
+        type="generic",
+        read_only=True,
+        parameters=Params,
+        output=OutputWithWeirdList,
+    )
+
+    renderer = ActionRenderer(action_meta)
+    output_models = list(renderer.render_outputs_ast())
+
+    assert len(output_models) == 1
+
+
+def test_render_params_with_none_annotation():
+    class ParamsWithNoneField(Params):
+        field_with_type: str
+
+    ParamsWithNoneField.model_fields["field_with_type"].annotation = None
+
+    from soar_sdk.meta.actions import ActionMeta
+
+    action_meta = ActionMeta(
+        action="test",
+        identifier="test",
+        description="test",
+        type="generic",
+        read_only=True,
+        parameters=ParamsWithNoneField,
+        output=ActionOutput,
+    )
+
+    renderer = ActionRenderer(action_meta)
+    params_ast = renderer.render_params_ast()
+
+    assert params_ast.name == "ParamsWithNoneField"
+    assert len(params_ast.body) == 1
+    assert isinstance(params_ast.body[0], ast.Pass)

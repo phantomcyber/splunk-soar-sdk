@@ -326,6 +326,19 @@ def test_serialize_parameter_datapaths():
     ]
 
 
+def test_serialize_parameter_datapaths_with_none_annotation():
+    class SampleParams(Params):
+        field_with_type: str
+
+    SampleParams.model_fields["field_with_type"].annotation = None
+
+    serialized_parameter_datapaths = list(
+        OutputsSerializer.serialize_parameter_datapaths(SampleParams)
+    )
+
+    assert serialized_parameter_datapaths == []
+
+
 def test_serilized_datapaths_params():
     class SampleParams(Params):
         int_value: int

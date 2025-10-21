@@ -166,8 +166,7 @@ class ActionOutput(BaseModel):
         Nested ActionOutput classes are supported for complex data structures.
     """
 
-    # In Pydantic v2 need to allow instantiation using field names even when aliases are defined
-    # This is required because user code instantiates models with field names like `underscored_string="value"`
+    # Allow instantiation with both field names and aliases for backward compatibility
     model_config = ConfigDict(populate_by_name=True)
 
     @classmethod
@@ -236,7 +235,6 @@ class ActionOutput(BaseModel):
                 field_type = type_args[0]
                 origin = get_origin(field_type)
 
-            # Ensure field_type is a valid type after unwrapping
             if not isinstance(field_type, type):
                 raise TypeError(
                     f"Output field {field_name} has invalid type annotation: {field_type}"
