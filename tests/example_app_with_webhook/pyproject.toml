@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "This is the basic example SOAR app"
 license = "Copyright (c) Splunk Inc., 2025"
 readme = "README.md"
-requires-python = ">=3.9, <3.14"
+requires-python = ">=3.13, <=3.14"
 authors = [
     { name = "John Smith", email = "jsmith@example.com" }
 ]
@@ -36,16 +36,16 @@ url = "https://pypi.python.org/simple"
 
 [tool.uv]
 environments = [
-    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
-    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.14'",
     "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
-    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.9'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.14'",
     "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.13'",
-    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.9'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.14'",
     "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.14'",
 ]
 required-environments = [
-    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.9'",
     "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.14'",
 ]

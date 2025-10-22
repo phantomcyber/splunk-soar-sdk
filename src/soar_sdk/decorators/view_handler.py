@@ -1,6 +1,7 @@
 import inspect
 from functools import wraps
-from typing import Callable, Optional, Any
+from typing import Any
+from collections.abc import Callable
 
 from soar_sdk.action_results import ActionResult
 from soar_sdk.views.component_registry import COMPONENT_REGISTRY
@@ -10,9 +11,7 @@ from soar_sdk.views.view_parser import ViewFunctionParser
 from soar_sdk.views.template_renderer import (
     get_template_renderer,
     get_templates_dir,
-    BASE_TEMPLATE_PATH,
 )
-from soar_sdk.compat import remove_when_soar_newer_than
 
 from typing import TYPE_CHECKING
 
@@ -23,15 +22,15 @@ if TYPE_CHECKING:
 class ViewHandlerDecorator:
     """Class-based decorator for view handler functionality."""
 
-    def __init__(self, app: "App", *, template: Optional[str] = None) -> None:
+    def __init__(self, app: "App", *, template: str | None = None) -> None:
         self.app = app
         self.template = template
 
     @staticmethod
     def _validate_view_function_signature(
         function: Callable,
-        template: Optional[str] = None,
-        component_type: Optional[str] = None,
+        template: str | None = None,
+        component_type: str | None = None,
     ) -> None:
         """Validate that the function signature is compatible with view handlers."""
         signature = inspect.signature(function)
@@ -92,14 +91,9 @@ class ViewHandlerDecorator:
             **kwargs: Any,  # noqa: ANN401
         ) -> str:
             def handle_html_output(html: str) -> str:
-                remove_when_soar_newer_than(
-                    "6.4.1", "SOAR now fully supports prerendering views"
-                )
-                if context.get("accepts_prerender"):
-                    context["prerender"] = True
-                    return html
-                context["html_content"] = html
-                return BASE_TEMPLATE_PATH
+                # SOAR 7.0+ fully supports prerendering
+                context["prerender"] = True
+                return html
 
             def render_with_error_handling(
                 render_func: Callable[[], str], error_type: str, target_name: str

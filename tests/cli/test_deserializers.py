@@ -100,8 +100,8 @@ def test_from_app_json_basic_deserialization(basic_app_data, create_app_json):
 @pytest.mark.parametrize(
     "python_version_input,expected",
     [
-        ("3.9,3.13", f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"),
-        (["3.9", "3.13"], f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"),
+        ("3.13,3.14", f"{PythonVersion.PY_3_13},{PythonVersion.PY_3_14}"),
+        (["3.13", "3.14"], f"{PythonVersion.PY_3_13},{PythonVersion.PY_3_14}"),
         (None, PythonVersion.all_csv()),  # Should use default when None
     ],
 )
@@ -266,7 +266,7 @@ def test_from_app_json_complex_example(create_app_json):
         "logo": "logo.svg",
         "logo_dark": "logo_dark.svg",
         "product_name": "Example App",
-        "python_version": ["3.9", "3.13"],
+        "python_version": ["3.13", "3.14"],
         "product_version_regex": ".*",
         "publisher": "Splunk Inc.",
         "utctime_updated": "2025-04-17T12:00:00.000000Z",
@@ -323,7 +323,7 @@ def test_from_app_json_complex_example(create_app_json):
         assert result.appid == "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
         assert result.product_vendor == "Splunk Inc."
         assert (
-            result.python_version == f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"
+            result.python_version == f"{PythonVersion.PY_3_13},{PythonVersion.PY_3_14}"
         )
         assert result.project_name == "example_app"
         assert len(result.actions) == 1

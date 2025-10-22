@@ -1,5 +1,4 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional, Union
 
 from soar_sdk.asset import AssetFieldSpecification
 from soar_sdk.compat import PythonVersion
@@ -42,14 +41,14 @@ class AppMeta(BaseModel):
     configuration: dict[str, AssetFieldSpecification] = Field(default_factory=dict)
     actions: list[ActionMeta] = Field(default_factory=list)
 
-    pip39_dependencies: DependencyList = Field(default_factory=DependencyList)
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
+    pip314_dependencies: DependencyList = Field(default_factory=DependencyList)
 
-    webhook: Optional[WebhookMeta] = None
+    webhook: WebhookMeta | None = None
 
     @field_validator("python_version", mode="before")
     @classmethod
-    def convert_python_version_to_csv(cls, v: Union[list, str]) -> str:
+    def convert_python_version_to_csv(cls, v: list | str) -> str:
         """Converts python_version to a comma-separated string if it's a list and validates versions."""
         if isinstance(v, list):
             # Validate each version in the list and convert to CSV
