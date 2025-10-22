@@ -1,4 +1,4 @@
-from typing import Optional, Any, Union
+from typing import Any
 from pydantic import BaseModel, ConfigDict
 
 
@@ -10,23 +10,23 @@ class Artifact(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    name: Optional[str] = None
-    label: Optional[str] = None
-    description: Optional[str] = None
-    type: Optional[str] = None
-    severity: Optional[str] = None
-    source_data_identifier: Optional[str] = None
-    container_id: Optional[int] = None
-    data: Optional[dict[str, Any]] = None
+    name: str | None = None
+    label: str | None = None
+    description: str | None = None
+    type: str | None = None
+    severity: str | None = None
+    source_data_identifier: str | None = None
+    container_id: int | None = None
+    data: dict[str, Any] | None = None
     run_automation: bool = False
-    owner_id: Optional[Union[int, str]] = None
-    cef: Optional[dict[str, Any]] = None
-    cef_types: Optional[dict[str, list[str]]] = None
-    ingest_app_id: Optional[Union[int, str]] = None
-    tags: Optional[Union[list[str], str]] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    kill_chain: Optional[str] = None
+    owner_id: int | str | None = None
+    cef: dict[str, Any] | None = None
+    cef_types: dict[str, list[str]] | None = None
+    ingest_app_id: int | str | None = None
+    tags: list[str] | str | None = None
+    start_time: str | None = None
+    end_time: str | None = None
+    kill_chain: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the artifact to a dictionary (needed for save_artifact)."""

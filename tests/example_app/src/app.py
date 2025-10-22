@@ -1,6 +1,5 @@
-from typing import Union
 from collections.abc import Iterator
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from zoneinfo import ZoneInfo
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
@@ -128,7 +127,7 @@ def http_action(params: MakeRequestParamsCustom, asset: Asset) -> MakeRequestOut
 @app.on_poll()
 def on_poll(
     params: OnPollParams, soar: SOARClient, asset: Asset
-) -> Iterator[Union[Container, Artifact]]:
+) -> Iterator[Container | Artifact]:
     # Create container first for artifacts
     yield Container(
         name="Network Alerts",
@@ -140,7 +139,7 @@ def on_poll(
     for i in range(1, 3):
         logger.info(f"Processing network artifact {i}")
 
-        alert_id = f"testalert-{datetime.now(timezone.utc).strftime('%Y%m%d')}-{i}"
+        alert_id = f"testalert-{datetime.now(UTC).strftime('%Y%m%d')}-{i}"
         artifact = Artifact(
             name=f"Network Alert {i}",
             label="alert",

@@ -1,6 +1,5 @@
 import inspect
 from functools import wraps
-from typing import Optional
 from pathlib import Path
 
 from soar_sdk.cli.path_utils import relative_to_cwd
@@ -19,7 +18,7 @@ class WebhookDecorator:
     """Class-based decorator for webhook functionality."""
 
     def __init__(
-        self, app: "App", url_pattern: str, allowed_methods: Optional[list[str]] = None
+        self, app: "App", url_pattern: str, allowed_methods: list[str] | None = None
     ) -> None:
         self.app = app
         self.url_pattern = url_pattern

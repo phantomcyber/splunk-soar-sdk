@@ -1,6 +1,7 @@
 import inspect
 from functools import wraps
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 from collections.abc import Iterator
 
 from soar_sdk.abstract import SOARClient

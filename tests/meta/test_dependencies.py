@@ -10,7 +10,6 @@ from soar_sdk.meta.dependencies import (
     UvDependency,
 )
 
-from typing import Optional
 
 from typing_extensions import TypedDict
 
@@ -28,7 +27,7 @@ class TestUvWheel:
             basename: str
             distribution: str
             version: str
-            build_tag: Optional[str]
+            build_tag: str | None
             python_tags: list[str]
             abi_tags: list[str]
             platform_tags: list[str]

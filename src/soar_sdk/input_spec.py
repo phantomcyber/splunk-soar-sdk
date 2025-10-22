@@ -1,6 +1,6 @@
 from uuid import uuid4
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Literal, Optional, Any
+from typing import Literal, Any
 import random
 
 
@@ -20,7 +20,7 @@ class AppConfig(BaseModel):
 
     app_version: str
     directory: str
-    ingest: Optional[IngestConfig] = None
+    ingest: IngestConfig | None = None
     main_module: str
     # TODO: The platform should deprecate this unused field
     appname: Literal["-"] = "-"
@@ -133,9 +133,9 @@ class InputSpecification(BaseModel):
     }
     """
 
-    action: Optional[str] = None
+    action: str | None = None
     action_run_id: int = Field(default_factory=id_factory)
-    app_config: Optional[Any] = None
+    app_config: Any | None = None
     asset_id: str = Field(default_factory=lambda: str(id_factory()))
     config: AppConfig
     connector_run_id: int = Field(default_factory=id_factory)
@@ -146,4 +146,4 @@ class InputSpecification(BaseModel):
     identifier: str
     parameters: list[ActionParameter] = Field(default_factory=list)
     user_session_token: str = ""
-    soar_auth: Optional[SoarAuth] = None
+    soar_auth: SoarAuth | None = None

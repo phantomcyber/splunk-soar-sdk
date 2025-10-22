@@ -1,8 +1,10 @@
-from typing import Optional, Union, get_origin, get_args, Any
+from typing import Union, get_origin, get_args, Any
 from collections.abc import Iterator
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import TypedDict
+from typing import NotRequired
 from pydantic import BaseModel, Field, ConfigDict
 import itertools
+import types
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
@@ -41,7 +43,7 @@ class ActionResult(PhantomActionResult):
         self,
         status: bool,
         message: str,
-        param: Optional[dict] = None,
+        param: dict | None = None,
     ) -> None:
         """Initialize an ActionResult with status, message, and optional parameters.
 
@@ -83,16 +85,16 @@ class OutputFieldSpecification(TypedDict):
     data_path: str
     data_type: str
     contains: NotRequired[list[str]]
-    example_values: NotRequired[list[Union[str, float, bool]]]
+    example_values: NotRequired[list[str | float | bool]]
     column_name: NotRequired[str]
     column_order: NotRequired[int]
 
 
 def OutputField(
-    cef_types: Optional[list[str]] = None,
-    example_values: Optional[list[Union[str, float, bool]]] = None,
-    alias: Optional[str] = None,
-    column_name: Optional[str] = None,
+    cef_types: list[str] | None = None,
+    example_values: list[str | float | bool] | None = None,
+    alias: str | None = None,
+    column_name: str | None = None,
 ) -> Any:  # noqa: ANN401
     """Define metadata for an action output field.
 
@@ -173,7 +175,7 @@ class ActionOutput(BaseModel):
     def _to_json_schema(
         cls,
         parent_datapath: str = "action_result.data.*",
-        column_order_counter: Optional[itertools.count] = None,
+        column_order_counter: itertools.count | None = None,
     ) -> Iterator[OutputFieldSpecification]:
         """Convert the ActionOutput class to SOAR-compatible JSON schema.
 
@@ -213,7 +215,7 @@ class ActionOutput(BaseModel):
 
             # Handle lists and optional types, even nested ones
             origin = get_origin(field_type)
-            while origin in [list, Union, Optional]:
+            while origin in [list, Union, types.UnionType]:
                 type_args = [
                     arg
                     for arg in get_args(field_type)

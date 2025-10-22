@@ -1,7 +1,7 @@
 import dataclasses
 import json
 from pathlib import Path
-from typing import Any, NamedTuple, Optional, TypeVar, Union, cast
+from typing import Any, NamedTuple, TypeVar, cast
 import pydantic
 
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification, OutputField
@@ -94,10 +94,10 @@ class OutputFieldModel:
 
     data_path: str
     data_type: str
-    contains: Optional[list[str]] = None
-    example_values: Optional[list[Union[str, float, bool]]] = None
-    column_name: Optional[str] = None
-    column_order: Optional[int] = None
+    contains: list[str] | None = None
+    example_values: list[str | float | bool] | None = None
+    column_name: str | None = None
+    column_order: int | None = None
 
 
 class DeserializedActionMeta(NamedTuple):
@@ -212,7 +212,7 @@ class ActionDeserializer:
     @staticmethod
     def _build_output_structure(
         datapath_specs: dict[str, OutputFieldModel],
-    ) -> dict[str, Union[list, dict, OutputFieldModel]]:
+    ) -> dict[str, list | dict | OutputFieldModel]:
         """Parse a datapath string into a dictionary.
 
         Args:
@@ -223,10 +223,10 @@ class ActionDeserializer:
         """
 
         def set_nested_value(
-            field_struct: dict[str, Union[list, dict, OutputFieldModel]],
+            field_struct: dict[str, list | dict | OutputFieldModel],
             path_parts: list[str],
             field_spec: OutputFieldModel,
-        ) -> Union[list, dict, OutputFieldModel]:
+        ) -> list | dict | OutputFieldModel:
             """Recursively set a field spec in the nested output field structure."""
             # Base case: we're at a leaf node and can return the field spec directly
             if not path_parts:
@@ -240,7 +240,7 @@ class ActionDeserializer:
 
             # Recursive case: this portion of the datapath is an object key
             next_field_struct = cast(
-                dict[str, Union[list, dict, OutputFieldModel]],
+                dict[str, list | dict | OutputFieldModel],
                 field_struct.get(current_key, {}),
             )
             field_struct[current_key] = set_nested_value(
@@ -248,7 +248,7 @@ class ActionDeserializer:
             )
             return field_struct
 
-        MergeT = TypeVar("MergeT", bound=Union[list, dict, OutputFieldModel])
+        MergeT = TypeVar("MergeT", bound=list | dict | OutputFieldModel)
 
         def merge(base: MergeT, new_structure: MergeT) -> MergeT:
             """Merge two nested structures, handling arrays and objects."""
@@ -280,12 +280,12 @@ class ActionDeserializer:
             # Should never happen in reality, hence the pragma, but we handle it gracefully
             return new_structure  # pragma: no cover
 
-        result: dict[str, Union[list, dict, OutputFieldModel]] = {}
+        result: dict[str, list | dict | OutputFieldModel] = {}
 
         for datapath, field_spec in datapath_specs.items():
             path_parts = datapath.split(".")
             nested_structure = cast(
-                dict[str, Union[list, dict, OutputFieldModel]],
+                dict[str, list | dict | OutputFieldModel],
                 set_nested_value({}, path_parts, field_spec),
             )
             merged = merge(result, nested_structure)
@@ -298,7 +298,7 @@ class ActionDeserializer:
     def _build_output_class(
         cls,
         action_name: str,
-        output_structure: dict[str, Union[dict, list, OutputFieldModel]],
+        output_structure: dict[str, dict | list | OutputFieldModel],
     ) -> type[ActionOutput]:
         """Build dynamic pydantic models for an action output, from the output data paths.
 
@@ -323,7 +323,7 @@ class ActionDeserializer:
 
     @classmethod
     def _build_output_field(
-        cls, field_name: str, output_structure: Union[list, dict, OutputFieldModel]
+        cls, field_name: str, output_structure: list | dict | OutputFieldModel
     ) -> tuple[str, FieldSpec]:
         """Build dynamic specs for an action output field, from an output data path.
 

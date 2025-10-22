@@ -6,7 +6,7 @@ from collections.abc import AsyncGenerator
 @asynccontextmanager
 async def phantom_get_login_session(
     base_url: str, username: str, password: str
-) -> AsyncGenerator[httpx.AsyncClient, None]:
+) -> AsyncGenerator[httpx.AsyncClient]:
     """Contextmanager that creates an authenticated client with CSRF token handling."""
     # Set longer timeouts for large file uploads
     timeout = httpx.Timeout(30.0, read=60.0)

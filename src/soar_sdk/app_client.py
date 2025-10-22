@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, TYPE_CHECKING, Union, Optional
+from typing import Any, TYPE_CHECKING
 from collections.abc import Mapping
 
 import httpx
@@ -41,9 +41,9 @@ class AppClient(SOARClient[SummaryType]):
         self._artifacts_api = Artifact(soar_client=self)
         self._containers_api = Container(soar_client=self)
         self._vault_api = Vault(soar_client=self)
-        self.basic_auth: Optional[BasicAuth] = None
+        self.basic_auth: BasicAuth | None = None
 
-        self._summary: Optional[SummaryType] = None
+        self._summary: SummaryType | None = None
         self._message: str = ""
         self.__container_id: int = 0
         self.__asset_id: str = ""
@@ -132,13 +132,13 @@ class AppClient(SOARClient[SummaryType]):
         self,
         endpoint: str,
         *,
-        params: Optional[Union[dict[str, Any], httpx.QueryParams]] = None,
-        headers: Optional[dict[str, str]] = None,
-        cookies: Optional[dict[str, str]] = None,
-        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
-        timeout: Optional[httpx.Timeout] = None,
+        params: dict[str, Any] | httpx.QueryParams | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: httpx.Timeout | None = None,
         follow_redirects: bool = False,
-        extensions: Optional[Mapping[str, Any]] = None,
+        extensions: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         """Perform a DELETE request to the specific endpoint using the SOAR client."""
         headers = headers or {}
@@ -167,7 +167,7 @@ class AppClient(SOARClient[SummaryType]):
         """Set the message for the action result."""
         self._message = message
 
-    def get_summary(self) -> Optional[SummaryType]:
+    def get_summary(self) -> SummaryType | None:
         """Get the summary for the action result."""
         return self._summary
 

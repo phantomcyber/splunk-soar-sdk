@@ -1,4 +1,4 @@
-from typing import ClassVar, Optional
+from typing import ClassVar
 from collections.abc import Iterator
 import typing
 import ast
@@ -202,7 +202,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
         yield ast.fix_missing_locations(node)
 
     def render_outputs_ast(
-        self, model: Optional[type[ActionOutput]] = None
+        self, model: type[ActionOutput] | None = None
     ) -> Iterator[ast.ClassDef]:
         """Generates the AST for the action outputs.
 

@@ -19,7 +19,7 @@ if TYPE_CHECKING or not _soar_is_available:
     from soar_sdk.shims.phantom.action_result import ActionResult
     from soar_sdk.shims.phantom.connector_result import ConnectorResult
 
-    from typing import Union, Any, Optional
+    from typing import Any
     from contextlib import suppress
 
     class BaseConnector:  # type: ignore[no-redef]
@@ -71,14 +71,14 @@ if TYPE_CHECKING or not _soar_is_available:
         def error_print(
             self,
             _tag: str,
-            _dump_object: Union[str, list, dict, ActionResult, Exception] = "",
+            _dump_object: str | list | dict | ActionResult | Exception = "",
         ) -> None:
             print(_tag, _dump_object)
 
         def debug_print(
             self,
             _tag: str,
-            _dump_object: Union[str, list, dict, ActionResult, Exception] = "",
+            _dump_object: str | list | dict | ActionResult | Exception = "",
         ) -> None:
             print(_tag, _dump_object)
 
@@ -109,12 +109,12 @@ if TYPE_CHECKING or not _soar_is_available:
 
         def save_container(
             self, container: dict, fail_on_duplicate: bool = False
-        ) -> tuple[bool, str, Optional[int]]:
+        ) -> tuple[bool, str, int | None]:
             return True, "Container saved successfully", 1
 
         def save_artifacts(
             self, artifacts: list[dict]
-        ) -> tuple[bool, str, Union[Optional[int], list[int]]]:
+        ) -> tuple[bool, str, int | None | list[int]]:
             return True, "Artifacts saved successfully", [1]
 
         def get_config(self) -> dict:

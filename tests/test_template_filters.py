@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 import re
 
 import pytest
@@ -21,14 +21,14 @@ def test_datetime_minutes_conversion():
 
 
 def test_human_datetime_relative():
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     past = now - timedelta(days=1, hours=2)
     result = template_filters.human_datetime(past, relative=True)
     assert result == "a day ago"
 
 
 def test_human_datetime_absolute():
-    dt = datetime(2023, 1, 15, 14, 30, tzinfo=timezone.utc)
+    dt = datetime(2023, 1, 15, 14, 30, tzinfo=UTC)
     result = template_filters.human_datetime(dt, relative=False)
     assert result == "Jan 15, 2023 2:30 pm"
 

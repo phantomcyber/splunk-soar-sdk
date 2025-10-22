@@ -5,7 +5,7 @@ try:
 except ImportError:
     _soar_is_available = False
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or not _soar_is_available:
     from soar_sdk.shims.phantom.install_info import get_product_version
@@ -34,12 +34,12 @@ if TYPE_CHECKING or not _soar_is_available:
 
             @staticmethod
             def sendstatus(
-                handle: Optional[int], status: int, message: str, flag: bool
+                handle: int | None, status: int, message: str, flag: bool
             ) -> None:
                 print(message)
 
             @staticmethod
-            def debugprint(handle: Optional[int], message: str, level: int) -> None:
+            def debugprint(handle: int | None, message: str, level: int) -> None:
                 print(message)
 
             @staticmethod

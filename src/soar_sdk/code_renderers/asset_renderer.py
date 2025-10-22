@@ -1,5 +1,4 @@
 import dataclasses
-from typing import Optional, Union
 import ast
 from collections.abc import Iterator
 
@@ -12,12 +11,12 @@ class AssetContext:
     """Context for rendering individual configuration keys of an Asset class."""
 
     name: str
-    description: Optional[str]
+    description: str | None
     required: bool
-    default: Union[str, int, float, bool, None]
+    default: str | int | float | bool | None
     data_type: str
-    value_list: Optional[list[str]]
-    alias: Optional[str] = None
+    value_list: list[str] | None
+    alias: str | None = None
 
     @property
     def is_str(self) -> bool:

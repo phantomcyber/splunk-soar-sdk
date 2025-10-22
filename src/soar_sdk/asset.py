@@ -1,9 +1,10 @@
-from typing import Any, Optional, Union
+from typing import Any
 from zoneinfo import ZoneInfo
 from pydantic import BaseModel, model_validator, ConfigDict, Field
 from pydantic_core import PydanticUndefined
 
-from typing_extensions import NotRequired, TypedDict
+from typing_extensions import TypedDict
+from typing import NotRequired
 
 
 from soar_sdk.compat import remove_when_soar_newer_than
@@ -17,12 +18,12 @@ remove_when_soar_newer_than(
 
 
 def AssetField(
-    description: Optional[str] = None,
+    description: str | None = None,
     required: bool = True,
-    default: Optional[Any] = None,  # noqa: ANN401
-    value_list: Optional[list] = None,
+    default: Any | None = None,  # noqa: ANN401
+    value_list: list | None = None,
     sensitive: bool = False,
-    alias: Optional[str] = None,
+    alias: str | None = None,
 ) -> Any:  # noqa: ANN401
     """Representation of an asset configuration field.
 
@@ -81,7 +82,7 @@ class AssetFieldSpecification(TypedDict):
     data_type: str
     description: NotRequired[str]
     required: NotRequired[bool]
-    default: NotRequired[Union[str, int, float, bool]]
+    default: NotRequired[str | int | float | bool]
     value_list: NotRequired[list[str]]
     order: NotRequired[int]
 

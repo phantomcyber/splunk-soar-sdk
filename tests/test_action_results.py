@@ -1,4 +1,3 @@
-from typing import Optional, Union
 import pytest
 from soar_sdk.action_results import ActionOutput, OutputField
 
@@ -19,9 +18,9 @@ class ExampleActionOutput(ActionOutput):
     )
     nested_type: ExampleInnerData
     list_of_types: list[ExampleInnerData]
-    optional_field: Optional[str] = None
-    optional_inner_field: Optional[ExampleInnerData] = None
-    optional_list_of_types: Optional[list[ExampleInnerData]] = None
+    optional_field: str | None = None
+    optional_inner_field: ExampleInnerData | None = None
+    optional_list_of_types: list[ExampleInnerData] | None = None
 
 
 def test_action_output_to_json_schema():
@@ -68,11 +67,11 @@ class BadActionOutput(ActionOutput):
 
 
 class BadUnionActionOutput(ActionOutput):
-    union_field: Union[str, int]
+    union_field: str | int
 
 
 class BadOptionalUnionActionOutput(ActionOutput):
-    evil_field: Optional[Union[str, int]]
+    evil_field: str | int | None
 
 
 class BadListOfNonesActionOutput(ActionOutput):

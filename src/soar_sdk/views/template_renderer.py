@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from soar_sdk.views.template_filters import setup_jinja_env
 from soar_sdk.paths import SDK_TEMPLATES
@@ -107,7 +107,7 @@ class JinjaTemplateRenderer(TemplateRenderer):
 
 
 def get_template_renderer(
-    engine: Optional[str] = None, templates_dir: Optional[str] = None
+    engine: str | None = None, templates_dir: str | None = None
 ) -> TemplateRenderer:
     """Factory function to get the appropriate template renderer.
 

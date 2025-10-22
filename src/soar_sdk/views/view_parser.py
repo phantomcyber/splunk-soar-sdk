@@ -1,13 +1,12 @@
 from typing import (
     Any,
-    Callable,
     TypeVar,
-    Union,
     get_origin,
     get_args,
     Generic,
     cast,
 )
+from collections.abc import Callable
 import inspect
 from pydantic import BaseModel
 from soar_sdk.action_results import ActionOutput
@@ -85,7 +84,7 @@ class ViewFunctionParser(Generic[T]):
         context: ViewContext,
         *args: Any,  # noqa: ANN401
         **kwargs: Any,  # noqa: ANN401
-    ) -> Union[str, dict, BaseModel]:
+    ) -> str | dict | BaseModel:
         """Wrapper around the object's view function which massages platform inputs as necessary.
 
         Takes the JSON list of AppRun results provided by Splunk SOAR, parses that into
