@@ -100,6 +100,7 @@ def test_toml_renderer(mock_jinja_env):
         name="test_app",
         version="1.0.0",
         description="A test application",
+        uv_index="https://fake-index.com/simple",
         copyright="2023 Test Company",
         python_versions=PythonVersion.all(),
     )

@@ -1,10 +1,12 @@
 import tarfile
 from pathlib import Path
 from unittest.mock import patch
+from urllib.parse import urlparse
 
 import httpx
 import pytest
 import respx
+import toml
 from typer.testing import CliRunner
 
 from soar_sdk.cli.package.cli import package
@@ -246,3 +248,161 @@ def test_package_build_without_app_templates(wheel_resp_mock, tmp_path: Path):
     # Should NOT contain the app templates message
     assert "Adding app templates to package" not in result.stdout
     assert "Adding SDK base template to package" in result.stdout
+
+
+def test_uv_lock_matches_declared_index():
+    """Test that uv.lock contains wheel URLs matching the app's declared uv_index.
+
+    This integration test verifies that when an app declares a uv_index in pyproject.toml,
+    the uv.lock file contains wheel URLs consistent with that index declaration.
+    For PyPI, wheels come from files.pythonhosted.org (PyPI's CDN).
+    For custom indexes, wheels would come from that custom index's domain.
+    """
+    # Use the example app which has both pyproject.toml and uv.lock
+    example_app = Path.cwd() / "tests/example_app"
+
+    # Read the declared index from pyproject.toml
+    with (example_app / "pyproject.toml").open() as f:
+        pyproject = toml.load(f)
+
+    declared_index = pyproject["tool"]["uv"]["index"][0]["url"]
+
+    # Read the uv.lock file
+    with (example_app / "uv.lock").open() as f:
+        uv_lock = toml.load(f)
+
+    # Verify that at least some packages have wheel URLs
+    packages_with_wheels = [
+        pkg
+        for pkg in uv_lock.get("package", [])
+        if pkg.get("wheels") and any("url" in wheel for wheel in pkg["wheels"])
+    ]
+
+    assert len(packages_with_wheels) > 0, (
+        "uv.lock should contain packages with wheel URLs"
+    )
+
+    # For PyPI (the default), wheel URLs should come from PyPI's CDN (files.pythonhosted.org)
+    # This verifies that the declared index in pyproject.toml is being used by uv
+    if "pypi.python.org" in declared_index or "pypi.org" in declared_index:
+        # Check a few packages to ensure they have PyPI CDN URLs
+        for pkg in packages_with_wheels[:3]:  # Check first 3 packages
+            for wheel in pkg["wheels"]:
+                if "url" in wheel:
+                    wheel_url = wheel["url"]
+                    # PyPI wheels come from files.pythonhosted.org
+                    assert (
+                        "files.pythonhosted.org" in wheel_url or "pypi.org" in wheel_url
+                    ), f"Package {pkg['name']}: Expected PyPI CDN URL, got: {wheel_url}"
+                    break
+    else:
+        # For custom indexes, verify wheel URLs come from that index's domain
+        declared_domain = urlparse(declared_index).netloc
+        for pkg in packages_with_wheels[:3]:
+            for wheel in pkg["wheels"]:
+                if "url" in wheel:
+                    wheel_url = wheel["url"]
+                    wheel_domain = urlparse(wheel_url).netloc
+                    assert declared_domain in wheel_domain, (
+                        f"Package {pkg['name']}: Expected custom index domain {declared_domain}, got: {wheel_url}"
+                    )
+                    break
+
+
+def test_package_build_fetches_from_custom_index(wheel_resp_mock, tmp_path: Path):
+    """Test that package building fetches wheels from the declared custom index.
+
+    This test verifies that when building a package, wheels are fetched from the
+    index URLs specified in the uv.lock file, and the process completes successfully.
+    """
+    example_app = Path.cwd() / "tests/example_app"
+    destination = tmp_path / "example_app.tgz"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert destination.is_file()
+    # Verify that wheel downloads were attempted (mocked by wheel_resp_mock)
+    assert wheel_resp_mock.called
+
+
+def test_package_build_fails_with_clear_error_on_fetch_failure(
+    respx_mock, tmp_path: Path
+):
+    """Test that package building produces a comprehensible error when wheel fetching fails.
+
+    This test verifies that when a wheel cannot be fetched (due to connectivity issues,
+    authentication failures, or other network problems), the error message is clear
+    and actionable for the user.
+    """
+    example_app = Path.cwd() / "tests/example_app"
+
+    # Mock wheel downloads to return 403 Forbidden
+    wheel_route = respx_mock.get(url__regex=r".+/.+\.whl")
+    wheel_route.respond(
+        status_code=403, json={"error": "Forbidden - authentication required"}
+    )
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    # The build should fail with a non-zero exit code
+    assert result.exit_code != 0
+
+    # The error message should be comprehensible and mention the issue
+    # It should contain information about the HTTP error
+    output = result.stdout + str(getattr(result, "exception", ""))
+    assert "403" in output or "Forbidden" in output
+
+
+def test_package_build_fails_with_clear_error_on_connection_timeout(
+    respx_mock, tmp_path: Path
+):
+    """Test that package building produces a clear error when connection times out.
+
+    This test verifies that network timeout errors are handled gracefully with
+    user-friendly error messages.
+    """
+    example_app = Path.cwd() / "tests/example_app"
+
+    # Mock wheel downloads to raise a timeout error
+    wheel_route = respx_mock.get(url__regex=r".+/.+\.whl")
+    wheel_route.side_effect = httpx.ReadTimeout("Connection timed out")
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    # The build should fail
+    assert result.exit_code != 0
+
+    # Error should mention timeout or connection issue
+    output = result.stdout + str(getattr(result, "exception", ""))
+    assert "timeout" in output.lower() or "connection" in output.lower()
