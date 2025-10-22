@@ -5,7 +5,10 @@ try:
 except ImportError:
     _soar_is_available = False
 
+from pathlib import Path
 from typing import TYPE_CHECKING
+
+from soar_sdk.compat import remove_when_soar_newer_than
 
 if TYPE_CHECKING or not _soar_is_available:
     import json
@@ -131,6 +134,11 @@ if TYPE_CHECKING or not _soar_is_available:
 
         def initialize(self) -> bool:
             return True
+
+        def get_app_dir(self) -> str:
+            # Remove when 7.1.0 is the min supported broker version
+            remove_when_soar_newer_than("7.1.1")
+            return Path.cwd().as_posix()
 
 
 __all__ = ["BaseConnector"]

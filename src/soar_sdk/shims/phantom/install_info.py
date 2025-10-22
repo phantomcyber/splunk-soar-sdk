@@ -1,5 +1,9 @@
 try:
-    from phantom_common.install_info import get_verify_ssl_setting, get_product_version
+    from phantom_common.install_info import (
+        get_verify_ssl_setting,
+        get_product_version,
+        is_onprem_broker_install,
+    )
 
     _soar_is_available = True
 except ImportError:
@@ -17,6 +21,10 @@ if TYPE_CHECKING or not _soar_is_available:
         """Mock function to simulate the behavior of get_product_version."""
         return "6.4.1"
 
+    def is_onprem_broker_install() -> bool:
+        """Mock function to simulate the behavior of is_onprem_broker_install."""
+        return False
+
 
 def is_soar_available() -> bool:
     """
@@ -25,4 +33,9 @@ def is_soar_available() -> bool:
     return _soar_is_available
 
 
-__all__ = ["get_product_version", "get_verify_ssl_setting", "is_soar_available"]
+__all__ = [
+    "get_product_version",
+    "get_verify_ssl_setting",
+    "is_onprem_broker_install",
+    "is_soar_available",
+]

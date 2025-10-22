@@ -357,21 +357,21 @@ def test_get_app_dir_broker(
     app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
 ):
     """Test get_app_dir return on broker."""
-    mock_install_info = mocker.patch("soar_sdk.actions_manager.install_info")
-    mock_install_info.is_onprem_broker_install.return_value = True
-    mocker.patch("os.getenv", return_value="/splunk_data/apps/test_app/1.0.0")
+    mocker.patch("soar_sdk.actions_manager.is_onprem_broker_install", return_value=True)
 
-    result = app_actions_manager.get_app_dir()
+    app_dir = "/splunk_data/apps/test_app/1.0.0"
+    mocker.patch.dict("os.environ", {"APP_HOME": app_dir})
 
-    assert result == "/splunk_data/apps/test_app/1.0.0"
+    assert app_actions_manager.get_app_dir() == app_dir
 
 
 def test_get_app_dir_non_broker(
     app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
 ):
     """Test get_app_dir return on non-broker."""
-    mock_install_info = mocker.patch("soar_sdk.actions_manager.install_info")
-    mock_install_info.is_onprem_broker_install.return_value = False
+    mocker.patch(
+        "soar_sdk.actions_manager.is_onprem_broker_install", return_value=False
+    )
 
     super_mock = mocker.patch(
         "soar_sdk.shims.phantom.base_connector.BaseConnector.get_app_dir",
@@ -379,7 +379,5 @@ def test_get_app_dir_non_broker(
         create=True,
     )
 
-    result = app_actions_manager.get_app_dir()
-
-    assert result == "/opt/phantom/apps/test_app"
+    assert app_actions_manager.get_app_dir() == "/opt/phantom/apps/test_app"
     super_mock.assert_called_once()

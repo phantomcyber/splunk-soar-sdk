@@ -1,6 +1,7 @@
 from typing import Optional, Any
 import os
 
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 
@@ -8,12 +9,8 @@ from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.types import Action
 from pydantic import ValidationError
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
+from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
 from soar_sdk.logging import getLogger
-
-try:
-    from phantom_common import install_info
-except ImportError:
-    install_info = None
 
 
 _INGEST_STATE_KEY = "ingestion_state"
@@ -150,8 +147,10 @@ class ActionsManager(BaseConnector):
 
         Returns APP_HOME directly on brokers, which contains the correct SDK app path.
         """
+        # Remove when 7.1.0 is the min supported broker version
+        remove_when_soar_newer_than("7.1.1")
         # On AB, APP_HOME is set by spawn to the full app path at runtime
-        if install_info and install_info.is_onprem_broker_install():
+        if is_onprem_broker_install():
             return os.getenv("APP_HOME", "")
 
         # For non-broker just proceed as we did before
