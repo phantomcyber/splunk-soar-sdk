@@ -1,9 +1,10 @@
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
 from abc import abstractmethod
 from soar_sdk.exceptions import SoarAPIError
+from datetime import UTC
 
 
 class VaultBase:
@@ -19,9 +20,9 @@ class VaultBase:
     def create_attachment(
         self,
         container_id: int,
-        file_content: Union[str, bytes],
+        file_content: str | bytes,
         file_name: str,
-        metadata: Optional[dict[str, str]] = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         """Creates a vault attachment from file content. This differs from add_attachment because it doesn't require the file to exist locally."""
         pass
@@ -32,7 +33,7 @@ class VaultBase:
         container_id: int,
         file_location: str,
         file_name: str,
-        metadata: Optional[dict[str, str]] = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         """Add an attachment to vault. This requires the file to exist locally."""
         pass
@@ -40,9 +41,9 @@ class VaultBase:
     @abstractmethod
     def get_attachment(
         self,
-        vault_id: Optional[str] = None,
-        file_name: Optional[str] = None,
-        container_id: Optional[int] = None,
+        vault_id: str | None = None,
+        file_name: str | None = None,
+        container_id: int | None = None,
         download_file: bool = True,
     ) -> list[dict[str, Any]]:
         """Returns vault attachments based on the provided query parameters."""
@@ -51,9 +52,9 @@ class VaultBase:
     @abstractmethod
     def delete_attachment(
         self,
-        vault_id: Optional[str] = None,
-        file_name: Optional[str] = None,
-        container_id: Optional[int] = None,
+        vault_id: str | None = None,
+        file_name: str | None = None,
+        container_id: int | None = None,
         remove_all: bool = False,
     ) -> list[str]:
         """Deletes vault attachments based on the provided query parameters."""
@@ -79,9 +80,9 @@ if _soar_is_available:
         def create_attachment(
             self,
             container_id: int,
-            file_content: Union[str, bytes],
+            file_content: str | bytes,
             file_name: str,
-            metadata: Optional[dict[str, str]] = None,
+            metadata: dict[str, str] | None = None,
         ) -> str:
             resp_json = Vault.create_attachment(
                 file_content, container_id, file_name, metadata
@@ -96,7 +97,7 @@ if _soar_is_available:
             container_id: int,
             file_location: str,
             file_name: str,
-            metadata: Optional[dict[str, str]] = None,
+            metadata: dict[str, str] | None = None,
         ) -> str:
             resp_json = vault_add(container_id, file_location, file_name, metadata)
             if not resp_json.get("succeeded"):
@@ -106,9 +107,9 @@ if _soar_is_available:
 
         def get_attachment(
             self,
-            vault_id: Optional[str] = None,
-            file_name: Optional[str] = None,
-            container_id: Optional[int] = None,
+            vault_id: str | None = None,
+            file_name: str | None = None,
+            container_id: int | None = None,
             download_file: bool = True,
         ) -> list[dict[str, Any]]:
             success, _, attachment = vault_info(
@@ -120,9 +121,9 @@ if _soar_is_available:
 
         def delete_attachment(
             self,
-            vault_id: Optional[str] = None,
-            file_name: Optional[str] = None,
-            container_id: Optional[int] = None,
+            vault_id: str | None = None,
+            file_name: str | None = None,
+            container_id: int | None = None,
             remove_all: bool = False,
         ) -> list[str]:
             success, message, deleted_file_names = vault_delete(
@@ -143,7 +144,7 @@ else:
     from pathlib import Path
     import secrets
     import random
-    from datetime import datetime, timezone
+    from datetime import datetime
     import hashlib
     from soar_sdk.logging import getLogger
     from soar_sdk.models.vault_attachment import VaultAttachment
@@ -162,9 +163,9 @@ else:
         def create_attachment(
             self,
             container_id: int,
-            file_content: Union[str, bytes],
+            file_content: str | bytes,
             file_name: str,
-            metadata: Optional[dict[str, str]] = None,
+            metadata: dict[str, str] | None = None,
         ) -> str:
             if is_client_authenticated(self.soar_client.client):
                 data = {
@@ -203,7 +204,7 @@ else:
                     container_id=container_id,
                     container="test_container",
                     created_via="upload",
-                    create_time=datetime.now(timezone.utc).isoformat(),
+                    create_time=datetime.now(UTC).isoformat(),
                     user="Phantom User",
                     vault_document=doc_id,
                     vault_id=vault_id,
@@ -224,7 +225,7 @@ else:
             container_id: int,
             file_location: str,
             file_name: str,
-            metadata: Optional[dict[str, str]] = None,
+            metadata: dict[str, str] | None = None,
         ) -> str:
             metadata = metadata or {}
 
@@ -265,7 +266,7 @@ else:
                     container_id=container_id,
                     container="test_container",
                     created_via="upload",
-                    create_time=datetime.now(timezone.utc).isoformat(),
+                    create_time=datetime.now(UTC).isoformat(),
                     user="Phantom User",
                     vault_document=doc_id,
                     vault_id=vault_id,
@@ -283,9 +284,9 @@ else:
 
         def get_attachment(
             self,
-            vault_id: Optional[str] = None,
-            file_name: Optional[str] = None,
-            container_id: Optional[int] = None,
+            vault_id: str | None = None,
+            file_name: str | None = None,
+            container_id: int | None = None,
             download_file: bool = True,
         ) -> list[dict[str, Any]]:
             if not any([vault_id, file_name, container_id]):
@@ -295,7 +296,7 @@ else:
 
             results = []
             if is_client_authenticated(self.soar_client.client):
-                query_params: dict[str, Union[str, int]] = {"pretty": ""}
+                query_params: dict[str, str | int] = {"pretty": ""}
                 if vault_id:
                     query_params["_filter_vault_document__hash"] = (
                         f'"{vault_id.lower()}"'
@@ -332,9 +333,9 @@ else:
 
         def delete_attachment(
             self,
-            vault_id: Optional[str] = None,
-            file_name: Optional[str] = None,
-            container_id: Optional[int] = None,
+            vault_id: str | None = None,
+            file_name: str | None = None,
+            container_id: int | None = None,
             remove_all: bool = False,
         ) -> list[str]:
             vault_enteries = self.get_attachment(vault_id, file_name, container_id)

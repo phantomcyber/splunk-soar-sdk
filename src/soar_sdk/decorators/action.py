@@ -1,7 +1,8 @@
 import inspect
 from functools import wraps
 from collections.abc import Iterator
-from typing import Callable, Optional, Any, Union, get_args, get_origin
+from typing import Any, get_args, get_origin
+from collections.abc import Callable
 from collections.abc import AsyncGenerator
 
 from soar_sdk.abstract import SOARClient
@@ -25,24 +26,22 @@ class ActionDecorator:
     def __init__(
         self,
         app: "App",
-        name: Optional[str] = None,
-        identifier: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        identifier: str | None = None,
+        description: str | None = None,
         verbose: str = "",
         action_type: str = "generic",
         read_only: bool = True,
-        params_class: Optional[type[Params]] = None,
-        output_class: Union[
-            None,
-            type[ActionOutput],
-            Iterator[type[ActionOutput]],
-            AsyncGenerator[type[ActionOutput]],
-            list[type[ActionOutput]],
-        ] = None,
-        render_as: Optional[str] = None,
-        view_handler: Optional[Callable] = None,
+        params_class: type[Params] | None = None,
+        output_class: None
+        | type[ActionOutput]
+        | Iterator[type[ActionOutput]]
+        | AsyncGenerator[type[ActionOutput]]
+        | list[type[ActionOutput]] = None,
+        render_as: str | None = None,
+        view_handler: Callable | None = None,
         versions: str = "EQ(*)",
-        summary_type: Optional[type[ActionOutput]] = None,
+        summary_type: type[ActionOutput] | None = None,
         enable_concurrency_lock: bool = False,
     ) -> None:
         self.app = app

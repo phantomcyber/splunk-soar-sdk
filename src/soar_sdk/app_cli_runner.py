@@ -3,7 +3,7 @@ import inspect
 import json
 from pathlib import Path
 import typing
-from typing import Optional, Any
+from typing import Any
 import os
 from pydantic import ValidationError
 from urllib.parse import urlparse, parse_qs
@@ -31,7 +31,7 @@ class AppCliRunner:
     def __init__(self, app: "App") -> None:
         self.app = app
 
-    def parse_args(self, argv: Optional[list[str]] = None) -> argparse.Namespace:
+    def parse_args(self, argv: list[str] | None = None) -> argparse.Namespace:
         """Parse command line arguments for the app CLI runner."""
         root_parser = argparse.ArgumentParser()
         root_parser.add_argument(
@@ -257,7 +257,7 @@ class AppCliRunner:
         )
         print(f"Parsed webhook request: {args.webhook_request}")
 
-    def run(self, argv: Optional[list[str]] = None) -> None:
+    def run(self, argv: list[str] | None = None) -> None:
         """Run the app CLI."""
         args = self.parse_args(argv=argv)
 

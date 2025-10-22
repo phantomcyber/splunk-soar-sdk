@@ -1,5 +1,6 @@
 import typing
-from typing import Any, Callable, Optional, Protocol
+from typing import Any, Protocol
+from collections.abc import Callable
 
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
@@ -9,7 +10,7 @@ class Action(Protocol):
     """Type interface for an action definition."""
 
     meta: ActionMeta
-    params_class: Optional[type[Params]] = None
+    params_class: type[Params] | None = None
 
     def __call__(self, *args: Any, **kwargs: Any) -> bool:  # noqa: ANN401
         """Execute the action function."""

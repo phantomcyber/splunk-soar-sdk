@@ -1,5 +1,5 @@
 import abc
-from typing import TypeVar, Generic, Optional
+from typing import TypeVar, Generic
 import jinja2 as j2
 import ast
 from collections.abc import Iterator
@@ -12,7 +12,7 @@ class Renderer(Generic[ContextT], abc.ABC):
     """Abstract base class for rendering code using Jinja2 templates."""
 
     def __init__(
-        self, context: ContextT, jinja_env: Optional[j2.Environment] = None
+        self, context: ContextT, jinja_env: j2.Environment | None = None
     ) -> None:
         self.context = context
         self.jinja_env = jinja_env or j2.Environment(

@@ -1,5 +1,5 @@
 import httpx
-from typing import Optional, Any
+from typing import Any
 from collections.abc import Generator
 
 
@@ -11,9 +11,9 @@ def is_client_authenticated(client: httpx.Client) -> bool:
 def get_request_iter_pages(
     client: httpx.Client,
     endpoint: str,
-    params: Optional[dict] = None,
+    params: dict | None = None,
     page_size: int = 50,
-) -> Generator[Any, None, None]:
+) -> Generator[Any]:
     """Iterate through REST JSON results using the provided paging."""
     params = params or {}
 

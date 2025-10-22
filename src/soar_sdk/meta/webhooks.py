@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
 from ipaddress import ip_network
-from typing import Optional
 
 
 class WebhookRouteMeta(BaseModel):
@@ -8,14 +7,14 @@ class WebhookRouteMeta(BaseModel):
 
     url_pattern: str
     allowed_methods: list[str] = Field(default_factory=lambda: ["GET", "POST"])
-    declaration_path: Optional[str] = None
-    declaration_lineno: Optional[int] = None
+    declaration_path: str | None = None
+    declaration_lineno: int | None = None
 
 
 class WebhookMeta(BaseModel):
     """Metadata for a complex webhook definition which may contain multiple routes."""
 
-    handler: Optional[str]
+    handler: str | None
     requires_auth: bool = True
     allowed_headers: list[str] = Field(default_factory=list)
     ip_allowlist: list[str] = Field(default_factory=lambda: ["0.0.0.0/0", "::/0"])

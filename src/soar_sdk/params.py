@@ -1,5 +1,6 @@
-from typing import Optional, Union, Any, ClassVar
-from typing_extensions import NotRequired, TypedDict
+from typing import Any, ClassVar
+from typing_extensions import TypedDict
+from typing import NotRequired
 
 from pydantic import Field
 from pydantic_core import PydanticUndefined
@@ -15,16 +16,16 @@ remove_when_soar_newer_than(
 
 
 def Param(
-    description: Optional[str] = None,
+    description: str | None = None,
     required: bool = True,
     primary: bool = False,
-    default: Optional[Any] = None,  # noqa: ANN401
-    value_list: Optional[list] = None,
-    cef_types: Optional[list] = None,
+    default: Any | None = None,  # noqa: ANN401
+    value_list: list | None = None,
+    cef_types: list | None = None,
     allow_list: bool = False,
     sensitive: bool = False,
-    alias: Optional[str] = None,
-    column_name: Optional[str] = None,
+    alias: str | None = None,
+    column_name: str | None = None,
 ) -> Any:  # noqa: ANN401
     """Representation of a single complex action parameter.
 
@@ -94,7 +95,7 @@ class InputFieldSpecification(TypedDict):
     primary: bool
     value_list: NotRequired[list[str]]
     allow_list: bool
-    default: NotRequired[Union[str, int, float, bool]]
+    default: NotRequired[str | int | float | bool]
     column_name: NotRequired[str]
     column_order: NotRequired[int]
 

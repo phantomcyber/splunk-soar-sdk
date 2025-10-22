@@ -5,7 +5,8 @@ This module provides a router for mapping URL patterns to handler functions.
 
 import re
 from dataclasses import dataclass
-from typing import Callable, TypeVar, Generic, Optional
+from typing import TypeVar, Generic
+from collections.abc import Callable
 from collections.abc import Sequence
 
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
@@ -45,7 +46,7 @@ class Router(Generic[AssetType]):
         self,
         pattern: str,
         handler: Callable[[WebhookRequest], WebhookResponse],
-        methods: Optional[Sequence[str]] = None,
+        methods: Sequence[str] | None = None,
     ) -> None:
         """Register a new route with the router.
 
@@ -146,7 +147,7 @@ class Router(Generic[AssetType]):
             return False
 
         # Check each segment
-        for part1, part2 in zip(parts1, parts2):
+        for part1, part2 in zip(parts1, parts2, strict=False):
             is_param1 = part1.startswith("<") and part1.endswith(">")
             is_param2 = part2.startswith("<") and part2.endswith(">")
 

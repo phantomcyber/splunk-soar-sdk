@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Iterator
 from logging import getLogger
 import itertools
@@ -31,7 +31,7 @@ class OutputsSerializer:
     @staticmethod
     def serialize_parameter_datapaths(
         params_class: type[Params],
-        column_order_counter: Optional[itertools.count] = None,
+        column_order_counter: itertools.count | None = None,
     ) -> Iterator[OutputFieldSpecification]:
         """Serializes the parameter data paths of a Params class to JSON schema."""
         if column_order_counter is None:
@@ -64,7 +64,7 @@ class OutputsSerializer:
         cls,
         params_class: type[Params],
         outputs_class: type[ActionOutput],
-        summary_class: Optional[type[ActionOutput]] = None,
+        summary_class: type[ActionOutput] | None = None,
     ) -> list[OutputFieldSpecification]:
         """Serializes the data paths of an action to JSON schema."""
         status = OutputFieldSpecification(

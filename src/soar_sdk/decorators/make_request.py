@@ -12,7 +12,8 @@ from soar_sdk.logging import getLogger
 from functools import wraps
 import traceback
 
-from typing import TYPE_CHECKING, Callable, Any, Optional
+from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
 
 if TYPE_CHECKING:
     from soar_sdk.app import App
@@ -24,7 +25,7 @@ class MakeRequestDecorator:
     def __init__(
         self,
         app: "App",
-        output_class: Optional[type[ActionOutput]] = None,
+        output_class: type[ActionOutput] | None = None,
     ) -> None:
         self.app = app
         self.output_class = output_class
