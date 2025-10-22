@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 import asyncio
 import time
-from typing import Optional, Annotated
+from typing import Annotated
 from tqdm import tqdm
 from rich.console import Console
 from rich.panel import Panel
@@ -67,11 +67,11 @@ def build(
         ),
     ],
     output_file: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output-file", "-o", show_default="derived from pyproject.toml"),
     ] = None,
     with_sdk_wheel_from: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option(
             "--with-sdk-wheel-from",
             "-w",
@@ -115,7 +115,7 @@ def build(
 
         console.print(f"Generated manifest for app:[green] {app_name}[/]")
 
-        def filter_source_files(t: tarfile.TarInfo) -> Optional[tarfile.TarInfo]:
+        def filter_source_files(t: tarfile.TarInfo) -> tarfile.TarInfo | None:
             if t.isdir() and "__pycache__" not in t.name:
                 return t
             if t.isfile() and t.name.endswith(".py"):
@@ -125,7 +125,7 @@ def build(
         with tarfile.open(output_file, "w:gz") as app_tarball:
             # Collect all wheels from both Python versions
             all_wheels = set(
-                app_meta.pip39_dependencies.wheel + app_meta.pip313_dependencies.wheel
+                app_meta.pip313_dependencies.wheel + app_meta.pip314_dependencies.wheel
             )
 
             # Run the async collection function within an event loop
@@ -188,8 +188,8 @@ def build(
                     input_file=wheel_archive_path,
                     input_file_aarch64=wheel_archive_path,
                 )
-                app_meta.pip39_dependencies.wheel.append(wheel_entry)
                 app_meta.pip313_dependencies.wheel.append(wheel_entry)
+                app_meta.pip314_dependencies.wheel.append(wheel_entry)
 
             console.print("Writing manifest")
             manifest_json = json.dumps(app_meta.to_json_manifest(), indent=4).encode()

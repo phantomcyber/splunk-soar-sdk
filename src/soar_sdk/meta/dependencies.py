@@ -1,3 +1,4 @@
+import functools
 import io
 import os
 from pathlib import Path
@@ -6,7 +7,7 @@ import tarfile
 from tempfile import TemporaryDirectory
 import build
 
-from typing import Optional, ClassVar
+from typing import ClassVar
 from collections.abc import Mapping, Sequence, AsyncGenerator
 from pydantic import BaseModel, Field
 
@@ -61,21 +62,17 @@ DEPENDENCIES_TO_BUILD = {
 class UvWheel(BaseModel):
     """Represents a Python wheel file with metadata and methods to fetch and validate it."""
 
-    url: Optional[str] = None
-    filename: Optional[str] = None
+    url: str | None = None
+    filename: str | None = None
     hash: str
-    size: Optional[int] = None
+    size: int | None = None
 
     # The wheel file name is specified by PEP427. It's either a 5- or 6-tuple:
     # {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
     # We can parse this to determine which configurations it supports.
-    @property
+    @functools.cached_property
     def basename(self) -> str:
         """The base name of the wheel file."""
-        remove_when_soar_newer_than(
-            "6.4.0",
-            "We should be able to adopt pydantic 2 now, and turn this into a cached property.",
-        )
         if self.filename:
             return self.filename.removesuffix(".whl")
         if self.url:
@@ -94,7 +91,7 @@ class UvWheel(BaseModel):
         return self.basename.split("-")[1]
 
     @property
-    def build_tag(self) -> Optional[str]:
+    def build_tag(self) -> str | None:
         """An optional build tag for the wheel."""
         split = self.basename.split("-")
         if len(split) == 6:
@@ -144,7 +141,7 @@ class UvSourceDistribution(BaseModel):
 
     url: str
     hash: str
-    size: Optional[int] = None
+    size: int | None = None
 
     def validate_hash(self, sdist: bytes) -> None:
         """Validate the hash of the downloaded sdist against the expected hash."""
@@ -167,8 +164,8 @@ class UvSourceDistribution(BaseModel):
     @staticmethod
     def _builder_runner(
         cmd: Sequence[str],
-        cwd: Optional[str] = None,
-        extra_environ: Optional[Mapping[str, str]] = None,
+        cwd: str | None = None,
+        extra_environ: Mapping[str, str] | None = None,
     ) -> None:
         """Run a command in a subprocess and return its exit code, stdout, and stderr."""
         proc = subprocess.run(  # noqa: S603
@@ -200,13 +197,13 @@ class DependencyWheel(BaseModel):
 
     module: str
     input_file: str = ""
-    input_file_aarch64: Optional[str] = None
+    input_file_aarch64: str | None = None
 
-    wheel: Optional[UvWheel] = Field(exclude=True, default=None)
-    wheel_aarch64: Optional[UvWheel] = Field(exclude=True, default=None)
-    sdist: Optional[UvSourceDistribution] = Field(exclude=True, default=None)
+    wheel: UvWheel | None = Field(exclude=True, default=None)
+    wheel_aarch64: UvWheel | None = Field(exclude=True, default=None)
+    sdist: UvSourceDistribution | None = Field(exclude=True, default=None)
 
-    async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes], None]:
+    async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes]]:
         """Collect a list of wheel files to fetch for this dependency across all platforms."""
         if self.wheel is None and self.sdist is not None:
             logger.info(f"Building sdist for {self.input_file}")
@@ -263,7 +260,7 @@ class UvPackage(BaseModel):
         default_factory=dict, alias="optional-dependencies"
     )
     wheels: list[UvWheel] = []
-    sdist: Optional[UvSourceDistribution] = None
+    sdist: UvSourceDistribution | None = None
 
     def _find_wheel(
         self,
