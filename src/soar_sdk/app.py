@@ -495,6 +495,33 @@ class App:
         """
         return OnPollDecorator(self)
 
+    def on_es_poll(self) -> "OnESPollDecorator":
+        """Decorator for the on_es_poll action.
+
+        The decorated function must be a generator (using yield) or return an Iterator that yields tuples of (Finding, list[AttachmentInput]). Only one on_es_poll action is allowed per app.
+
+        Example:
+            >>> @app.on_es_poll()
+            ... def on_es_poll(
+            ...     params: OnESPollParams, soar: SOARClient, asset: Asset
+            ... ) -> Iterator[tuple[Finding, list[AttachmentInput]]]:
+            ...     yield (
+            ...         Finding(
+            ...             rule_title="Risk threshold exceeded for user",
+            ...             rule_description="Risk Threshold Exceeded for an object over a 24 hour period",
+            ...             security_domain="threat",
+            ...             risk_object="bad_user@splunk.com",
+            ...             risk_object_type="user",
+            ...             risk_score=100.0,
+            ...             status="New",
+            ...         ),
+            ...         [],
+            ...     )
+        """
+        from soar_sdk.decorators.on_es_poll import OnESPollDecorator
+
+        return OnESPollDecorator(self)
+
     def view_handler(
         self,
         *,

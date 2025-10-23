@@ -193,6 +193,25 @@ class OnPollParams(Params):
     )
 
 
+class OnESPollParams(Params):
+    """Canonical parameters for the special 'on es poll' action."""
+
+    start_time: int = Param(
+        description="Start of time range, in epoch time (milliseconds).",
+        required=False,
+    )
+
+    end_time: int = Param(
+        description="End of time range, in epoch time (milliseconds).",
+        required=False,
+    )
+
+    container_count: int = Param(
+        description="Maximum number of container records to query for.",
+        required=False,
+    )
+
+
 class MakeRequestParams(Params):
     """Canonical parameters for the special make request action."""
 
