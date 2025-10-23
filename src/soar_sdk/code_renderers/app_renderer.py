@@ -80,6 +80,7 @@ class AppRenderer:
                 ast.alias(name="Param", asname=None),
                 ast.alias(name="Params", asname=None),
                 ast.alias(name="OnPollParams", asname=None),
+                ast.alias(name="OnESPollParams", asname=None),
             ],
             level=0,
         )
@@ -112,6 +113,16 @@ class AppRenderer:
         yield ast.ImportFrom(
             module="soar_sdk.models.artifact",
             names=[ast.alias(name="Artifact", asname=None)],
+            level=0,
+        )
+        yield ast.ImportFrom(
+            module="soar_sdk.models.finding",
+            names=[ast.alias(name="Finding", asname=None)],
+            level=0,
+        )
+        yield ast.ImportFrom(
+            module="soar_sdk.models.attachment_input",
+            names=[ast.alias(name="AttachmentInput", asname=None)],
             level=0,
         )
 

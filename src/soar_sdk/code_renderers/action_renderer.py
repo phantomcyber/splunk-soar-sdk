@@ -103,6 +103,62 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 ctx=ast.Load(),
             ),
         ),
+        "on es poll": ast.FunctionDef(
+            name="on_es_poll",
+            args=ast.arguments(
+                posonlyargs=[],
+                args=[
+                    ast.arg(
+                        arg="soar", annotation=ast.Name(id="SOARClient", ctx=ast.Load())
+                    ),
+                    ast.arg(
+                        arg="asset", annotation=ast.Name(id="Asset", ctx=ast.Load())
+                    ),
+                    ast.arg(
+                        arg="params",
+                        annotation=ast.Name(id="OnESPollParams", ctx=ast.Load()),
+                    ),
+                ],
+                vararg=None,
+                kwonlyargs=[],
+                kw_defaults=[],
+                kwarg=None,
+                defaults=[],
+            ),
+            body=[
+                ast.Raise(
+                    ast.Call(
+                        func=ast.Name(id="NotImplementedError"), args=[], keywords=[]
+                    )
+                )
+            ],
+            decorator_list=[
+                ast.Call(
+                    func=ast.Name(id="app.on_es_poll", ctx=ast.Load()),
+                    args=[],
+                    keywords=[],
+                )
+            ],
+            returns=ast.Subscript(
+                value=ast.Name(id="Iterator", ctx=ast.Load()),
+                slice=ast.Subscript(
+                    value=ast.Name(id="tuple", ctx=ast.Load()),
+                    slice=ast.Tuple(
+                        elts=[
+                            ast.Name(id="Finding", ctx=ast.Load()),
+                            ast.Subscript(
+                                value=ast.Name(id="list", ctx=ast.Load()),
+                                slice=ast.Name(id="AttachmentInput", ctx=ast.Load()),
+                                ctx=ast.Load(),
+                            ),
+                        ],
+                        ctx=ast.Load(),
+                    ),
+                    ctx=ast.Load(),
+                ),
+                ctx=ast.Load(),
+            ),
+        ),
     }
 
     @property
