@@ -1,6 +1,6 @@
 import inspect
 from functools import wraps
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
@@ -48,7 +48,7 @@ class ConnectivityTestDecorator:
         @action_protocol
         @wraps(function)
         def inner(
-            _param: Optional[dict] = None,
+            _param: dict | None = None,
             soar: SOARClient = self.app.soar_client,
         ) -> bool:
             kwargs = self.app._build_magic_args(function, soar=soar)

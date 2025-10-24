@@ -31,7 +31,7 @@ def test_connectivity_decoration_with_meta(app_with_action: App):
         """
         pass
 
-    assert sorted(test_connectivity.meta.dict().keys()) == sorted(
+    assert sorted(test_connectivity.meta.model_dump().keys()) == sorted(
         [
             "action",
             "identifier",

@@ -17,7 +17,7 @@ def is_async_generator(obj: Any) -> bool:  # noqa: ANN401
     return inspect.isasyncgen(obj)
 
 
-async def async_generator_to_list(agen: AsyncGenerator[T, None]) -> list[T]:
+async def async_generator_to_list(agen: AsyncGenerator[T]) -> list[T]:
     """Consume an async generator and return its items in a list."""
     result: list[T] = []
     # Python 3.9 coverage limitation with async for loops
@@ -31,7 +31,7 @@ def run_async_if_needed(result: Coroutine[Any, Any, T]) -> T: ...
 
 
 @overload
-def run_async_if_needed(result: AsyncGenerator[T, None]) -> list[T]: ...
+def run_async_if_needed(result: AsyncGenerator[T]) -> list[T]: ...
 
 
 @overload

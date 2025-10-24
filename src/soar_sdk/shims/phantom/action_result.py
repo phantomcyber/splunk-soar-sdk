@@ -5,12 +5,12 @@ try:
 except ImportError:
     _soar_is_available = False
 
-from typing import Any, Optional, Union, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING or not _soar_is_available:
 
     class ActionResult:  # type: ignore[no-redef]
-        def __init__(self, param: Optional[dict] = None) -> None:
+        def __init__(self, param: dict | None = None) -> None:
             self.status = False
             self.message = ""
             self.summary: dict[str, Any] = {}
@@ -24,9 +24,9 @@ if TYPE_CHECKING or not _soar_is_available:
 
         def set_status(
             self,
-            status_code: Union[bool, int],
+            status_code: bool | int,
             _status_message: str = "",
-            _exception: Optional[Exception] = None,
+            _exception: Exception | None = None,
         ) -> bool:
             self.status = bool(status_code)
             self.message = _status_message

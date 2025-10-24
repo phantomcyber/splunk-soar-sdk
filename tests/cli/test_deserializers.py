@@ -62,17 +62,17 @@ def mock_action_deserializer():
     with (
         patch.object(ActionDeserializer, "parse_parameters") as mock_parse_params,
         patch.object(ActionDeserializer, "parse_output") as mock_parse_output,
-        patch.object(ActionMeta, "parse_obj") as mock_parse_obj,
+        patch.object(ActionMeta, "model_validate") as mock_model_validate,
     ):
         mock_parse_params.return_value = Params
         mock_parse_output.return_value = ActionOutput
         mock_action_meta = Mock(spec=ActionMeta)
-        mock_parse_obj.return_value = mock_action_meta
+        mock_model_validate.return_value = mock_action_meta
 
         yield {
             "parse_parameters": mock_parse_params,
             "parse_output": mock_parse_output,
-            "parse_obj": mock_parse_obj,
+            "model_validate": mock_model_validate,
             "action_meta": mock_action_meta,
         }
 
@@ -100,8 +100,8 @@ def test_from_app_json_basic_deserialization(basic_app_data, create_app_json):
 @pytest.mark.parametrize(
     "python_version_input,expected",
     [
-        ("3.9,3.13", f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"),
-        (["3.9", "3.13"], f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"),
+        ("3.13,3.14", f"{PythonVersion.PY_3_13},{PythonVersion.PY_3_14}"),
+        (["3.13", "3.14"], f"{PythonVersion.PY_3_13},{PythonVersion.PY_3_14}"),
         (None, PythonVersion.all_csv()),  # Should use default when None
     ],
 )
@@ -266,7 +266,7 @@ def test_from_app_json_complex_example(create_app_json):
         "logo": "logo.svg",
         "logo_dark": "logo_dark.svg",
         "product_name": "Example App",
-        "python_version": ["3.9", "3.13"],
+        "python_version": ["3.13", "3.14"],
         "product_version_regex": ".*",
         "publisher": "Splunk Inc.",
         "utctime_updated": "2025-04-17T12:00:00.000000Z",
@@ -323,7 +323,7 @@ def test_from_app_json_complex_example(create_app_json):
         assert result.appid == "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
         assert result.product_vendor == "Splunk Inc."
         assert (
-            result.python_version == f"{PythonVersion.PY_3_9},{PythonVersion.PY_3_13}"
+            result.python_version == f"{PythonVersion.PY_3_13},{PythonVersion.PY_3_14}"
         )
         assert result.project_name == "example_app"
         assert len(result.actions) == 1
@@ -560,10 +560,11 @@ def test_action_deserializer_uses_correct_default_params():
         "test_action", {"param1": {"data_type": "string", "description": "test param"}}
     )
 
-    field = result.__fields__["param1"]
-    assert not field.field_info.extra.get("required")
-    assert not field.field_info.extra.get("primary")
-    assert not field.field_info.extra.get("allow_list")
+    field = result.model_fields["param1"]
+    json_schema_extra = field.json_schema_extra or {}
+    assert not json_schema_extra.get("required")
+    assert not json_schema_extra.get("primary")
+    assert not json_schema_extra.get("allow_list")
 
 
 def test_action_deserializer_with_underscored_params():
@@ -770,11 +771,11 @@ def test_complex_output_specification():
             },
         ],
     }
-    expected_output = ComplexActionOutput.parse_obj(raw_output)
+    expected_output = ComplexActionOutput.model_validate(raw_output)
 
     ParsedComplexActionOutput = ActionDeserializer.parse_output(
         "complex_action", complex_output_def
     )
-    actual_output = ParsedComplexActionOutput.parse_obj(raw_output)
+    actual_output = ParsedComplexActionOutput.model_validate(raw_output)
 
-    assert actual_output == expected_output
+    assert actual_output.model_dump() == expected_output.model_dump()

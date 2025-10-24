@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from collections.abc import Iterator
 from logging import getLogger
 import itertools
@@ -6,6 +6,7 @@ import itertools
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
+from soar_sdk.field_utils import parse_json_schema_extra
 
 logger = getLogger(__name__)
 
@@ -16,7 +17,7 @@ class ParamsSerializer:
     @staticmethod
     def get_sorted_fields_keys(params_class: type[Params]) -> list[str]:
         """Lists the fields of a Params class in order of declaration."""
-        return list(params_class.__fields__.keys())
+        return list(params_class.model_fields.keys())
 
     @classmethod
     def serialize_fields_info(cls, params_class: type[Params]) -> dict[str, Any]:
@@ -30,21 +31,28 @@ class OutputsSerializer:
     @staticmethod
     def serialize_parameter_datapaths(
         params_class: type[Params],
-        column_order_counter: Optional[itertools.count] = None,
+        column_order_counter: itertools.count | None = None,
     ) -> Iterator[OutputFieldSpecification]:
         """Serializes the parameter data paths of a Params class to JSON schema."""
         if column_order_counter is None:
             column_order_counter = itertools.count()
 
-        for field_name, field in params_class.__fields__.items():
+        for field_name, field in params_class.model_fields.items():
+            annotation = field.annotation
+            if annotation is None:
+                continue
+
             spec = OutputFieldSpecification(
                 data_path=f"action_result.parameter.{field_name}",
-                data_type=as_datatype(field.annotation),
+                data_type=as_datatype(annotation),
             )
-            if cef_types := field.field_info.extra.get("cef_types"):
+
+            json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
+
+            if cef_types := json_schema_extra.get("cef_types"):
                 spec["contains"] = cef_types
 
-            column_name = field.field_info.extra.get("column_name")
+            column_name = json_schema_extra.get("column_name")
 
             if column_name is not None:
                 spec["column_name"] = column_name
@@ -56,7 +64,7 @@ class OutputsSerializer:
         cls,
         params_class: type[Params],
         outputs_class: type[ActionOutput],
-        summary_class: Optional[type[ActionOutput]] = None,
+        summary_class: type[ActionOutput] | None = None,
     ) -> list[OutputFieldSpecification]:
         """Serializes the data paths of an action to JSON schema."""
         status = OutputFieldSpecification(

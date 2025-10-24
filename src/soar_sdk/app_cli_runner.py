@@ -3,7 +3,7 @@ import inspect
 import json
 from pathlib import Path
 import typing
-from typing import Optional, Any
+from typing import Any
 import os
 from pydantic import ValidationError
 from urllib.parse import urlparse, parse_qs
@@ -31,7 +31,7 @@ class AppCliRunner:
     def __init__(self, app: "App") -> None:
         self.app = app
 
-    def parse_args(self, argv: Optional[list[str]] = None) -> argparse.Namespace:
+    def parse_args(self, argv: list[str] | None = None) -> argparse.Namespace:
         """Parse command line arguments for the app CLI runner."""
         root_parser = argparse.ArgumentParser()
         root_parser.add_argument(
@@ -162,13 +162,13 @@ class AppCliRunner:
                 )
 
             try:
-                param = chosen_action.params_class.parse_obj(params_json)
+                param = chosen_action.params_class.model_validate(params_json)
             except Exception as e:
                 root_parser.error(
                     f"Unable to parse parameter JSON file {params_file}:\n{e}"
                 )
 
-            parameter_list.append(ActionParameter(**param.dict()))
+            parameter_list.append(ActionParameter(**param.model_dump()))
 
         input_data = InputSpecification(
             action=args.identifier,
@@ -191,7 +191,7 @@ class AppCliRunner:
                 )
 
         input_data.config = AppConfig(
-            **input_data.config.dict(),
+            **input_data.config.model_dump(),
             **asset_json,  # Merge asset JSON into config
         )
 
@@ -207,7 +207,7 @@ class AppCliRunner:
             except ValidationError as e:
                 root_parser.error(f"Provided soar auth arguments are invalid: {e}.")
 
-        args.raw_input_data = input_data.json()
+        args.raw_input_data = input_data.model_dump_json()
 
     def _parse_webhook_args(
         self,
@@ -250,14 +250,14 @@ class AppCliRunner:
             path_parts=path_parts,
             query=query,
             body=args.data,
-            asset=self.app.asset_cls.parse_obj(asset_json),
+            asset=self.app.asset_cls.model_validate(asset_json),
             soar_base_url=soar_base_url,
             soar_auth_token=soar_auth_token,
             asset_id=args.asset_id,
         )
         print(f"Parsed webhook request: {args.webhook_request}")
 
-    def run(self, argv: Optional[list[str]] = None) -> None:
+    def run(self, argv: list[str] | None = None) -> None:
         """Run the app CLI."""
         args = self.parse_args(argv=argv)
 

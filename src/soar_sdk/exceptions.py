@@ -1,10 +1,7 @@
-from typing import Optional
-
-
 class ActionFailure(Exception):
     """Exception raised when an action fails to execute successfully."""
 
-    def __init__(self, message: str, action_name: Optional[str] = None) -> None:
+    def __init__(self, message: str, action_name: str | None = None) -> None:
         self.message = message
         self.action_name = action_name
         super().__init__(self.message)

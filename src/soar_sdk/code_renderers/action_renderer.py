@@ -1,14 +1,15 @@
-from typing import ClassVar, Optional
+from typing import ClassVar
 from collections.abc import Iterator
 import typing
 import ast
-from pydantic.fields import Undefined
+from pydantic_core import PydanticUndefined
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.code_renderers.renderer import AstRenderer
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
+from soar_sdk.field_utils import parse_json_schema_extra
 
 
 class ActionRenderer(AstRenderer[ActionMeta]):
@@ -201,7 +202,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
         yield ast.fix_missing_locations(node)
 
     def render_outputs_ast(
-        self, model: Optional[type[ActionOutput]] = None
+        self, model: type[ActionOutput] | None = None
     ) -> Iterator[ast.ClassDef]:
         """Generates the AST for the action outputs.
 
@@ -221,16 +222,24 @@ class ActionRenderer(AstRenderer[ActionMeta]):
 
         field_defs: list[ast.stmt] = []
 
-        for field_name_str, field in model.__fields__.items():
+        for field_name_str, field in model.model_fields.items():
             annotation = field.annotation
+            if annotation is None:
+                continue
+
             annotation_str = "{name}"
             while typing.get_origin(annotation) is list:
                 annotation_str = f"list[{annotation_str}]"
                 annotation = typing.get_args(annotation)[0]
+
+            # Ensure annotation is a valid type after unwrapping
+            if not isinstance(annotation, type):
+                continue
+
             annotation_str = annotation_str.format(name=annotation.__name__)
 
             field_name = normalize_field_name(field_name_str)
-            if field.alias != field_name.normalized:
+            if field.alias is not None and field.alias != field_name.normalized:
                 field_name.original = field.alias
                 field_name.modified = True
 
@@ -240,9 +249,10 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 simple=1,
             )
 
-            if issubclass(annotation, ActionOutput):
+            if isinstance(annotation, type) and issubclass(annotation, ActionOutput):
                 # If the field is a Pydantic model, recursively print its fields
-                for model_ast in self.render_outputs_ast(field.type_):
+                # In Pydantic v2, use annotation directly (no field.type_)
+                for model_ast in self.render_outputs_ast(annotation):
                     model_tree[model_ast.name] = model_ast
 
                 if field_name.modified:
@@ -258,7 +268,9 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                     )
             else:
                 keywords = []
-                if (extras := {**field.field_info.extra}) or field_name.modified:
+                extras = {**parse_json_schema_extra(field.json_schema_extra)}
+
+                if extras or field_name.modified:
                     extras["example_values"] = extras.pop("examples", None)
                     if extras["example_values"] == [True, False]:
                         extras["example_values"] = None
@@ -315,7 +327,10 @@ class ActionRenderer(AstRenderer[ActionMeta]):
             keywords=[],
         )
 
-        for field_name, field_def in self.action_meta.parameters.__fields__.items():
+        for field_name, field_def in self.action_meta.parameters.model_fields.items():
+            if field_def.annotation is None:
+                continue
+
             field_type = ast.Name(id=field_def.annotation.__name__, ctx=ast.Load())
 
             param = ast.Call(
@@ -324,29 +339,31 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 keywords=[],
             )
 
-            if field_def.field_info.description:
+            json_schema_extra = parse_json_schema_extra(field_def.json_schema_extra)
+
+            if field_def.description:
                 param.keywords.append(
                     ast.keyword(
                         arg="description",
-                        value=ast.Constant(value=field_def.field_info.description),
+                        value=ast.Constant(value=field_def.description),
                     )
                 )
-            if not field_def.field_info.extra.get("required", True):
+            if not json_schema_extra.get("required", True):
                 param.keywords.append(
                     ast.keyword(arg="required", value=ast.Constant(value=False))
                 )
-            if field_def.field_info.extra.get("primary", False):
+            if json_schema_extra.get("primary", False):
                 param.keywords.append(
                     ast.keyword(arg="primary", value=ast.Constant(value=True))
                 )
-            if (default := field_def.field_info.default) and default != Undefined:
+            if field_def.default not in (PydanticUndefined, None):
                 param.keywords.append(
                     ast.keyword(
                         arg="default",
-                        value=ast.Constant(value=field_def.field_info.default),
+                        value=ast.Constant(value=field_def.default),
                     )
                 )
-            if value_list := field_def.field_info.extra.get("value_list"):
+            if value_list := json_schema_extra.get("value_list"):
                 param.keywords.append(
                     ast.keyword(
                         arg="value_list",
@@ -356,7 +373,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                         ),
                     )
                 )
-            if cef_types := field_def.field_info.extra.get("cef_types"):
+            if cef_types := json_schema_extra.get("cef_types"):
                 param.keywords.append(
                     ast.keyword(
                         arg="cef_types",
@@ -366,7 +383,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                         ),
                     )
                 )
-            if field_def.field_info.extra.get("allow_list", False):
+            if json_schema_extra.get("allow_list", False):
                 param.keywords.append(
                     ast.keyword(arg="allow_list", value=ast.Constant(value=True))
                 )

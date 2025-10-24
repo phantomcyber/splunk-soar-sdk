@@ -2,7 +2,7 @@ from enum import Enum
 import functools
 from packaging.version import Version
 
-MIN_PHANTOM_VERSION = "6.4.0"
+MIN_PHANTOM_VERSION = "7.0.0"
 
 UPDATE_TIME_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
 
@@ -27,8 +27,8 @@ def remove_when_soar_newer_than(
 class PythonVersion(str, Enum):
     """Enum to represent supported Python versions."""
 
-    PY_3_9 = "3.9"
     PY_3_13 = "3.13"
+    PY_3_14 = "3.14"
 
     def __str__(self) -> str:
         """Returns the string representation of the Python version."""
@@ -41,10 +41,10 @@ class PythonVersion(str, Enum):
         Raises ValueError if the version is not supported.
         """
         # "3" is a special case for connectors that don't properly define their Python version
-        if version_str in ("3", "3.9"):
-            return cls.PY_3_9
-        if version_str == "3.13":
+        if version_str in ("3", "3.13"):
             return cls.PY_3_13
+        if version_str == "3.14":
+            return cls.PY_3_14
 
         raise ValueError(f"Unsupported Python version: {version_str}")
 
@@ -67,7 +67,7 @@ class PythonVersion(str, Enum):
     @classmethod
     def all(cls) -> list["PythonVersion"]:
         """Returns a list of all supported Python versions."""
-        return [cls.PY_3_9, cls.PY_3_13]
+        return [cls.PY_3_13, cls.PY_3_14]
 
     @classmethod
     def all_csv(cls) -> str:

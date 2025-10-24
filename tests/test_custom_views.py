@@ -103,9 +103,9 @@ def test_view_handler_template_wrapper_functionality(simple_app: App):
 
         result = test_view(mock_action, mock_app_runs, mock_context)
 
-        # Should return the base template path for backwards compatibility
-        assert result == "templates/base/base_template.html"
-        assert mock_context["html_content"] == "<html>rendered</html>"
+        # SOAR 7.0+ returns rendered HTML directly with prerender enabled
+        assert result == "<html>rendered</html>"
+        assert mock_context["prerender"] is True
 
 
 def test_view_handler_template_wrapper_prerender_support(simple_app: App):
@@ -256,7 +256,8 @@ def test_view_handler_error_handling_template_render_failure(simple_app: App):
 
         # Should catch exception and render error template
         mock_renderer.render_error_template.assert_called_once()
-        assert result == "templates/base/base_template.html"
+        assert result == "<div>Template Error</div>"
+        assert mock_context["prerender"] is True
 
 
 def test_view_handler_error_handling_general_exception(simple_app: App):
@@ -302,7 +303,8 @@ def test_view_handler_error_handling_general_exception(simple_app: App):
 
         # Should catch exception and render error template
         mock_renderer.render_error_template.assert_called_once()
-        assert result == "templates/base/base_template.html"
+        assert result == "<div>General Error</div>"
+        assert mock_context["prerender"] is True
 
 
 def test_view_handler_context_validation_error(simple_app: App):
@@ -334,7 +336,9 @@ def test_view_handler_context_validation_wrong_type(simple_app: App):
     mock_app_runs = []
     mock_context = "not_a_dict"
 
-    with pytest.raises(AttributeError, match="'str' object has no attribute 'get'"):
+    with pytest.raises(
+        TypeError, match="'str' object does not support item assignment"
+    ):
         test_view(mock_action, mock_app_runs, mock_context)
 
 
@@ -417,8 +421,8 @@ def test_view_handler_component_functionality(simple_app: App):
                 "colors": ["#FF6384"],
             },
         )
-        assert result == "templates/base/base_template.html"
-        assert mock_context["html_content"] == "<div>Component rendered</div>"
+        assert result == "<div>Component rendered</div>"
+        assert mock_context["prerender"] is True
 
 
 def test_view_handler_component_with_prerender(simple_app: App):
@@ -518,8 +522,8 @@ def test_view_handler_component_render_failure(simple_app: App):
             "test_component_view",
             "component 'pie_chart'",
         )
-        assert result == "templates/base/base_template.html"
-        assert mock_context["html_content"] == "<div>Component Render Error</div>"
+        assert result == "<div>Component Render Error</div>"
+        assert mock_context["prerender"] is True
 
 
 def test_view_handler_component_general_exception(simple_app: App):
@@ -570,8 +574,8 @@ def test_view_handler_component_general_exception(simple_app: App):
             "test_component_view",
             "pie_chart",
         )
-        assert result == "templates/base/base_template.html"
-        assert mock_context["html_content"] == "<div>Component Function Error</div>"
+        assert result == "<div>Component Function Error</div>"
+        assert mock_context["prerender"] is True
 
 
 def test_view_handler_component_integration_with_action(simple_app: App):

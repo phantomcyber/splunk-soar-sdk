@@ -1,4 +1,3 @@
-from typing import Optional, Union
 import pytest
 from soar_sdk.action_results import ActionOutput, OutputField
 
@@ -19,9 +18,9 @@ class ExampleActionOutput(ActionOutput):
     )
     nested_type: ExampleInnerData
     list_of_types: list[ExampleInnerData]
-    optional_field: Optional[str]
-    optional_inner_field: Optional[ExampleInnerData]
-    optional_list_of_types: Optional[list[ExampleInnerData]]
+    optional_field: str | None = None
+    optional_inner_field: ExampleInnerData | None = None
+    optional_list_of_types: list[ExampleInnerData] | None = None
 
 
 def test_action_output_to_json_schema():
@@ -68,11 +67,11 @@ class BadActionOutput(ActionOutput):
 
 
 class BadUnionActionOutput(ActionOutput):
-    union_field: Union[str, int]
+    union_field: str | int
 
 
 class BadOptionalUnionActionOutput(ActionOutput):
-    evil_field: Optional[Union[str, int]]
+    evil_field: str | int | None
 
 
 class BadListOfNonesActionOutput(ActionOutput):
@@ -113,7 +112,7 @@ def test_parse_action_output():
             {"inner_string": "inner_value_2"},
         ],
     }
-    parsed_data = ExampleActionOutput.parse_obj(raw_data)
+    parsed_data = ExampleActionOutput.model_validate(raw_data)
     assert parsed_data.stringy_field == "example_string"
     assert parsed_data.list_of_strings == ["string1", "string2"]
     assert parsed_data.nested_lists == [[1, 2], [3, 4]]
@@ -152,7 +151,7 @@ def test_action_output_to_dict():
         "optional_inner_field": None,
         "optional_list_of_types": None,
     }
-    assert action_output.dict(by_alias=True) == expected_dict
+    assert action_output.model_dump(by_alias=True) == expected_dict
 
 
 def test_action_output_to_json_schema_with_column_name_and_column_order():
@@ -168,3 +167,25 @@ def test_action_output_to_json_schema_with_column_name_and_column_order():
             "column_order": 0,
         }
     ]
+
+
+def test_action_output_with_none_annotation():
+    class OutputWithNoneField(ActionOutput):
+        field_with_annotation: str
+
+    OutputWithNoneField.model_fields["field_with_annotation"].annotation = None
+    schema = list(OutputWithNoneField._to_json_schema())
+    assert schema == []
+
+
+def test_action_output_not_a_type_after_unwrapping():
+    class OutputWithNonType(ActionOutput):
+        weird_field: str
+
+    field_info = OutputWithNonType.model_fields["weird_field"]
+    # Manually set annotation to something that's not a type after unwrapping
+    # Using a string instance instead of a type class
+    field_info.annotation = "not_a_type_class"
+
+    with pytest.raises(TypeError, match="invalid type annotation"):
+        list(OutputWithNonType._to_json_schema())

@@ -1,6 +1,7 @@
 from unittest import mock
 
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.crypto import encrypt
 from soar_sdk.input_spec import InputSpecification
@@ -36,7 +37,7 @@ def test_handle(example_app: App, simple_action_input: InputSpecification):
     }
 
     with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
-        example_app.handle(simple_action_input.json())
+        example_app.handle(simple_action_input.model_dump_json())
 
     mock_handle.assert_called_once()
     # Ensure that the encrypted asset configs get decrypted correctly
@@ -62,7 +63,7 @@ def test_decrypted_field_not_present(
     }
 
     with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
-        example_app.handle(simple_action_input.json())
+        example_app.handle(simple_action_input.model_dump_json())
 
     mock_handle.assert_called_once()
     # Ensure that the encrypted asset configs get decrypted correctly
@@ -99,7 +100,7 @@ def test_handle_with_sensitive_field_no_errors(
     }
 
     # Call handle - this should not throw any errors
-    _ = example_app.handle(simple_action_input.json())
+    _ = example_app.handle(simple_action_input.model_dump_json())
     assert example_app._raw_asset_config.get("password") == ""
 
 
@@ -112,6 +113,22 @@ def test_get_actions(example_app: App):
     assert len(actions) == 1
     assert "action_handler" in actions
     assert actions["action_handler"] == action_handler
+
+
+def test_adapt_action_result_with_empty_list_and_summary():
+    class SummaryOutput(ActionOutput):
+        count: int
+
+    summary = SummaryOutput(count=5)
+    result = App._adapt_action_result(
+        [],
+        ActionsManager(),
+        action_params=Params(),
+        message="test",
+        summary=summary,
+    )
+
+    assert result is True
 
 
 def test_app_asset(app_with_simple_asset: App):
@@ -163,7 +180,7 @@ def test_enable_webhooks(app_with_simple_asset: App):
         default_ip_allowlist=["10.0.0.0/24"],
     )
 
-    assert app_with_simple_asset.webhook_meta.dict() == {
+    assert app_with_simple_asset.webhook_meta.model_dump() == {
         "handler": None,
         "requires_auth": False,
         "allowed_headers": ["Authorization", "X-Forwarded-For"],

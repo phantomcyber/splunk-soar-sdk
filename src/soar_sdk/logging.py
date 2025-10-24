@@ -4,7 +4,7 @@ from soar_sdk.colors import ANSIColor
 from soar_sdk.shims.phantom.install_info import is_soar_available, get_product_version
 from soar_sdk.shims.phantom.ph_ipc import ph_ipc
 from packaging.version import Version
-from typing import Any, Optional
+from typing import Any
 from soar_sdk.compat import remove_when_soar_newer_than
 
 PROGRESS_LEVEL = 25
@@ -38,7 +38,7 @@ class SOARHandler(logging.Handler):
         self,
     ) -> None:
         super().__init__()
-        self.__handle: Optional[int] = None
+        self.__handle: int | None = None
 
     def emit(self, record: logging.LogRecord) -> None:
         is_new_soar = Version(get_product_version()) >= Version("7.0.0")
@@ -79,7 +79,7 @@ class SOARHandler(logging.Handler):
         except Exception:
             self.handleError(record)
 
-    def set_handle(self, handle: Optional[int]) -> None:
+    def set_handle(self, handle: int | None) -> None:
         """Set the action handle for the SOAR client."""
         self.__handle = handle
 

@@ -1,5 +1,4 @@
-from pydantic import BaseModel, Field, validator
-from typing import Optional, Union
+from pydantic import BaseModel, Field, field_validator
 
 from soar_sdk.asset import AssetFieldSpecification
 from soar_sdk.compat import PythonVersion
@@ -42,13 +41,14 @@ class AppMeta(BaseModel):
     configuration: dict[str, AssetFieldSpecification] = Field(default_factory=dict)
     actions: list[ActionMeta] = Field(default_factory=list)
 
-    pip39_dependencies: DependencyList = Field(default_factory=DependencyList)
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
+    pip314_dependencies: DependencyList = Field(default_factory=DependencyList)
 
-    webhook: Optional[WebhookMeta]
+    webhook: WebhookMeta | None = None
 
-    @validator("python_version", pre=True)
-    def convert_python_version_to_csv(cls, v: Union[list, str]) -> str:
+    @field_validator("python_version", mode="before")
+    @classmethod
+    def convert_python_version_to_csv(cls, v: list | str) -> str:
         """Converts python_version to a comma-separated string if it's a list and validates versions."""
         if isinstance(v, list):
             # Validate each version in the list and convert to CSV
@@ -64,4 +64,7 @@ class AppMeta(BaseModel):
 
     def to_json_manifest(self) -> dict:
         """Converts the AppMeta instance to a JSON-compatible dictionary."""
-        return self.dict(exclude_none=True)
+        data = self.model_dump(exclude_none=True)
+        # In Pydantic v2 nested model_dump() overrides aren't automatically called
+        data["actions"] = [action.model_dump() for action in self.actions]
+        return data

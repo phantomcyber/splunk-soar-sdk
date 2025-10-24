@@ -10,7 +10,7 @@ import uuid
 import humanize
 import bleach  # type: ignore[import-untyped]
 from datetime import datetime, timedelta
-from typing import Optional, TypeVar, Union
+from typing import TypeVar
 from collections.abc import Iterable
 from collections.abc import Iterator
 from jinja2 import Environment
@@ -77,7 +77,7 @@ def by_key(dictionary: dict, key: str) -> str:
     return dictionary.get(key, "")
 
 
-def by_nested_key(dictionary: dict, key: str) -> Optional[str]:
+def by_nested_key(dictionary: dict, key: str) -> str | None:
     """Get nested dictionary value by space-separated key."""
     split_key = key.split()
     src = dictionary.get(split_key[0], None)
@@ -97,7 +97,7 @@ def typeof(item: object) -> type:
     return type(item)
 
 
-def safe_intcomma(value: Union[str, int]) -> str:
+def safe_intcomma(value: str | int) -> str:
     """Format integer with commas, safely handling non-integers."""
     try:
         return f"{int(value):,}"
@@ -143,7 +143,7 @@ def to_json(obj: object) -> str:
     return json.dumps(obj)
 
 
-def absval(obj: Union[int, float]) -> Union[int, float]:
+def absval(obj: int | float) -> int | float:
     """Get absolute value."""
     return abs(obj)
 

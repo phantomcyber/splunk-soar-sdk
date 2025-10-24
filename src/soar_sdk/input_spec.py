@@ -1,6 +1,6 @@
 from uuid import uuid4
-from pydantic import BaseModel, Field, validator
-from typing import Literal, Optional, Any
+from pydantic import BaseModel, Field, field_validator, ConfigDict
+from typing import Literal, Any
 import random
 
 
@@ -20,20 +20,18 @@ class AppConfig(BaseModel):
 
     app_version: str
     directory: str
-    ingest: Optional[IngestConfig] = None
+    ingest: IngestConfig | None = None
     main_module: str
     # TODO: The platform should deprecate this unused field
     appname: Literal["-"] = "-"
 
     # NOTE: Inputs will intermix the keys of the asset config with the keys here
-    class Config:
-        """Configuration for the AppConfig model."""
-
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
     def get_asset_config(self) -> dict[str, Any]:
         """Get the asset configuration from the app config."""
-        return {k: v for k, v in self.__dict__.items() if k not in self.__fields__}
+        # In Pydantic v2 extra fields are stored in __pydantic_extra__
+        return dict(self.__pydantic_extra__) if self.__pydantic_extra__ else {}
 
 
 class EnvironmentVariable(BaseModel):
@@ -65,10 +63,7 @@ class ActionParameter(BaseModel):
     # context: Optional[ParameterContext] = None # noqa: ERA001
 
     # Additional keys are action-specific and not predictable here.
-    class Config:
-        """Configuration for the ActionParameter model."""
-
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class SoarAuth(BaseModel):
@@ -78,7 +73,8 @@ class SoarAuth(BaseModel):
     username: str
     password: str
 
-    @validator("phantom_url")
+    @field_validator("phantom_url")
+    @classmethod
     def validate_phantom_url(cls, value: str) -> str:
         """Ensure the URL starts with http:// or https://."""
         return (
@@ -137,9 +133,9 @@ class InputSpecification(BaseModel):
     }
     """
 
-    action: Optional[str] = None
+    action: str | None = None
     action_run_id: int = Field(default_factory=id_factory)
-    app_config: Optional[Any] = None
+    app_config: Any | None = None
     asset_id: str = Field(default_factory=lambda: str(id_factory()))
     config: AppConfig
     connector_run_id: int = Field(default_factory=id_factory)
@@ -148,6 +144,6 @@ class InputSpecification(BaseModel):
     dec_key: str = Field(default_factory=lambda: str(id_factory()))
     environment_variables: dict[str, EnvironmentVariable] = Field(default_factory=dict)
     identifier: str
-    parameters: list[ActionParameter] = Field(default_factory=lambda: [{}])
+    parameters: list[ActionParameter] = Field(default_factory=list)
     user_session_token: str = ""
-    soar_auth: Optional[SoarAuth] = None
+    soar_auth: SoarAuth | None = None

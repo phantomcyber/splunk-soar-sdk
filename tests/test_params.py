@@ -22,10 +22,16 @@ def test_sensitive_param_must_be_str():
 
 
 def test_make_request_params_validation():
-    with pytest.raises(TypeError) as e:
+    """Test that MakeRequestParams validates fields on instantiation in Pydantic v2."""
 
-        class BrokenMakeRequestParams(MakeRequestParams):
-            not_allowed: str = Param(description="Not allowed")
+    class BrokenMakeRequestParams(MakeRequestParams):
+        not_allowed: str = Param(description="Not allowed")
+
+    # In Pydantic v2, validation happens on instantiation, not class creation
+    with pytest.raises(TypeError) as e:
+        BrokenMakeRequestParams(
+            http_method="GET", endpoint="/test", not_allowed="value"
+        )
 
     assert (
         str(e.value)
@@ -41,3 +47,24 @@ def test_make_request_params_subclass_schema():
         MakeRequestParamsSubclass._to_json_schema()["query_parameters"]["description"]
         == "Query parameters for virustotal"
     )
+
+
+def test_params_field_without_annotation():
+    class BrokenParams(Params):
+        field_no_type: str
+
+    BrokenParams.model_fields["field_no_type"].annotation = None
+
+    with pytest.raises(TypeError, match="has no type annotation"):
+        BrokenParams._to_json_schema()
+
+
+def test_param_with_none_values():
+    class TestParams(Params):
+        field1: str = Param(
+            required=None, primary=None, allow_list=None, sensitive=None
+        )
+
+    # This should work without errors - None values should skip the if blocks
+    schema = TestParams._to_json_schema()
+    assert "field1" in schema

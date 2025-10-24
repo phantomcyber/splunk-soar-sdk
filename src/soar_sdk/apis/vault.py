@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 from soar_sdk.models.vault_attachment import VaultAttachment
 from soar_sdk.shims.phantom.vault import PhantomVault, VaultBase
 
@@ -47,9 +47,9 @@ class Vault:
     def create_attachment(
         self,
         container_id: int,
-        file_content: Union[str, bytes],
+        file_content: str | bytes,
         file_name: str,
-        metadata: Optional[dict[str, str]] = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         """Create a vault attachment from file content.
 
@@ -87,7 +87,7 @@ class Vault:
         container_id: int,
         file_location: str,
         file_name: str,
-        metadata: Optional[dict[str, str]] = None,
+        metadata: dict[str, str] | None = None,
     ) -> str:
         """Add an existing file to the vault as an attachment.
 
@@ -121,9 +121,9 @@ class Vault:
 
     def get_attachment(
         self,
-        vault_id: Optional[str] = None,
-        file_name: Optional[str] = None,
-        container_id: Optional[int] = None,
+        vault_id: str | None = None,
+        file_name: str | None = None,
+        container_id: int | None = None,
     ) -> list[VaultAttachment]:
         """Retrieve attachment(s) from the vault.
 
@@ -161,9 +161,9 @@ class Vault:
 
     def delete_attachment(
         self,
-        vault_id: Optional[str] = None,
-        file_name: Optional[str] = None,
-        container_id: Optional[int] = None,
+        vault_id: str | None = None,
+        file_name: str | None = None,
+        container_id: int | None = None,
         remove_all: bool = False,
     ) -> list[str]:
         """Delete attachment(s) from the vault.

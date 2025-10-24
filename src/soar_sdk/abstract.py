@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Optional, Union, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 from collections.abc import Mapping, Iterable, AsyncIterable
 
 from soar_sdk.apis.vault import Vault
@@ -8,9 +8,9 @@ from soar_sdk.apis.container import Container
 from soar_sdk.action_results import ActionOutput
 import httpx
 from pydantic.dataclasses import dataclass
-from pydantic import validator
+from pydantic import field_validator
 
-JSONType = Union[dict[str, Any], list[Any], str, int, float, bool, None]
+JSONType = dict[str, Any] | list[Any] | str | int | float | bool | None
 SummaryType = TypeVar("SummaryType", bound=ActionOutput)
 
 
@@ -23,7 +23,8 @@ class SOARClientAuth:
     password: str = ""
     user_session_token: str = ""
 
-    @validator("base_url")
+    @field_validator("base_url")
+    @classmethod
     def validate_phantom_url(cls, value: str) -> str:
         """Validate and format the base URL for the SOAR API."""
         return (
@@ -74,13 +75,13 @@ class SOARClient(Generic[SummaryType]):
         self,
         endpoint: str,
         *,
-        params: Optional[Union[dict[str, Any], httpx.QueryParams]] = None,
-        headers: Optional[dict[str, str]] = None,
-        cookies: Optional[dict[str, str]] = None,
-        timeout: Optional[httpx.Timeout] = None,
-        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
+        params: dict[str, Any] | httpx.QueryParams | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        timeout: httpx.Timeout | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
         follow_redirects: bool = False,
-        extensions: Optional[Mapping[str, Any]] = None,
+        extensions: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         """Perform a GET request to the specific endpoint using the SOAR client."""
         response = self.client.get(
@@ -100,19 +101,17 @@ class SOARClient(Generic[SummaryType]):
         self,
         endpoint: str,
         *,
-        content: Optional[
-            Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-        ] = None,
-        data: Optional[Mapping[str, Any]] = None,
-        files: Optional[dict[str, Any]] = None,
-        json: Optional[JSONType] = None,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
-        cookies: Optional[dict[str, str]] = None,
-        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
-        timeout: Optional[Union[float, httpx.Timeout]] = None,
+        content: str | bytes | Iterable[bytes] | AsyncIterable[bytes] | None = None,
+        data: Mapping[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
+        json: JSONType | None = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx.Timeout | None = None,
         follow_redirects: bool = True,
-        extensions: Optional[Mapping[str, Any]] = None,
+        extensions: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         """Perform a POST request to the specific endpoint using the SOAR client."""
         headers = headers or {}
@@ -138,19 +137,17 @@ class SOARClient(Generic[SummaryType]):
         self,
         endpoint: str,
         *,
-        content: Optional[
-            Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]
-        ] = None,
-        data: Optional[Mapping[str, Any]] = None,
-        files: Optional[dict[str, Any]] = None,
-        json: Optional[JSONType] = None,
-        params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, str]] = None,
-        cookies: Optional[dict[str, str]] = None,
-        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
-        timeout: Optional[Union[float, httpx.Timeout]] = None,
+        content: str | bytes | Iterable[bytes] | AsyncIterable[bytes] | None = None,
+        data: Mapping[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
+        json: JSONType | None = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx.Timeout | None = None,
         follow_redirects: bool = True,
-        extensions: Optional[Mapping[str, Any]] = None,
+        extensions: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         """Perform a PUT request to the specific endpoint using the SOAR client."""
         headers = headers or {}
@@ -176,13 +173,13 @@ class SOARClient(Generic[SummaryType]):
         self,
         endpoint: str,
         *,
-        params: Optional[Union[dict[str, Any], httpx.QueryParams]] = None,
-        headers: Optional[dict[str, str]] = None,
-        cookies: Optional[dict[str, str]] = None,
-        auth: Optional[Union[httpx.Auth, tuple[str, str]]] = None,
-        timeout: Optional[httpx.Timeout] = None,
+        params: dict[str, Any] | httpx.QueryParams | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: httpx.Timeout | None = None,
         follow_redirects: bool = False,
-        extensions: Optional[Mapping[str, Any]] = None,
+        extensions: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         """Perform a DELETE request to the specific endpoint using the SOAR client."""
         headers = headers or {}
@@ -229,7 +226,7 @@ class SOARClient(Generic[SummaryType]):
         pass
 
     @abstractmethod
-    def get_summary(self) -> Optional[SummaryType]:
+    def get_summary(self) -> SummaryType | None:
         """Get the summary for the action run."""
         pass
 

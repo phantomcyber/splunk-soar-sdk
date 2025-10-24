@@ -1,3 +1,4 @@
+import functools
 import io
 import os
 from pathlib import Path
@@ -6,7 +7,7 @@ import tarfile
 from tempfile import TemporaryDirectory
 import build
 
-from typing import Optional
+from typing import ClassVar
 from collections.abc import Mapping, Sequence, AsyncGenerator
 from pydantic import BaseModel, Field
 
@@ -61,22 +62,23 @@ DEPENDENCIES_TO_BUILD = {
 class UvWheel(BaseModel):
     """Represents a Python wheel file with metadata and methods to fetch and validate it."""
 
-    url: str
+    url: str | None = None
+    filename: str | None = None
     hash: str
-    size: Optional[int] = None
+    size: int | None = None
 
     # The wheel file name is specified by PEP427. It's either a 5- or 6-tuple:
     # {distribution}-{version}(-{build tag})?-{python tag}-{abi tag}-{platform tag}.whl
     # We can parse this to determine which configurations it supports.
-    @property
+    @functools.cached_property
     def basename(self) -> str:
         """The base name of the wheel file."""
-        remove_when_soar_newer_than(
-            "6.4.0",
-            "We should be able to adopt pydantic 2 now, and turn this into a cached property.",
-        )
-        filename = self.url.split("/")[-1]
-        return filename.removesuffix(".whl")
+        if self.filename:
+            return self.filename.removesuffix(".whl")
+        if self.url:
+            filename = self.url.split("/")[-1]
+            return filename.removesuffix(".whl")
+        raise ValueError("UvWheel must have either url or filename")
 
     @property
     def distribution(self) -> str:
@@ -89,7 +91,7 @@ class UvWheel(BaseModel):
         return self.basename.split("-")[1]
 
     @property
-    def build_tag(self) -> Optional[str]:
+    def build_tag(self) -> str | None:
         """An optional build tag for the wheel."""
         split = self.basename.split("-")
         if len(split) == 6:
@@ -122,6 +124,10 @@ class UvWheel(BaseModel):
 
     async def fetch(self) -> bytes:
         """Download the wheel file from the specified URL."""
+        if self.url is None:
+            raise ValueError(
+                f"Cannot fetch wheel {self.filename or 'unknown'}: no URL provided (local file reference?)"
+            )
         async with httpx.AsyncClient() as client:
             response = await client.get(self.url, timeout=10)
             response.raise_for_status()
@@ -135,7 +141,7 @@ class UvSourceDistribution(BaseModel):
 
     url: str
     hash: str
-    size: Optional[int] = None
+    size: int | None = None
 
     def validate_hash(self, sdist: bytes) -> None:
         """Validate the hash of the downloaded sdist against the expected hash."""
@@ -158,8 +164,8 @@ class UvSourceDistribution(BaseModel):
     @staticmethod
     def _builder_runner(
         cmd: Sequence[str],
-        cwd: Optional[str] = None,
-        extra_environ: Optional[Mapping[str, str]] = None,
+        cwd: str | None = None,
+        extra_environ: Mapping[str, str] | None = None,
     ) -> None:
         """Run a command in a subprocess and return its exit code, stdout, and stderr."""
         proc = subprocess.run(  # noqa: S603
@@ -191,13 +197,13 @@ class DependencyWheel(BaseModel):
 
     module: str
     input_file: str = ""
-    input_file_aarch64: Optional[str] = None
+    input_file_aarch64: str | None = None
 
-    wheel: Optional[UvWheel] = Field(exclude=True, default=None)
-    wheel_aarch64: Optional[UvWheel] = Field(exclude=True, default=None)
-    sdist: Optional[UvSourceDistribution] = Field(exclude=True, default=None)
+    wheel: UvWheel | None = Field(exclude=True, default=None)
+    wheel_aarch64: UvWheel | None = Field(exclude=True, default=None)
+    sdist: UvSourceDistribution | None = Field(exclude=True, default=None)
 
-    async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes], None]:
+    async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes]]:
         """Collect a list of wheel files to fetch for this dependency across all platforms."""
         if self.wheel is None and self.sdist is not None:
             logger.info(f"Building sdist for {self.input_file}")
@@ -229,7 +235,7 @@ class DependencyWheel(BaseModel):
 
     def __hash__(self) -> int:
         """Compute a hash for the dependency wheel so we can dedupe wheel files in a later step."""
-        return hash((type(self), *tuple(self.dict().items())))
+        return hash((type(self), *tuple(self.model_dump().items())))
 
 
 class DependencyList(BaseModel):
@@ -254,7 +260,7 @@ class UvPackage(BaseModel):
         default_factory=dict, alias="optional-dependencies"
     )
     wheels: list[UvWheel] = []
-    sdist: Optional[UvSourceDistribution] = None
+    sdist: UvSourceDistribution | None = None
 
     def _find_wheel(
         self,
@@ -287,21 +293,21 @@ class UvPackage(BaseModel):
             f"Could not find a suitable wheel for {self.name=}, {self.version=}, {abi_precedence=}, {python_precedence=}, {platform_precedence=}"
         )
 
-    _manylinux_precedence = [
+    _manylinux_precedence: ClassVar[list[str]] = [
         "_2_28",  # glibc 2.28, latest stable version, supports Ubuntu 18.10+ and RHEL/Oracle 8+
         "_2_17",  # glibc 2.17, LTS-ish, supports Ubuntu 13.10+ and RHEL/Oracle 7+
         "2014",  # Synonym for _2_17
     ]
-    platform_precedence_x86_64 = [
+    platform_precedence_x86_64: ClassVar[list[str]] = [
         *[f"manylinux{version}_x86_64" for version in _manylinux_precedence],
         "any",
     ]
-    platform_precedence_aarch64 = [
+    platform_precedence_aarch64: ClassVar[list[str]] = [
         *[f"manylinux{version}_aarch64" for version in _manylinux_precedence],
         "any",
     ]
 
-    build_from_source_warning_triggered = False
+    build_from_source_warning_triggered: bool = False
 
     def _resolve(
         self, abi_precedence: list[str], python_precedence: list[str]
@@ -348,21 +354,6 @@ class UvPackage(BaseModel):
 
         return wheel
 
-    def resolve_py39(self) -> DependencyWheel:
-        """Resolve the dependency wheel for Python 3.9."""
-        return self._resolve(
-            abi_precedence=[
-                "cp39",  # Python 3.9-specific ABI
-                "abi3",  # Python 3 stable ABI
-                "none",  # Source wheels -- no ABI
-            ],
-            python_precedence=[
-                "cp39",  # Binary wheel for Python 3.9
-                "pp39",  # Source wheel for Python 3.9
-                "py3",  # Source wheel for any Python 3.x
-            ],
-        )
-
     def resolve_py313(self) -> DependencyWheel:
         """Resolve the dependency wheel for Python 3.13."""
         return self._resolve(
@@ -374,6 +365,21 @@ class UvPackage(BaseModel):
             python_precedence=[
                 "cp313",  # Binary wheel for Python 3.13
                 "pp313",  # Source wheel for Python 3.13
+                "py3",  # Source wheel for any Python 3.x
+            ],
+        )
+
+    def resolve_py314(self) -> DependencyWheel:
+        """Resolve the dependency wheel for Python 3.14."""
+        return self._resolve(
+            abi_precedence=[
+                "cp314",  # Python 3.14-specific ABI
+                "abi3",  # Python 3 stable ABI
+                "none",  # Source wheels -- no ABI
+            ],
+            python_precedence=[
+                "cp314",  # Binary wheel for Python 3.14
+                "pp314",  # Source wheel for Python 3.14
                 "py3",  # Source wheel for any Python 3.x
             ],
         )
@@ -446,21 +452,21 @@ class UvLock(BaseModel):
         packages: list[UvPackage],
     ) -> tuple[DependencyList, DependencyList]:
         """Resolve the dependencies for the given packages."""
-        py39_wheels: list[DependencyWheel] = []
         py313_wheels: list[DependencyWheel] = []
+        py314_wheels: list[DependencyWheel] = []
 
         for package in packages:
-            wheel_39 = package.resolve_py39()
             wheel_313 = package.resolve_py313()
+            wheel_314 = package.resolve_py314()
 
-            if wheel_39 == wheel_313:
-                wheel_39.add_platform_prefix("shared")
+            if wheel_313 == wheel_314:
                 wheel_313.add_platform_prefix("shared")
+                wheel_314.add_platform_prefix("shared")
             else:
-                wheel_39.add_platform_prefix("python39")
                 wheel_313.add_platform_prefix("python313")
+                wheel_314.add_platform_prefix("python314")
 
-            py39_wheels.append(wheel_39)
             py313_wheels.append(wheel_313)
+            py314_wheels.append(wheel_314)
 
-        return DependencyList(wheel=py39_wheels), DependencyList(wheel=py313_wheels)
+        return DependencyList(wheel=py313_wheels), DependencyList(wheel=py314_wheels)

@@ -1,12 +1,15 @@
-from typing import Optional, Union, get_origin, get_args, Any
+from typing import Union, get_origin, get_args, Any
 from collections.abc import Iterator
-from typing_extensions import NotRequired, TypedDict
-from pydantic import BaseModel, Field
+from typing_extensions import TypedDict
+from typing import NotRequired
+from pydantic import BaseModel, Field, ConfigDict
 import itertools
+import types
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.meta.datatypes import as_datatype
+from soar_sdk.field_utils import parse_json_schema_extra
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
@@ -40,7 +43,7 @@ class ActionResult(PhantomActionResult):
         self,
         status: bool,
         message: str,
-        param: Optional[dict] = None,
+        param: dict | None = None,
     ) -> None:
         """Initialize an ActionResult with status, message, and optional parameters.
 
@@ -82,16 +85,16 @@ class OutputFieldSpecification(TypedDict):
     data_path: str
     data_type: str
     contains: NotRequired[list[str]]
-    example_values: NotRequired[list[Union[str, float, bool]]]
+    example_values: NotRequired[list[str | float | bool]]
     column_name: NotRequired[str]
     column_order: NotRequired[int]
 
 
 def OutputField(
-    cef_types: Optional[list[str]] = None,
-    example_values: Optional[list[Union[str, float, bool]]] = None,
-    alias: Optional[str] = None,
-    column_name: Optional[str] = None,
+    cef_types: list[str] | None = None,
+    example_values: list[str | float | bool] | None = None,
+    alias: str | None = None,
+    column_name: str | None = None,
 ) -> Any:  # noqa: ANN401
     """Define metadata for an action output field.
 
@@ -121,11 +124,18 @@ def OutputField(
         ...     )
         ...     count: int = OutputField(example_values=[1, 5, 10])
     """
+    json_schema_extra: dict[str, Any] = {}
+    if cef_types is not None:
+        json_schema_extra["cef_types"] = cef_types
+    if example_values is not None:
+        json_schema_extra["examples"] = example_values
+    if column_name is not None:
+        json_schema_extra["column_name"] = column_name
+
     return Field(
-        examples=example_values,
+        default=...,
         alias=alias,
-        cef_types=cef_types,
-        column_name=column_name,
+        json_schema_extra=json_schema_extra if json_schema_extra else None,
     )
 
 
@@ -158,11 +168,14 @@ class ActionOutput(BaseModel):
         Nested ActionOutput classes are supported for complex data structures.
     """
 
+    # Allow instantiation with both field names and aliases for backward compatibility
+    model_config = ConfigDict(populate_by_name=True)
+
     @classmethod
     def _to_json_schema(
         cls,
         parent_datapath: str = "action_result.data.*",
-        column_order_counter: Optional[itertools.count] = None,
+        column_order_counter: itertools.count | None = None,
     ) -> Iterator[OutputFieldSpecification]:
         """Convert the ActionOutput class to SOAR-compatible JSON schema.
 
@@ -191,15 +204,18 @@ class ActionOutput(BaseModel):
         if column_order_counter is None:
             column_order_counter = itertools.count()
 
-        for _field_name, field in cls.__fields__.items():
+        for _field_name, field in cls.model_fields.items():
             field_name = alias if (alias := field.alias) else _field_name
 
             field_type = field.annotation
+            if field_type is None:
+                continue
+
             datapath = parent_datapath + f".{field_name}"
 
             # Handle lists and optional types, even nested ones
             origin = get_origin(field_type)
-            while origin in [list, Union, Optional]:
+            while origin in [list, Union, types.UnionType]:
                 type_args = [
                     arg
                     for arg in get_args(field_type)
@@ -221,6 +237,11 @@ class ActionOutput(BaseModel):
                 field_type = type_args[0]
                 origin = get_origin(field_type)
 
+            if not isinstance(field_type, type):
+                raise TypeError(
+                    f"Output field {field_name} has invalid type annotation: {field_type}"
+                )
+
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema
                 yield from field_type._to_json_schema(datapath, column_order_counter)
@@ -237,15 +258,17 @@ class ActionOutput(BaseModel):
                 data_path=datapath, data_type=type_name
             )
 
-            if cef_types := field.field_info.extra.get("cef_types"):
+            json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
+
+            if cef_types := json_schema_extra.get("cef_types"):
                 schema_field["contains"] = cef_types
-            if examples := field.field_info.extra.get("examples"):
+            if examples := json_schema_extra.get("examples"):
                 schema_field["example_values"] = examples
 
             if field_type is bool:
                 schema_field["example_values"] = [True, False]
 
-            column_name = field.field_info.extra.get("column_name")
+            column_name = json_schema_extra.get("column_name")
 
             if column_name is not None:
                 schema_field["column_name"] = column_name

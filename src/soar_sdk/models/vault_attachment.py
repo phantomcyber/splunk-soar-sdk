@@ -1,4 +1,4 @@
-from typing import IO, Optional, Union
+from typing import IO
 from pydantic import BaseModel
 
 
@@ -11,15 +11,15 @@ class VaultAttachment(BaseModel):
     """
 
     id: int
-    created_via: Optional[str] = None
+    created_via: str | None = None
     container: str
-    task: Optional[str] = None
+    task: str | None = None
     create_time: str
     name: str
     user: str
     vault_document: int
-    mime_type: Optional[str] = None
-    es_attachment_id: Optional[str] = None
+    mime_type: str | None = None
+    es_attachment_id: str | None = None
     hash: str
     vault_id: str
     size: int
@@ -29,7 +29,7 @@ class VaultAttachment(BaseModel):
     container_id: int
     contains: list[str] = []
 
-    def open(self, mode: str = "r") -> Union[IO[str], IO[bytes]]:
+    def open(self, mode: str = "r") -> IO[str] | IO[bytes]:
         """Open the vault attachment file.
 
         Args:

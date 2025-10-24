@@ -165,7 +165,7 @@ def test_action_decoration_with_meta(simple_app: App):
         """
         pass
 
-    assert sorted(foo.meta.dict().keys()) == sorted(
+    assert sorted(foo.meta.model_dump().keys()) == sorted(
         [
             "action",
             "identifier",
@@ -194,7 +194,7 @@ def test_action_decoration_with_render_as(simple_app: App):
         """
         pass
 
-    assert sorted(foo.meta.dict().keys()) == sorted(
+    assert sorted(foo.meta.model_dump().keys()) == sorted(
         [
             "action",
             "identifier",
@@ -386,9 +386,12 @@ def test_delete(
     def delete_action(params: Params, soar: SOARClient) -> ActionOutput:
         soar.delete("/some/delete/endpoint")
         assert result
-        assert ActionOutput()
+        return ActionOutput()
 
-    result = delete_action(SampleParams(), soar=TestClient())
+    result = delete_action(
+        SampleParams(int_value=1, str_value="test", pass_value="test", bool_value=True),
+        soar=TestClient(),
+    )
     assert mock_delete_any_soar_call.call_count == 1
 
 

@@ -2,7 +2,8 @@ import json
 import base64
 import mimetypes
 
-from typing import Optional, TypeVar, Generic, Any, IO, Callable
+from typing import TypeVar, Generic, Any, IO
+from collections.abc import Callable
 from pydantic import BaseModel, Field
 
 from soar_sdk.asset import BaseAsset
@@ -18,7 +19,7 @@ class WebhookRequest(BaseModel, Generic[AssetType]):
     headers: dict[str, str]
     path_parts: list[str]
     query: dict[str, list[str]]
-    body: Optional[str]
+    body: str | None
     asset: AssetType
     soar_base_url: str
     soar_auth_token: str
@@ -65,7 +66,7 @@ class WebhookResponse(BaseModel):
     def text_response(
         content: str,
         status_code: int = 200,
-        extra_headers: Optional[dict[str, Any]] = None,
+        extra_headers: dict[str, Any] | None = None,
     ) -> "WebhookResponse":
         """Build a WebhookResponse object given raw textual content.
 
@@ -83,7 +84,7 @@ class WebhookResponse(BaseModel):
     def json_response(
         content: dict,
         status_code: int = 200,
-        extra_headers: Optional[dict[str, Any]] = None,
+        extra_headers: dict[str, Any] | None = None,
     ) -> "WebhookResponse":
         """Build a WebhookResponse object given a dictionary, to be interpreted as JSON.
 
@@ -101,9 +102,9 @@ class WebhookResponse(BaseModel):
     def file_response(
         fd: IO,
         filename: str,
-        content_type: Optional[str] = None,
+        content_type: str | None = None,
         status_code: int = 200,
-        extra_headers: Optional[dict[str, Any]] = None,
+        extra_headers: dict[str, Any] | None = None,
     ) -> "WebhookResponse":
         """Build a webhook response using the data in a given open file-like object.
 

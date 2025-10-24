@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Any
 import os
 
 from soar_sdk.compat import remove_when_soar_newer_than
@@ -31,7 +31,7 @@ class ActionsManager(BaseConnector):
         self.auth_state: dict = {}
         self.asset_cache: dict = {}
 
-    def get_action(self, identifier: str) -> Optional[Action]:
+    def get_action(self, identifier: str) -> Action | None:
         """Convenience method for getting an Action callable from its identifier.
 
         Returns None if there are no actions managed by this object matching the given
@@ -60,14 +60,12 @@ class ActionsManager(BaseConnector):
         """
         self._actions[action_identifier] = wrapped_function
 
-    def handle(
-        self, input_data: InputSpecification, handle: Optional[int] = None
-    ) -> str:
+    def handle(self, input_data: InputSpecification, handle: int | None = None) -> str:
         """Runs handling of the input data on connector."""
         action_id = input_data.identifier
         if self.get_action(action_id):
             self.print_progress_message = True
-            return self._handle_action(input_data.json(), handle or 0)
+            return self._handle_action(input_data.model_dump_json(), handle or 0)
         else:
             raise RuntimeError(
                 f"Action {action_id} not recognized"
@@ -86,7 +84,7 @@ class ActionsManager(BaseConnector):
 
         if handler := self.get_action(action_id):
             try:
-                params = handler.meta.parameters.parse_obj(param)
+                params = handler.meta.parameters.model_validate(param)
             except (ValueError, ValidationError) as e:
                 self.save_progress(
                     f"Validation Error - the params data for action could not be parsed: {e!s}"

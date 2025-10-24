@@ -21,7 +21,7 @@ def test_action_meta_dict_with_view_handler():
         view_handler=mock_view,
     )
 
-    result = meta.dict()
+    result = meta.model_dump()
 
     assert "render" in result
     assert result["render"]["type"] == "custom"
@@ -48,7 +48,7 @@ def test_action_meta_dict_with_view_handler_multi_part_module():
         view_handler=mock_view,
     )
 
-    result = meta.dict()
+    result = meta.model_dump()
 
     assert result["render"]["type"] == "custom"
     assert "view_handler" not in result
@@ -67,7 +67,7 @@ def test_action_meta_dict_without_view_handler():
         versions="EQ(*)",
     )
 
-    result = meta.dict()
+    result = meta.model_dump()
 
     assert "render" not in result
     assert "view_handler" not in result
@@ -87,7 +87,7 @@ def test_action_meta_dict_with_concurrency_lock():
         enable_concurrency_lock=True,
     )
 
-    result = meta.dict()
+    result = meta.model_dump()
 
     assert "lock" in result
     assert result["lock"]["enabled"] is True

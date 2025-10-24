@@ -1,6 +1,5 @@
 import dataclasses
 import ast
-from typing import Union
 from collections.abc import Iterator
 
 
@@ -50,7 +49,7 @@ class AppRenderer:
         self.context = context
 
     @staticmethod
-    def create_default_imports() -> Iterator[Union[ast.Import, ast.ImportFrom]]:
+    def create_default_imports() -> Iterator[ast.Import | ast.ImportFrom]:
         """Create default imports for the App module.
 
         Returns:

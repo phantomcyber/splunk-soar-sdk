@@ -3,7 +3,8 @@ import inspect
 import json
 from pathlib import Path
 import sys
-from typing import Any, Optional, Union, Callable
+from typing import Any
+from collections.abc import Callable
 from collections.abc import Iterator
 from zoneinfo import ZoneInfo
 
@@ -101,7 +102,7 @@ class App:
         product_name: str,
         publisher: str,
         appid: str,
-        python_version: Optional[Union[list[PythonVersion], str]] = None,
+        python_version: list[PythonVersion] | str | None = None,
         min_phantom_version: str = MIN_PHANTOM_VERSION,
         fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
@@ -164,13 +165,13 @@ class App:
         runner = AppCliRunner(self)
         runner.run()
 
-    def handle(self, raw_input_data: str, handle: Optional[int] = None) -> str:
+    def handle(self, raw_input_data: str, handle: int | None = None) -> str:
         """Runs handling of the input data on connector.
 
         NOTE: handle is actually a pointer address to spawn's internal state.
         In versions of SOAR >6.4.1, handle will not be passed to the app.
         """
-        input_data = InputSpecification.parse_obj(json.loads(raw_input_data))
+        input_data = InputSpecification.model_validate(json.loads(raw_input_data))
         self._raw_asset_config = input_data.config.get_asset_config()
 
         # Decrypt sensitive fields in the asset configuration
@@ -221,27 +222,27 @@ class App:
     def asset(self) -> BaseAsset:
         """Returns the asset instance for the app."""
         if not hasattr(self, "_asset"):
-            self._asset = self.asset_cls.parse_obj(self._raw_asset_config)
+            self._asset = self.asset_cls.model_validate(self._raw_asset_config)
         return self._asset
 
     def register_action(
         self,
         /,
-        action: Union[str, Callable],
+        action: str | Callable,
         *,
-        name: Optional[str] = None,
-        identifier: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        identifier: str | None = None,
+        description: str | None = None,
         verbose: str = "",
         action_type: str = "generic",  # TODO: consider introducing enum type for that
         read_only: bool = True,
-        params_class: Optional[type[Params]] = None,
-        output_class: Optional[type[ActionOutput]] = None,
-        render_as: Optional[str] = None,
-        view_handler: Union[str, Callable, None] = None,
-        view_template: Optional[str] = None,
+        params_class: type[Params] | None = None,
+        output_class: type[ActionOutput] | None = None,
+        render_as: str | None = None,
+        view_handler: str | Callable | None = None,
+        view_template: str | None = None,
         versions: str = "EQ(*)",
-        summary_type: Optional[type[ActionOutput]] = None,
+        summary_type: type[ActionOutput] | None = None,
         enable_concurrency_lock: bool = False,
     ) -> Action:
         """Dynamically register an action function defined in another module.
@@ -415,18 +416,18 @@ class App:
     def action(
         self,
         *,
-        name: Optional[str] = None,
-        identifier: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        identifier: str | None = None,
+        description: str | None = None,
         verbose: str = "",
         action_type: str = "generic",  # TODO: consider introducing enum type for that
         read_only: bool = True,
-        params_class: Optional[type[Params]] = None,
-        output_class: Optional[type[ActionOutput]] = None,
-        render_as: Optional[str] = None,
-        view_handler: Optional[Callable] = None,
+        params_class: type[Params] | None = None,
+        output_class: type[ActionOutput] | None = None,
+        render_as: str | None = None,
+        view_handler: Callable | None = None,
         versions: str = "EQ(*)",
-        summary_type: Optional[type[ActionOutput]] = None,
+        summary_type: type[ActionOutput] | None = None,
         enable_concurrency_lock: bool = False,
     ) -> ActionDecorator:
         """Decorator for registering an action function.
@@ -497,7 +498,7 @@ class App:
     def view_handler(
         self,
         *,
-        template: Optional[str] = None,
+        template: str | None = None,
     ) -> ViewHandlerDecorator:
         """Decorator for custom view functions with output parsing and template rendering.
 
@@ -525,7 +526,7 @@ class App:
         return ViewHandlerDecorator(self, template=template)
 
     def make_request(
-        self, output_class: Optional[type[ActionOutput]] = None
+        self, output_class: type[ActionOutput] | None = None
     ) -> MakeRequestDecorator:
         """Decorator for registering a ``make request`` action function.
 
@@ -556,7 +557,7 @@ class App:
     def _validate_params_class(
         action_name: str,
         spec: inspect.FullArgSpec,
-        params_class: Optional[type[Params]] = None,
+        params_class: type[Params] | None = None,
     ) -> type[Params]:
         """Validates the class used for params argument of the action.
 
@@ -572,7 +573,7 @@ class App:
                     "Action function must accept at least the params positional argument"
                 )
             params_arg = spec.args[0]
-            annotated_params_type: Optional[type] = spec.annotations.get(params_arg)
+            annotated_params_type: type | None = spec.annotations.get(params_arg)
             if annotated_params_type is None:
                 raise TypeError(
                     f"Action {action_name} has no params type set. "
@@ -594,7 +595,7 @@ class App:
         """
         # The reason we wrap values in callables is to avoid evaluating any lazy attributes
         # (like asset) unless they're actually going to be used in the action function.
-        magic_args: dict[str, Union[object, Callable[[], object]]] = {
+        magic_args: dict[str, object | Callable[[], object]] = {
             "soar": self.soar_client,
             "asset": lambda: self.asset,
         }
@@ -626,18 +627,16 @@ class App:
 
     @staticmethod
     def _adapt_action_result(
-        result: Union[
-            ActionOutput,
-            ActionResult,
-            list[ActionOutput],
-            Iterator[ActionOutput],
-            tuple[bool, str],
-            bool,
-        ],
+        result: ActionOutput
+        | ActionResult
+        | list[ActionOutput]
+        | Iterator[ActionOutput]
+        | tuple[bool, str]
+        | bool,
         actions_manager: ActionsManager,
-        action_params: Optional[Params] = None,
+        action_params: Params | None = None,
         message: str = "",
-        summary: Optional[ActionOutput] = None,
+        summary: ActionOutput | None = None,
     ) -> bool:
         """Handles multiple ways of returning response from action.
 
@@ -657,13 +656,21 @@ class App:
                 )
             # Handle empty list/iterator case
             if not statuses:
-                result = ActionOutput(status=True, message=message)
+                # Create ActionResult directly for empty list
+                param_dict = action_params.model_dump() if action_params else None
+                result = ActionResult(
+                    status=True,
+                    message=message,
+                    param=param_dict,
+                )
+                if summary:
+                    result.set_summary(summary.model_dump(by_alias=True))
             else:
                 return all(statuses)
 
         if isinstance(result, ActionOutput):
-            output_dict = result.dict(by_alias=True)
-            param_dict = action_params.dict() if action_params else None
+            output_dict = result.model_dump(by_alias=True)
+            param_dict = action_params.model_dump() if action_params else None
 
             result = ActionResult(
                 status=True,
@@ -672,7 +679,7 @@ class App:
             )
             result.add_data(output_dict)
             if summary:
-                result.set_summary(summary.dict(by_alias=True))
+                result.set_summary(summary.model_dump(by_alias=True))
 
         if isinstance(result, ActionResult):
             actions_manager.add_result(result)
@@ -695,14 +702,14 @@ class App:
 
             pytest.mark.skip(inner)
 
-    webhook_meta: Optional[WebhookMeta] = None
-    webhook_router: Optional[Router] = None
+    webhook_meta: WebhookMeta | None = None
+    webhook_router: Router | None = None
 
     def enable_webhooks(
         self,
         default_requires_auth: bool = True,
-        default_allowed_headers: Optional[list[str]] = None,
-        default_ip_allowlist: Optional[list[str]] = None,
+        default_allowed_headers: list[str] | None = None,
+        default_ip_allowlist: list[str] | None = None,
     ) -> "App":
         """Enable webhook functionality for the app.
 
@@ -731,7 +738,7 @@ class App:
             default_ip_allowlist = ["0.0.0.0/0", "::/0"]
 
         self.webhook_meta = WebhookMeta(
-            handler=None,  # The handler is set by the ManifestProcessor when generating the final manifest
+            handler=None,
             requires_auth=default_requires_auth,
             allowed_headers=default_allowed_headers,
             ip_allowlist=default_ip_allowlist,
@@ -742,7 +749,7 @@ class App:
         return self
 
     def webhook(
-        self, url_pattern: str, allowed_methods: Optional[list[str]] = None
+        self, url_pattern: str, allowed_methods: list[str] | None = None
     ) -> WebhookDecorator:
         """Decorator for registering a webhook handler."""
         return WebhookDecorator(self, url_pattern, allowed_methods)
@@ -752,8 +759,8 @@ class App:
         method: str,
         headers: dict[str, str],
         path_parts: list[str],
-        query: dict[str, Union[str, list[str], None]],
-        body: Optional[str],
+        query: dict[str, str | list[str] | None],
+        body: str | None,
         asset: dict,
         soar_rest_client: SoarRestClient,
     ) -> dict:
@@ -801,4 +808,4 @@ class App:
             raise TypeError(
                 f"Webhook handler must return a WebhookResponse, got {type(response)}"
             )
-        return response.dict()
+        return response.model_dump()

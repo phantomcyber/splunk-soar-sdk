@@ -1,5 +1,5 @@
-from typing import Any, Optional, Union
-from pydantic import BaseModel
+from typing import Any
+from pydantic import BaseModel, ConfigDict
 from soar_sdk.action_results import ActionResult
 
 
@@ -10,17 +10,14 @@ class ViewContext(BaseModel):
     container: int
     app: int
     no_connection: bool
-    google_maps_key: Union[bool, str]
-    dark_title_logo: Optional[str] = None
-    title_logo: Optional[str] = None
-    app_name: Optional[str] = None
-    results: Optional[list[dict[str, Any]]] = None
-    html_content: Optional[str] = None
+    google_maps_key: bool | str
+    dark_title_logo: str | None = None
+    title_logo: str | None = None
+    app_name: str | None = None
+    results: list[dict[str, Any]] | None = None
+    html_content: str | None = None
 
-    class Config:
-        """Pydantic config."""
-
-        extra = "allow"
+    model_config = ConfigDict(extra="allow")
 
 
 class ResultSummary(BaseModel):

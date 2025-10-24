@@ -93,3 +93,21 @@ def test_fields_requiring_decryption():
         normal_field: str = AssetField()
 
     assert AssetWithSensitiveFields.fields_requiring_decryption() == {"sensitive_field"}
+
+
+def test_asset_field_none_annotation():
+    class TestAsset(BaseAsset):
+        field_with_type: str
+
+    TestAsset.model_fields["field_with_type"].annotation = None
+    schema = TestAsset.to_json_schema()
+    assert "field_with_type" not in schema
+
+
+def test_asset_field_with_none_values():
+    class TestAsset(BaseAsset):
+        field1: str = AssetField(required=None, sensitive=None)
+
+    # This should work without errors - None values for optional params
+    schema = TestAsset.to_json_schema()
+    assert "field1" in schema

@@ -33,7 +33,7 @@ def app_meta():
         logo="logo.svg",
         logo_dark="logo_dark.svg",
         product_name="Test Product",
-        python_version=["3.9", "3.13"],
+        python_version=["3.13", "3.14"],
         project_name="test_app",
         license="Copyright (c) 2025 Splunk Inc.",
     )
@@ -199,7 +199,7 @@ def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
         )
     }
 
-    app_meta.python_version = [PythonVersion.PY_3_9]
+    app_meta.python_version = [PythonVersion.PY_3_13]
 
     app_dir = tmp_path / "test_app"
     app_dir.mkdir()
@@ -223,10 +223,10 @@ def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
     print(result.output)  # For debugging purposes
 
     assert result.exit_code == 0
-    assert "declares support for Python versions '3.9'" in result.output
-    assert "will support the default versions ['3.9', '3.13']" in result.output
+    assert "declares support for Python versions '3.13'" in result.output
+    assert "will support the default versions ['3.13', '3.14']" in result.output
     assert (
-        'requires-python = ">=3.9, <3.14"'
+        'requires-python = ">=3.13, <3.15"'
         in (output_dir / "pyproject.toml").read_text()
     )
 
@@ -273,7 +273,7 @@ def test_convert_cli_with_default_output(runner, tmp_path, app_meta):
 def test_convert_cli_with_custom_view(runner, tmp_path, app_meta):
     """Test that convert command handles custom views correctly."""
 
-    app_meta_dict = app_meta.dict()
+    app_meta_dict = app_meta.model_dump()
     app_meta_dict["actions"] = [
         {
             "action": "custom view action",
@@ -318,7 +318,7 @@ def test_convert_cli_with_custom_view(runner, tmp_path, app_meta):
 def test_convert_cli_with_rest_handler(runner, tmp_path, app_meta):
     """Test that convert command handles REST handlers correctly."""
 
-    app_meta_dict = app_meta.dict()
+    app_meta_dict = app_meta.model_dump()
     app_meta_dict["rest_handler"] = "my_connector.rest_handler"
 
     app_dir = tmp_path / "test_app"
@@ -349,7 +349,7 @@ def test_convert_cli_with_rest_handler(runner, tmp_path, app_meta):
 def test_convert_cli_with_webhooks(runner, tmp_path, app_meta):
     """Test that convert command handles webhooks correctly."""
 
-    app_meta_dict = app_meta.dict()
+    app_meta_dict = app_meta.model_dump()
     app_meta_dict["webhooks"] = {
         "handler": "my_connector.webhook_handler",
     }

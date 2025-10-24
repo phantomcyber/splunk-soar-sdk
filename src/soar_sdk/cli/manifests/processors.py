@@ -1,13 +1,13 @@
 import importlib
 import json
 import toml
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 from pprint import pprint
 
 from soar_sdk.app import App
 from soar_sdk.cli.path_utils import context_directory
-from soar_sdk.compat import remove_when_soar_newer_than, UPDATE_TIME_FORMAT
+from soar_sdk.compat import UPDATE_TIME_FORMAT
 from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.meta.dependencies import UvLock
@@ -30,9 +30,7 @@ class ManifestProcessor:
         app = self.import_app_instance(app_meta)
         app_meta.configuration = app.asset_cls.to_json_schema()
         app_meta.actions = app.actions_manager.get_actions_meta_list()
-        app_meta.utctime_updated = datetime.now(timezone.utc).strftime(
-            UPDATE_TIME_FORMAT
-        )
+        app_meta.utctime_updated = datetime.now(UTC).strftime(UPDATE_TIME_FORMAT)
         for field, value in app.app_meta_info.items():
             setattr(app_meta, field, value)
 
@@ -43,16 +41,12 @@ class ManifestProcessor:
                 dep for dep in dependencies if dep.name != "splunk-soar-sdk"
             ]
 
-        app_meta.pip39_dependencies, app_meta.pip313_dependencies = (
+        app_meta.pip313_dependencies, app_meta.pip314_dependencies = (
             uv_lock.resolve_dependencies(dependencies)
         )
 
         if app.webhook_meta is not None:
-            remove_when_soar_newer_than("6.4.0")
             app_meta.webhook = app.webhook_meta
-            app_meta.webhook.handler = (
-                f"{app_meta.main_module.replace(':', '.')}.handle_webhook"
-            )
 
         return app_meta
 

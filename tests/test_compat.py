@@ -24,18 +24,18 @@ def test_no_error_when_version_equals_or_above_minimum(version):
 
 def test_str_python_version():
     """Test that PythonVersion enum returns correct string representation."""
-    assert str(PythonVersion.PY_3_9) == "3.9"
     assert str(PythonVersion.PY_3_13) == "3.13"
+    assert str(PythonVersion.PY_3_14) == "3.14"
 
 
 @pytest.mark.parametrize(
     "versions, expected_requires_python",
     (
-        ([], ">=3.9, <3.14"),
-        ([PythonVersion.PY_3_9], ">=3.9, <3.10"),
+        ([], ">=3.13, <3.15"),
         ([PythonVersion.PY_3_13], ">=3.13, <3.14"),
-        ([PythonVersion.PY_3_9, PythonVersion.PY_3_13], ">=3.9, <3.14"),
-        (PythonVersion.all(), ">=3.9, <3.14"),
+        ([PythonVersion.PY_3_14], ">=3.14, <3.15"),
+        ([PythonVersion.PY_3_13, PythonVersion.PY_3_14], ">=3.13, <3.15"),
+        (PythonVersion.all(), ">=3.13, <3.15"),
     ),
 )
 def test_to_requires_python(

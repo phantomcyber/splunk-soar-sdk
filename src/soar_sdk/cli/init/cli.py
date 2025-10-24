@@ -1,4 +1,4 @@
-from typing import Annotated, Optional, cast
+from typing import Annotated, cast
 import datetime
 import json
 import os
@@ -65,7 +65,7 @@ def init_callback(
     type: str = "generic",  # noqa: A002
     vendor: str = "Splunk Inc.",
     publisher: str = "Splunk Inc.",
-    product: Optional[str] = None,
+    product: str | None = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
 ) -> None:
@@ -107,11 +107,11 @@ def init_sdk_app(
     publisher: str,
     logo: Path,
     logo_dark: Path,
-    product: Optional[str] = None,
+    product: str | None = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
-    app_content: Optional[list[ast.stmt]] = None,
-    asset_class: Optional[ast.ClassDef] = None,
+    app_content: list[ast.stmt] | None = None,
+    asset_class: ast.ClassDef | None = None,
 ) -> None:
     """Initialize a new SOAR app in the specified directory."""
     app_dir.mkdir(exist_ok=True)
@@ -149,9 +149,7 @@ def init_sdk_app(
         name=name,
         version=version,
         description=description,
-        copyright=copyright.format(
-            year=datetime.datetime.now(datetime.timezone.utc).year
-        ),
+        copyright=copyright.format(year=datetime.datetime.now(datetime.UTC).year),
         python_versions=python_versions,
         authors=authors,
         dependencies=dependencies,
@@ -242,7 +240,7 @@ def convert_connector_to_sdk(
         ),
     ],
     output_dir: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Argument(
             file_okay=False,
             dir_okay=True,
