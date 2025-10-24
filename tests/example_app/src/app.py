@@ -4,13 +4,37 @@ from zoneinfo import ZoneInfo
 from soar_sdk.abstract import SOARClient
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.params import OnPollParams, MakeRequestParams, Params, Param
+from soar_sdk.params import (
+    OnPollParams,
+    OnESPollParams,
+    MakeRequestParams,
+    Params,
+    Param,
+)
 from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
+from soar_sdk.models.finding import Finding
+from soar_sdk.models.attachment_input import AttachmentInput
 from soar_sdk.action_results import ActionOutput, MakeRequestOutput, OutputField
 from soar_sdk.logging import getLogger
 
 logger = getLogger()
+
+# Test mail template for ES findings
+SAMPLE_EMAIL_TEMPLATE = """From: suspicious@example.com
+To: {user}
+Subject: Suspicious Activity Detected
+Date: {date}
+
+This is a suspicious email that triggered the risk threshold.
+Event ID: {event_id}
+"""
+
+# Test event data CSV for attachments
+SAMPLE_EVENTS_CSV = """timestamp,user,action,risk_score
+{timestamp},{{user}},login_failed,{{risk_score}}
+{timestamp},{{user}},access_denied,{{secondary_score}}
+"""
 
 
 class Asset(BaseAsset):
@@ -156,6 +180,55 @@ def on_poll(
         )
 
         yield artifact
+
+
+@app.on_es_poll()
+def on_es_poll(
+    params: OnESPollParams, soar: SOARClient, asset: Asset
+) -> Iterator[tuple[Finding, list[AttachmentInput]]]:
+    for i in range(1, 3):
+        logger.info(f"Processing ES finding {i}")
+
+        finding = Finding(
+            rule_title=f"Risk threshold exceeded for user-{i}",
+            rule_description="Risk Threshold Exceeded for an object over a 24 hour period",
+            security_domain="threat",
+            risk_object=f"user{i}@example.com",
+            risk_object_type="user",
+            risk_score=75.0 + (i * 10),
+            status="New",
+            urgency="medium",
+        )
+
+        # Attach evidence
+        email_evidence = SAMPLE_EMAIL_TEMPLATE.format(
+            user=f"user{i}@example.com",
+            date=datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000"),
+            event_id=f"EVT-{i:04d}",
+        )
+
+        event_data = SAMPLE_EVENTS_CSV.format(
+            timestamp=datetime.now(timezone.utc).isoformat()
+        ).format(
+            user=f"user{i}@example.com",
+            risk_score=75.0 + (i * 10),
+            secondary_score=50.0 + (i * 5),
+        )
+
+        attachments = [
+            AttachmentInput(
+                file_content=email_evidence,
+                file_name=f"suspicious_email_user{i}.eml",
+                metadata={"type": "email_evidence", "source": "investigation_mailbox"},
+            ),
+            AttachmentInput(
+                file_content=event_data,
+                file_name=f"risk_events_user{i}.csv",
+                metadata={"type": "event_log", "event_count": "2"},
+            ),
+        ]
+
+        yield (finding, attachments)
 
 
 app.register_action(
