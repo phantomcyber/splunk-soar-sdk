@@ -12,6 +12,7 @@ dependencies = [
     "boto3>=1.38.3",
     "httpx[http2]>=0.28.1",
     "requests>=2.32.3",
+    "splunk-soar-sdk",
     "yarl>=1.20.0",
 ]
 
@@ -31,7 +32,6 @@ main_module = "src.app:app"
 
 [[tool.uv.index]]
 url = "https://pypi.python.org/simple"
-
 
 [tool.uv]
 environments = [
