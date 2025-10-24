@@ -354,21 +354,6 @@ class UvPackage(BaseModel):
 
         return wheel
 
-    def resolve_py39(self) -> DependencyWheel:
-        """Resolve the dependency wheel for Python 3.9."""
-        return self._resolve(
-            abi_precedence=[
-                "cp39",  # Python 3.9-specific ABI
-                "abi3",  # Python 3 stable ABI
-                "none",  # Source wheels -- no ABI
-            ],
-            python_precedence=[
-                "cp39",  # Binary wheel for Python 3.9
-                "pp39",  # Source wheel for Python 3.9
-                "py3",  # Source wheel for any Python 3.x
-            ],
-        )
-
     def resolve_py313(self) -> DependencyWheel:
         """Resolve the dependency wheel for Python 3.13."""
         return self._resolve(
