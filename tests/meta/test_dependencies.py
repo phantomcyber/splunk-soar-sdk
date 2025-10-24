@@ -125,8 +125,8 @@ class TestUvPackage:
             ],
         )
         wheel = package._find_wheel(
-            abi_precedence=["cp39", "abi3", "none"],
-            python_precedence=["cp39", "pp39", "py3"],
+            abi_precedence=["cp313", "abi3", "none"],
+            python_precedence=["cp313", "pp313", "py3"],
             platform_precedence=[
                 "manylinux_2_28_x86_64",
                 "manylinux_2_17_x86_64",
@@ -142,18 +142,18 @@ class TestUvPackage:
             version="1.2.0",
             wheels=[
                 UvWheel(
-                    url="https://notarealurl.com/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                    url="https://notarealurl.com/mypy-1.2.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
                     hash="sha256:023fe9e618182ca6317ae89833ba422c411469156b690fde6a315ad10695a521",
                     size=12190233,
                 )
             ],
         )
-        wheel = package.resolve_py39()
-        wheel.add_platform_prefix("python39")
+        wheel = package.resolve_py313()
+        wheel.add_platform_prefix("python313")
 
         assert (
             wheel.input_file
-            == "wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
+            == "wheels/python313/mypy-1.2.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl"
         )
         assert wheel.input_file_aarch64 is None
 
@@ -168,7 +168,7 @@ class TestUvPackage:
             ),
         )
 
-        wheel = package.resolve_py39()
+        wheel = package.resolve_py313()
         assert wheel.sdist is not None
 
     def test_resolve_forbidden_sdist_fails(self):
@@ -186,7 +186,7 @@ class TestUvPackage:
             FileNotFoundError,
             match="Could not find a suitable x86_64 wheel or source distribution",
         ):
-            package.resolve_py39()
+            package.resolve_py313()
 
     def test_resolve_sdist_warns_once(self):
         package = UvPackage(
@@ -201,8 +201,8 @@ class TestUvPackage:
 
         logger = logging.getLogger("soar_sdk.meta.dependencies")
         with mock.patch.object(logger, "warning") as mock_warn:
-            package.resolve_py39()
             package.resolve_py313()
+            package.resolve_py314()
 
         mock_warn.assert_called_once()
 
@@ -244,7 +244,7 @@ class TestDependencyWheel:
     async def test_collect_no_aarch64_wheel(self, wheel_resp_mock, fake_wheel: UvWheel):
         wheel = DependencyWheel(
             module="mypy",
-            input_file="wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            input_file="wheels/python313/mypy-1.2.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
             wheel=fake_wheel,
         )
 
@@ -256,12 +256,12 @@ class TestDependencyWheel:
     def test_hash(self, fake_wheel: UvWheel):
         wheel1 = DependencyWheel(
             module="mypy",
-            input_file="wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            input_file="wheels/python313/mypy-1.2.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
             wheel=fake_wheel,
         )
         wheel2 = DependencyWheel(
             module="mypy",
-            input_file="wheels/python39/mypy-1.2.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+            input_file="wheels/python313/mypy-1.2.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
             wheel=fake_wheel,
         )
 
