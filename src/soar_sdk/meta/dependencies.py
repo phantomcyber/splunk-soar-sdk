@@ -384,6 +384,21 @@ class UvPackage(BaseModel):
             ],
         )
 
+    def resolve_py314(self) -> DependencyWheel:
+        """Resolve the dependency wheel for Python 3.14."""
+        return self._resolve(
+            abi_precedence=[
+                "cp314",  # Python 3.14-specific ABI
+                "abi3",  # Python 3 stable ABI
+                "none",  # Source wheels -- no ABI
+            ],
+            python_precedence=[
+                "cp314",  # Binary wheel for Python 3.14
+                "pp314",  # Source wheel for Python 3.14
+                "py3",  # Source wheel for any Python 3.x
+            ],
+        )
+
 
 class UvLock(BaseModel):
     """Represents the structure of the uv lock file."""
@@ -452,21 +467,21 @@ class UvLock(BaseModel):
         packages: list[UvPackage],
     ) -> tuple[DependencyList, DependencyList]:
         """Resolve the dependencies for the given packages."""
-        py39_wheels: list[DependencyWheel] = []
         py313_wheels: list[DependencyWheel] = []
+        py314_wheels: list[DependencyWheel] = []
 
         for package in packages:
-            wheel_39 = package.resolve_py39()
             wheel_313 = package.resolve_py313()
+            wheel_314 = package.resolve_py314()
 
-            if wheel_39 == wheel_313:
-                wheel_39.add_platform_prefix("shared")
+            if wheel_313 == wheel_314:
                 wheel_313.add_platform_prefix("shared")
+                wheel_314.add_platform_prefix("shared")
             else:
-                wheel_39.add_platform_prefix("python39")
                 wheel_313.add_platform_prefix("python313")
+                wheel_314.add_platform_prefix("python314")
 
-            py39_wheels.append(wheel_39)
             py313_wheels.append(wheel_313)
+            py314_wheels.append(wheel_314)
 
-        return DependencyList(wheel=py39_wheels), DependencyList(wheel=py313_wheels)
+        return DependencyList(wheel=py313_wheels), DependencyList(wheel=py314_wheels)

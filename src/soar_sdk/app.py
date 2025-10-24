@@ -738,7 +738,7 @@ class App:
             default_ip_allowlist = ["0.0.0.0/0", "::/0"]
 
         self.webhook_meta = WebhookMeta(
-            handler=None,  # The handler is set by the ManifestProcessor when generating the final manifest
+            handler=None,
             requires_auth=default_requires_auth,
             allowed_headers=default_allowed_headers,
             ip_allowlist=default_ip_allowlist,
