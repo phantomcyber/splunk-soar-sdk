@@ -1,6 +1,7 @@
 import inspect
 from functools import wraps
-from typing import Callable, Any
+from typing import Any
+from collections.abc import Callable
 from collections.abc import Iterator
 
 from soar_sdk.abstract import SOARClient
@@ -65,8 +66,8 @@ class OnESPollDecorator:
         def inner(
             params: OnESPollParams,
             soar: SOARClient = self.app.soar_client,
-            *args: Any,
-            **kwargs: Any,
+            *args: Any,  # noqa: ANN401
+            **kwargs: Any,  # noqa: ANN401
         ) -> bool:
             from soar_sdk.models.finding import Finding
             from soar_sdk.models.attachment_input import AttachmentInput
@@ -194,8 +195,8 @@ class OnESPollDecorator:
         inner.params_class = validated_params_class
 
         class OnESPollActionMeta(ActionMeta):
-            def dict(self, *args: object, **kwargs: object) -> dict[str, Any]:
-                data = super().dict(*args, **kwargs)
+            def model_dump(self, *args: object, **kwargs: object) -> dict[str, Any]:
+                data = super().model_dump(*args, **kwargs)
                 data["output"] = []
                 return data
 
