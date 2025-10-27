@@ -203,12 +203,12 @@ def on_es_poll(
         # Attach evidence
         email_evidence = SAMPLE_EMAIL_TEMPLATE.format(
             user=f"user{i}@example.com",
-            date=datetime.now(timezone.utc).strftime("%a, %d %b %Y %H:%M:%S +0000"),
+            date=datetime.now(UTC).strftime("%a, %d %b %Y %H:%M:%S +0000"),
             event_id=f"EVT-{i:04d}",
         )
 
         event_data = SAMPLE_EVENTS_CSV.format(
-            timestamp=datetime.now(timezone.utc).isoformat()
+            timestamp=datetime.now(UTC).isoformat()
         ).format(
             user=f"user{i}@example.com",
             risk_score=75.0 + (i * 10),

@@ -1,5 +1,5 @@
-from typing import Optional, Union
 from pydantic import BaseModel, field_validator, ConfigDict
+from pydantic_core.core_schema import ValidationInfo
 
 
 class AttachmentInput(BaseModel):
@@ -10,14 +10,15 @@ class AttachmentInput(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    file_content: Optional[Union[str, bytes]] = None
-    file_location: Optional[str] = None
+    file_content: str | bytes | None = None
+    file_location: str | None = None
     file_name: str
-    metadata: Optional[dict[str, str]] = None
+    metadata: dict[str, str] | None = None
 
     @field_validator("file_location")
     @classmethod
-    def validate_one_source(cls, v: Optional[str], info) -> Optional[str]:
+    def validate_one_source(cls, v: str | None, info: ValidationInfo) -> str | None:
+        """Validate that exactly one of file_content or file_location is provided."""
         file_content = info.data.get("file_content")
         if v is None and file_content is None:
             raise ValueError("Must provide either file_content or file_location")
