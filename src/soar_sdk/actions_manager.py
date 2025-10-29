@@ -154,6 +154,10 @@ class ActionsManager(BaseConnector):
         # For non-broker just proceed as we did before
         return super().get_app_dir()
 
+    def send_finding_to_es(self, finding: dict[str, Any]) -> None:
+        """Send finding to ES."""
+        pass
+
     @classmethod
     def get_soar_base_url(cls) -> str:
         """Get the base URL of the Splunk SOAR instance this app is running on."""

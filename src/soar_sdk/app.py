@@ -3,7 +3,7 @@ import inspect
 import json
 from pathlib import Path
 import sys
-from typing import Any, TYPE_CHECKING
+from typing import Any
 from collections.abc import Callable
 from collections.abc import Iterator
 from zoneinfo import ZoneInfo
@@ -28,9 +28,6 @@ from soar_sdk.app_client import AppClient
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.logging import getLogger
 from soar_sdk.types import Action
-
-if TYPE_CHECKING:
-    from soar_sdk.decorators.on_es_poll import OnESPollDecorator
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.exceptions import ActionRegistrationError
@@ -41,6 +38,7 @@ from soar_sdk.decorators import (
     ActionDecorator,
     ViewHandlerDecorator,
     OnPollDecorator,
+    OnESPollDecorator,
     WebhookDecorator,
     MakeRequestDecorator,
 )
@@ -498,7 +496,7 @@ class App:
         """
         return OnPollDecorator(self)
 
-    def on_es_poll(self) -> "OnESPollDecorator":
+    def on_es_poll(self) -> OnESPollDecorator:
         """Decorator for the on_es_poll action.
 
         The decorated function must be a generator (using yield) or return an Iterator that yields tuples of (Finding, list[AttachmentInput]). Only one on_es_poll action is allowed per app.
@@ -521,8 +519,6 @@ class App:
             ...         [],
             ...     )
         """
-        from soar_sdk.decorators.on_es_poll import OnESPollDecorator
-
         return OnESPollDecorator(self)
 
     def view_handler(

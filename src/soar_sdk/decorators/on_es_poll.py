@@ -123,6 +123,9 @@ class OnESPollDecorator:
                             f"Processing finding: {finding_dict.get('rule_title', 'Unnamed finding')}"
                         )
 
+                        # Send finding to ES
+                        self.app.actions_manager.send_finding_to_es(finding_dict)
+
                         container = Container(
                             name=finding.rule_title,
                             description=finding.rule_description,
