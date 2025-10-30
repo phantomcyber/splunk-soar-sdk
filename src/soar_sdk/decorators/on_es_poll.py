@@ -119,8 +119,10 @@ class OnESPollDecorator:
                             f"Processing finding: {finding_dict.get('rule_title', 'Unnamed finding')}"
                         )
 
-                        # Send finding to ES
-                        self.app.actions_manager.send_finding_to_es(finding_dict)
+                        # Send finding to ES and get finding_id back
+                        finding_id = self.app.actions_manager.send_finding_to_es(
+                            finding_dict
+                        )
 
                         container = Container(
                             name=finding.rule_title,
@@ -130,6 +132,7 @@ class OnESPollDecorator:
                             owner_id=finding.owner,
                             sensitivity=finding.disposition,
                             tags=finding.source,
+                            external_id=finding_id,
                             data={
                                 "security_domain": finding.security_domain,
                                 "risk_score": finding.risk_score,

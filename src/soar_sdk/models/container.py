@@ -14,6 +14,7 @@ class Container(BaseModel):
     label: str | None = None
     description: str | None = None
     source_data_identifier: str | None = None
+    external_id: str | None = None
     severity: str | None = None
     status: str | None = None
     tags: list[str] | str | None = None
