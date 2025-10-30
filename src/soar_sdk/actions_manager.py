@@ -154,9 +154,12 @@ class ActionsManager(BaseConnector):
         # For non-broker just proceed as we did before
         return super().get_app_dir()
 
-    def send_finding_to_es(self, finding: dict[str, Any]) -> None:
-        """Send finding to ES."""
-        pass
+    def send_finding_to_es(self, finding: dict[str, Any]) -> str:
+        """Send finding to ES.
+
+        Returns finding_id: ID for the finding in ES.
+        """
+        return ""
 
     @classmethod
     def get_soar_base_url(cls) -> str:
