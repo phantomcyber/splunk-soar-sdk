@@ -12,6 +12,9 @@ from soar_sdk.types import Action, action_protocol
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.async_utils import run_async_if_needed
 from soar_sdk.logging import getLogger
+from soar_sdk.models.finding import Finding
+from soar_sdk.models.attachment_input import AttachmentInput
+from soar_sdk.models.container import Container
 
 from typing import TYPE_CHECKING
 
@@ -41,14 +44,11 @@ class OnESPollDecorator:
         is_generator = inspect.isgeneratorfunction(function)
         is_async_generator = inspect.isasyncgenfunction(function)
         signature = inspect.signature(function)
-        has_iterator_return = False
 
-        if (
+        has_iterator_return = (
             signature.return_annotation != inspect.Signature.empty
-            and hasattr(signature.return_annotation, "__origin__")
-            and signature.return_annotation.__origin__ is Iterator
-        ):
-            has_iterator_return = True
+            and getattr(signature.return_annotation, "__origin__", None) is Iterator
+        )
 
         if not (is_generator or is_async_generator or has_iterator_return):
             raise TypeError(
@@ -69,10 +69,6 @@ class OnESPollDecorator:
             *args: Any,  # noqa: ANN401
             **kwargs: Any,  # noqa: ANN401
         ) -> bool:
-            from soar_sdk.models.finding import Finding
-            from soar_sdk.models.attachment_input import AttachmentInput
-            from soar_sdk.models.container import Container
-
             try:
                 try:
                     action_params = validated_params_class.parse_obj(params)
