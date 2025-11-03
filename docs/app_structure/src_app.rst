@@ -203,7 +203,7 @@ A successful ``test connectivity`` action should return ``None``, and a failure 
     :lineno-match:
     :pyobject: on_poll
 
-``on poll`` is another special action that apps may choose to implement. This action always takes an :class:`~soar_sdk.params.OnPollParams` instance as its parameter. If defined, this action will be called in order to ingest new data into the Splunk Splunk SOAR platform. The action should yield  :class:`~soar_sdk.models.container.Container` and/or :class:`~soar_sdk.models.artifact.Artifact` instances representing the new data to be ingested. The SDK will handle actually creating the containers and artifacts in the platform.
+``on poll`` is another special action that apps may choose to implement. This action always takes an :class:`~soar_sdk.params.OnPollParams` instance as its parameter. If defined, this action will be called in order to ingest new data into the Splunk SOAR platform. The action should yield  :class:`~soar_sdk.models.container.Container` and/or :class:`~soar_sdk.models.artifact.Artifact` instances representing the new data to be ingested. The SDK will handle actually creating the containers and artifacts in the platform.
 
 Make Request Action
 ^^^^^^^^^^^^^^
