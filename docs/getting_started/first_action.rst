@@ -75,7 +75,7 @@ The Action Declaration
 
 .. code-block:: python
 
-    def my_action(params: Params, asset: BaseAsset) -> ActionOutput:
+    def my_action(params: Params, soar: SOARClient, asset: BaseAsset) -> ActionOutput:
 
 ``my_action`` is the identifier of the action, and is used to derive the action's name (``my action``). This name will be used in the Splunk SOAR platform UI, and will be added to the app's generated manifest at packaging time.
 
@@ -86,6 +86,12 @@ The ``params`` argument should always be the first argument, and of a type inher
 .. seealso::
 
     Read more on defining action params in the :ref:`API Reference <action-param-label>` or :ref:`App structure <app-structure-actions-def>` docs.
+
+The ``soar`` argument is an API client, which you can use to access SOAR's REST API.
+
+.. seealso::
+
+    Read more about the client in the :ref:`API Reference <soar-client-label>` docs.
 
 The ``asset`` argument contains an instance of the app's asset configuration. It should be the same type that is specified as the ``asset_cls`` of the app.
 

@@ -37,6 +37,10 @@ class SOARClientAuth:
 class SOARClient(Generic[SummaryType]):
     """An API interface for interacting with the Splunk SOAR Platform."""
 
+    asset_cache: dict  #: Dictionary for caching data in between action runs.
+    auth_state: dict  #: Dictionary for storing authentication values such as an API or refresh token. Note that this is stored unencrypted in the database.
+    ingestion_state: dict  #: Dictionary for storing ingestion information such as a checkpoint value.
+
     @property
     @abstractmethod
     def client(self) -> httpx.Client:

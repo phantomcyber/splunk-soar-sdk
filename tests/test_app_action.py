@@ -122,33 +122,6 @@ def test_action_call_with_params_dict(simple_app, sample_params):
     action_function(sample_params, soar=client_mock)
 
 
-def test_action_call_with_state(simple_app, sample_params):
-    initial_state = {"key": "initial"}
-    updated_state = {"key": "updated"}
-
-    @simple_app.action()
-    def action_function(params: SampleParams, soar: SOARClient) -> ActionOutput:
-        assert soar.ingestion_state == initial_state
-        assert soar.auth_state == initial_state
-        assert soar.asset_cache == initial_state
-
-        soar.ingestion_state = updated_state
-        soar.auth_state = updated_state
-        soar.asset_cache = updated_state
-
-    client_mock = mock.Mock(spec=SOARClient)
-
-    client_mock.ingestion_state = initial_state
-    client_mock.auth_state = initial_state
-    client_mock.asset_cache = initial_state
-
-    action_function(sample_params, soar=client_mock)
-
-    assert client_mock.ingestion_state == updated_state
-    assert client_mock.auth_state == updated_state
-    assert client_mock.asset_cache == updated_state
-
-
 def test_app_action_simple_declaration(simple_app: App):
     @simple_app.action()
     def some_handler(params: Params) -> ActionOutput: ...

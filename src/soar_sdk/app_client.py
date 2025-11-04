@@ -48,6 +48,10 @@ class AppClient(SOARClient[SummaryType]):
         self.__container_id: int = 0
         self.__asset_id: str = ""
 
+        self.asset_cache = {}
+        self.auth_state = {}
+        self.ingestion_state = {}
+
     @property
     def client(self) -> httpx.Client:
         """The HTTP client used for making requests to the SOAR API."""
