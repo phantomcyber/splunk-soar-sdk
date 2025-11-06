@@ -136,6 +136,44 @@ class TestUvPackage:
         )
         assert wheel.basename == "certifi-2025.1.31-py3-none-any"
 
+    def test_find_wheel_abi3_compatibility(self):
+        """Test that abi3 wheels match correctly with newer Python versions.
+
+        abi3 wheels specify a minimum Python version. For example, cp311-abi3
+        means the wheel works with Python 3.11 and all later versions (3.12, 3.13, etc.).
+        """
+        package = UvPackage(
+            name="cryptography",
+            version="46.0.3",
+            dependencies=[],
+            wheels=[
+                # cp38-abi3 wheel: works with Python 3.8+
+                UvWheel(
+                    url="https://notarealurl.com/cryptography-46.0.3-cp38-abi3-manylinux_2_28_x86_64.whl",
+                    hash="sha256:abc123",
+                    size=1000000,
+                ),
+                # cp311-abi3 wheel: works with Python 3.11+
+                UvWheel(
+                    url="https://notarealurl.com/cryptography-46.0.3-cp311-abi3-manylinux_2_28_x86_64.whl",
+                    hash="sha256:def456",
+                    size=1000000,
+                ),
+            ],
+        )
+
+        # Python 3.13 should match both abi3 wheels since 3.13 >= 3.8 and 3.13 >= 3.11
+        # Should prefer cp311-abi3 (highest compatible minimum version)
+        wheel = package._find_wheel(
+            abi_precedence=["cp313", "abi3", "none"],
+            python_precedence=["cp313", "py3"],
+            platform_precedence=["manylinux_2_28_x86_64", "any"],
+        )
+
+        # Should match cp311-abi3 (prefer higher minimum version over cp38-abi3)
+        assert "abi3" in wheel.basename
+        assert wheel.basename == "cryptography-46.0.3-cp311-abi3-manylinux_2_28_x86_64"
+
     def test_resolve_no_aarch64_available(self):
         package = UvPackage(
             name="mypy",

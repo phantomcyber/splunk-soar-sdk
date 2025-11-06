@@ -277,9 +277,7 @@ class UvPackage(BaseModel):
         for abi in abi_precedence:
             abi_wheels = [wheel for wheel in self.wheels if abi in wheel.abi_tags]
             for python in python_precedence:
-                python_wheels = [
-                    wheel for wheel in abi_wheels if python in wheel.python_tags
-                ]
+                python_wheels = self._filter_python_wheels(abi_wheels, python, abi)
                 for platform in platform_precedence:
                     platform_wheels = [
                         wheel
@@ -292,6 +290,54 @@ class UvPackage(BaseModel):
         raise FileNotFoundError(
             f"Could not find a suitable wheel for {self.name=}, {self.version=}, {abi_precedence=}, {python_precedence=}, {platform_precedence=}"
         )
+
+    def _filter_python_wheels(
+        self, wheels: list[UvWheel], target_python: str, abi: str
+    ) -> list[UvWheel]:
+        """Filter and sort wheels by Python version compatibility.
+
+        For abi3 wheels, prefers the highest compatible minimum version
+        (e.g., cp311-abi3 over cp38-abi3 for Python 3.13).
+        """
+        compatible = [
+            wheel
+            for wheel in wheels
+            if self._is_python_compatible(wheel, target_python, abi)
+        ]
+
+        # For abi3 wheels, prefer highest minimum version (closest to target)
+        if abi == "abi3" and compatible:
+            compatible = sorted(
+                compatible,
+                key=lambda w: max(
+                    (int(tag[2:]) for tag in w.python_tags if tag.startswith("cp")),
+                    default=0,
+                ),
+                reverse=True,
+            )
+
+        return compatible
+
+    def _is_python_compatible(
+        self, wheel: UvWheel, target_python: str, abi: str
+    ) -> bool:
+        """Check if a wheel is compatible with the target Python version.
+
+        For abi3 wheels, the Python tag indicates minimum version (e.g., cp311-abi3 works with Python ≥3.11).
+        For non-abi3 wheels, exact tag matching is required.
+        """
+        if target_python in wheel.python_tags:
+            return True
+
+        # For abi3 wheels, check if target >= minimum version (e.g., cp313 >= cp311)
+        if abi == "abi3":
+            return any(
+                int(tag[2:]) <= int(target_python[2:])
+                for tag in wheel.python_tags
+                if tag.startswith("cp") and target_python.startswith("cp")
+            )
+
+        return False
 
     _manylinux_precedence: ClassVar[list[str]] = [
         "_2_28",  # glibc 2.28, latest stable version, supports Ubuntu 18.10+ and RHEL/Oracle 8+
