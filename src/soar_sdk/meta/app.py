@@ -67,4 +67,7 @@ class AppMeta(BaseModel):
         data = self.model_dump(exclude_none=True)
         # In Pydantic v2 nested model_dump() overrides aren't automatically called
         data["actions"] = [action.model_dump() for action in self.actions]
+        # Ensure webhook handler field is set
+        if self.webhook is not None:
+            data["webhook"] = self.webhook.model_dump(exclude_none=False)
         return data
