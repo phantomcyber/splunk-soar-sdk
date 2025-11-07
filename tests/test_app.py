@@ -288,6 +288,8 @@ def test_handle_webhook_invalid_return_type_raises(
 def test_handle_webhook_soar_client(
     app_with_asset_webhook: App, mock_get_any_soar_call, mock_delete_any_soar_call
 ):
+    app_with_asset_webhook.actions_manager.auth_state = {"test_read_value": 42}
+
     @app_with_asset_webhook.webhook("test_webhook_with_query")
     def webhook_handler(request: WebhookRequest, soar: SOARClient) -> WebhookResponse:
         assert request.query == {
@@ -295,6 +297,13 @@ def test_handle_webhook_soar_client(
             "list_param": ["value1", "value2"],
             "empty_param": [""],
         }
+
+        assert soar.auth_state["test_read_value"] == 42
+        soar.asset_cache["test_write_value"] = 42
+
+        assert soar.ingestion_state == {}
+        soar.ingestion_state = {"test_replace_value": 42}
+
         soar.get("rest/version")
         soar.delete("rest/containers/1/artifacts/2")
         return WebhookResponse.text_response("Webhook received!")
@@ -317,6 +326,11 @@ def test_handle_webhook_soar_client(
     assert response["status_code"] == 200
     assert response["content"] == "Webhook received!"
 
+    assert app_with_asset_webhook.actions_manager.asset_cache["test_write_value"] == 42
+    assert app_with_asset_webhook.actions_manager.ingestion_state == {
+        "test_replace_value": 42
+    }
+
 
 def test_create_soar_client_auth_object(auth_action_input):
     result = App.create_soar_client_auth_object(auth_action_input)
@@ -330,3 +344,27 @@ def test_create_soar_client_auth_token_object(auth_token_input):
     assert isinstance(result, SOARClientAuth)
     assert result.base_url == "https://localhost:9999/"
     assert result.user_session_token == "example_token"
+
+
+def test_app_state(example_app: App, simple_action_input: InputSpecification):
+    example_app.actions_manager.auth_state = {"test_read_value": 42}
+
+    @example_app.action()
+    def test_action(params: Params, soar: SOARClient, asset: BaseAsset) -> ActionOutput:
+        assert soar.auth_state["test_read_value"] == 42
+        soar.asset_cache["test_write_value"] = 42
+
+        assert soar.ingestion_state == {}
+        soar.ingestion_state = {"test_replace_value": 42}
+
+        return ActionOutput()
+
+    # Call handle - this should not throw any errors
+    _ = example_app.handle(simple_action_input.model_dump_json())
+
+    result = example_app.actions_manager.action_results[0]
+    print(f"Message: {result.get_message()}")
+    assert result.get_status()
+
+    assert example_app.actions_manager.asset_cache["test_write_value"] == 42
+    assert example_app.actions_manager.ingestion_state == {"test_replace_value": 42}

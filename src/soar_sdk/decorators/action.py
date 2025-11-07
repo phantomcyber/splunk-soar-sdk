@@ -122,9 +122,19 @@ class ActionDecorator:
             action_params = self.app._validate_params(params, action_name)
             kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
 
+            # load the asset state from the actions_manager
+            soar.asset_cache = self.app.actions_manager.asset_cache
+            soar.auth_state = self.app.actions_manager.auth_state
+            soar.ingestion_state = self.app.actions_manager.ingestion_state
+
             try:
                 result = function(action_params, *args, **kwargs)
                 result = run_async_if_needed(result)
+
+                # push the asset state back to the actions_manager
+                self.app.actions_manager.asset_cache = soar.asset_cache
+                self.app.actions_manager.auth_state = soar.auth_state
+                self.app.actions_manager.ingestion_state = soar.ingestion_state
             except ActionFailure as e:
                 e.set_action_name(action_name)
                 return self.app._adapt_action_result(
