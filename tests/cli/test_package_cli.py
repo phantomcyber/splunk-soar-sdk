@@ -96,15 +96,15 @@ def test_install_command(mock_install_client, app_tarball: Path):
 
     assert result.exit_code == 0
 
-    assert mock_install_client.get("login").called
-    assert mock_install_client.post("login").called
+    assert mock_install_client.get("/").called
     assert mock_install_client.post("app_install").called
 
     app_install_call = mock_install_client.post("app_install")
     assert app_install_call.call_count == 1
-    expected_cookies = "csrftoken=fake_csrf_token; sessionid=fake_session_id"
+    expected_csrf_header = "fake_csrf_token"
     assert (
-        app_install_call.calls[0].request.headers.get("Cookie", "") == expected_cookies
+        app_install_call.calls[0].request.headers.get("X-CSRFToken", "")
+        == expected_csrf_header
     )
 
 
