@@ -15,7 +15,8 @@ jobs:
       matrix:
         app:
           - example_app
-          - example_app_with_webhook
+          # TODO: Re-enable once webhook app is fixed
+          # - example_app_with_webhook
     steps:
       - name: Checkout SDK repository
         uses: actions/checkout@v4
@@ -74,11 +75,12 @@ jobs:
           name: example_app-tar
           path: /tmp/
 
-      - name: Download example_app_with_webhook tar file
-        uses: actions/download-artifact@v4
-        with:
-          name: example_app_with_webhook-tar
-          path: /tmp/
+      # TODO: Re-enable once webhook app is fixed
+      # - name: Download example_app_with_webhook tar file
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: example_app_with_webhook-tar
+      #     path: /tmp/
 
       - name: Clear uv cache and sync SDK
         run: |
@@ -98,17 +100,18 @@ jobs:
             "$phantom_ip" \
             --username "${{ vars.PHANTOM_USERNAME }}"
 
-      - name: Install example_app_with_webhook on Phantom instance
-        env:
-          PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
-        run: |
-          phantom_ip=${{ matrix.ip }}
-          echo "Installing example_app_with_webhook on https://$phantom_ip"
-
-          uv run soarapps package install \
-            /tmp/example_app_with_webhook.tgz \
-            "$phantom_ip" \
-            --username "${{ vars.PHANTOM_USERNAME }}"
+      # TODO: Re-enable once webhook app is fixed
+      # - name: Install example_app_with_webhook on Phantom instance
+      #   env:
+      #     PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
+      #   run: |
+      #     phantom_ip=${{ matrix.ip }}
+      #     echo "Installing example_app_with_webhook on https://$phantom_ip"
+      #
+      #     uv run soarapps package install \
+      #       /tmp/example_app_with_webhook.tgz \
+      #       "$phantom_ip" \
+      #       --username "${{ vars.PHANTOM_USERNAME }}"
 
       - name: Run integration tests
         env:

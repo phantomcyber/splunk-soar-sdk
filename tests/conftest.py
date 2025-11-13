@@ -338,6 +338,11 @@ def sdist_resp_mock(respx_mock):
 @pytest.mark.respx(base_url="https://10.1.23.4/")
 def mock_install_client(respx_mock):
     """Fixture to mock requests.Session."""
+    # Mock the home page GET request for CSRF token
+    respx_mock.get("/").respond(
+        cookies={"csrftoken": "fake_csrf_token"}, status_code=200
+    )
+
     respx_mock.get("login").respond(
         cookies={"csrftoken": "mocked_csrf_token"}, status_code=200
     )
