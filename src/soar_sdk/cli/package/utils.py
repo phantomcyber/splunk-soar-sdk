@@ -32,6 +32,8 @@ async def phantom_install_app(
 ) -> httpx.Response:
     """Send a POST request with a CSRF token to the specified endpoint using an authenticated token."""
     csrftoken = client.cookies.get("csrftoken")
+    if not csrftoken:
+        raise RuntimeError("CSRF token not found in cookies")
 
     response = await client.post(
         endpoint,

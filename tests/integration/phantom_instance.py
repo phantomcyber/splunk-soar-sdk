@@ -161,7 +161,9 @@ class PhantomInstance:
             "add_label": True,
             "label_name": label,
         }
-        create_label_request = self.post(phantom_constants.ENDPOINT_EVENT_SETTINGS, json_data=data)
+        create_label_request = self.post(
+            phantom_constants.ENDPOINT_EVENT_SETTINGS, json_data=data
+        )
         return create_label_request.json()["success"]
 
     def delete_label(self, label: str) -> bool:
@@ -171,10 +173,18 @@ class PhantomInstance:
             "label_name": label,
         }
         logging.info('Deleting container label "%s".', label)
-        delete_label_request = self.post(phantom_constants.ENDPOINT_EVENT_SETTINGS, json_data=data)
+        delete_label_request = self.post(
+            phantom_constants.ENDPOINT_EVENT_SETTINGS, json_data=data
+        )
         return delete_label_request.json()["success"]
 
-    def create_container(self, container_name: str, label: str, tags: list | None = None, status: str = "new") -> int:
+    def create_container(
+        self,
+        container_name: str,
+        label: str,
+        tags: list | None = None,
+        status: str = "new",
+    ) -> int:
         """Create a container."""
         data = {
             "name": container_name,
@@ -182,7 +192,9 @@ class PhantomInstance:
             "tags": tags if tags is not None else [],
             "status": status,
         }
-        create_container_request = self.post(phantom_constants.ENDPOINT_CONTAINER, json_data=data)
+        create_container_request = self.post(
+            phantom_constants.ENDPOINT_CONTAINER, json_data=data
+        )
         container_id = create_container_request.json()["id"]
         return container_id
 
@@ -191,7 +203,9 @@ class PhantomInstance:
         logging.info("Deleting container with ID %s.", container_id)
         self.delete(phantom_constants.ENDPOINT_CONTAINER, container_id)
 
-    def get_action_results(self, action_id: int, include_expensive: bool = True) -> dict:
+    def get_action_results(
+        self, action_id: int, include_expensive: bool = True
+    ) -> dict:
         """Get the results of a triggered action."""
         action_query_params = {}
         if include_expensive:
@@ -205,7 +219,9 @@ class PhantomInstance:
         url = f"{phantom_constants.ENDPOINT_RUN_ACTION}/{action_id}"
         return self.get(url).json()
 
-    def get_app_info(self, name: str | None = None, vendor: str | None = None, pretty: bool = True) -> dict:
+    def get_app_info(
+        self, name: str | None = None, vendor: str | None = None, pretty: bool = True
+    ) -> dict:
         """Query for app information."""
         app_query_params = {}
         if name:
@@ -243,13 +259,17 @@ class PhantomInstance:
             )
 
         query_asset_params = {"_filter_name": f'"{asset_name}"'}
-        query_asset_request = self.get(phantom_constants.ENDPOINT_ASSET, query_asset_params)
+        query_asset_request = self.get(
+            phantom_constants.ENDPOINT_ASSET, query_asset_params
+        )
 
         query_asset_json = query_asset_request.json()
         num_assets_found = query_asset_json["count"]
 
         if num_assets_found >= 1:
-            logging.info('Found %d asset(s) with name "%s"', num_assets_found, asset_name)
+            logging.info(
+                'Found %d asset(s) with name "%s"', num_assets_found, asset_name
+            )
             if overwrite:
                 for asset_data in query_asset_json["data"]:
                     existing_asset_id = asset_data["id"]
@@ -257,9 +277,13 @@ class PhantomInstance:
             else:
                 return query_asset_json["data"][0]["id"]
 
-        new_asset_request = self.post(phantom_constants.ENDPOINT_ASSET, json_data=asset).json()
+        new_asset_request = self.post(
+            phantom_constants.ENDPOINT_ASSET, json_data=asset
+        ).json()
 
-        assert new_asset_request["success"] is True, f"Failed to insert asset {asset_name}."
+        assert new_asset_request["success"] is True, (
+            f"Failed to insert asset {asset_name}."
+        )
 
         return new_asset_request["id"]
 
@@ -267,7 +291,9 @@ class PhantomInstance:
         """Delete an asset."""
         self.delete(phantom_constants.ENDPOINT_ASSET, asset_id)
 
-    def run_action(self, action: str, container_id: int, targets: list, name: str | None = None) -> int:
+    def run_action(
+        self, action: str, container_id: int, targets: list, name: str | None = None
+    ) -> int:
         """Run an action."""
         if name is None:
             name = f"automation_test_run_{uuid.uuid4()}"
@@ -279,7 +305,9 @@ class PhantomInstance:
             "targets": targets,
         }
 
-        run_action_response = self.post(phantom_constants.ENDPOINT_RUN_ACTION, json_data=data).json()
+        run_action_response = self.post(
+            phantom_constants.ENDPOINT_RUN_ACTION, json_data=data
+        ).json()
 
         return run_action_response["action_run_id"]
 
@@ -310,7 +338,10 @@ class PhantomInstance:
             if poll_now_message["message"] == "timed out":
                 count += 1
                 time.sleep(retry_delay)
-                logging.info("Re-sending poll-now request [%d] times, due to previous request TIMEOUT", count)
+                logging.info(
+                    "Re-sending poll-now request [%d] times, due to previous request TIMEOUT",
+                    count,
+                )
                 poll_now_message = self.post(endpoint, json_data=data).json()
             else:
                 return poll_now_message
@@ -335,4 +366,6 @@ class PhantomInstance:
 
             time.sleep(poll_interval)
 
-        raise TimeoutError(f"Action {action_id} did not complete within {timeout} seconds")
+        raise TimeoutError(
+            f"Action {action_id} did not complete within {timeout} seconds"
+        )
