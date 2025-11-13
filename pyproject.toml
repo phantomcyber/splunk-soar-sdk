@@ -73,6 +73,7 @@ dev = [
     "pytest-asyncio>=0.23.8",
     "pytest-cov>=5,<6",
     "pytest-mock>=3.14.0,<4",
+    "pytest-rerunfailures>=15.0,<16",
     "pytest-watcher>=0.4.3",
     "pytest-xdist>=3.6.1",
     "respx>=0.22.0",
@@ -119,6 +120,9 @@ required-environments = [
 
 [tool.pytest.ini_options]
 addopts = "--ignore=src/soar_sdk/app_templates --ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail --durations=5"
+markers = [
+    "integration: Integration tests that require a live SOAR instance",
+]
 
 [tool.coverage.run]
 branch = true
