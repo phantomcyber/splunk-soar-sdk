@@ -14,22 +14,15 @@ async def phantom_get_login_session(
         base_url=base_url,
         verify=False,  # noqa: S501
         timeout=timeout,
+        auth=(username, password),  # Use HTTP Basic Auth
     ) as client:
-        # get the cookies from the get method
-        response = await client.get("/login")
+        # Get CSRF token by hitting home page (follow redirects)
+        response = await client.get("/", follow_redirects=True)
         response.raise_for_status()
         csrf_token = response.cookies.get("csrftoken")
+        if not csrf_token:
+            raise RuntimeError("Could not obtain CSRF token from SOAR instance")
         client.cookies.update(response.cookies)
-
-        await client.post(
-            "/login",
-            data={
-                "username": username,
-                "password": password,
-                "csrfmiddlewaretoken": csrf_token,
-            },
-            headers={"Referer": f"{base_url}/login"},
-        )
 
         yield client
 
@@ -44,7 +37,10 @@ async def phantom_install_app(
         endpoint,
         files=files,
         data={"csrfmiddlewaretoken": csrftoken},
-        headers={"Referer": f"{client.base_url}/{endpoint}"},
+        headers={
+            "Referer": f"{client.base_url}/",
+            "X-CSRFToken": csrftoken,
+        },
     )
 
     return response
