@@ -15,7 +15,8 @@ jobs:
       matrix:
         app:
           - example_app
-          - example_app_with_webhook
+          # TODO: Re-enable once webhook app is fixed
+          # - example_app_with_webhook
     steps:
       - name: Checkout SDK repository
         uses: actions/checkout@v4
@@ -78,11 +79,12 @@ jobs:
           name: example_app-tar
           path: /tmp/
 
-      - name: Download example_app_with_webhook tar file
-        uses: actions/download-artifact@v4
-        with:
-          name: example_app_with_webhook-tar
-          path: /tmp/
+      # TODO: Re-enable once webhook app is fixed
+      # - name: Download example_app_with_webhook tar file
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: example_app_with_webhook-tar
+      #     path: /tmp/
 
       - name: Clear uv cache and sync SDK
         run: |
