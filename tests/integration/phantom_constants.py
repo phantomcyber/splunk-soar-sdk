@@ -1,5 +1,3 @@
-"""Phantom specific constants for integration tests."""
-
 # General/Misc
 REST_API_BASE_URI = "/rest"
 
