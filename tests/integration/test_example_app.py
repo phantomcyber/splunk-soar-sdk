@@ -11,7 +11,7 @@ def test_reverse_string(example_app_client: AppOnStackClient):
     expected_output = input_string[::-1]
 
     result = example_app_client.run_action(
-        "reverse_string", {"input_string": input_string}
+        "reverse string", {"input_string": input_string}
     )
     assert result.success, f"Action failed: {result.message}"
     assert result.data.get("original_string") == input_string
