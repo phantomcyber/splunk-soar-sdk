@@ -80,7 +80,7 @@ class AppOnStackClient:
         if not self.app_info or not self.asset_id or not self.container_id:
             raise RuntimeError("App not set up. Call setup_app() first.")
 
-        targets = [{"app_id": self.app_info["id"], "asset_id": self.asset_id}]
+        targets = [{"app_id": self.app_info["id"], "assets": [self.asset_id]}]
 
         action_id = self.phantom.run_action(
             action=ACTION_TEST_CONNECTIVITY,
@@ -114,7 +114,7 @@ class AppOnStackClient:
         targets = [
             {
                 "app_id": self.app_info["id"],
-                "asset_id": self.asset_id,
+                "assets": [self.asset_id],
                 "parameters": [params],
             }
         ]

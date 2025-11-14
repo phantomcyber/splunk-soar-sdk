@@ -47,6 +47,11 @@ class ManifestProcessor:
 
         if app.webhook_meta is not None:
             app_meta.webhook = app.webhook_meta
+            module_name = self.get_module_dot_path(app_meta.main_module)
+            app_instance_name = app_meta.main_module.split(":")[-1]
+            app_meta.webhook.handler = (
+                f"{module_name}.{app_instance_name}.handle_webhook"
+            )
 
         return app_meta
 
