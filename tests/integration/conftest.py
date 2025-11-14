@@ -49,3 +49,37 @@ def example_app_client():
     yield client
 
     client.cleanup()
+
+
+@pytest.fixture(scope="session")
+def webhook_app_client():
+    phantom_url = os.environ.get("PHANTOM_URL")
+    if not phantom_url:
+        pytest.skip("PHANTOM_URL environment variable not set")
+
+    host = phantom_url.replace("https://", "").replace("http://", "")
+
+    username = os.environ.get("PHANTOM_USERNAME", "admin")
+    password = os.environ.get("PHANTOM_PASSWORD", "password")
+
+    asset_file = (
+        Path(__file__).parent.parent / "example_app_with_webhook" / "example_asset.json"
+    )
+    with open(asset_file) as f:
+        asset_config = json.load(f)
+
+    client = AppOnStackClient(
+        host=host,
+        username=username,
+        password=password,
+        app_name="example_app",
+        app_vendor="Splunk Inc.",
+        asset_config=asset_config,
+        verify_cert=False,
+    )
+
+    client.setup_app()
+
+    yield client
+
+    client.cleanup()

@@ -34,7 +34,7 @@ class PhantomInstance(SOARClient):
         if not verify_certs:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        transport = httpx.HTTPTransport(retries=5)
+        transport = httpx.HTTPTransport(retries=5, verify=verify_certs)
         self._client = httpx.Client(
             base_url=self.base_url,
             auth=(ph_user, ph_pass),
