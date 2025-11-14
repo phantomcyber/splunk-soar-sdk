@@ -3,74 +3,19 @@ from __future__ import annotations
 import logging
 import time
 import uuid
-from dataclasses import dataclass
-from http import HTTPStatus
 
-import requests
+import httpx
 import urllib3
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
+
+from soar_sdk.abstract import SOARClient
+from soar_sdk.apis.vault import Vault
+from soar_sdk.apis.artifact import Artifact
+from soar_sdk.apis.container import Container
 
 from . import phantom_constants
 
 
-@dataclass
-class PhantomSession:
-    """A Phantom login session."""
-
-    base_url: str
-    username: str
-    password: str
-    verify_certs: bool = False
-    _session: requests.Session | None = None
-
-    def __post_init__(self):
-        """Post data class initialization logic."""
-        retry_strategy = Retry(
-            total=5,
-            backoff_factor=1,
-            status_forcelist=[
-                HTTPStatus.TOO_MANY_REQUESTS,
-                HTTPStatus.INTERNAL_SERVER_ERROR,
-                HTTPStatus.BAD_GATEWAY,
-                HTTPStatus.SERVICE_UNAVAILABLE,
-                HTTPStatus.GATEWAY_TIMEOUT,
-            ],
-        )
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        self._session = requests.Session()
-        self._session.mount(self.base_url, adapter)
-
-    def __del__(self):
-        """Cleanup upon instance deletion."""
-        if self._session:
-            try:
-                self._session.close()
-            except Exception:
-                logging.debug("Failed to close Phantom session.")
-
-    def _update_request_kwargs(self, kwargs):
-        """Update the request kwargs with required info."""
-        kwargs["auth"] = (self.username, self.password)
-        kwargs.setdefault("verify", self.verify_certs)
-
-    def get(self, url, **kwargs):
-        """Send a GET request through the existing session."""
-        self._update_request_kwargs(kwargs)
-        return self._session.get(url, **kwargs)
-
-    def post(self, url, **kwargs):
-        """Send a POST request through the existing session."""
-        self._update_request_kwargs(kwargs)
-        return self._session.post(url, **kwargs)
-
-    def delete(self, url, **kwargs):
-        """Send a DELETE request through the existing session."""
-        self._update_request_kwargs(kwargs)
-        return self._session.delete(url, **kwargs)
-
-
-class PhantomInstance:
+class PhantomInstance(SOARClient):
     """Handle interaction with a Phantom instance."""
 
     def __init__(
@@ -80,21 +25,77 @@ class PhantomInstance:
         ph_pass: str,
         verify_certs: bool = False,
     ):
+        super().__init__()
         self.base_url = base_url
         self.verify_certs = verify_certs
+        self.ph_user = ph_user
+        self.ph_pass = ph_pass
 
         if not verify_certs:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        self.ph_creds = (ph_user, ph_pass)
-        self.session = PhantomSession(
+        transport = httpx.HTTPTransport(retries=5)
+        self._client = httpx.Client(
             base_url=self.base_url,
-            username=ph_user,
-            password=ph_pass,
-            verify_certs=verify_certs,
+            auth=(ph_user, ph_pass),
+            verify=verify_certs,
+            transport=transport,
+            timeout=httpx.Timeout(phantom_constants.DEFAULT_REQUEST_TIMEOUT_IN_SECONDS),
         )
 
-    def get(
+        self._vault_api = Vault(soar_client=self)
+        self._artifacts_api = Artifact(soar_client=self)
+        self._containers_api = Container(soar_client=self)
+
+    @property
+    def client(self) -> httpx.Client:
+        """The HTTP client used for making requests to the SOAR API."""
+        return self._client
+
+    @property
+    def vault(self) -> Vault:
+        """The SOAR Vault API."""
+        return self._vault_api
+
+    @property
+    def artifact(self) -> Artifact:
+        """The SOAR Artifacts API."""
+        return self._artifacts_api
+
+    @property
+    def container(self) -> Container:
+        """The SOAR Containers API."""
+        return self._containers_api
+
+    def get_executing_container_id(self) -> int:
+        """Return the current Container ID passed in the Connector Run Action JSON."""
+        return 0
+
+    def get_asset_id(self) -> str:
+        """Return the current Asset ID passed in the Connector Run Action JSON."""
+        return ""
+
+    def update_client(self, soar_auth, asset_id: str, container_id: int = 0) -> None:
+        """Update the SOAR client with the given authentication and asset ID."""
+        pass
+
+    def set_summary(self, summary) -> None:
+        """Set the custom summary object for the action run."""
+        pass
+
+    def set_message(self, message: str) -> None:
+        """Set the summary message for the action run."""
+        pass
+
+    def get_summary(self):
+        """Get the summary for the action run."""
+        return None
+
+    def get_message(self) -> str:
+        """Get the summary message for the action run."""
+        return ""
+
+    def get_endpoint(
         self,
         endpoint: str,
         params: dict | None = None,
@@ -102,17 +103,19 @@ class PhantomInstance:
         raise_on_fail: bool = True,
     ):
         """Send a GET request to the specified endpoint on the phantom instance."""
-        url = f"{self.base_url}{endpoint}"
-        request = self.session.get(url, timeout=timeout, params=params)
-
-        if not request.ok:
-            logging.error(request.text)
+        try:
+            return super().get(
+                endpoint,
+                params=params,
+                timeout=httpx.Timeout(timeout),
+            )
+        except httpx.HTTPStatusError as e:
+            logging.error(e.response.text)
             if raise_on_fail:
-                request.raise_for_status()
+                raise
+            return e.response
 
-        return request
-
-    def post(
+    def post_endpoint(
         self,
         endpoint: str,
         data: dict | None = None,
@@ -121,17 +124,20 @@ class PhantomInstance:
         raise_on_fail: bool = True,
     ):
         """Send a POST request to the specified endpoint on the phantom instance."""
-        url = f"{self.base_url}{endpoint}"
-        request = self.session.post(url, timeout=timeout, data=data, json=json_data)
-
-        if not request.ok:
-            logging.error(request.text)
+        try:
+            return super().post(
+                endpoint,
+                data=data,
+                json=json_data,
+                timeout=httpx.Timeout(timeout),
+            )
+        except httpx.HTTPStatusError as e:
+            logging.error(e.response.text)
             if raise_on_fail:
-                request.raise_for_status()
+                raise
+            return e.response
 
-        return request
-
-    def delete(
+    def delete_endpoint(
         self,
         endpoint: str,
         object_id: int,
@@ -139,19 +145,20 @@ class PhantomInstance:
         raise_on_fail: bool = True,
     ):
         """Send a DELETE request to the specified endpoint on the phantom instance."""
-        url = f"{self.base_url}{endpoint}/{object_id}"
-        request = self.session.delete(url, timeout=timeout)
-
-        if not request.ok:
-            logging.error(request.text)
+        try:
+            return super().delete(
+                f"{endpoint}/{object_id}",
+                timeout=httpx.Timeout(timeout),
+            )
+        except httpx.HTTPStatusError as e:
+            logging.error(e.response.text)
             if raise_on_fail:
-                request.raise_for_status()
-
-        return request
+                raise
+            return e.response
 
     def get_version(self) -> str:
         """Get the phantom instance version."""
-        return self.get(phantom_constants.ENDPOINT_VERSION).json()["version"]
+        return self.get_endpoint(phantom_constants.ENDPOINT_VERSION).json()["version"]
 
     def create_label(self, label: str) -> bool:
         """Create a label."""
@@ -159,7 +166,7 @@ class PhantomInstance:
             "add_label": True,
             "label_name": label,
         }
-        create_label_request = self.post(
+        create_label_request = self.post_endpoint(
             phantom_constants.ENDPOINT_EVENT_SETTINGS, json_data=data
         )
         return create_label_request.json()["success"]
@@ -171,7 +178,7 @@ class PhantomInstance:
             "label_name": label,
         }
         logging.info('Deleting container label "%s".', label)
-        delete_label_request = self.post(
+        delete_label_request = self.post_endpoint(
             phantom_constants.ENDPOINT_EVENT_SETTINGS, json_data=data
         )
         return delete_label_request.json()["success"]
@@ -190,7 +197,7 @@ class PhantomInstance:
             "tags": tags if tags is not None else [],
             "status": status,
         }
-        create_container_request = self.post(
+        create_container_request = self.post_endpoint(
             phantom_constants.ENDPOINT_CONTAINER, json_data=data
         )
         container_id = create_container_request.json()["id"]
@@ -199,7 +206,7 @@ class PhantomInstance:
     def delete_container(self, container_id: int):
         """Delete a container."""
         logging.info("Deleting container with ID %s.", container_id)
-        self.delete(phantom_constants.ENDPOINT_CONTAINER, container_id)
+        self.delete_endpoint(phantom_constants.ENDPOINT_CONTAINER, container_id)
 
     def get_action_results(
         self, action_id: int, include_expensive: bool = True
@@ -210,12 +217,12 @@ class PhantomInstance:
             action_query_params["include_expensive"] = True
 
         url = f"{phantom_constants.ENDPOINT_RUN_ACTION}/{action_id}/app_runs"
-        return self.get(url, action_query_params).json()
+        return self.get_endpoint(url, action_query_params).json()
 
     def get_action_status(self, action_id: int) -> dict:
         """Get the status of a triggered action."""
         url = f"{phantom_constants.ENDPOINT_RUN_ACTION}/{action_id}"
-        return self.get(url).json()
+        return self.get_endpoint(url).json()
 
     def get_app_info(
         self, name: str | None = None, vendor: str | None = None, pretty: bool = True
@@ -228,7 +235,9 @@ class PhantomInstance:
             app_query_params["_filter_product_vendor"] = f'"{vendor}"'
         if pretty:
             app_query_params["pretty"] = True
-        app_info_request = self.get(phantom_constants.ENDPOINT_APP, app_query_params)
+        app_info_request = self.get_endpoint(
+            phantom_constants.ENDPOINT_APP, app_query_params
+        )
 
         app_info_json = app_info_request.json()
 
@@ -237,7 +246,9 @@ class PhantomInstance:
     def get_asset(self, name: str) -> dict:
         """Query for an asset by name."""
         asset_query_params = {"_filter_name": f'"{name}"'}
-        asset_request = self.get(phantom_constants.ENDPOINT_ASSET, asset_query_params)
+        asset_request = self.get_endpoint(
+            phantom_constants.ENDPOINT_ASSET, asset_query_params
+        )
 
         asset_request_json = asset_request.json()
         num_assets_found = asset_request_json["count"]
@@ -257,7 +268,7 @@ class PhantomInstance:
             )
 
         query_asset_params = {"_filter_name": f'"{asset_name}"'}
-        query_asset_request = self.get(
+        query_asset_request = self.get_endpoint(
             phantom_constants.ENDPOINT_ASSET, query_asset_params
         )
 
@@ -271,11 +282,13 @@ class PhantomInstance:
             if overwrite:
                 for asset_data in query_asset_json["data"]:
                     existing_asset_id = asset_data["id"]
-                    self.delete(phantom_constants.ENDPOINT_ASSET, existing_asset_id)
+                    self.delete_endpoint(
+                        phantom_constants.ENDPOINT_ASSET, existing_asset_id
+                    )
             else:
                 return query_asset_json["data"][0]["id"]
 
-        new_asset_request = self.post(
+        new_asset_request = self.post_endpoint(
             phantom_constants.ENDPOINT_ASSET, json_data=asset
         ).json()
 
@@ -287,7 +300,7 @@ class PhantomInstance:
 
     def delete_asset(self, asset_id: int):
         """Delete an asset."""
-        self.delete(phantom_constants.ENDPOINT_ASSET, asset_id)
+        self.delete_endpoint(phantom_constants.ENDPOINT_ASSET, asset_id)
 
     def run_action(
         self, action: str, container_id: int, targets: list, name: str | None = None
@@ -303,7 +316,7 @@ class PhantomInstance:
             "targets": targets,
         }
 
-        run_action_response = self.post(
+        run_action_response = self.post_endpoint(
             phantom_constants.ENDPOINT_RUN_ACTION, json_data=data
         ).json()
 
@@ -325,10 +338,9 @@ class PhantomInstance:
         }
 
         endpoint = f"{phantom_constants.ENDPOINT_ASSET}/{asset_id}"
-        poll_now_message = self.post(endpoint, json_data=data).json()
+        poll_now_message = self.post_endpoint(endpoint, json_data=data).json()
         logging.info("Poll now response %s", poll_now_message)
 
-        # Handle timeout retries
         count = 1
         max_retries = 10
         retry_delay = 60
@@ -340,7 +352,7 @@ class PhantomInstance:
                     "Re-sending poll-now request [%d] times, due to previous request TIMEOUT",
                     count,
                 )
-                poll_now_message = self.post(endpoint, json_data=data).json()
+                poll_now_message = self.post_endpoint(endpoint, json_data=data).json()
             else:
                 return poll_now_message
 
