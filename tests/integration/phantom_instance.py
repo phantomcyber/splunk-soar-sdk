@@ -50,7 +50,6 @@ class PhantomInstance(SOARClient):
     @property
     def client(self) -> httpx.Client:
         """The HTTP client used for making requests to the SOAR API."""
-        print(f"{self._client.verify=}")
         return self._client
 
     @property
@@ -104,7 +103,6 @@ class PhantomInstance(SOARClient):
         raise_on_fail: bool = True,
     ):
         """Send a GET request to the specified endpoint on the phantom instance."""
-        print(f"{self.client.verify=}")
         try:
             return self.get(
                 endpoint,
@@ -126,7 +124,6 @@ class PhantomInstance(SOARClient):
         raise_on_fail: bool = True,
     ):
         """Send a POST request to the specified endpoint on the phantom instance."""
-        print(f"{self._client.verify=}")
         try:
             return self.post(
                 endpoint,
@@ -148,7 +145,6 @@ class PhantomInstance(SOARClient):
         raise_on_fail: bool = True,
     ):
         """Send a DELETE request to the specified endpoint on the phantom instance."""
-        print(f"{self._client.verify=}")
         try:
             return self.delete(
                 f"{endpoint}/{object_id}",
