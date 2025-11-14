@@ -90,7 +90,7 @@ class SOARClient(Generic[SummaryType]):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
-            auth=auth,
+            auth=auth if auth is not None else httpx.USE_CLIENT_DEFAULT,
             follow_redirects=follow_redirects,
             extensions=extensions,
         )
@@ -125,7 +125,7 @@ class SOARClient(Generic[SummaryType]):
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth,  # type: ignore[arg-type]
+            auth=auth if auth is not None else httpx.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -161,7 +161,7 @@ class SOARClient(Generic[SummaryType]):
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth,  # type: ignore[arg-type]
+            auth=auth if auth is not None else httpx.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -189,7 +189,7 @@ class SOARClient(Generic[SummaryType]):
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth,  # type: ignore[arg-type]
+            auth=auth if auth is not None else httpx.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
