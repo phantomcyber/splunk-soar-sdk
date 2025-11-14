@@ -59,6 +59,7 @@ jobs:
       PHANTOM_USERNAME: ${{ vars.PHANTOM_USERNAME }}
       PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
       NUM_TEST_RETRIES: ${{ vars.NUM_TEST_RETRIES || '2' }}
+      UV_LOCKED: 1
     steps:
       - name: Checkout SDK repository
         uses: actions/checkout@v4
@@ -84,7 +85,6 @@ jobs:
 
       - name: Clear uv cache and sync SDK
         run: |
-          # Clear uv cache to ensure SDK is rebuilt with latest changes
           uv cache clean
           uv sync
 
@@ -119,7 +119,6 @@ jobs:
         run: |
           echo "Running integration tests against $PHANTOM_URL"
 
-          # Install dev dependencies (includes pytest and plugins)
           uv sync --group dev
 
           # Run pytest with integration tests only (no coverage)
