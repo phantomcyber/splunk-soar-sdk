@@ -54,6 +54,7 @@ class PhantomInstance(SOARClient):
     @property
     def client(self) -> httpx.Client:
         """The HTTP client used for making requests to the SOAR API."""
+        print(f"{self._client.verify=}")
         return self._client
 
     @property
