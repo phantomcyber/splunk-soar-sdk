@@ -14,9 +14,11 @@ def test_reverse_string(example_app_client: AppOnStackClient):
         "reverse string", {"input_string": input_string}
     )
     assert result.success, f"Action failed: {result.message}"
-    assert result.data.get("original_string") == input_string
-    assert result.data.get("reversed_string") == expected_output
-    assert result.data.get("underscored_string") == f"{input_string}_{expected_output}"
+
+    data = result.data[0]
+    assert data.get("original_string") == input_string
+    assert data.get("reversed_string") == expected_output
+    assert data.get("underscored_string") == f"{input_string}_{expected_output}"
 
 
 def test_on_poll(example_app_client: AppOnStackClient):
