@@ -104,7 +104,7 @@ class PhantomInstance(SOARClient):
     ):
         """Send a GET request to the specified endpoint on the phantom instance."""
         try:
-            return super().get(
+            return self.get(
                 endpoint,
                 params=params,
                 timeout=httpx.Timeout(timeout),
@@ -125,7 +125,7 @@ class PhantomInstance(SOARClient):
     ):
         """Send a POST request to the specified endpoint on the phantom instance."""
         try:
-            return super().post(
+            return self.post(
                 endpoint,
                 data=data,
                 json=json_data,
@@ -146,7 +146,7 @@ class PhantomInstance(SOARClient):
     ):
         """Send a DELETE request to the specified endpoint on the phantom instance."""
         try:
-            return super().delete(
+            return self.delete(
                 f"{endpoint}/{object_id}",
                 timeout=httpx.Timeout(timeout),
             )
