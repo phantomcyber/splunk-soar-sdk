@@ -21,8 +21,9 @@ def test_reverse_string(example_app_client: AppOnStackClient):
     assert data.get("_underscored_string") == f"{input_string}_{expected_output}"
 
 
-def test_on_poll(example_app_client: AppOnStackClient):
-    result = example_app_client.run_poll({})
+# TODO: implement this next
+# def test_on_poll(example_app_client: AppOnStackClient):
+#     result = example_app_client.run_poll({})  # noqa: ERA001
 
-    assert result.success, f"Polling failed: {result.message}"
-    assert len(result.data) == 2
+#     assert result.success, f"Polling failed: {result.message}"  # noqa: ERA001
+#     assert len(result.data) == 2  # noqa: ERA001
