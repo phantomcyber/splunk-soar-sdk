@@ -1,6 +1,6 @@
 [project]
 name = "exampleapp"
-version = "0.1.0"
+version = "0.1.1"
 description = "This is the basic example SOAR app"
 license = "Copyright (c) Splunk Inc., 2025"
 readme = "README.md"
