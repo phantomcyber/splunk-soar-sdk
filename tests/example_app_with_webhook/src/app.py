@@ -22,8 +22,8 @@ class Asset(BaseAsset):
 
 app = App(
     asset_cls=Asset,
-    name="example_app",
-    appid="9b388c08-67de-4ca4-817f-26f8fb7cbf55",
+    name="example_app with webhook",
+    appid="1782380b-3df2-4571-bf63-a30e0b51b1ac",
     app_type="sandbox",
     product_vendor="Splunk Inc.",
     logo="logo.svg",
