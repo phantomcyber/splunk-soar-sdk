@@ -1,7 +1,7 @@
 {
-    "name": "example_app",
+    "name": "example_app with webhook",
     "description": "This is the basic example SOAR app",
-    "appid": "9b388c08-67de-4ca4-817f-26f8fb7cbf55",
+    "appid": "1782380b-3df2-4571-bf63-a30e0b51b1ac",
     "type": "sandbox",
     "product_vendor": "Splunk Inc.",
     "app_version": "0.1.1",
@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-11-15T00:28:49.842950Z",
+    "utctime_updated": "2025-11-15T00:43:48.487296Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
