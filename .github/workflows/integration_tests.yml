@@ -108,7 +108,8 @@ jobs:
           uv run soarapps package install \
             /tmp/example_app_with_webhook.tgz \
             "$phantom_ip" \
-            --username "${{ vars.PHANTOM_USERNAME }}"
+            --username "${{ vars.PHANTOM_USERNAME }}" \
+            --force
 
       - name: Run integration tests
         env:

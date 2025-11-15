@@ -28,7 +28,10 @@ async def phantom_get_login_session(
 
 
 async def phantom_install_app(
-    client: httpx.AsyncClient, endpoint: str, files: dict[str, bytes]
+    client: httpx.AsyncClient,
+    endpoint: str,
+    files: dict[str, bytes],
+    force: bool = False,
 ) -> httpx.Response:
     """Send a POST request with a CSRF token to the specified endpoint using an authenticated token."""
     csrftoken = client.cookies.get("csrftoken")
@@ -38,7 +41,7 @@ async def phantom_install_app(
     response = await client.post(
         endpoint,
         files=files,
-        data={"csrfmiddlewaretoken": csrftoken},
+        data={"csrfmiddlewaretoken": csrftoken, "forced_installation": force},
         headers={
             "Referer": f"{client.base_url}/",
             "X-CSRFToken": csrftoken,
