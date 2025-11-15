@@ -1,5 +1,5 @@
 [project]
-name = "exampleapp"
+name = "exampleapp_with_webhook"
 version = "0.1.1"
 description = "This is the basic example SOAR app"
 license = "Copyright (c) Splunk Inc., 2025"
