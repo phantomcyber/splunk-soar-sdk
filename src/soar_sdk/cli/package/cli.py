@@ -206,7 +206,11 @@ def build(
 
 
 async def upload_app(
-    soar_instance: str, username: str, password: str, app_tarball: Path
+    soar_instance: str,
+    username: str,
+    password: str,
+    app_tarball: Path,
+    force: bool = False,
 ) -> httpx.Response:
     """Asynchronously upload an app tgz to a Splunk SOAR system, via REST API."""
     base_url = (
@@ -217,12 +221,14 @@ async def upload_app(
 
     payload = {"app": app_tarball.read_bytes()}
     async with phantom_get_login_session(base_url, username, password) as client:
-        response = await phantom_install_app(client, "app_install", payload)
+        response = await phantom_install_app(client, "app_install", payload, force)
     return response
 
 
 @package.command()
-def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
+def install(
+    app_tarball: Path, soar_instance: str, username: str = "", force: bool = False
+) -> None:
     """Install the app tgz to the specified Splunk SOAR system.
 
     ..note:
@@ -243,7 +249,7 @@ def install(app_tarball: Path, soar_instance: str, username: str = "") -> None:
         password = typer.prompt("Please enter your SOAR password", hide_input=True)
 
     app_install_request = asyncio.run(
-        upload_app(soar_instance, username, password, app_tarball)
+        upload_app(soar_instance, username, password, app_tarball, force)
     )
 
     try:
