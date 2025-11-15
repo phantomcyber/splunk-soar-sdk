@@ -558,7 +558,6 @@
         ]
     },
     "webhook": {
-        "handler": "src.app.app.handle_webhook",
         "requires_auth": true,
         "allowed_headers": [],
         "ip_allowlist": [
