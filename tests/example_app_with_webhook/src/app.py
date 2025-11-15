@@ -28,7 +28,7 @@ app = App(
     product_vendor="Splunk Inc.",
     logo="logo.svg",
     logo_dark="logo_dark.svg",
-    product_name="Example App",
+    product_name="Example App with Webhoo",
     publisher="Splunk Inc.",
     min_phantom_version="6.2.2.134",
 ).enable_webhooks()
