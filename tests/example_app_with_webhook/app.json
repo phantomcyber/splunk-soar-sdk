@@ -4,7 +4,7 @@
     "appid": "9b388c08-67de-4ca4-817f-26f8fb7cbf55",
     "type": "sandbox",
     "product_vendor": "Splunk Inc.",
-    "app_version": "0.1.0",
+    "app_version": "0.1.1",
     "license": "Copyright (c) Splunk Inc., 2025",
     "min_phantom_version": "6.2.2.134",
     "package_name": "phantom_exampleapp",
@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-11-14T23:20:24.923801Z",
+    "utctime_updated": "2025-11-15T00:28:49.842950Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -558,7 +558,6 @@
         ]
     },
     "webhook": {
-        "handler": "src.app.app.handle_webhook",
         "requires_auth": true,
         "allowed_headers": [],
         "ip_allowlist": [
