@@ -30,10 +30,11 @@ def parse_junit_xml(xml_path: Path) -> TestResult:
     failed = 0
     skipped = 0
     errors = 0
-    duration = float(root.get("time", 0))
+    duration = 0.0
     failures = []
 
     for testsuite in root.findall(".//testsuite"):
+        duration += float(testsuite.get("time", 0))
         passed += (
             int(testsuite.get("tests", 0))
             - int(testsuite.get("failures", 0))
@@ -95,8 +96,8 @@ def generate_markdown_summary(
     total_errors = sum(r.errors for r in results)
     total_tests = total_passed + total_failed + total_skipped + total_errors
 
-    md = "```\nIntegration Test Results\n"
-    md += "━" * 63 + "\n"
+    md = "Integration Test Results\n"
+    md += "━" * 63 + "\n\n"
 
     status = "PASSED" if total_failed + total_errors == 0 else "FAILED"
     md += f"{total_tests} tests: {total_passed} passed, {total_failed + total_errors} failed, {total_skipped} skipped\n"
@@ -110,7 +111,7 @@ def generate_markdown_summary(
     has_failures = any(r.failures for r in results)
     if has_failures:
         md += "\nFailed Tests\n"
-        md += "━" * 63 + "\n"
+        md += "━" * 63 + "\n\n"
         for result in results:
             if result.failures:
                 for failure in result.failures:
@@ -119,12 +120,10 @@ def generate_markdown_summary(
                     message = failure["message"][:200].strip()
                     if len(failure["message"]) > 200:
                         message += "..."
-                    md += f"  {failure['type']}: {message}\n"
-
-    md += "```\n"
+                    md += f"  {failure['type']}: {message}\n\n"
 
     if has_failures and run_url:
-        md += "\n[View full logs and artifacts](" + run_url + ")\n"
+        md += "[View full logs and artifacts](" + run_url + ")\n"
 
     return md
 
