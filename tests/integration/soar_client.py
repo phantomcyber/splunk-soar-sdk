@@ -4,6 +4,8 @@ import logging
 import time
 from contextlib import suppress
 from dataclasses import dataclass
+import json
+from asyncio import timeout
 
 from .phantom_constants import ACTION_TEST_CONNECTIVITY, STATUS_SUCCESS
 from .phantom_instance import PhantomInstance
@@ -144,20 +146,57 @@ class AppOnStackClient:
 
         return ActionResult(success=success, message=message, data=action_result)
 
-    def run_poll(self, params: dict | None = None) -> ActionResult:
+    async def run_poll(
+        self,
+        container_source_ids: str = "",
+        max_containers: int = 1,
+        max_artifacts: int = 10,
+    ) -> ActionResult:
         if not self.app_info or not self.asset_id:
             raise RuntimeError("App not set up. Call setup_app() first.")
 
-        result = self.phantom.poll_now(
-            app_id=self.app_info["id"],
-            asset_id=self.asset_id,
-            container_id=self.container_id,
-        )
+        async with self.phantom.attach_websocket() as websocket, timeout(3):
+            await websocket.send(
+                json.dumps(
+                    {
+                        "asset_id": self.asset_id,
+                        "register": True,
+                        "referer": f"/apps/{self.app_info['id']}/asset/{self.asset_id}/",
+                        "id": json.dumps({"asset_id": self.asset_id}),
+                    }
+                )
+            )
 
-        success = result.get("success", False)
-        message = result.get("message", "Poll completed")
+            result = self.phantom.poll_now(
+                asset_id=self.asset_id,
+                container_source_ids=container_source_ids,
+                max_containers=max_containers,
+                max_artifacts=max_artifacts,
+            )
 
-        return ActionResult(success=success, message=message, data=result)
+            if not result.get("received"):
+                raise RuntimeError(f"Starting polling failed: {result}")
+            subscription_id = result["poll_id"]
+
+            async for messages_json in websocket:
+                messages: list[dict] = json.loads(messages_json)
+                for message in messages:
+                    if message.get("subscription_id") != subscription_id:
+                        continue
+                    match message.get("status"):
+                        case "progress":
+                            continue
+                        case "success":
+                            await websocket.send(
+                                json.dumps(
+                                    {
+                                        "asset_id": self.asset_id,
+                                        "unregister": True,
+                                        "referer": f"/apps/{self.app_info['id']}/asset/{self.asset_id}/",
+                                    }
+                                )
+                            )
+                            return ActionResult(success=True, message=message)
 
     def enable_webhook(self, webhook_config: dict | None = None) -> ActionResult:
         if not self.app_info or not self.asset_id:

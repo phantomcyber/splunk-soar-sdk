@@ -3,9 +3,13 @@ from __future__ import annotations
 import logging
 import time
 import uuid
+import ssl
+from contextlib import asynccontextmanager
 
 import httpx
 import urllib3
+from urllib.parse import urlparse
+import websockets
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.apis.vault import Vault
@@ -203,6 +207,13 @@ class PhantomInstance(SOARClient):
         container_id = create_container_request.json()["id"]
         return container_id
 
+    def find_containers_for_asset(self, asset_id: int) -> list[dict]:
+        """Find containers that were created by a given asset"""
+        response = self.get_endpoint(
+            phantom_constants.ENDPOINT_CONTAINER, params={"_filter_asset_id": asset_id}
+        )
+        return response.json()["data"]
+
     def delete_container(self, container_id: int):
         """Delete a container."""
         logging.info("Deleting container with ID %s.", container_id)
@@ -325,8 +336,8 @@ class PhantomInstance(SOARClient):
     def poll_now(
         self,
         asset_id: int,
-        container_source_ids: list | None = None,
-        max_containers: int = 3,
+        container_source_ids: str = "",
+        max_containers: int = 1,
         max_artifacts: int = 10,
     ) -> dict:
         """Trigger the on poll action."""
@@ -340,21 +351,6 @@ class PhantomInstance(SOARClient):
         endpoint = f"{phantom_constants.ENDPOINT_ASSET}/{asset_id}"
         poll_now_message = self.post_endpoint(endpoint, json_data=data).json()
         logging.info("Poll now response %s", poll_now_message)
-
-        count = 1
-        max_retries = 10
-        retry_delay = 60
-        while count < max_retries:
-            if poll_now_message["message"] == "timed out":
-                count += 1
-                time.sleep(retry_delay)
-                logging.info(
-                    "Re-sending poll-now request [%d] times, due to previous request TIMEOUT",
-                    count,
-                )
-                poll_now_message = self.post_endpoint(endpoint, json_data=data).json()
-            else:
-                return poll_now_message
 
         return poll_now_message
 
@@ -379,3 +375,30 @@ class PhantomInstance(SOARClient):
         raise TimeoutError(
             f"Action {action_id} did not complete within {timeout} seconds"
         )
+
+    @asynccontextmanager
+    async def attach_websocket(self):
+        login_csrf_response = self.get("/login")
+        csrf_token = login_csrf_response.cookies.get("csrftoken")
+        login_response = self.post(
+            "/login",
+            data={
+                "username": self.ph_user,
+                "password": self.ph_pass,
+                "csrfmiddlewaretoken": csrf_token,
+            },
+        )
+        session_id = login_response.cookies.get("sessionid")
+
+        webhook_server = urlparse(self.base_url).netloc
+        ssl_context = ssl.create_default_context()
+        if not self.verify_certs:
+            ssl_context.check_hostname = False
+            ssl_context.verify_mode = ssl.CERT_NONE
+
+        async with websockets.connect(
+            f"wss://{webhook_server}/websocket",
+            additional_headers={"Cookie": f"sessionid={session_id}"},
+            ssl=ssl_context,
+        ) as w:
+            yield w
