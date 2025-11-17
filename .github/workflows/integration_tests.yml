@@ -127,6 +127,7 @@ jobs:
             --color=yes \
             --no-cov \
             -m "integration" \
+            --junitxml=test-results/junit-${{ matrix.version }}.xml \
             || exit_code=$?
 
           echo "Integration tests completed"
@@ -141,3 +142,41 @@ jobs:
             pytest-logs/
             test-results/
           retention-days: 1
+
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: integration-test
+    if: always()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: integration-test-results-*
+          path: all-test-results/
+          merge-multiple: true
+
+      - name: Generate test summary
+        run: |
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          python3 .github/scripts/generate_test_summary.py all-test-results/ test-summary.md "$RUN_URL"
+
+      - name: Post summary to job
+        run: |
+          cat test-summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload summary as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary
+          path: test-summary.md
+          retention-days: 7
+
+      - name: Fail if tests failed
+        run: |
+          if grep -q "FAILED" test-summary.md; then
+            echo "Integration tests failed - check summary above"
+            exit 1
+          fi
