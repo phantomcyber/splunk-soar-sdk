@@ -1,3 +1,5 @@
+import pytest
+
 from .soar_client import AppOnStackClient
 
 
@@ -21,9 +23,17 @@ def test_reverse_string(example_app_client: AppOnStackClient):
     assert data.get("_underscored_string") == f"{input_string}_{expected_output}"
 
 
-# TODO: implement this next
-# def test_on_poll(example_app_client: AppOnStackClient):
-#     result = example_app_client.run_poll({})  # noqa: ERA001
+@pytest.mark.asyncio
+async def test_on_poll(example_app_client: AppOnStackClient):
+    result = await example_app_client.run_poll()
 
-#     assert result.success, f"Polling failed: {result.message}"  # noqa: ERA001
-#     assert len(result.data) == 2  # noqa: ERA001
+    containers = example_app_client.phantom.find_containers_for_asset(
+        asset_id=example_app_client.asset_id
+    )
+    for container in containers:
+        example_app_client.phantom.delete_container(container["id"])
+
+    assert result.success, f"Polling failed: {result.message}"
+    assert len(containers) == 1
+    assert containers[0].get("artifact_count") == 2
+    assert containers[0].get("name") == "Network Alerts"
