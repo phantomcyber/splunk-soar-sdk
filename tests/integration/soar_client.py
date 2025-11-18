@@ -30,11 +30,13 @@ class AppOnStackClient:
         app_vendor: str,
         asset_config: dict,
         verify_cert: bool = False,
+        automation_broker_name: str | None = None,
     ):
         self.host = host
         self.app_name = app_name
         self.app_vendor = app_vendor
         self.asset_config = asset_config
+        self.automation_broker_name = automation_broker_name
 
         base_url = f"https://{host}"
         self.phantom = PhantomInstance(
@@ -66,6 +68,24 @@ class AppOnStackClient:
             "app_version": self.app_info["app_version"],
             "configuration": self.asset_config,
         }
+
+        if self.automation_broker_name:
+            ab_results = self.phantom.get_automation_brokers(
+                name=self.automation_broker_name
+            )
+            if ab_results["count"] == 0:
+                logger.warning(
+                    f"Automation broker '{self.automation_broker_name}' not found. "
+                    "Asset will be created without an automation broker."
+                )
+            else:
+                ab_id = ab_results["data"][0]["id"]
+                asset_data["automation_broker_id"] = ab_id
+                logger.info(
+                    f"Setting automation broker '{self.automation_broker_name}' "
+                    f"(ID: {ab_id}) for asset '{asset_name}'"
+                )
+
         self.asset_id = self.phantom.insert_asset(asset_data, overwrite=True)
 
         label = "integration_test"
