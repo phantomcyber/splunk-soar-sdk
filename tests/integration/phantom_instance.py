@@ -402,3 +402,12 @@ class PhantomInstance(SOARClient):
             ssl=ssl_context,
         ) as w:
             yield w
+
+    def get_automation_brokers(self, name: str | None = None) -> dict:
+        """Query for automation brokers."""
+        query_params = {}
+        if name:
+            query_params["_filter_name"] = f'"{name}"'
+        return self.get_endpoint(
+            phantom_constants.ENDPOINT_AUTOMATION_BROKER, query_params
+        ).json()

@@ -37,3 +37,17 @@ async def test_on_poll(example_app_client: AppOnStackClient):
     assert len(containers) == 1
     assert containers[0].get("artifact_count") == 2
     assert containers[0].get("name") == "Network Alerts"
+
+
+@pytest.mark.onprem
+def test_reverse_string_with_ab(example_app_client: AppOnStackClient):
+    input_string = "AB Testing!"
+    expected_output = input_string[::-1]
+
+    result = example_app_client.run_action(
+        "reverse string", {"input_string": input_string}
+    )
+    assert result.success, f"Action failed: {result.message}"
+
+    data = result.data["data"][0]
+    assert data.get("reversed_string") == expected_output
