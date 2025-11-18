@@ -41,6 +41,7 @@ async def test_on_poll(example_app_client: AppOnStackClient):
 
 @pytest.mark.onprem
 def test_reverse_string_with_ab(example_app_client: AppOnStackClient):
+    """Test reverse string action with automation broker (on-prem simulation)."""
     input_string = "AB Testing!"
     expected_output = input_string[::-1]
 
