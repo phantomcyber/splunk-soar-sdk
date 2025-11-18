@@ -19,9 +19,9 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(pytest.mark.integration)
 
         test_markers = [marker.name for marker in item.iter_markers()]
-        force_automation_broker = False
-        if cls := item.cls:
-            force_automation_broker = getattr(cls, "force_automation_broker", False)
+        force_automation_broker = (
+            getattr(item.cls, "force_automation_broker", False) if item.cls else False
+        )
 
         if pytest.mark.onprem.name in test_markers or force_automation_broker:
             item.add_marker(pytest.mark.require_ab)
