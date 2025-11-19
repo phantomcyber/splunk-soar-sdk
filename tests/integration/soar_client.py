@@ -214,6 +214,13 @@ class AppOnStackClient:
             return ""
         return f"https://{self.host}/rest/handler/{self.app_name}/{self.asset_id}"
 
+    def get_ingested_containers(self) -> list[dict]:
+        return self.phantom.find_containers_from_asset(self.asset_id)
+
+    def delete_ingested_containers(self) -> None:
+        for container in self.get_ingested_containers():
+            self.phantom.delete_container(container["id"])
+
     def cleanup(self) -> None:
         if self.container_id:
             try:
@@ -226,3 +233,5 @@ class AppOnStackClient:
                 self.phantom.delete_asset(self.asset_id)
             except Exception as e:
                 logger.warning(f"Failed to delete asset {self.asset_id}: {e}")
+
+        self.delete_ingested_containers()

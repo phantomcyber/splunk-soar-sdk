@@ -28,8 +28,10 @@ jobs:
 
       - name: Build ${{ matrix.app }}
         run: |
+          echo "Building SOAR SDK from branch"
+          uv build
           echo "Building ${{ matrix.app }} using soarapps CLI"
-          uv run soarapps package build tests/${{ matrix.app }} --output-file /tmp/${{ matrix.app }}.tgz
+          uv run soarapps package build tests/${{ matrix.app }} --output-file /tmp/${{ matrix.app }}.tgz --with-sdk-wheel-from "dist/splunk_soar_sdk-*.whl"
           echo "App build completed successfully"
 
       - name: Upload app tar file as artifact
