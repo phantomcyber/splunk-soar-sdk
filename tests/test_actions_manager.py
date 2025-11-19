@@ -1,6 +1,7 @@
 from collections.abc import AsyncGenerator, Iterator
 from unittest import mock
 from zoneinfo import ZoneInfo
+from pathlib import Path
 
 import pytest
 import pytest_mock
@@ -292,3 +293,8 @@ def test_get_app_dir_non_broker(
 
     assert app_actions_manager.get_app_dir() == "/opt/phantom/apps/test_app"
     super_mock.assert_called_once()
+
+
+def test_override_app_dir(app_actions_manager: ActionsManager, tmp_path: Path):
+    app_actions_manager.override_app_dir(tmp_path)
+    assert app_actions_manager.get_app_dir() == tmp_path.as_posix()

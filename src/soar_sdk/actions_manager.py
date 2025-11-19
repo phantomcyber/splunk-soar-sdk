@@ -1,5 +1,6 @@
 from typing import Any
 import os
+from pathlib import Path
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.input_spec import InputSpecification
@@ -22,6 +23,7 @@ class ActionsManager(BaseConnector):
         super().__init__()
 
         self._actions: dict[str, Action] = {}
+        self.__app_dir: Path | None = None
 
     def get_action(self, identifier: str) -> Action | None:
         """Convenience method for getting an Action callable from its identifier.
@@ -108,6 +110,10 @@ class ActionsManager(BaseConnector):
 
         Returns APP_HOME directly on brokers, which contains the correct SDK app path.
         """
+        # If the app dir has been overridden by calling `override_app_dir`, return that
+        if self.__app_dir:
+            return self.__app_dir.as_posix()
+
         # Remove when 7.1.0 is the min supported broker version
         remove_when_soar_newer_than("7.1.1")
         # On AB, APP_HOME is set by spawn to the full app path at runtime
@@ -128,3 +134,10 @@ class ActionsManager(BaseConnector):
     def get_soar_base_url(cls) -> str:
         """Get the base URL of the Splunk SOAR instance this app is running on."""
         return cls._get_phantom_base_url()
+
+    def override_app_dir(self, app_dir: Path) -> None:
+        """Request that the given app_dir be used, instead of whatever super().get_app_dir() returns.
+
+        This is useful for contexts such as Webhooks, where the app dir isn't necessarily the cwd, but we still need to load the app JSON reliably.
+        """
+        self.__app_dir = app_dir
