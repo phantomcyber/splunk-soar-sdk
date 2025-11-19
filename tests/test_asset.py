@@ -2,7 +2,7 @@ from pydantic import Field
 import pytest
 
 from soar_sdk.asset import AssetField, AssetFieldSpecification, BaseAsset
-from soar_sdk.exceptions import ActionContextRequired
+from soar_sdk.exceptions import AppContextRequired
 
 
 def test_asset_with_aliased_field():
@@ -115,9 +115,9 @@ def test_asset_field_with_none_values():
 
 
 def test_asset_state_unavailable_outside_action():
-    with pytest.raises(ActionContextRequired):
+    with pytest.raises(AppContextRequired):
         _ = BaseAsset().auth_state
-    with pytest.raises(ActionContextRequired):
+    with pytest.raises(AppContextRequired):
         _ = BaseAsset().cache_state
-    with pytest.raises(ActionContextRequired):
+    with pytest.raises(AppContextRequired):
         _ = BaseAsset().ingest_state
