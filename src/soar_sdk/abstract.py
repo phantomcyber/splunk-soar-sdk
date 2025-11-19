@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, Generic, TypeVar
+from typing import Any, TypeVar
 from collections.abc import Mapping, Iterable, AsyncIterable
 
 from soar_sdk.apis.vault import Vault
@@ -34,7 +34,7 @@ class SOARClientAuth:
         )
 
 
-class SOARClient(Generic[SummaryType]):
+class SOARClient[SummaryType: ActionOutput]:
     """An API interface for interacting with the Splunk SOAR Platform."""
 
     @property
