@@ -12,11 +12,6 @@ from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionRe
 from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
 from soar_sdk.logging import getLogger
 
-
-_INGEST_STATE_KEY = "ingestion_state"
-_AUTH_STATE_KEY = "auth_state"
-_CACHE_STATE_KEY = "asset_cache"
-
 logger = getLogger()
 
 
@@ -27,9 +22,6 @@ class ActionsManager(BaseConnector):
         super().__init__()
 
         self._actions: dict[str, Action] = {}
-        self.ingestion_state: dict = {}
-        self.auth_state: dict = {}
-        self.asset_cache: dict = {}
 
     def get_action(self, identifier: str) -> Action | None:
         """Convenience method for getting an Action callable from its identifier.
@@ -94,35 +86,6 @@ class ActionsManager(BaseConnector):
 
         else:
             raise RuntimeError(f"Action {action_id} not found.")
-
-    def initialize(self) -> bool:
-        """Load asset state into memory at initialization, splitting it into 3 categories.
-
-        Asset state is used to store data that needs to be accessed across actions.
-        Chiefly, it is used to store ingestion state, authentication state, and/or
-        used as an asset cache. Returns True only to conform with the BaseConnector interface.
-        """
-        state = self.load_state() or {}
-        self.ingestion_state = state.get(_INGEST_STATE_KEY, {})
-        self.auth_state = state.get(_AUTH_STATE_KEY, {})
-        self.asset_cache = state.get(_CACHE_STATE_KEY, {})
-
-        return True
-
-    def finalize(self) -> bool:
-        """Save asset state from memory into persistent storage at finalization.
-
-        Joins the SDK's 3 categories of asset state into a single dictionary, conforming
-        to the platform's expectations, and saves it.
-        Returns True only to conform with the BaseConnector interface.
-        """
-        state = {
-            _INGEST_STATE_KEY: self.ingestion_state,
-            _AUTH_STATE_KEY: self.auth_state,
-            _CACHE_STATE_KEY: self.asset_cache,
-        }
-        self.save_state(state)
-        return True
 
     def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
         """Wrapper for BaseConnector's add_action_result method."""

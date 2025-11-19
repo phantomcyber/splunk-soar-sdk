@@ -22,6 +22,7 @@ from soar_sdk.meta.dependencies import (
     UvDependency,
 )
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+from soar_sdk.asset_state import AssetState
 from tests.stubs import SampleActionParams
 from pathlib import Path
 from httpx import Response
@@ -52,6 +53,12 @@ def example_app() -> App:
 def example_provider(example_app: App) -> ActionsManager:
     """Create an example actions manager for testing."""
     return example_app.actions_manager
+
+
+@pytest.fixture
+def example_state(example_provider: ActionsManager) -> AssetState:
+    """Create an example asset state manager for testing"""
+    return AssetState(example_provider, "example")
 
 
 @pytest.fixture

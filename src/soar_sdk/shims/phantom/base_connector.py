@@ -27,6 +27,7 @@ if TYPE_CHECKING or not _soar_is_available:
             self.action_results: list[ActionResult] = []
             self.__conn_result: ConnectorResult
             self.__conn_result = ConnectorResult()
+            self.__state: dict = {}
 
         @staticmethod
         def _get_phantom_base_url() -> str:
@@ -121,10 +122,10 @@ if TYPE_CHECKING or not _soar_is_available:
             return self.config
 
         def save_state(self, state: dict) -> None:
-            self.state = state
+            self.__state = state
 
         def load_state(self) -> dict:
-            return self.state
+            return self.__state
 
         def _set_csrf_info(self, token: str, referer: str) -> None:
             pass

@@ -1,4 +1,5 @@
 from unittest import mock
+import json
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.actions_manager import ActionsManager
@@ -43,6 +44,31 @@ def test_handle(example_app: App, simple_action_input: InputSpecification):
     # Ensure that the encrypted asset configs get decrypted correctly
     assert example_app._raw_asset_config.get("client_id") == "test_client_id"
     assert example_app._raw_asset_config.get("client_secret") == "test_client_secret"
+
+
+def test_handle_asset_state(example_app: App, simple_action_input: InputSpecification):
+    @example_app.action()
+    def set_state(params: Params, asset: BaseAsset) -> ActionOutput:
+        asset.auth_state["foo"] = 42
+        asset.cache_state["hello"] = "world"
+        return ActionOutput()
+
+    @example_app.action()
+    def get_state(params: Params, asset: BaseAsset) -> ActionOutput:
+        assert asset.auth_state["foo"] == 42
+        assert asset.cache_state["hello"] == "world"
+        assert asset.ingest_state == {}
+        return ActionOutput()
+
+    simple_action_input.action = "set_state"
+    simple_action_input.identifier = "set_state"
+    _ = example_app.handle(simple_action_input.model_dump_json())
+    assert example_app.actions_manager.get_action_results()[-1].status
+
+    simple_action_input.action = "get_state"
+    simple_action_input.identifier = "get_state"
+    _ = example_app.handle(simple_action_input.model_dump_json())
+    assert example_app.actions_manager.get_action_results()[-1].status
 
 
 def test_decrypted_field_not_present(
@@ -101,6 +127,7 @@ def test_handle_with_sensitive_field_no_errors(
 
     # Call handle - this should not throw any errors
     _ = example_app.handle(simple_action_input.model_dump_json())
+    assert example_app.actions_manager.get_action_results()[-1].status
     assert example_app._raw_asset_config.get("password") == ""
 
 
@@ -212,6 +239,26 @@ def test_handle_webhook(app_with_asset_webhook: App, mock_get_any_soar_call):
     )
     assert response["status_code"] == 200
     assert response["content"] == "Webhook received!"
+    assert mock_get_any_soar_call.call_count == 1
+
+
+def test_handle_webhook_with_state(app_with_asset_webhook: App, mock_get_any_soar_call):
+    @app_with_asset_webhook.webhook("stateful_webhook")
+    def stateful_webhook(request: WebhookRequest) -> WebhookResponse:
+        request.asset.cache_state["hello"] = "world"
+        return WebhookResponse.json_response(dict(request.asset.cache_state))
+
+    response = app_with_asset_webhook.handle_webhook(
+        method="GET",
+        headers={},
+        path_parts=["stateful_webhook"],
+        query={},
+        body=None,
+        asset={"base_url": "https://example.com"},
+        soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
+    )
+    assert response["status_code"] == 200
+    assert json.loads(response["content"]) == {"hello": "world"}
     assert mock_get_any_soar_call.call_count == 1
 
 
