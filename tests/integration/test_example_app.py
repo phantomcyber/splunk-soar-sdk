@@ -25,15 +25,22 @@ def test_reverse_string(example_app_client: AppOnStackClient):
 
 @pytest.mark.asyncio
 async def test_on_poll(example_app_client: AppOnStackClient):
+    # Clean up any previous failed runs so they don't pollute the asset
+    example_app_client.delete_ingested_containers()
+
     result = await example_app_client.run_poll()
 
-    containers = example_app_client.phantom.find_containers_for_asset(
-        asset_id=example_app_client.asset_id
-    )
-    for container in containers:
-        example_app_client.phantom.delete_container(container["id"])
+    containers = example_app_client.get_ingested_containers()
 
     assert result.success, f"Polling failed: {result.message}"
     assert len(containers) == 1
     assert containers[0].get("artifact_count") == 2
     assert containers[0].get("name") == "Network Alerts"
+
+
+def test_asset_state(example_app_client: AppOnStackClient):
+    write_result = example_app_client.run_action("write state", {})
+    assert write_result.success, f"State writing action failed: {write_result.message}"
+
+    read_result = example_app_client.run_action("read state", {})
+    assert read_result.success, f"State reading action failed: {read_result.message}"
