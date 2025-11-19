@@ -255,7 +255,7 @@ def test_handle_webhook_with_state(app_with_asset_webhook: App, mock_get_any_soa
         query={},
         body=None,
         asset={"base_url": "https://example.com"},
-        soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
+        soar_rest_client=SoarRestClient(token="test_token", asset_id="1"),
     )
     assert response["status_code"] == 200
     assert json.loads(response["content"]) == {"hello": "world"}
