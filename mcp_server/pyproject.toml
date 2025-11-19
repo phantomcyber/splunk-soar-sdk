@@ -1,0 +1,26 @@
+[project]
+name = "soar-test-assistant"
+version = "0.1.0"
+description = "MCP server for intelligent SOAR SDK test analysis and fixing"
+readme = "README.md"
+requires-python = ">=3.13, <=3.14"
+dependencies = [
+    "mcp>=1.1.0",
+    "splunk-soar-sdk",
+]
+
+[tool.uv.sources]
+splunk-soar-sdk = { path = "..", editable = true }
+
+[project.scripts]
+soar_test_assistant = "soar_test_assistant.server:cli"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=7.4.2",
+    "ruff>=0.11.6",
+]

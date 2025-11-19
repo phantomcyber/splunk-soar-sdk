@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "soar-test-assistant": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "/Users/grokas/dev/hackathon/splunk-soar-sdk/mcp_server",
+        "soar_test_assistant"
+      ],
+      "env": {}
+    }
+  }
+}
