@@ -1,10 +1,11 @@
 import importlib
 import json
-import re
 import toml
 from datetime import datetime, UTC
 from pathlib import Path
 from pprint import pprint
+
+from packaging.specifiers import SpecifierSet
 
 from soar_sdk.app import App
 from soar_sdk.cli.path_utils import context_directory
@@ -35,27 +36,9 @@ class ManifestProcessor:
         if not requires_python:
             return sdk_versions
 
-        # Parse requires-python constraints
-        constraints = re.findall(r"([><=!]+)\s*(\d+\.\d+)", requires_python)
-        if not constraints:
-            return sdk_versions
-
-        # Filter SDK versions that match constraints
-        compatible = []
-        for version in sdk_versions:
-            v = float(version)
-            if all(
-                not (
-                    (op == ">=" and v < float(cv))
-                    or (op == ">" and v <= float(cv))
-                    or (op == "<=" and v > float(cv))
-                    or (op == "<" and v >= float(cv))
-                    or (op == "==" and v != float(cv))
-                    or (op == "!=" and v == float(cv))
-                )
-                for op, cv in constraints
-            ):
-                compatible.append(version)
+        # Use packaging.specifiers to check version compatibility
+        specifier_set = SpecifierSet(requires_python)
+        compatible = [version for version in sdk_versions if version in specifier_set]
 
         return compatible
 
