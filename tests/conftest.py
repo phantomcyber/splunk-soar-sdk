@@ -58,7 +58,7 @@ def example_provider(example_app: App) -> ActionsManager:
 @pytest.fixture
 def example_state(example_provider: ActionsManager) -> AssetState:
     """Create an example asset state manager for testing"""
-    return AssetState(example_provider, "example")
+    return AssetState(example_provider, "example", "1")
 
 
 @pytest.fixture

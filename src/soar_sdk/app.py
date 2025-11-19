@@ -225,9 +225,15 @@ class App:
         """Returns the asset instance for the app."""
         if not hasattr(self, "_asset"):
             self._asset = self.asset_cls.model_validate(self._raw_asset_config)
-            self._asset._auth_state = AssetState(self.actions_manager, "auth")
-            self._asset._cache_state = AssetState(self.actions_manager, "cache")
-            self._asset._ingest_state = AssetState(self.actions_manager, "ingest")
+
+            asset_id = self.soar_client.get_asset_id()
+            self._asset._auth_state = AssetState(self.actions_manager, "auth", asset_id)
+            self._asset._cache_state = AssetState(
+                self.actions_manager, "cache", asset_id
+            )
+            self._asset._ingest_state = AssetState(
+                self.actions_manager, "ingest", asset_id
+            )
         return self._asset
 
     def register_action(
