@@ -85,14 +85,16 @@ def unit(
     if test_path:
         pytest_args.append(str(test_path))
 
-    pytest_args.extend([
-        "-m",
-        "not integration",
-        "--tb=short",
-        "--color=yes",
-        "-o",
-        "addopts=",
-    ])
+    pytest_args.extend(
+        [
+            "-m",
+            "not integration",
+            "--tb=short",
+            "--color=yes",
+            "-o",
+            "addopts=",
+        ]
+    )
 
     if parallel:
         pytest_args.extend(["-n", "auto"])
@@ -113,7 +115,7 @@ def unit(
     console.print(f"[dim]Coverage: {coverage}[/dim]")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             pytest_args,
             check=False,
         )
@@ -124,7 +126,7 @@ def unit(
             console.print("[bold green]All tests passed![/bold green]")
     except KeyboardInterrupt:
         console.print("[yellow]Tests interrupted by user[/yellow]")
-        raise typer.Exit(130)
+        raise typer.Exit(130) from None
 
 
 @test.command()
@@ -221,11 +223,15 @@ def integration(
         soarapps test integration 10.1.19.88 --junit-xml results.xml
     """
     if not username:
-        console.print("[red]Error: Username is required (use -u or PHANTOM_USERNAME env var)[/red]")
+        console.print(
+            "[red]Error: Username is required (use -u or PHANTOM_USERNAME env var)[/red]"
+        )
         raise typer.Exit(1)
 
     if not password:
-        console.print("[red]Error: Password is required (use -p or PHANTOM_PASSWORD env var)[/red]")
+        console.print(
+            "[red]Error: Password is required (use -p or PHANTOM_PASSWORD env var)[/red]"
+        )
         raise typer.Exit(1)
 
     phantom_url = f"https://{instance_ip}"
@@ -266,14 +272,16 @@ def integration(
     if junit_xml:
         pytest_args.append(f"--junitxml={junit_xml}")
 
-    console.print(f"[bold green]Running integration tests against {instance_ip}[/bold green]")
+    console.print(
+        f"[bold green]Running integration tests against {instance_ip}[/bold green]"
+    )
     console.print(f"[dim]Test directory: {test_dir}[/dim]")
     console.print(f"[dim]Retries: {retries}[/dim]")
     if automation_broker:
         console.print(f"[dim]Automation broker: {automation_broker}[/dim]")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             pytest_args,
             env=env,
             check=False,
@@ -285,4 +293,4 @@ def integration(
             console.print("[bold green]All tests passed![/bold green]")
     except KeyboardInterrupt:
         console.print("[yellow]Tests interrupted by user[/yellow]")
-        raise typer.Exit(130)
+        raise typer.Exit(130) from None

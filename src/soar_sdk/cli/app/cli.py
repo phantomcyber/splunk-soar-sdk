@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import subprocess
-import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -22,7 +21,7 @@ def test(
         typer.Argument(
             help="Path to the app directory",
         ),
-    ] = Path("."),
+    ] = Path(),
     parallel: Annotated[
         bool,
         typer.Option(
@@ -162,7 +161,7 @@ def test(
         console.print("[dim]Watch mode: enabled[/dim]")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # noqa: S603
             pytest_args,
             cwd=app_path,
             check=False,
@@ -174,10 +173,10 @@ def test(
             console.print("[bold green]All tests passed![/bold green]")
     except KeyboardInterrupt:
         console.print("[yellow]Tests interrupted by user[/yellow]")
-        raise typer.Exit(130)
+        raise typer.Exit(130) from None
     except FileNotFoundError:
         console.print(
             f"[red]Error: {pytest_cmd} not found. "
             "Make sure pytest is installed in the app's environment.[/red]"
         )
-        raise typer.Exit(1)
+        raise typer.Exit(1) from None

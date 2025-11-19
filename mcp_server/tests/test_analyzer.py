@@ -13,7 +13,7 @@ class TestTestAnalyzer:
         """Create a TestAnalyzer instance."""
         return TestAnalyzer()
 
-    def test_analyze_empty_output(self, analyzer):
+    def test_analyze_empty_output(self, analyzer) -> None:
         """Test analyzing empty output."""
         result = analyzer.analyze("", None)
         assert result["summary"]["passed"] == 0
@@ -21,7 +21,7 @@ class TestTestAnalyzer:
         assert result["failures"] == []
         assert result["errors"] == []
 
-    def test_extract_failures(self, analyzer):
+    def test_extract_failures(self, analyzer) -> None:
         """Test extracting FAILED test cases."""
         output = """
         FAILED tests/test_example.py::test_something - AssertionError
@@ -34,7 +34,7 @@ class TestTestAnalyzer:
         assert result["failures"][1]["file"] == "tests/test_other.py"
         assert result["failures"][1]["test"] == "test_another"
 
-    def test_extract_errors(self, analyzer):
+    def test_extract_errors(self, analyzer) -> None:
         """Test extracting ERROR test cases."""
         output = """
         ERROR tests/test_example.py::test_setup - ImportError
@@ -44,7 +44,7 @@ class TestTestAnalyzer:
         assert result["errors"][0]["file"] == "tests/test_example.py"
         assert result["errors"][0]["test"] == "test_setup"
 
-    def test_categorize_assertion_error(self, analyzer):
+    def test_categorize_assertion_error(self, analyzer) -> None:
         """Test categorizing assertion errors."""
         output = """
         FAILED tests/test_example.py::test_something
@@ -59,7 +59,7 @@ class TestTestAnalyzer:
         assert result["failures"][0]["is_app_bug"] is True
         assert result["failures"][0]["is_sdk_bug"] is False
 
-    def test_categorize_import_error(self, analyzer):
+    def test_categorize_import_error(self, analyzer) -> None:
         """Test categorizing import errors."""
         output = """
         FAILED tests/test_example.py::test_something
@@ -71,7 +71,7 @@ class TestTestAnalyzer:
         assert result["failures"][0]["category"] == "import_error"
         assert result["failures"][0]["is_app_bug"] is True
 
-    def test_categorize_attribute_error(self, analyzer):
+    def test_categorize_attribute_error(self, analyzer) -> None:
         """Test categorizing attribute errors."""
         output = """
         FAILED tests/test_example.py::test_something
@@ -82,7 +82,7 @@ class TestTestAnalyzer:
         assert len(result["failures"]) == 1
         assert result["failures"][0]["category"] == "attribute_error"
 
-    def test_categorize_type_error(self, analyzer):
+    def test_categorize_type_error(self, analyzer) -> None:
         """Test categorizing type errors."""
         output = """
         FAILED tests/test_example.py::test_something
@@ -93,7 +93,7 @@ class TestTestAnalyzer:
         assert len(result["failures"]) == 1
         assert result["failures"][0]["category"] == "type_error"
 
-    def test_categorize_fixture_error(self, analyzer):
+    def test_categorize_fixture_error(self, analyzer) -> None:
         """Test categorizing fixture errors."""
         output = """
         FAILED tests/test_example.py::test_something
@@ -104,7 +104,7 @@ class TestTestAnalyzer:
         assert len(result["failures"]) == 1
         assert result["failures"][0]["category"] == "fixture_error"
 
-    def test_suggest_import_fix(self, analyzer):
+    def test_suggest_import_fix(self, analyzer) -> None:
         """Test suggesting import error fixes."""
         output = """
         FAILED tests/test_example.py::test_something
@@ -118,7 +118,7 @@ class TestTestAnalyzer:
         assert "requests" in fix["description"]
         assert "uv add" in fix["command"]
 
-    def test_extract_summary(self, analyzer):
+    def test_extract_summary(self, analyzer) -> None:
         """Test extracting test summary."""
         output = "=== 5 failed, 10 passed, 2 skipped in 5.23s ==="
         result = analyzer.analyze(output, None)
@@ -126,7 +126,7 @@ class TestTestAnalyzer:
         assert result["summary"]["passed"] == 10
         assert result["summary"]["skipped"] == 2
 
-    def test_total_issues_count(self, analyzer):
+    def test_total_issues_count(self, analyzer) -> None:
         """Test total issues count."""
         output = """
         FAILED tests/test_1.py::test_a
@@ -136,23 +136,19 @@ class TestTestAnalyzer:
         result = analyzer.analyze(output, None)
         assert result["total_issues"] == 3
 
-    def test_extract_missing_module(self, analyzer):
+    def test_extract_missing_module(self, analyzer) -> None:
         """Test extracting missing module name."""
         missing = analyzer._extract_missing_module(
             "ModuleNotFoundError: No module named 'foobar'"
         )
         assert missing == "foobar"
 
-    def test_extract_fixture_name(self, analyzer):
+    def test_extract_fixture_name(self, analyzer) -> None:
         """Test extracting fixture name."""
-        fixture = analyzer._extract_fixture_name(
-            "fixture 'my_fixture' not found"
-        )
+        fixture = analyzer._extract_fixture_name("fixture 'my_fixture' not found")
         assert fixture == "my_fixture"
 
-    def test_extract_assert_line(self, analyzer):
+    def test_extract_assert_line(self, analyzer) -> None:
         """Test extracting assertion line."""
-        assert_line = analyzer._extract_assert_line(
-            "assert 1 == 2"
-        )
+        assert_line = analyzer._extract_assert_line("assert 1 == 2")
         assert assert_line == "1 == 2"
