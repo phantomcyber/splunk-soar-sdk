@@ -90,6 +90,8 @@ def unit(
         "not integration",
         "--tb=short",
         "--color=yes",
+        "-o",
+        "addopts=",
     ])
 
     if parallel:
@@ -253,6 +255,8 @@ def integration(
         "--no-cov",
         "--tb=short",
         "--color=yes",
+        "-o",
+        "addopts=",
         f"--reruns={retries}",
     ]
 
