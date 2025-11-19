@@ -13,22 +13,23 @@ AssetStateType = dict[AssetStateKeyType, AssetStateValueType]
 class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
     """An adapter to the asset state stored within SOAR. The state can be split into multiple partitions; this object represents a single partition. State is automatically encrypted at rest."""
 
-    def __init__(self, backend: BaseConnector, state_key: str) -> None:
+    def __init__(self, backend: BaseConnector, state_key: str, asset_id: str) -> None:
         self.backend = backend
         self.state_key = state_key
+        self.asset_id = asset_id
 
     def get_all(self) -> AssetStateType:
         """Get the entirety of this part of the asset state."""
         state = self.backend.load_state() or {}
         if not (part_encrypted := state.get(self.state_key)):
             return {}
-        part_json = encryption_helper.decrypt(part_encrypted)
+        part_json = encryption_helper.decrypt(part_encrypted, self.asset_id)
         return json.loads(part_json)
 
     def put_all(self, new_value: AssetStateType) -> None:
         """Entirely replace this part of the asset state."""
         part_json = json.dumps(new_value)
-        part_encrypted = encryption_helper.encrypt(part_json)
+        part_encrypted = encryption_helper.encrypt(part_json, salt=self.asset_id)
         state = self.backend.load_state() or {}
         state[self.state_key] = part_encrypted
         self.backend.save_state(state)
