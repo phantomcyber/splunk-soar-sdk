@@ -1,37 +1,32 @@
 # SOAR Test Assistant MCP Server
 
-An MCP (Model Context Protocol) server that provides AI-powered test analysis and auto-fixing for Splunk SOAR SDK and apps.
+Model Context Protocol server for automated test analysis and fixing in Splunk SOAR SDK development.
 
-## Features
+## Overview
 
-- **Automatic Test Fixing**: Iteratively runs tests, analyzes failures, and applies fixes until passing
-- **Intelligent Analysis**: Identifies root causes and distinguishes SDK bugs from app bugs
-- **Multi-Test Support**: Works with app tests, SDK unit tests, and SDK integration tests
-- **Auto-Detection**: Automatically detects test type based on project structure
+This MCP server provides AI-powered test automation for Claude Code, enabling:
+
+- Automatic detection and fixing of import errors
+- Intelligent analysis of test failures
+- Proposed fixes for assertions, type errors, and attribute errors
+- Iterative test execution until passing
 
 ## Installation
 
-### Quick Install
+### Quick Start
 
 ```bash
 cd mcp_server
 ./install.sh
 ```
 
-This will install dependencies and configure the MCP server in Claude Code.
+Restart Claude Code after installation.
 
-### Manual Install
+### Manual Configuration
 
-1. Install dependencies:
-```bash
-cd mcp_server
-uv sync
-```
-
-2. Add to your MCP settings file (location varies by OS):
-   - macOS: `~/.config/claude-code/mcp_settings.json`
-   - Linux: `~/.config/claude-code/mcp_settings.json`
-   - Windows: `%APPDATA%\claude-code\mcp_settings.json`
+Add to your MCP settings file:
+- macOS/Linux: `~/.config/claude-code/mcp_settings.json`
+- Windows: `%APPDATA%\claude-code\mcp_settings.json`
 
 ```json
 {
@@ -49,122 +44,165 @@ uv sync
 }
 ```
 
-3. Restart Claude Code
-
 ## Usage
 
-Once installed, use the tools naturally in Claude Code:
+The MCP server works from any directory. Open Claude Code in your project and use natural language:
 
-### Run and Fix Tests Automatically
+### From App Directory
 
-```
-Can you run tests for the example app and auto-fix any failures?
-```
-
-```
-Run and fix SDK unit tests
+```bash
+cd /path/to/your-soar-app
+code .
 ```
 
-```
-Run and fix SDK integration tests against 10.1.19.88
-(username: admin, password: password)
+Examples:
+- "Run and fix tests for ."
+- "Fix my app tests"
+- "Run and fix tests in tests/test_actions.py"
+
+### From SDK Directory
+
+```bash
+cd /path/to/splunk-soar-sdk
+code .
 ```
 
-### Analyze Test Output
+Examples:
+- "Run and fix SDK unit tests"
+- "Run and fix tests for tests/example_app"
+- "Run SDK integration tests"
 
-```
-I have this pytest output: [paste output]
-Can you analyze what's wrong?
+Note: Integration tests require SOAR instance credentials (IP, username, password). Claude Code will prompt for these if not provided.
+
+### From Any Directory
+
+```bash
+cd ~/projects
+code .
 ```
 
-### Manual Tool Usage
-
-```
-Use run_and_fix_tests on tests/example_app with max_iterations=10 and verbose=true
-```
+Example:
+- "Run and fix tests for /path/to/my-app"
 
 ## MCP Tools
 
-### `run_and_fix_tests`
+### run_and_fix_tests
 
-Automatically runs tests, analyzes failures, applies fixes, and re-runs until all tests pass or max iterations reached.
+Main tool that runs tests, analyzes failures, applies fixes, and re-runs until passing or max iterations reached.
 
-**Parameters:**
-- `path` (required): Path to test location (app dir or SDK root)
-- `test_type` (optional): "app", "sdk_unit", or "sdk_integration" (auto-detected if not specified)
+Parameters:
+- `path` (required): Path to test location
+- `test_type` (optional): "app", "sdk_unit", or "sdk_integration" (auto-detected)
 - `test_path` (optional): Specific test file or directory
-- `soar_instance` (for integration tests): `{"ip": "10.1.19.88", "username": "admin", "password": "pass"}`
+- `soar_instance` (optional): For integration tests: `{"ip": "...", "username": "...", "password": "..."}`
 - `max_iterations` (optional): Maximum fix attempts (default: 5)
-- `verbose` (optional): Enable verbose output (default: false)
+- `verbose` (optional): Enable detailed output (default: false)
 
-**Returns:**
-- Final test status
-- Summary of fixes applied
+Returns:
+- Test status
+- Applied fixes
+- Proposed fixes pending approval (if any)
 - Test output
 
-### `analyze_test_failure`
+### analyze_test_failure
 
-Analyzes pytest output to identify root causes and classify failures.
+Analyzes pytest output to identify failures and classify issues.
 
-**Parameters:**
+Parameters:
 - `test_output` (required): Full pytest output
 - `app_path` (optional): Path to app being tested
 
-**Returns:**
-- Analysis of test failures
+Returns:
+- Detailed failure analysis
 - Classification (SDK bug vs app bug)
 - Suggested fixes
 
-### `fix_test_failure`
+### fix_test_failure
 
 Applies automated fixes based on analysis.
 
-**Parameters:**
-- `failure_analysis` (required): JSON output from `analyze_test_failure`
+Parameters:
+- `failure_analysis` (required): JSON from analyze_test_failure
 - `app_path` (required): Path to app
-- `auto_apply` (optional): Whether to automatically apply fixes (default: true)
+- `auto_apply` (optional): Auto-apply fixes (default: true)
 
-**Returns:**
-- List of files modified
-- Changes applied
+Returns:
+- Modified files
+- Applied changes
+
+### apply_approved_fixes
+
+Applies fixes after user review and approval.
+
+Parameters:
+- `app_path` (required): Path to app
+- `approved_fixes` (required): List of approved fixes from pending_fixes
+
+Returns:
+- Modified files
+- Applied fixes
+- Errors (if any)
 
 ## How It Works
 
-### Auto-Fix Flow
+### Test Execution Flow
 
-1. **Run Tests**: Executes appropriate test command based on type
-2. **Analyze Failures**: Parses pytest output to identify:
-   - Failed tests and error types
-   - SDK bugs vs app bugs
-   - Root causes
-3. **Apply Fixes**: Automatically fixes common issues:
-   - Missing dependencies → `uv add <package>`
-   - Import errors → Install packages
-4. **Re-run**: Repeats until tests pass or max iterations reached
-5. **Report**: Provides summary of fixes applied
+1. Run tests with appropriate command
+2. Parse pytest output to identify failures
+3. Classify errors (import, assertion, type, attribute)
+4. Determine if SDK bug or app bug
+5. Apply automatic fixes or propose changes
+6. Re-run tests
+7. Repeat until passing or max iterations
 
-### Currently Auto-Fixable
+### Automatic Fixes
 
-- Missing Python packages (ImportError, ModuleNotFoundError)
-- Simple dependency issues
+Import errors are fixed automatically:
+- Missing packages: `uv add <package>`
+- ModuleNotFoundError: Install missing dependencies
 
-### Requires Manual Review
+No user approval required.
 
-- Assertion errors
-- Type errors
-- Attribute errors
-- Fixture errors
+### Proposed Fixes
+
+Complex issues require user approval:
+
+**Assertion errors**: Analyzes expected vs actual values, proposes swapping comparisons or adding review comments.
+
+**Type errors**: Detects type mismatches (int/str), proposes conversions.
+
+**Attribute errors**: Identifies None access issues, proposes protective checks.
+
+Example proposed fix:
+```
+File: tests/test_api.py
+Old: assert response.status_code == 200
+New: assert response.status_code == 404
+Reasoning: Actual value is 404, not 200. Test expectation may need updating.
+Safety note: Changes test expectations
+```
+
+### Credential Handling
+
+Integration tests require SOAR instance credentials. If not provided:
+
+1. MCP server returns credentials_required status
+2. Claude Code prompts for IP, username, password
+3. User provides credentials
+4. Tests run with provided credentials
+
+Credentials can also be provided upfront in the initial request.
 
 ## Configuration
 
-The `[tool.uv.sources]` section in `pyproject.toml` allows using a local development version of `splunk-soar-sdk`:
+The `[tool.uv.sources]` section in pyproject.toml enables local SDK development:
 
 ```toml
 [tool.uv.sources]
 splunk-soar-sdk = { path = "..", editable = true }
 ```
 
-When publishing or distributing, remove this section to use the PyPI version.
+This allows the MCP server to use your local SDK installation. Remove this section if publishing to PyPI.
 
 ## Development
 
@@ -172,13 +210,12 @@ When publishing or distributing, remove this section to use the PyPI version.
 
 ```
 mcp_server/
-├── src/
-│   └── soar_test_assistant/
-│       ├── __init__.py
-│       ├── server.py          # MCP server and tool handlers
-│       ├── test_analyzer.py   # Pytest output analysis
-│       └── test_fixer.py      # Automated fix application
-├── tests/                     # Unit and integration tests
+├── src/soar_test_assistant/
+│   ├── __init__.py
+│   ├── server.py          # MCP server and tools
+│   ├── test_analyzer.py   # Failure analysis
+│   └── test_fixer.py      # Fix application
+├── tests/                  # Unit tests
 ├── pyproject.toml
 ├── LICENSE
 └── README.md
@@ -199,116 +236,22 @@ uv run ruff format src/
 
 ## Repository Location
 
-**Question: Should this be its own repo?**
+The MCP server is bundled with the Splunk SOAR SDK. This provides:
+- Tight integration with SDK development
+- Version alignment
+- Unified CI/CD and issue tracking
+- Natural discoverability for SDK users
 
-**Current:** Lives in `splunk-soar-sdk/mcp_server/`
-
-**Pros of keeping it in SDK repo:**
-- Easier to develop in tandem with SDK
-- Shares CI/CD infrastructure
-- Natural versioning alignment
-- Users find it when looking for SDK tools
-
-**Pros of separate repo:**
-- Independent release cycle
-- Clearer ownership
-- Easier to publish to MCP marketplace
-- Can have different contributors/maintainers
-
-**Recommendation:** Keep it in the SDK repo for now. If it gains significant usage or needs independent releases, split it later. The `[project.urls]` already points to the subdirectory which works fine for PyPI.
-
-## Distribution & Publishing
-
-MCP servers can be distributed in multiple ways:
-
-### 1. Direct Installation (Recommended for Now)
-
-Users install directly from the repository:
-
-```bash
-# Clone or download the repo
-cd mcp_server
-uv sync
-
-# Add to Claude Code MCP settings
-```
-
-This is the simplest approach and works great for specialized tools.
-
-### 2. PyPI Package
-
-Publish as a Python package for easy installation:
-
-```bash
-# Prepare for publishing
-# 1. Remove or comment out [tool.uv.sources] section in pyproject.toml
-# 2. Build the package
-uv build
-
-# 3. Publish to PyPI
-uv publish
-
-# Users can then install with:
-pip install soar-test-assistant
-# or
-uv pip install soar-test-assistant
-```
-
-### 3. MCP Marketplace (Future)
-
-Anthropic is developing an official MCP marketplace/registry. When available, you can submit your MCP server there for discoverability.
-
-**Current Status:** The MCP marketplace doesn't exist yet as a centralized registry. The Model Context Protocol is still young (2024).
-
-**How users find MCP servers now:**
-- GitHub repositories
-- Documentation/blog posts
-- Word of mouth
-- MCP community listings (informal)
-
-### 4. Claude Code Configuration
-
-Users can reference your server in multiple ways:
-
-**From Local Path:**
-```json
-{
-  "mcpServers": {
-    "soar-test-assistant": {
-      "command": "uv",
-      "args": ["run", "--directory", "/path/to/mcp_server", "soar_test_assistant"]
-    }
-  }
-}
-```
-
-**From Installed Package:**
-```json
-{
-  "mcpServers": {
-    "soar-test-assistant": {
-      "command": "soar_test_assistant"
-    }
-  }
-}
-```
-
-### Recommendation for Now
-
-1. **Keep in SDK repo** - Users who use the SDK will find it naturally
-2. **Document in SDK README** - Add a section about the MCP server
-3. **Optionally publish to PyPI** - Makes installation easier
-4. **Wait for MCP marketplace** - Submit when it becomes available
-
-The MCP ecosystem is still early, so direct distribution works perfectly fine.
+If significant independent usage develops, the server can be split into its own repository.
 
 ## Support
 
-- **SDK Issues**: https://github.com/phantomcyber/splunk-soar-sdk/issues
-- **MCP Server Issues**: Use the same issue tracker with `[mcp-server]` label
+Report issues at https://github.com/phantomcyber/splunk-soar-sdk/issues
 
 ## License
 
-Apache License 2.0 - Copyright (c) 2024 Splunk Inc.
+Apache License 2.0
 
-See [LICENSE](LICENSE) for full details.
+Copyright (c) 2024 Splunk Inc.
+
+See LICENSE file for full terms.

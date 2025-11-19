@@ -122,6 +122,40 @@ async def list_tools() -> list[Tool]:
                 "required": ["path"],
             },
         ),
+        Tool(
+            name="apply_approved_fixes",
+            description=(
+                "Applies previously proposed fixes that have been reviewed and approved by the user. "
+                "Takes the proposed fixes from a previous run_and_fix_tests call and applies them."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "app_path": {
+                        "type": "string",
+                        "description": "Path to the app to fix",
+                    },
+                    "approved_fixes": {
+                        "type": "array",
+                        "description": "List of approved fixes from pending_approval",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "file": {"type": "string"},
+                                "proposed_fix": {
+                                    "type": "object",
+                                    "properties": {
+                                        "old_code": {"type": "string"},
+                                        "new_code": {"type": "string"},
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+                "required": ["app_path", "approved_fixes"],
+            },
+        ),
     ]
 
 
@@ -133,6 +167,8 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
         return await fix_test_failure(arguments)
     elif name == "run_and_fix_tests":
         return await run_and_fix_tests(arguments)
+    elif name == "apply_approved_fixes":
+        return await apply_approved_fixes(arguments)
     else:
         raise ValueError(f"Unknown tool: {name}")
 
@@ -228,6 +264,27 @@ async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
             test_type=test_type,
             soar_instance=soar_instance,
         )
+
+        # Check if credentials are needed
+        if test_result.get("needs_credentials"):
+            return [
+                TextContent(
+                    type="text",
+                    text=(
+                        test_result["output"]
+                        + "\n\n"
+                        + json.dumps(
+                            {
+                                "status": "credentials_required",
+                                "credential_type": test_result.get("credential_type"),
+                                "message": "Please provide credentials to continue",
+                            },
+                            indent=2,
+                        )
+                    ),
+                )
+            ]
+
         test_history.append(
             {
                 "iteration": iteration,
@@ -285,7 +342,48 @@ async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
             }
         )
 
-        if not fix_result.get("files_modified"):
+        # Check if there are fixes pending approval
+        if fix_result.get("fixes_pending_approval"):
+            pending_fixes = fix_result["fixes_pending_approval"]
+            summary = {
+                "status": "pending_approval",
+                "iterations": iteration,
+                "fixes_applied": all_fixes,
+                "pending_fixes": pending_fixes,
+                "message": "Proposed fixes require your approval",
+            }
+
+            # Format pending fixes for user review
+            approval_text = (
+                "\n\n[PENDING APPROVAL] The following fixes have been proposed:\n\n"
+            )
+            for idx, fix in enumerate(pending_fixes, 1):
+                proposed = fix.get("proposed_fix", {})
+                approval_text += f"\n{idx}. {fix['file']}::{fix['test']}\n"
+                approval_text += f"   File: {proposed.get('file', 'N/A')}\n"
+                approval_text += f"   Old code: {proposed.get('old_code', 'N/A')}\n"
+                approval_text += f"   New code: {proposed.get('new_code', 'N/A')}\n"
+                approval_text += f"   Reasoning: {proposed.get('reasoning', 'N/A')}\n"
+                if proposed.get("safety_note"):
+                    approval_text += f"   Safety note: {proposed.get('safety_note')}\n"
+                approval_text += "\n"
+
+            approval_text += (
+                "\nTo apply these fixes, you'll need to manually approve them. "
+                "Review each proposed change carefully to ensure it aligns with your "
+                "intended behavior.\n\n"
+            )
+
+            return [
+                TextContent(
+                    type="text",
+                    text=output + approval_text + json.dumps(summary, indent=2),
+                )
+            ]
+
+        if not fix_result.get("files_modified") and not fix_result.get(
+            "fixes_pending_approval"
+        ):
             summary = {
                 "status": "no_fixes_available",
                 "iterations": iteration,
@@ -389,12 +487,15 @@ async def run_tests(
             return {
                 "exit_code": 1,
                 "output": (
-                    "Error: Integration tests require SOAR instance credentials.\n\n"
-                    "Please provide the soar_instance parameter with:\n"
-                    '  {"ip": "10.1.19.88", "username": "admin", "password": "yourpassword"}\n\n'
-                    "Example usage:\n"
-                    "  soar_instance={'ip': '10.1.19.88', 'username': 'admin', 'password': 'password'}"
+                    "[CREDENTIALS REQUIRED] Integration tests require SOAR instance credentials.\n\n"
+                    "Please provide:\n"
+                    "  - SOAR instance IP address (e.g., 10.1.19.88)\n"
+                    "  - Username (e.g., admin)\n"
+                    "  - Password\n\n"
+                    "I'll ask you for these details and then re-run the tests."
                 ),
+                "needs_credentials": True,
+                "credential_type": "soar_instance",
             }
 
         cmd = ["uv", "run", "soarapps", "test", "integration", soar_instance["ip"]]
@@ -438,6 +539,82 @@ async def run_tests(
         "output": result.stdout + result.stderr,
         "test_type": test_type,
     }
+
+
+async def apply_approved_fixes(arguments: dict) -> list[TextContent]:
+    """Apply fixes that have been approved by the user."""
+    app_path = Path(arguments["app_path"])
+    approved_fixes = arguments["approved_fixes"]
+
+    if not app_path.exists():
+        return [
+            TextContent(
+                type="text",
+                text=f"Error: Path does not exist: {app_path}",
+            )
+        ]
+
+    files_modified = []
+    fixes_applied = []
+    errors = []
+
+    for fix in approved_fixes:
+        try:
+            file_path = app_path / fix["file"]
+            proposed = fix["proposed_fix"]
+
+            if not file_path.exists():
+                errors.append(f"File not found: {file_path}")
+                continue
+
+            # Read current content
+            content = file_path.read_text()
+
+            # Apply the fix
+            if proposed["old_code"] in content:
+                new_content = content.replace(
+                    proposed["old_code"], proposed["new_code"], 1
+                )
+                file_path.write_text(new_content)
+
+                files_modified.append(str(file_path))
+                fixes_applied.append(
+                    {
+                        "file": fix["file"],
+                        "test": fix.get("test", "N/A"),
+                        "old_code": proposed["old_code"],
+                        "new_code": proposed["new_code"],
+                    }
+                )
+            else:
+                errors.append(
+                    f"Could not find old code in {fix['file']}: {proposed['old_code'][:50]}..."
+                )
+
+        except Exception as e:
+            errors.append(f"Error applying fix to {fix['file']}: {e!s}")
+
+    result = {
+        "status": "completed",
+        "files_modified": list(set(files_modified)),
+        "fixes_applied": fixes_applied,
+        "total_fixes": len(fixes_applied),
+        "errors": errors,
+    }
+
+    message = f"\n[APPLIED] Successfully applied {len(fixes_applied)} fixes\n\n"
+    if errors:
+        message += f"[WARNING] {len(errors)} errors occurred:\n"
+        for error in errors:
+            message += f"  - {error}\n"
+        message += "\n"
+
+    return [
+        TextContent(
+            type="text",
+            text=message + json.dumps(result, indent=2),
+        )
+    ]
 
 
 async def main() -> None:
