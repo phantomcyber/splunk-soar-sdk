@@ -207,7 +207,7 @@ class PhantomInstance(SOARClient):
         container_id = create_container_request.json()["id"]
         return container_id
 
-    def find_containers_for_asset(self, asset_id: int) -> list[dict]:
+    def find_containers_from_asset(self, asset_id: int) -> list[dict]:
         """Find containers that were created by a given asset"""
         response = self.get_endpoint(
             phantom_constants.ENDPOINT_CONTAINER, params={"_filter_asset_id": asset_id}
