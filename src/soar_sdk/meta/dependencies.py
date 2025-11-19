@@ -496,23 +496,35 @@ class UvLock(BaseModel):
     @staticmethod
     def resolve_dependencies(
         packages: list[UvPackage],
+        python_versions: list[str] | None = None,
     ) -> tuple[DependencyList, DependencyList]:
-        """Resolve the dependencies for the given packages."""
-        py313_wheels: list[DependencyWheel] = []
-        py314_wheels: list[DependencyWheel] = []
+        """Resolve the dependencies for the given packages.
+
+        Args:
+            packages: List of packages to resolve dependencies for.
+            python_versions: List of Python versions to resolve for (e.g., ["3.13", "3.14"]).
+                           If None, defaults to ["3.13", "3.14"] for backwards compatibility.
+
+        Returns:
+            Tuple of (py313_dependencies, py314_dependencies).
+        """
+        python_versions = python_versions or ["3.13", "3.14"]
+        resolve_both = len(python_versions) == 2
+
+        py313_wheels, py314_wheels = [], []
 
         for package in packages:
-            wheel_313 = package.resolve_py313()
-            wheel_314 = package.resolve_py314()
+            wheel_313 = package.resolve_py313() if "3.13" in python_versions else None
+            wheel_314 = package.resolve_py314() if "3.14" in python_versions else None
 
-            if wheel_313 == wheel_314:
-                wheel_313.add_platform_prefix("shared")
-                wheel_314.add_platform_prefix("shared")
-            else:
-                wheel_313.add_platform_prefix("python313")
-                wheel_314.add_platform_prefix("python314")
+            prefix = "shared" if not resolve_both or wheel_313 == wheel_314 else None
 
-            py313_wheels.append(wheel_313)
-            py314_wheels.append(wheel_314)
+            if wheel_313:
+                wheel_313.add_platform_prefix(prefix or "python313")
+                py313_wheels.append(wheel_313)
+
+            if wheel_314:
+                wheel_314.add_platform_prefix(prefix or "python314")
+                py314_wheels.append(wheel_314)
 
         return DependencyList(wheel=py313_wheels), DependencyList(wheel=py314_wheels)
