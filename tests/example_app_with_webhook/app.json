@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-11-15T00:51:16.261449Z",
+    "utctime_updated": "2025-11-19T21:56:14.068861Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -583,7 +583,7 @@
                     "DELETE"
                 ],
                 "declaration_path": "src/app.py",
-                "declaration_lineno": 70
+                "declaration_lineno": 72
             },
             {
                 "url_pattern": "test_webhook_file",
@@ -592,7 +592,7 @@
                     "POST"
                 ],
                 "declaration_path": "src/app.py",
-                "declaration_lineno": 83
+                "declaration_lineno": 85
             }
         ]
     }

@@ -830,6 +830,8 @@ class App:
             else:
                 normalized_query[key] = [value]
 
+        self.actions_manager.override_app_dir(self.app_root)
+        self.actions_manager._load_app_json()
         request = WebhookRequest(
             method=method,
             headers=headers,

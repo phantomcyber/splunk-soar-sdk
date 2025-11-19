@@ -12,7 +12,7 @@ from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.input_spec import AppConfig
 from soar_sdk.field_utils import parse_json_schema_extra
 from soar_sdk.asset_state import AssetState
-from soar_sdk.exceptions import ActionContextRequired
+from soar_sdk.exceptions import AppContextRequired
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
@@ -294,19 +294,19 @@ class BaseAsset(BaseModel):
     def auth_state(self) -> AssetState:
         """A place to store authentication data, such as session and refresh tokens, between action runs. This data is stored by the SOAR service, and is encrypted at rest."""
         if self._auth_state is None:
-            raise ActionContextRequired()
+            raise AppContextRequired()
         return self._auth_state
 
     @property
     def cache_state(self) -> AssetState:
         """A place to cache miscellaneous data between action runs. This data is stored by the SOAR service, and is encrypted at rest."""
         if self._cache_state is None:
-            raise ActionContextRequired()
+            raise AppContextRequired()
         return self._cache_state
 
     @property
     def ingest_state(self) -> AssetState:
         """A place to store ingestion information, such as checkpoints, between action runs. This data is stored by the SOAR service, and is encrypted at rest."""
         if self._ingest_state is None:
-            raise ActionContextRequired()
+            raise AppContextRequired()
         return self._ingest_state

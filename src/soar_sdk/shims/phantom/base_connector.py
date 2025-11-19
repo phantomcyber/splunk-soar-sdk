@@ -28,6 +28,7 @@ if TYPE_CHECKING or not _soar_is_available:
             self.__conn_result: ConnectorResult
             self.__conn_result = ConnectorResult()
             self.__state: dict = {}
+            self.__app_json: dict = {}
 
         @staticmethod
         def _get_phantom_base_url() -> str:
@@ -140,6 +141,9 @@ if TYPE_CHECKING or not _soar_is_available:
             # Remove when 7.1.0 is the min supported broker version
             remove_when_soar_newer_than("7.1.1")
             return Path.cwd().as_posix()
+
+        def _load_app_json(self) -> None:
+            pass
 
 
 __all__ = ["BaseConnector"]
