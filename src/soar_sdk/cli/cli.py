@@ -6,6 +6,7 @@ from soar_sdk.cli.manifests.cli import manifests
 from soar_sdk.cli.package.cli import package
 from soar_sdk.cli.init.cli import init, convert
 from soar_sdk.cli.test.cli import test
+from soar_sdk.cli.app.cli import app as app_commands
 
 CONTEXT_SETTINGS = {"help_option_names": ["-h", "--help"]}
 HELP = """A command-line tool for helping with SOAR Apps development"""
@@ -20,6 +21,7 @@ app.add_typer(package, name="package")
 app.add_typer(init, name="init")
 app.add_typer(convert, name="convert")
 app.add_typer(test, name="test")
+app.add_typer(app_commands, name="app")
 
 
 @app.command("version")
