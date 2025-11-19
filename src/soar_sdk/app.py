@@ -31,6 +31,7 @@ from soar_sdk.types import Action
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.exceptions import ActionRegistrationError
+from soar_sdk.asset_state import AssetState
 
 import uuid
 from soar_sdk.decorators import (
@@ -224,6 +225,9 @@ class App:
         """Returns the asset instance for the app."""
         if not hasattr(self, "_asset"):
             self._asset = self.asset_cls.model_validate(self._raw_asset_config)
+            self._asset._auth_state = AssetState(self.actions_manager, "auth")
+            self._asset._cache_state = AssetState(self.actions_manager, "cache")
+            self._asset._ingest_state = AssetState(self.actions_manager, "ingest")
         return self._asset
 
     def register_action(
