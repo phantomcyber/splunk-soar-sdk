@@ -198,21 +198,14 @@ class AppOnStackClient:
                             )
                             return ActionResult(success=True, message=message)
 
-    def enable_webhook(self, webhook_config: dict | None = None) -> ActionResult:
+    def enable_webhook(self, webhook_config: dict | None = None) -> None:
         if not self.app_info or not self.asset_id:
             raise RuntimeError("App not set up. Call setup_app() first.")
-
-        return ActionResult(
-            success=True,
-            message="Webhook support placeholder",
-            data={"webhook_url": self.webhook_base_url},
-        )
+        self.phantom.enable_webhook(self.asset_id, webhook_config)
 
     @property
     def webhook_base_url(self) -> str:
-        if not self.app_info or not self.asset_id:
-            return ""
-        return f"https://{self.host}/rest/handler/{self.app_name}/{self.asset_id}"
+        return self.phantom.get_webhook_base_url(self.asset_id)
 
     def get_ingested_containers(self) -> list[dict]:
         return self.phantom.find_containers_from_asset(self.asset_id)
