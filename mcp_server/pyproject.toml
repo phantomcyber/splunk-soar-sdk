@@ -1,13 +1,42 @@
 [project]
 name = "soar-test-assistant"
 version = "0.1.0"
-description = "MCP server for intelligent SOAR SDK test analysis and fixing"
+description = "MCP server for intelligent SOAR SDK test analysis and auto-fixing"
 readme = "README.md"
 requires-python = ">=3.13, <=3.14"
-dependencies = [
-    "mcp>=1.1.0",
-    "splunk-soar-sdk",
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+keywords = ["mcp", "soar", "splunk", "testing", "pytest", "test-automation", "ai"]
+
+authors = [
+    { name = "Ian Rokas", email = "grokas@splunk.com" },
 ]
+
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+
+dependencies = [
+    "mcp>=1.1.0,<2.0.0",
+    "splunk-soar-sdk>=3.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/phantomcyber/splunk-soar-sdk/tree/main/mcp_server"
+Repository = "https://github.com/phantomcyber/splunk-soar-sdk"
+Issues = "https://github.com/phantomcyber/splunk-soar-sdk/issues"
 
 [tool.uv.sources]
 splunk-soar-sdk = { path = "..", editable = true }
@@ -22,5 +51,6 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "pytest>=7.4.2",
+    "pytest-asyncio>=0.23.0",
     "ruff>=0.11.6",
 ]

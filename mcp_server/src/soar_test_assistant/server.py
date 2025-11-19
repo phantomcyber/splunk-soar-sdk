@@ -1,3 +1,5 @@
+"""MCP server for SOAR SDK test analysis and auto-fixing."""
+
 import asyncio
 import json
 import subprocess
@@ -98,7 +100,7 @@ async def list_tools() -> list[Tool]:
                         "type": "object",
                         "description": (
                             "Required for sdk_integration tests. "
-                            "Format: {\"ip\": \"10.1.19.88\", \"username\": \"admin\", \"password\": \"pass\"}"
+                            'Format: {"ip": "10.1.19.88", "username": "admin", "password": "pass"}'
                         ),
                         "properties": {
                             "ip": {"type": "string"},
@@ -124,7 +126,7 @@ async def list_tools() -> list[Tool]:
 
 
 @app.call_tool()
-async def call_tool(name: str, arguments: Any) -> list[TextContent]:
+async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
     if name == "analyze_test_failure":
         return await analyze_test_failure(arguments)
     elif name == "fix_test_failure":
@@ -226,23 +228,31 @@ async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
             test_type=test_type,
             soar_instance=soar_instance,
         )
-        test_history.append({
-            "iteration": iteration,
-            "exit_code": test_result["exit_code"],
-            "output": test_result["output"] if verbose else test_result["output"][-500:],
-        })
+        test_history.append(
+            {
+                "iteration": iteration,
+                "exit_code": test_result["exit_code"],
+                "output": test_result["output"]
+                if verbose
+                else test_result["output"][-500:],
+            }
+        )
 
         if test_result["exit_code"] == 0:
             summary = {
                 "status": "success",
                 "iterations": iteration,
                 "fixes_applied": all_fixes,
-                "final_output": test_result["output"] if verbose else "All tests passed!",
+                "final_output": test_result["output"]
+                if verbose
+                else "All tests passed!",
             }
             return [
                 TextContent(
                     type="text",
-                    text=output + "\n✓ All tests passed!\n\n" + json.dumps(summary, indent=2),
+                    text=output
+                    + "\n[PASS] All tests passed!\n\n"
+                    + json.dumps(summary, indent=2),
                 )
             ]
 
@@ -261,17 +271,19 @@ async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
                     type="text",
                     text=(
                         output
-                        + "\n✗ Tests failed but no specific failures detected.\n\n"
+                        + "\n[FAIL] Tests failed but no specific failures detected.\n\n"
                         + json.dumps(summary, indent=2)
                     ),
                 )
             ]
 
         fix_result = await fixer.apply_fixes(analysis, auto_apply=True)
-        all_fixes.append({
-            "iteration": iteration,
-            "fixes": fix_result,
-        })
+        all_fixes.append(
+            {
+                "iteration": iteration,
+                "fixes": fix_result,
+            }
+        )
 
         if not fix_result.get("files_modified"):
             summary = {
@@ -286,7 +298,7 @@ async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
                     type="text",
                     text=(
                         output
-                        + "\n✗ No fixes available for current failures.\n\n"
+                        + "\n[FAIL] No fixes available for current failures.\n\n"
                         + json.dumps(summary, indent=2)
                     ),
                 )
@@ -306,7 +318,7 @@ async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
         TextContent(
             type="text",
             text=(
-                f"\n✗ Max iterations ({max_iterations}) reached without passing all tests.\n\n"
+                f"\n[FAIL] Max iterations ({max_iterations}) reached without passing all tests.\n\n"
                 + json.dumps(summary, indent=2)
             ),
         )
@@ -337,7 +349,7 @@ def detect_test_type(path: Path) -> str:
                 content = f.read()
                 if "[tool.soar.app]" in content:
                     return "app"
-        except Exception:
+        except OSError:
             pass
 
     # Default to app if unsure
@@ -410,8 +422,9 @@ async def run_tests(
             "output": f"Error: Unknown test type: {test_type}",
         }
 
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: S603
         cmd,
+        check=False,
         capture_output=True,
         text=True,
         cwd=cwd,
@@ -425,18 +438,14 @@ async def run_tests(
     }
 
 
-async def main():
-    from mcp.server.stdio import stdio_server
-
+async def main() -> None:
+    """Run the MCP server."""
     async with stdio_server() as (read_stream, write_stream):
-        await app.run(
-            read_stream,
-            write_stream,
-            app.create_initialization_options()
-        )
+        await app.run(read_stream, write_stream, app.create_initialization_options())
 
 
-def cli():
+def cli() -> None:
+    """CLI entry point for the MCP server."""
     asyncio.run(main())
 
 
