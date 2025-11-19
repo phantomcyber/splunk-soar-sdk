@@ -107,17 +107,14 @@ class PhantomInstance(SOARClient):
         raise_on_fail: bool = True,
     ):
         """Send a GET request to the specified endpoint on the phantom instance."""
-        try:
-            return self.get(
-                endpoint,
-                params=params,
-                timeout=httpx.Timeout(timeout),
-            )
-        except httpx.HTTPStatusError as e:
-            logging.error(e.response.text)
-            if raise_on_fail:
-                raise
-            return e.response
+        response = self.get(
+            endpoint,
+            params=params,
+            timeout=httpx.Timeout(timeout),
+        )
+        if raise_on_fail:
+            response.raise_for_status()
+        return response
 
     def post_endpoint(
         self,
@@ -128,18 +125,15 @@ class PhantomInstance(SOARClient):
         raise_on_fail: bool = True,
     ):
         """Send a POST request to the specified endpoint on the phantom instance."""
-        try:
-            return self.post(
-                endpoint,
-                data=data,
-                json=json_data,
-                timeout=httpx.Timeout(timeout),
-            )
-        except httpx.HTTPStatusError as e:
-            logging.error(e.response.text)
-            if raise_on_fail:
-                raise
-            return e.response
+        response = self.post(
+            endpoint,
+            data=data,
+            json=json_data,
+            timeout=httpx.Timeout(timeout),
+        )
+        if raise_on_fail:
+            response.raise_for_status()
+        return response
 
     def delete_endpoint(
         self,
@@ -149,16 +143,13 @@ class PhantomInstance(SOARClient):
         raise_on_fail: bool = True,
     ):
         """Send a DELETE request to the specified endpoint on the phantom instance."""
-        try:
-            return self.delete(
-                f"{endpoint}/{object_id}",
-                timeout=httpx.Timeout(timeout),
-            )
-        except httpx.HTTPStatusError as e:
-            logging.error(e.response.text)
-            if raise_on_fail:
-                raise
-            return e.response
+        response = self.delete(
+            f"{endpoint}/{object_id}",
+            timeout=httpx.Timeout(timeout),
+        )
+        if raise_on_fail:
+            response.raise_for_status()
+        return response
 
     def get_version(self) -> str:
         """Get the phantom instance version."""
@@ -354,6 +345,23 @@ class PhantomInstance(SOARClient):
 
         return poll_now_message
 
+    def enable_webhook(self, asset_id: int, webhook_config: dict | None = None) -> None:
+        """Enable webhooks for an asset."""
+        data = {"webhook": {**(webhook_config or {}), "enabled": True}}
+        endpoint = f"{phantom_constants.ENDPOINT_ASSET}/{asset_id}"
+        self.post_endpoint(endpoint, json_data=data)
+
+    def get_webhook_base_url(self, asset_id: int) -> str:
+        """Get the base URL for an asset webhook."""
+        endpoint = f"{phantom_constants.ENDPOINT_ASSET}/{asset_id}"
+        data = self.get_endpoint(endpoint).json()
+        if not (webhook := data.get("webhook")):
+            raise RuntimeError(f"Webhooks are not enabled on asset {asset_id}")
+        host = urlparse(self.base_url).hostname
+        port = webhook["webhook_port"]
+        path = webhook["webhook_url"]
+        return f"https://{host}:{port}{path}"
+
     def wait_for_action_completion(
         self,
         action_id: int,
@@ -390,14 +398,14 @@ class PhantomInstance(SOARClient):
         )
         session_id = login_response.cookies.get("sessionid")
 
-        webhook_server = urlparse(self.base_url).netloc
+        websocket_server = urlparse(self.base_url).netloc
         ssl_context = ssl.create_default_context()
         if not self.verify_certs:
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
 
         async with websockets.connect(
-            f"wss://{webhook_server}/websocket",
+            f"wss://{websocket_server}/websocket",
             additional_headers={"Cookie": f"sessionid={session_id}"},
             ssl=ssl_context,
         ) as w:

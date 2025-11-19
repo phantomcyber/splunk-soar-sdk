@@ -135,6 +135,8 @@ class App:
         self.actions_manager: ActionsManager = ActionsManager()
         self.soar_client: SOARClient = AppClient()
 
+        self.app_root = Path(inspect.stack()[1].filename).parent.parent
+
     def get_actions(self) -> dict[str, Action]:
         """Returns the list of actions registered in the app."""
         return self.actions_manager.get_actions()
@@ -809,6 +811,7 @@ class App:
         _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
         asset_id = soar_rest_client.asset_id
         soar_base_url = soar_rest_client.base_url
+        soar_base_url = soar_base_url.removesuffix("/rest")
         soar_auth = SOARClientAuth(
             user_session_token=soar_auth_token,
             base_url=soar_base_url,

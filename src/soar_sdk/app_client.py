@@ -93,6 +93,7 @@ class AppClient(SOARClient[SummaryType]):
             verify=False,  # noqa: S501
         )
         if session_id:
+            self._client.cookies.set("sessionid", session_id)
             self.__login()
         else:
             if soar_auth.username:
@@ -106,7 +107,7 @@ class AppClient(SOARClient[SummaryType]):
             self._client.headers.update({"Cookie": update_cookies})
 
     def __login(self) -> None:
-        response = self._client.get("/login")
+        response = self._client.get("/login", follow_redirects=True)
         response.raise_for_status()
         self.csrf_token = response.cookies.get("csrftoken") or ""
         self._client.cookies.update(response.cookies)
