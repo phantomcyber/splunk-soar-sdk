@@ -51,6 +51,15 @@ class ActionRegistrationError(Exception):
         super().__init__(f"Error registering action: {action}")
 
 
+class ActionContextRequired(Exception):
+    """Exception raised when trying to access certain features outside the context of an action run."""
+
+    def __init__(self) -> None:
+        super().__init__(
+            "This feature is only available in the context of an action run."
+        )
+
+
 __all__ = [
     "ActionFailure",
     "ActionRegistrationError",

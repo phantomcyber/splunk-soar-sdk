@@ -9,12 +9,7 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
-from soar_sdk.actions_manager import (
-    ActionsManager,
-    _INGEST_STATE_KEY,
-    _AUTH_STATE_KEY,
-    _CACHE_STATE_KEY,
-)
+from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
@@ -257,90 +252,6 @@ def test_app_connector_delegates_get_phantom_base_url():
         return_value="some_url",
     ):
         assert ActionsManager.get_soar_base_url() == "some_url"
-
-
-def test_app_connector_initialize_loads_state(
-    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
-):
-    """Test that initialize loads the state from load_state method."""
-    # Mock the load_state method to return a specific state
-    test_state_inner = {"test_key": "test_value"}
-    test_state = {
-        _INGEST_STATE_KEY: test_state_inner,
-        _AUTH_STATE_KEY: test_state_inner,
-        _CACHE_STATE_KEY: test_state_inner,
-    }
-
-    load_state = mocker.patch.object(
-        app_actions_manager, "load_state", return_value=test_state
-    )
-
-    # Call initialize
-    result = app_actions_manager.initialize()
-
-    # Verify initialize returns True
-    assert result is True
-
-    # Verify load_state was called
-    load_state.assert_called_once()
-
-    # Verify the state was stored correctly
-    assert app_actions_manager.ingestion_state == test_state_inner
-    assert app_actions_manager.auth_state == test_state_inner
-    assert app_actions_manager.asset_cache == test_state_inner
-
-
-def test_app_connector_initialize_handles_empty_state(
-    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
-):
-    """Test that initialize handles None return from load_state."""
-    # Mock the load_state method to return None
-    load_state = mocker.patch.object(
-        app_actions_manager, "load_state", return_value=None
-    )
-
-    # Call initialize
-    result = app_actions_manager.initialize()
-
-    # Verify initialize returns True
-    assert result is True
-
-    # Verify load_state was called
-    load_state.assert_called_once()
-
-    # Verify the state was initialized to an empty dict
-    assert app_actions_manager.ingestion_state == {}
-    assert app_actions_manager.auth_state == {}
-    assert app_actions_manager.asset_cache == {}
-
-
-def test_app_connector_finalize_saves_state(
-    app_actions_manager: ActionsManager, mocker: pytest_mock.MockerFixture
-):
-    """Test that finalize saves the current state using save_state."""
-    # Set up a test state
-    test_state = {"key1": "value1", "key2": "value2"}
-    app_actions_manager.ingestion_state = test_state
-    app_actions_manager.auth_state = test_state
-    app_actions_manager.asset_cache = test_state
-
-    # Mock the save_state method
-    save_state = mocker.patch.object(app_actions_manager, "save_state")
-
-    # Call finalize
-    result = app_actions_manager.finalize()
-
-    # Verify finalize returns True
-    assert result is True
-
-    # Verify save_state was called with the correct state
-    save_state.assert_called_once_with(
-        {
-            _INGEST_STATE_KEY: test_state,
-            _AUTH_STATE_KEY: test_state,
-            _CACHE_STATE_KEY: test_state,
-        }
-    )
 
 
 def test_app_connector_delegates_set_csrf_info(
