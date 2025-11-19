@@ -1,9 +1,11 @@
+"""Automated test failure fixer that applies fixes based on analysis."""
+
 import subprocess
 from pathlib import Path
 
 
 class TestFixer:
-    def __init__(self, app_path: Path):
+    def __init__(self, app_path: Path) -> None:
         self.app_path = app_path
 
     async def apply_fixes(self, analysis: dict, auto_apply: bool = True) -> dict:
@@ -70,8 +72,9 @@ class TestFixer:
             }
 
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # noqa: S603
                 command.split(),
+                check=False,
                 cwd=self.app_path,
                 capture_output=True,
                 text=True,
@@ -100,7 +103,7 @@ class TestFixer:
         except Exception as e:
             return {
                 "applied": False,
-                "reason": f"Error installing dependency: {str(e)}",
+                "reason": f"Error installing dependency: {e!s}",
             }
 
     async def _fix_assertion_error(self, failure: dict, suggested_fix: dict) -> dict:

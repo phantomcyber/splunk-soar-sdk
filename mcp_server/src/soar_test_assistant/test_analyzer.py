@@ -1,5 +1,6 @@
+"""Pytest test output analyzer for identifying failures and suggesting fixes."""
+
 import re
-from pathlib import Path
 
 
 class TestAnalyzer:
@@ -33,12 +34,16 @@ class TestAnalyzer:
         matches = re.findall(failure_pattern, output)
 
         for file_path, test_name in matches:
-            failure_section = self._extract_failure_section(output, file_path, test_name)
-            failures.append({
-                "file": file_path,
-                "test": test_name,
-                "traceback": failure_section,
-            })
+            failure_section = self._extract_failure_section(
+                output, file_path, test_name
+            )
+            failures.append(
+                {
+                    "file": file_path,
+                    "test": test_name,
+                    "traceback": failure_section,
+                }
+            )
 
         return failures
 
@@ -50,15 +55,19 @@ class TestAnalyzer:
 
         for file_path, test_name in matches:
             error_section = self._extract_error_section(output, file_path, test_name)
-            errors.append({
-                "file": file_path,
-                "test": test_name,
-                "traceback": error_section,
-            })
+            errors.append(
+                {
+                    "file": file_path,
+                    "test": test_name,
+                    "traceback": error_section,
+                }
+            )
 
         return errors
 
-    def _extract_failure_section(self, output: str, file_path: str, test_name: str) -> str:
+    def _extract_failure_section(
+        self, output: str, file_path: str, test_name: str
+    ) -> str:
         """Extract the detailed failure section for a specific test."""
         pattern = rf"_{{{test_name}}}.*?(?=_{{|\Z)"
         match = re.search(pattern, output, re.DOTALL)
@@ -66,7 +75,9 @@ class TestAnalyzer:
             return match.group(0)
         return ""
 
-    def _extract_error_section(self, output: str, file_path: str, test_name: str) -> str:
+    def _extract_error_section(
+        self, output: str, file_path: str, test_name: str
+    ) -> str:
         """Extract the detailed error section for a specific test."""
         return self._extract_failure_section(output, file_path, test_name)
 
