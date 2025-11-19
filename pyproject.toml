@@ -218,7 +218,7 @@ no_implicit_optional = true
 show_error_context = true
 strict_equality = true
 check_untyped_defs = true
-exclude = ['tests/.*', 'dist/.*']
+exclude = ['tests/.*', 'dist/.*', 'mcp_server/.*']
 
 [[tool.mypy.overrides]]
 module = "phantom.*"

@@ -201,7 +201,7 @@ async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
     analyzer = TestAnalyzer()
     fixer = TestFixer(test_path_arg)
     iteration = 0
-    all_fixes = []
+    all_fixes: list[dict] = []
     test_history = []
 
     if verbose:
@@ -402,8 +402,10 @@ async def run_tests(
             cmd.extend(["-t", test_path])
 
         # Set environment variables for authentication
+        import os
+
         env = {
-            **subprocess.os.environ,
+            **os.environ,
             "PHANTOM_USERNAME": soar_instance.get("username", "admin"),
             "PHANTOM_PASSWORD": soar_instance.get("password", "password"),
         }

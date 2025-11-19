@@ -4,6 +4,7 @@
 def test_missing_package():
     """This test will fail due to missing package - auto-fixable."""
     import yaml
+
     assert yaml is not None
 
 
