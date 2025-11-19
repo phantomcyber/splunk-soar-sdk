@@ -1,3 +1,4 @@
+import textwrap
 import pytest
 from unittest import mock
 
@@ -14,11 +15,13 @@ class TestGetTargetPythonVersions:
 
     def test_both_versions_when_no_constraint(self, mock_pyproject_toml):
         """When no requires-python is specified, should return all SDK-supported versions."""
-        pyproject_content = """
-[project]
-name = "test-app"
-version = "1.0.0"
-"""
+        pyproject_content = textwrap.dedent(
+            """
+            [project]
+            name = "test-app"
+            version = "1.0.0"
+            """
+        )
         (mock_pyproject_toml / "pyproject.toml").write_text(pyproject_content)
 
         processor = ManifestProcessor(
@@ -30,12 +33,14 @@ version = "1.0.0"
 
     def test_only_313_when_constrained(self, mock_pyproject_toml):
         """When requires-python excludes 3.14, should return only 3.13."""
-        pyproject_content = """
-[project]
-name = "test-app"
-version = "1.0.0"
-requires-python = ">=3.13, <3.14"
-"""
+        pyproject_content = textwrap.dedent(
+            """
+            [project]
+            name = "test-app"
+            version = "1.0.0"
+            requires-python = ">=3.13, <3.14"
+            """
+        )
         (mock_pyproject_toml / "pyproject.toml").write_text(pyproject_content)
 
         processor = ManifestProcessor(
@@ -47,12 +52,14 @@ requires-python = ">=3.13, <3.14"
 
     def test_only_314_when_constrained(self, mock_pyproject_toml):
         """When requires-python excludes 3.13, should return only 3.14."""
-        pyproject_content = """
-[project]
-name = "test-app"
-version = "1.0.0"
-requires-python = ">=3.14"
-"""
+        pyproject_content = textwrap.dedent(
+            """
+            [project]
+            name = "test-app"
+            version = "1.0.0"
+            requires-python = ">=3.14"
+            """
+        )
         (mock_pyproject_toml / "pyproject.toml").write_text(pyproject_content)
 
         processor = ManifestProcessor(
@@ -64,12 +71,14 @@ requires-python = ">=3.14"
 
     def test_both_versions_with_inclusive_range(self, mock_pyproject_toml):
         """When requires-python includes both 3.13 and 3.14, should return both."""
-        pyproject_content = """
-[project]
-name = "test-app"
-version = "1.0.0"
-requires-python = ">=3.13, <=3.14"
-"""
+        pyproject_content = textwrap.dedent(
+            """
+            [project]
+            name = "test-app"
+            version = "1.0.0"
+            requires-python = ">=3.13, <=3.14"
+            """
+        )
         (mock_pyproject_toml / "pyproject.toml").write_text(pyproject_content)
 
         processor = ManifestProcessor(
@@ -81,12 +90,14 @@ requires-python = ">=3.13, <=3.14"
 
     def test_empty_when_no_match(self, mock_pyproject_toml):
         """When requires-python doesn't match any SDK versions, should return empty."""
-        pyproject_content = """
-[project]
-name = "test-app"
-version = "1.0.0"
-requires-python = ">=3.15"
-"""
+        pyproject_content = textwrap.dedent(
+            """
+            [project]
+            name = "test-app"
+            version = "1.0.0"
+            requires-python = ">=3.15"
+            """
+        )
         (mock_pyproject_toml / "pyproject.toml").write_text(pyproject_content)
 
         processor = ManifestProcessor(
@@ -255,13 +266,15 @@ class TestIntegration:
 
     def test_313_only_project_skips_314_resolution(self, tmp_path):
         """Test that a project with requires-python='>=3.13, <3.14' doesn't try to resolve 3.14 wheels."""
-        pyproject_content = """
-[project]
-name = "test-app"
-version = "1.0.0"
-requires-python = ">=3.13, <3.14"
-dependencies = ["httpx"]
-"""
+        pyproject_content = textwrap.dedent(
+            """
+            [project]
+            name = "test-app"
+            version = "1.0.0"
+            requires-python = ">=3.13, <3.14"
+            dependencies = ["httpx"]
+            """
+        )
         (tmp_path / "pyproject.toml").write_text(pyproject_content)
 
         processor = ManifestProcessor("manifest.json", project_context=str(tmp_path))
