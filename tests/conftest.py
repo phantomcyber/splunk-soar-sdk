@@ -309,7 +309,6 @@ def fake_uv_lockfile(fake_wheel) -> UvLock:
 
 
 @pytest.fixture
-@pytest.mark.respx(base_url="https://files.pythonhosted.org/packages")
 def wheel_resp_mock(respx_mock):
     """Fixture that automatically mocks requests to download wheels. Useful for keeping tests for package builds fast and reliable."""
     # Create the mock route for wheel downloads
@@ -321,7 +320,6 @@ def wheel_resp_mock(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx(base_url="https://files.pythonhosted.org/packages")
 def sdist_resp_mock(respx_mock):
     """Fixture that automatically mocks requests to download source distributions. Useful for keeping tests for package builds fast and reliable."""
     # Create the mock route for source distribution downloads
@@ -335,7 +333,6 @@ def sdist_resp_mock(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx(base_url="https://10.1.23.4/")
 def mock_install_client(respx_mock):
     """Fixture to mock requests.Session."""
     # Mock the home page GET request for CSRF token
@@ -385,7 +382,6 @@ def soar_client_auth_token() -> SOARClientAuth:
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_post_artifact(respx_mock):
     """Fixture to mock POST requests to create artifacts."""
     mock_route = respx_mock.post(re.compile(r".*/rest/artifact/?$")).mock(
@@ -395,7 +391,6 @@ def mock_post_artifact(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_get_any_soar_call(respx_mock):
     """Fixture to mock GET requests to any SOAR endpoint."""
     mock_route = respx_mock.get(re.compile(r".*")).mock(
@@ -409,7 +404,6 @@ def mock_get_any_soar_call(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_put_any_call(respx_mock):
     """Fixture to mock PUT requests to any SOAR endpoint."""
     mock_route = respx_mock.put(re.compile(r".*")).mock(
@@ -419,7 +413,6 @@ def mock_put_any_call(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_post_any_soar_call(respx_mock):
     """Fixture to mock POST requests to any SOAR endpoint."""
     mock_route = respx_mock.post(re.compile(r".*")).mock(
@@ -433,7 +426,6 @@ def mock_post_any_soar_call(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_delete_any_soar_call(respx_mock):
     """Fixture to mock DELETE requests to any SOAR endpoint."""
     mock_route = respx_mock.delete(re.compile(r".*")).mock(
@@ -447,7 +439,6 @@ def mock_delete_any_soar_call(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_post_container(respx_mock):
     """Fixture to mock POST requests to create containers."""
     mock_route = respx_mock.post(re.compile(r".*/rest/container/?$")).mock(
@@ -459,7 +450,6 @@ def mock_post_container(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_post_vault(respx_mock):
     """Fixture to mock POST requests to add attachments to vault."""
     mock_route = respx_mock.post(re.compile(r".*/rest/container_attachment/?$")).mock(
@@ -469,7 +459,6 @@ def mock_post_vault(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_get_vault(respx_mock):
     """Fixture to mock GET requests to retrieve attachments from vault."""
     mock_route = respx_mock.get(re.compile(r".*/rest/container_attachment.*")).mock(
@@ -514,7 +503,6 @@ def mock_get_vault(respx_mock):
 
 
 @pytest.fixture
-@pytest.mark.respx
 def mock_delete_vault(respx_mock):
     """Fixture to mock DELETE requests to remove attachments from vault."""
     mock_route = respx_mock.delete(re.compile(r".*/rest/container_attachment.*")).mock(
