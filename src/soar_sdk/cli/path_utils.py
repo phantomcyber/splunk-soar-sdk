@@ -36,8 +36,3 @@ def context_directory(path: Path) -> Iterator[None]:
             yield
     finally:
         os.chdir(original_dir)
-
-
-def relative_to_cwd(path: Path) -> str:
-    """Reinterpret the given path as relative to the current working directory."""
-    return path.relative_to(Path.cwd()).as_posix()
