@@ -59,6 +59,8 @@ jobs:
       PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
       NUM_TEST_RETRIES: ${{ vars.NUM_TEST_RETRIES || '2' }}
       PHANTOM_VERSION: ${{ matrix.version }}
+      AUTOMATION_BROKER_NAME: ${{ vars.AUTOMATION_BROKER_NAME }}
+      FORCE_AUTOMATION_BROKER: ${{ vars.FORCE_AUTOMATION_BROKER }}
       UV_LOCKED: 1
     steps:
       - name: Checkout SDK repository
