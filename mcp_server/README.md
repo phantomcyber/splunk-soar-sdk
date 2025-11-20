@@ -4,7 +4,7 @@ Model Context Protocol server for automated test analysis and fixing in Splunk S
 
 ## Overview
 
-This MCP server provides AI-powered test automation for Claude Code, enabling:
+This MCP server provides AI-powered test automation for Claude Code (or any MCP-compatible AI agent), enabling:
 
 - Automatic detection and fixing of import errors
 - Intelligent analysis of test failures
@@ -20,7 +20,7 @@ cd mcp_server
 ./install.sh
 ```
 
-Restart Claude Code after installation.
+Restart Claude Code (or your MCP client) after installation.
 
 ### Manual Configuration
 
@@ -46,7 +46,7 @@ Add to your MCP settings file:
 
 ## Usage
 
-The MCP server works from any directory. Open Claude Code in your project and use natural language:
+The MCP server works from any directory. Open Claude Code (or your MCP client) in your project and use natural language:
 
 ### From App Directory
 
@@ -72,7 +72,7 @@ Examples:
 - "Run and fix tests for tests/example_app"
 - "Run SDK integration tests"
 
-Note: Integration tests require SOAR instance credentials (IP, username, password). Claude Code will prompt for these if not provided.
+Note: Integration tests require SOAR instance credentials (IP, username, password). Claude Code (or your MCP client) will prompt for these if not provided.
 
 ### From Any Directory
 
@@ -187,7 +187,7 @@ Safety note: Changes test expectations
 Integration tests require SOAR instance credentials. If not provided:
 
 1. MCP server returns credentials_required status
-2. Claude Code prompts for IP, username, password
+2. Claude Code (or your MCP client) prompts for IP, username, password
 3. User provides credentials
 4. Tests run with provided credentials
 
