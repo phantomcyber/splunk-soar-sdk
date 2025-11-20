@@ -196,6 +196,8 @@ SOARClient
 
 The ``SOARClient`` class is an app's gateway to the Splunk SOAR platform APIs. It provides methods for creating and manipulating platform objects such as containers, artifacts, and vault items.
 
+The SOAR Client also contains the `asset_cache`, `auth_state`, and `ingestion_state` dictionaries, which you can use to persist data between action runs. These are all scoped to the individual asset, so data does not leak between assets.
+
 .. autoclass:: soar_sdk.abstract.SOARClient
    :show-inheritance:
 

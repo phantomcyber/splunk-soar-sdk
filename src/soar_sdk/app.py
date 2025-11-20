@@ -805,6 +805,10 @@ class App:
         )
         self.soar_client.update_client(soar_auth, asset_id)
 
+        self.soar_client.asset_cache = self.actions_manager.asset_cache
+        self.soar_client.auth_state = self.actions_manager.auth_state
+        self.soar_client.ingestion_state = self.actions_manager.ingestion_state
+
         normalized_query = {}
         for key, value in query.items():
             # Normalize query parameters to always be a list
@@ -830,6 +834,10 @@ class App:
         )
 
         response = self.webhook_router.handle_request(request)
+        self.actions_manager.asset_cache = self.soar_client.asset_cache
+        self.actions_manager.auth_state = self.soar_client.auth_state
+        self.actions_manager.ingestion_state = self.soar_client.ingestion_state
+
         if not isinstance(response, WebhookResponse):
             raise TypeError(
                 f"Webhook handler must return a WebhookResponse, got {type(response)}"
