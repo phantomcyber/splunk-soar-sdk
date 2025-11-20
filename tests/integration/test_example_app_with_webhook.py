@@ -1,7 +1,6 @@
 from .soar_client import AppOnStackClient
 
 import httpx
-import pytest
 
 
 def test_connectivity(webhook_app_client: AppOnStackClient):
@@ -9,7 +8,6 @@ def test_connectivity(webhook_app_client: AppOnStackClient):
     assert result.success, f"Test connectivity failed: {result.message}"
 
 
-@pytest.mark.xfail
 def test_webhook_request(webhook_app_client: AppOnStackClient):
     webhook_app_client.enable_webhook({"requires_auth": False})
 
