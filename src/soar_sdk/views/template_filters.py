@@ -50,7 +50,7 @@ def sorteditems(dictionary: dict) -> list:
 T = TypeVar("T")
 
 
-def batch[T](iterable: Iterable[T], count: int) -> Iterator[list[T]]:
+def batch(iterable: Iterable[T], count: int) -> Iterator[list[T]]:
     """Batch items into groups of specified count."""
     result = []
     for item in iterable:
