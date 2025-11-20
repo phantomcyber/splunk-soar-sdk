@@ -91,6 +91,14 @@ jobs:
           uv cache clean
           uv sync
 
+      - name: Check connectivity to SOAR host
+        run: |
+          apt update -y
+          apt install -y netcat-openbsd
+          phantom_ip=${{ matrix.ip }}
+          nc -zv "$phantom_ip" 443
+          nc -zv "$phantom_ip" 3500
+
       - name: Install example_app on Phantom instance
         env:
           PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
