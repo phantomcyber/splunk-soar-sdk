@@ -6,10 +6,10 @@ An MCP server that provides automated test analysis and remediation capabilities
 
 The server implements a two-phase analysis and remediation cycle:
 
-### 1. **analyze_tests** - Test Execution and Failure Analysis
+### 1. analyze_tests - Test Execution and Failure Analysis
 Executes the test suite and captures comprehensive diagnostic output including stack traces, assertion failures, and error context.
 
-### 2. **fix_and_run_tests** - Automated Remediation and Validation
+### 2. fix_and_run_tests - Automated Remediation and Validation
 Applies proposed changes to source files, test fixtures, or dependencies, then re-executes the test suite to verify the fix.
 
 The cycle repeats until all tests pass or unresolvable failures are identified.
@@ -93,18 +93,17 @@ Automated remediation workflow for a failing manifest processor test:
 3. **Apply and Validate**: `fix_and_run_tests` executes regeneration command
    - Fixture updated with current expected values
    - Test suite re-executed
-   - Returns `status: "success"` ✅
+   - Returns `status: "success"`
 
 ## Installation
 
+Run the installation script from the repository root:
+
 ```bash
-cd mcp_server
-uv sync
+./install
 ```
 
-## Configuration
-
-Add to your MCP settings (`~/.config/claude-code/mcp_settings.json`):
+Or configure manually by adding to your MCP settings (`~/.config/claude-code/mcp_settings.json`):
 
 ```json
 {
@@ -118,7 +117,7 @@ Add to your MCP settings (`~/.config/claude-code/mcp_settings.json`):
 }
 ```
 
-Restart Claude Code after adding this configuration.
+Then restart Claude Code.
 
 ## SDK-Only Focus
 
@@ -128,35 +127,9 @@ This MCP server is **exclusively for SOAR SDK tests**:
 
 All tests run from the SDK root directory, which is auto-detected.
 
-## Common Remediation Patterns
-
-### Dependency Resolution
-Missing imports detected through traceback analysis require package installation via the project's dependency manager.
-
-### Fixture Synchronization
-Test fixtures can drift from implementation changes. Regeneration commands re-create fixtures using current code paths to restore test alignment.
-
-### Assertion Correction
-Failed assertions may indicate incorrect expected values in tests. File edits update assertions to match verified behavior.
-
 ## Development
 
 ```bash
 # Test the MCP server
 uv run pytest
-
-# Code quality
-uv run ruff check src/
-uv run ruff format src/
 ```
-
-## Architecture
-
-The server is designed as a stateless test orchestration layer:
-- **Test Execution**: Manages pytest invocation with proper environment configuration
-- **Change Application**: Applies file modifications and command executions atomically
-- **Validation**: Re-runs test suite after each change to verify remediation effectiveness
-
-## License
-
-Apache License 2.0 - Copyright (c) 2024 Splunk Inc.
