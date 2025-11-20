@@ -44,3 +44,17 @@ def test_asset_state(example_app_client: AppOnStackClient):
 
     read_result = example_app_client.run_action("read state", {})
     assert read_result.success, f"State reading action failed: {read_result.message}"
+
+
+@pytest.mark.onprem
+def test_reverse_string_with_ab(example_app_client: AppOnStackClient):
+    input_string = "AB Testing!"
+    expected_output = input_string[::-1]
+
+    result = example_app_client.run_action(
+        "reverse string", {"input_string": input_string}
+    )
+    assert result.success, f"Action failed: {result.message}"
+
+    data = result.data["data"][0]
+    assert data.get("reversed_string") == expected_output
