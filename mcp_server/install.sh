@@ -53,13 +53,6 @@ EOF
 fi
 
 echo ""
-echo "✓ Installation complete!"
-echo ""
-echo "The SOAR Test Assistant MCP server is now installed and configured."
-echo ""
-echo "To use it in Claude Code, you can now call tools like:"
-echo "  - run_and_fix_tests"
-echo "  - analyze_test_failure"
-echo "  - fix_test_failure"
+echo "Installation complete!"
 echo ""
 echo "Restart Claude Code to load the new MCP server."
