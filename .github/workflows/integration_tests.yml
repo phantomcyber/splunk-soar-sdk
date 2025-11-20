@@ -120,11 +120,6 @@ jobs:
         env:
           PHANTOM_URL: "https://${{ matrix.ip }}"
         run: |
-          echo "Checking network state"
-          hostname -I
-          curl 'https://ifconfig.me'
-          echo
-
           echo "Running integration tests against $PHANTOM_URL"
 
           uv sync --group dev
