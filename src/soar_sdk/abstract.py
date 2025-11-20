@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 from collections.abc import Mapping, Iterable, AsyncIterable
 
 from soar_sdk.apis.vault import Vault
@@ -34,7 +34,7 @@ class SOARClientAuth:
         )
 
 
-class SOARClient[SummaryType: ActionOutput]:
+class SOARClient(Generic[SummaryType]):
     """An API interface for interacting with the Splunk SOAR Platform."""
 
     @property
@@ -90,7 +90,7 @@ class SOARClient[SummaryType: ActionOutput]:
             headers=headers,
             cookies=cookies,
             timeout=timeout,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth,
             follow_redirects=follow_redirects,
             extensions=extensions,
         )
@@ -125,7 +125,7 @@ class SOARClient[SummaryType: ActionOutput]:
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth,  # type: ignore[arg-type]
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -161,7 +161,7 @@ class SOARClient[SummaryType: ActionOutput]:
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth,  # type: ignore[arg-type]
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -189,7 +189,7 @@ class SOARClient[SummaryType: ActionOutput]:
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth,  # type: ignore[arg-type]
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
