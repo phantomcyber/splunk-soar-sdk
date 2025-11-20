@@ -5,9 +5,11 @@ from datetime import datetime, UTC
 from pathlib import Path
 from pprint import pprint
 
+from packaging.specifiers import SpecifierSet
+
 from soar_sdk.app import App
 from soar_sdk.cli.path_utils import context_directory
-from soar_sdk.compat import UPDATE_TIME_FORMAT
+from soar_sdk.compat import UPDATE_TIME_FORMAT, PythonVersion
 from soar_sdk.meta.adapters import TOMLDataAdapter
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.meta.dependencies import UvLock
@@ -23,6 +25,22 @@ class ManifestProcessor:
     def __init__(self, manifest_path: str, project_context: str = ".") -> None:
         self.manifest_path = manifest_path
         self.project_context = Path(project_context)
+
+    def get_target_python_versions(self) -> list[str]:
+        """Get the intersection of project requires-python and SDK-supported versions."""
+        sdk_versions = [str(v) for v in PythonVersion.all()]
+
+        with open(self.project_context / "pyproject.toml") as f:
+            requires_python = toml.load(f).get("project", {}).get("requires-python", "")
+
+        if not requires_python:
+            return sdk_versions
+
+        # Use packaging.specifiers to check version compatibility
+        specifier_set = SpecifierSet(requires_python)
+        compatible = [version for version in sdk_versions if version in specifier_set]
+
+        return compatible
 
     def build(self, is_sdk_locally_built: bool = False) -> AppMeta:
         """Builds full AppMeta information including actions and other extra fields."""
@@ -41,8 +59,11 @@ class ManifestProcessor:
                 dep for dep in dependencies if dep.name != "splunk-soar-sdk"
             ]
 
+        # Get target Python versions from requires-python constraint
+        target_python_versions = self.get_target_python_versions()
+
         app_meta.pip313_dependencies, app_meta.pip314_dependencies = (
-            uv_lock.resolve_dependencies(dependencies)
+            uv_lock.resolve_dependencies(dependencies, target_python_versions)
         )
 
         if app.webhook_meta is not None:
