@@ -2,7 +2,7 @@
 
 import pytest
 
-from soar_test_assistant.test_analyzer import TestAnalyzer
+from soar_test_assistant.analyzer import TestAnalyzer
 
 
 class TestTestAnalyzer:
