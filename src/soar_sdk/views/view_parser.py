@@ -3,6 +3,7 @@ from typing import (
     TypeVar,
     get_origin,
     get_args,
+    Generic,
     cast,
 )
 from collections.abc import Callable
@@ -15,7 +16,7 @@ from soar_sdk.async_utils import run_async_if_needed
 T = TypeVar("T", bound=ActionOutput)
 
 
-class ViewFunctionParser[T: ActionOutput]:
+class ViewFunctionParser(Generic[T]):
     """Handles parsing and validation of view function signatures and execution."""
 
     def __init__(

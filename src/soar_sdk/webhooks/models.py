@@ -2,7 +2,7 @@ import json
 import base64
 import mimetypes
 
-from typing import TypeVar, Any, IO
+from typing import TypeVar, Generic, Any, IO
 from collections.abc import Callable
 from pydantic import BaseModel, Field
 
@@ -12,7 +12,7 @@ AssetType = TypeVar("AssetType", bound=BaseAsset)
 WebhookHandler = Callable[["WebhookRequest"], "WebhookResponse"]
 
 
-class WebhookRequest[AssetType: BaseAsset](BaseModel):
+class WebhookRequest(BaseModel, Generic[AssetType]):
     """Canonical format for HTTP requests made to webhook URLs."""
 
     method: str

@@ -5,7 +5,7 @@ This module provides a router for mapping URL patterns to handler functions.
 
 import re
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import TypeVar, Generic
 from collections.abc import Callable
 from collections.abc import Sequence
 
@@ -31,7 +31,7 @@ class Route:
 AssetType = TypeVar("AssetType", bound=BaseAsset)
 
 
-class Router[AssetType: BaseAsset]:
+class Router(Generic[AssetType]):
     """A router for mapping URL patterns to handler functions.
 
     URL patterns can include literal components and parameters in the form of <param_name>.
