@@ -1,257 +1,162 @@
 # SOAR Test Assistant MCP Server
 
-Model Context Protocol server for automated test analysis and fixing in Splunk SOAR SDK development.
+An MCP server that provides automated test analysis and remediation capabilities for the SOAR SDK. This server orchestrates test execution, applies targeted fixes, and validates changes through an iterative workflow.
 
-## Overview
+## Workflow
 
-This MCP server provides AI-powered test automation for Claude Code (or any MCP-compatible AI agent), enabling:
+The server implements a two-phase analysis and remediation cycle:
 
-- Automatic detection and fixing of import errors
-- Intelligent analysis of test failures
-- Proposed fixes for assertions, type errors, and attribute errors
-- Iterative test execution until passing
+### 1. **analyze_tests** - Test Execution and Failure Analysis
+Executes the test suite and captures comprehensive diagnostic output including stack traces, assertion failures, and error context.
+
+### 2. **fix_and_run_tests** - Automated Remediation and Validation
+Applies proposed changes to source files, test fixtures, or dependencies, then re-executes the test suite to verify the fix.
+
+The cycle repeats until all tests pass or unresolvable failures are identified.
+
+## Tools
+
+### `analyze_tests`
+
+Executes the SDK test suite and returns detailed diagnostic output for failure analysis.
+
+**Parameters:**
+- `test_type`: `"unit"` or `"integration"` (default: `"unit"`)
+- `test_path`: Optional specific test file/directory
+- `soar_instance`: Required for integration tests: `{"ip": "...", "username": "...", "password": "..."}`
+
+**Returns:**
+- `status`: `"success"` or `"failed"`
+- `test_output`: Complete pytest output with stack traces and context
+- `message`: Diagnostic guidance for common failure patterns
+
+**Example:**
+```json
+{
+  "test_type": "unit",
+  "test_path": "tests/cli/manifests/test_processors.py"
+}
+```
+
+### `fix_and_run_tests`
+
+Applies a set of proposed changes (file edits, command executions) and re-runs the test suite to validate the remediation.
+
+**Parameters:**
+- `test_type`: `"unit"` or `"integration"` (default: `"unit"`)
+- `test_path`: Optional specific test file/directory
+- `soar_instance`: Required for integration tests
+- `changes`: Array of changes to apply
+
+**Change Types:**
+
+#### edit_file
+Replace exact content in a file:
+```json
+{
+  "type": "edit_file",
+  "file": "tests/example_app/app.json",
+  "old_content": "\"version\": \"1.0\"",
+  "new_content": "\"version\": \"1.1\"",
+  "reasoning": "Update version to match new release"
+}
+```
+
+#### run_command
+Execute a bash command:
+```json
+{
+  "type": "run_command",
+  "command": "cd tests/example_app && uv run python -c \"<regenerate fixture code>\"",
+  "reasoning": "Regenerate outdated test fixture"
+}
+```
+
+**Returns:**
+- `status`: `"success"`, `"still_failing"`, or `"error"`
+- `applied_changes`: List of changes that were applied
+- `test_output`: New test results
+- `errors`: Any errors encountered
+
+## Example Session
+
+Automated remediation workflow for a failing manifest processor test:
+
+1. **Initial Analysis**: `analyze_tests` executes test suite
+   - Detects assertion failure: `app_meta != expected_meta`
+   - Identifies drift in test fixture `tests/example_app/app.json`
+
+2. **Remediation Strategy**: Regenerate test fixture to match current processor output
+   - Command: Invoke `ManifestProcessor` to generate updated manifest
+   - Preserve existing `utctime_updated` field to maintain test stability
+
+3. **Apply and Validate**: `fix_and_run_tests` executes regeneration command
+   - Fixture updated with current expected values
+   - Test suite re-executed
+   - Returns `status: "success"` ✅
 
 ## Installation
 
-### Quick Start
-
 ```bash
 cd mcp_server
-./install.sh
+uv sync
 ```
 
-Restart Claude Code (or your MCP client) after installation.
+## Configuration
 
-### Manual Configuration
-
-Add to your MCP settings file:
-- macOS/Linux: `~/.config/claude-code/mcp_settings.json`
-- Windows: `%APPDATA%\claude-code\mcp_settings.json`
+Add to your MCP settings (`~/.config/claude-code/mcp_settings.json`):
 
 ```json
 {
   "mcpServers": {
     "soar-test-assistant": {
       "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/absolute/path/to/mcp_server",
-        "soar_test_assistant"
-      ]
+      "args": ["run", "soar-test-assistant"],
+      "cwd": "/absolute/path/to/splunk-soar-sdk/mcp_server"
     }
   }
 }
 ```
 
-## Usage
+Restart Claude Code after adding this configuration.
 
-The MCP server works from any directory. Open Claude Code (or your MCP client) in your project and use natural language:
+## SDK-Only Focus
 
-### From App Directory
+This MCP server is **exclusively for SOAR SDK tests**:
+- **Unit tests**: `tests/` (excluding integration)
+- **Integration tests**: `tests/integration/`
 
-```bash
-cd /path/to/your-soar-app
-code .
-```
+All tests run from the SDK root directory, which is auto-detected.
 
-Examples:
-- "Run and fix tests for ."
-- "Fix my app tests"
-- "Run and fix tests in tests/test_actions.py"
+## Common Remediation Patterns
 
-### From SDK Directory
+### Dependency Resolution
+Missing imports detected through traceback analysis require package installation via the project's dependency manager.
 
-```bash
-cd /path/to/splunk-soar-sdk
-code .
-```
+### Fixture Synchronization
+Test fixtures can drift from implementation changes. Regeneration commands re-create fixtures using current code paths to restore test alignment.
 
-Examples:
-- "Run and fix SDK unit tests"
-- "Run and fix tests for tests/example_app"
-- "Run SDK integration tests"
-
-Note: Integration tests require SOAR instance credentials (IP, username, password). Claude Code (or your MCP client) will prompt for these if not provided.
-
-### From Any Directory
-
-```bash
-cd ~/projects
-code .
-```
-
-Example:
-- "Run and fix tests for /path/to/my-app"
-
-## MCP Tools
-
-### run_and_fix_tests
-
-Main tool that runs tests, analyzes failures, applies fixes, and re-runs until passing or max iterations reached.
-
-Parameters:
-- `path` (required): Path to test location
-- `test_type` (optional): "app", "sdk_unit", or "sdk_integration" (auto-detected)
-- `test_path` (optional): Specific test file or directory
-- `soar_instance` (optional): For integration tests: `{"ip": "...", "username": "...", "password": "..."}`
-- `max_iterations` (optional): Maximum fix attempts (default: 5)
-- `verbose` (optional): Enable detailed output (default: false)
-
-Returns:
-- Test status
-- Applied fixes
-- Proposed fixes pending approval (if any)
-- Test output
-
-### analyze_test_failure
-
-Analyzes pytest output to identify failures and classify issues.
-
-Parameters:
-- `test_output` (required): Full pytest output
-- `app_path` (optional): Path to app being tested
-
-Returns:
-- Detailed failure analysis
-- Classification (SDK bug vs app bug)
-- Suggested fixes
-
-### fix_test_failure
-
-Applies automated fixes based on analysis.
-
-Parameters:
-- `failure_analysis` (required): JSON from analyze_test_failure
-- `app_path` (required): Path to app
-- `auto_apply` (optional): Auto-apply fixes (default: true)
-
-Returns:
-- Modified files
-- Applied changes
-
-### apply_approved_fixes
-
-Applies fixes after user review and approval.
-
-Parameters:
-- `app_path` (required): Path to app
-- `approved_fixes` (required): List of approved fixes from pending_fixes
-
-Returns:
-- Modified files
-- Applied fixes
-- Errors (if any)
-
-## How It Works
-
-### Test Execution Flow
-
-1. Run tests with appropriate command
-2. Parse pytest output to identify failures
-3. Classify errors (import, assertion, type, attribute)
-4. Determine if SDK bug or app bug
-5. Apply automatic fixes or propose changes
-6. Re-run tests
-7. Repeat until passing or max iterations
-
-### Automatic Fixes
-
-Import errors are fixed automatically:
-- Missing packages: `uv add <package>`
-- ModuleNotFoundError: Install missing dependencies
-
-No user approval required.
-
-### Proposed Fixes
-
-Complex issues require user approval:
-
-**Assertion errors**: Analyzes expected vs actual values, proposes swapping comparisons or adding review comments.
-
-**Type errors**: Detects type mismatches (int/str), proposes conversions.
-
-**Attribute errors**: Identifies None access issues, proposes protective checks.
-
-Example proposed fix:
-```
-File: tests/test_api.py
-Old: assert response.status_code == 200
-New: assert response.status_code == 404
-Reasoning: Actual value is 404, not 200. Test expectation may need updating.
-Safety note: Changes test expectations
-```
-
-### Credential Handling
-
-Integration tests require SOAR instance credentials. If not provided:
-
-1. MCP server returns credentials_required status
-2. Claude Code (or your MCP client) prompts for IP, username, password
-3. User provides credentials
-4. Tests run with provided credentials
-
-Credentials can also be provided upfront in the initial request.
-
-## Configuration
-
-The `[tool.uv.sources]` section in pyproject.toml enables local SDK development:
-
-```toml
-[tool.uv.sources]
-splunk-soar-sdk = { path = "..", editable = true }
-```
-
-This allows the MCP server to use your local SDK installation. Remove this section if publishing to PyPI.
+### Assertion Correction
+Failed assertions may indicate incorrect expected values in tests. File edits update assertions to match verified behavior.
 
 ## Development
 
-### Project Structure
-
-```
-mcp_server/
-├── src/soar_test_assistant/
-│   ├── __init__.py
-│   ├── server.py          # MCP server and tools
-│   ├── test_analyzer.py   # Failure analysis
-│   └── test_fixer.py      # Fix application
-├── tests/                  # Unit tests
-├── pyproject.toml
-├── LICENSE
-└── README.md
-```
-
-### Running Tests
-
 ```bash
+# Test the MCP server
 uv run pytest
-```
 
-### Code Quality
-
-```bash
+# Code quality
 uv run ruff check src/
 uv run ruff format src/
 ```
 
-## Repository Location
+## Architecture
 
-The MCP server is bundled with the Splunk SOAR SDK. This provides:
-- Tight integration with SDK development
-- Version alignment
-- Unified CI/CD and issue tracking
-- Natural discoverability for SDK users
-
-If significant independent usage develops, the server can be split into its own repository.
-
-## Support
-
-Report issues at https://github.com/phantomcyber/splunk-soar-sdk/issues
+The server is designed as a stateless test orchestration layer:
+- **Test Execution**: Manages pytest invocation with proper environment configuration
+- **Change Application**: Applies file modifications and command executions atomically
+- **Validation**: Re-runs test suite after each change to verify remediation effectiveness
 
 ## License
 
-Apache License 2.0
-
-Copyright (c) 2024 Splunk Inc.
-
-See LICENSE file for full terms.
+Apache License 2.0 - Copyright (c) 2024 Splunk Inc.

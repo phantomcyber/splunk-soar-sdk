@@ -1,4 +1,11 @@
-"""MCP server for SOAR SDK test analysis and auto-fixing."""
+"""MCP server for SOAR SDK test analysis and fixing.
+
+This server provides two simple tools:
+1. analyze_tests: Run tests and return output for AI analysis
+2. fix_and_run_tests: Apply AI-proposed changes and re-run tests
+
+The AI does all the thinking - this server just runs tests and applies changes.
+"""
 
 import asyncio
 import json
@@ -10,9 +17,6 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import Tool, TextContent
 
-from .test_analyzer import TestAnalyzer
-from .test_fixer import TestFixer
-
 app = Server("soar-test-assistant")
 
 
@@ -20,77 +24,20 @@ app = Server("soar-test-assistant")
 async def list_tools() -> list[Tool]:
     return [
         Tool(
-            name="analyze_test_failure",
+            name="analyze_tests",
             description=(
-                "Analyzes pytest test output to identify failures and determine if they are "
-                "SDK bugs or app bugs. Returns detailed analysis and suggested fixes."
+                "Runs SDK unit or integration tests and returns the full output. "
+                "The AI agent analyzes this output to determine what fixes are needed. "
+                "Use this first to see what's failing."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "test_output": {
-                        "type": "string",
-                        "description": "The full pytest output from a test run",
-                    },
-                    "app_path": {
-                        "type": "string",
-                        "description": "Path to the app being tested (optional)",
-                    },
-                },
-                "required": ["test_output"],
-            },
-        ),
-        Tool(
-            name="fix_test_failure",
-            description=(
-                "Applies fixes for identified test failures. Takes analysis from "
-                "analyze_test_failure and applies the suggested fixes to the codebase."
-            ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "failure_analysis": {
-                        "type": "string",
-                        "description": "JSON output from analyze_test_failure",
-                    },
-                    "app_path": {
-                        "type": "string",
-                        "description": "Path to the app to fix",
-                    },
-                    "auto_apply": {
-                        "type": "boolean",
-                        "description": "Whether to automatically apply fixes",
-                        "default": True,
-                    },
-                },
-                "required": ["failure_analysis", "app_path"],
-            },
-        ),
-        Tool(
-            name="run_and_fix_tests",
-            description=(
-                "Automatically runs tests, analyzes failures, applies fixes, and re-runs "
-                "until all tests pass or maximum iterations reached. Works for app tests, "
-                "SDK unit tests, and SDK integration tests. Auto-detects test type or can "
-                "be specified explicitly."
-            ),
-            inputSchema={
-                "type": "object",
-                "properties": {
-                    "path": {
-                        "type": "string",
-                        "description": (
-                            "Path to test location. For apps: path to app dir. "
-                            "For SDK: path to SDK root (usually '.' or absolute path)"
-                        ),
-                    },
                     "test_type": {
                         "type": "string",
-                        "description": (
-                            "Type of tests to run. Auto-detected if not specified. "
-                            "Options: 'app', 'sdk_unit', 'sdk_integration'"
-                        ),
-                        "enum": ["app", "sdk_unit", "sdk_integration"],
+                        "description": "Type of SDK tests",
+                        "enum": ["unit", "integration"],
+                        "default": "unit",
                     },
                     "test_path": {
                         "type": "string",
@@ -98,62 +45,83 @@ async def list_tools() -> list[Tool]:
                     },
                     "soar_instance": {
                         "type": "object",
-                        "description": (
-                            "Required for sdk_integration tests. "
-                            'Format: {"ip": "10.1.19.88", "username": "admin", "password": "pass"}'
-                        ),
+                        "description": "Required for integration tests",
                         "properties": {
                             "ip": {"type": "string"},
                             "username": {"type": "string"},
                             "password": {"type": "string"},
                         },
                     },
-                    "max_iterations": {
-                        "type": "integer",
-                        "description": "Maximum number of fix attempts",
-                        "default": 5,
-                    },
-                    "verbose": {
-                        "type": "boolean",
-                        "description": "Enable verbose output",
-                        "default": False,
-                    },
                 },
-                "required": ["path"],
             },
         ),
         Tool(
-            name="apply_approved_fixes",
+            name="fix_and_run_tests",
             description=(
-                "Applies previously proposed fixes that have been reviewed and approved by the user. "
-                "Takes the proposed fixes from a previous run_and_fix_tests call and applies them."
+                "Applies AI-proposed changes (file edits or commands) and re-runs tests. "
+                "After analyzing test failures, the AI determines what changes are needed, "
+                "then calls this tool to apply those changes and verify tests pass. "
+                "Can be called multiple times until all tests pass."
             ),
             inputSchema={
                 "type": "object",
                 "properties": {
-                    "app_path": {
+                    "test_type": {
                         "type": "string",
-                        "description": "Path to the app to fix",
+                        "description": "Type of SDK tests",
+                        "enum": ["unit", "integration"],
+                        "default": "unit",
                     },
-                    "approved_fixes": {
+                    "test_path": {
+                        "type": "string",
+                        "description": "Specific test file or directory (optional)",
+                    },
+                    "soar_instance": {
+                        "type": "object",
+                        "description": "Required for integration tests",
+                        "properties": {
+                            "ip": {"type": "string"},
+                            "username": {"type": "string"},
+                            "password": {"type": "string"},
+                        },
+                    },
+                    "changes": {
                         "type": "array",
-                        "description": "List of approved fixes from pending_approval",
+                        "description": "List of changes to apply before running tests",
                         "items": {
                             "type": "object",
                             "properties": {
-                                "file": {"type": "string"},
-                                "proposed_fix": {
-                                    "type": "object",
-                                    "properties": {
-                                        "old_code": {"type": "string"},
-                                        "new_code": {"type": "string"},
-                                    },
+                                "type": {
+                                    "type": "string",
+                                    "enum": ["edit_file", "run_command"],
+                                    "description": "Type of change",
+                                },
+                                "file": {
+                                    "type": "string",
+                                    "description": "For edit_file: relative path to file from SDK root",
+                                },
+                                "old_content": {
+                                    "type": "string",
+                                    "description": "For edit_file: exact content to replace",
+                                },
+                                "new_content": {
+                                    "type": "string",
+                                    "description": "For edit_file: replacement content",
+                                },
+                                "command": {
+                                    "type": "string",
+                                    "description": "For run_command: bash command to execute",
+                                },
+                                "reasoning": {
+                                    "type": "string",
+                                    "description": "Why this change fixes the issue",
                                 },
                             },
+                            "required": ["type", "reasoning"],
                         },
                     },
                 },
-                "required": ["app_path", "approved_fixes"],
+                "required": ["changes"],
             },
         ),
     ]
@@ -161,460 +129,260 @@ async def list_tools() -> list[Tool]:
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
-    if name == "analyze_test_failure":
-        return await analyze_test_failure(arguments)
-    elif name == "fix_test_failure":
-        return await fix_test_failure(arguments)
-    elif name == "run_and_fix_tests":
-        return await run_and_fix_tests(arguments)
-    elif name == "apply_approved_fixes":
-        return await apply_approved_fixes(arguments)
+    if name == "analyze_tests":
+        return await analyze_tests(arguments)
+    elif name == "fix_and_run_tests":
+        return await fix_and_run_tests(arguments)
     else:
         raise ValueError(f"Unknown tool: {name}")
 
 
-async def analyze_test_failure(arguments: dict) -> list[TextContent]:
-    test_output = arguments["test_output"]
-    app_path = arguments.get("app_path")
-
-    analyzer = TestAnalyzer()
-    analysis = analyzer.analyze(test_output, app_path)
-
-    return [
-        TextContent(
-            type="text",
-            text=json.dumps(analysis, indent=2),
-        )
-    ]
-
-
-async def fix_test_failure(arguments: dict) -> list[TextContent]:
-    failure_analysis_str = arguments["failure_analysis"]
-    app_path = Path(arguments["app_path"])
-    auto_apply = arguments.get("auto_apply", True)
-
-    try:
-        failure_analysis = json.loads(failure_analysis_str)
-    except json.JSONDecodeError as e:
-        return [
-            TextContent(
-                type="text",
-                text=f"Error parsing failure analysis: {e}",
-            )
-        ]
-
-    fixer = TestFixer(app_path)
-    result = await fixer.apply_fixes(failure_analysis, auto_apply=auto_apply)
-
-    return [
-        TextContent(
-            type="text",
-            text=json.dumps(result, indent=2),
-        )
-    ]
-
-
-async def run_and_fix_tests(arguments: dict) -> list[TextContent]:
-    test_path_arg = Path(arguments["path"])
-    test_type = arguments.get("test_type")
-    specific_test = arguments.get("test_path")
+async def analyze_tests(arguments: dict) -> list[TextContent]:
+    """Run SDK tests and return output for AI analysis."""
+    test_type = arguments.get("test_type", "unit")
+    test_path = arguments.get("test_path")
     soar_instance = arguments.get("soar_instance")
-    max_iterations = arguments.get("max_iterations", 5)
-    verbose = arguments.get("verbose", False)
 
-    if not test_path_arg.exists():
+    sdk_root = find_sdk_root()
+    result = await run_sdk_tests(sdk_root, test_type, test_path, soar_instance)
+
+    if result["exit_code"] == 0:
         return [
             TextContent(
                 type="text",
-                text=f"Error: Path does not exist: {test_path_arg}",
+                text=json.dumps(
+                    {
+                        "status": "success",
+                        "message": "All tests passed!",
+                        "output": result["output"],
+                    },
+                    indent=2,
+                ),
             )
         ]
-
-    # Detect test type if not specified
-    if test_type is None:
-        test_type = detect_test_type(test_path_arg)
-
-    analyzer = TestAnalyzer()
-    fixer = TestFixer(test_path_arg)
-    iteration = 0
-    all_fixes: list[dict] = []
-    test_history = []
-
-    if verbose:
-        test_type_display = {
-            "app": "App Tests",
-            "sdk_unit": "SDK Unit Tests",
-            "sdk_integration": "SDK Integration Tests",
-        }.get(test_type, test_type)
-
-    while iteration < max_iterations:
-        iteration += 1
-
-        if verbose:
-            output = f"\n{'=' * 60}\n"
-            output += f"Test Type: {test_type_display}\n"
-            output += f"Iteration {iteration}/{max_iterations}\n"
-            output += f"{'=' * 60}\n"
-        else:
-            output = f"[{test_type}] Iteration {iteration}/{max_iterations}... "
-
-        test_result = await run_tests(
-            test_path_arg,
-            test_path=specific_test,
-            test_type=test_type,
-            soar_instance=soar_instance,
-        )
-
-        # Check if credentials are needed
-        if test_result.get("needs_credentials"):
-            return [
-                TextContent(
-                    type="text",
-                    text=(
-                        test_result["output"]
-                        + "\n\n"
-                        + json.dumps(
-                            {
-                                "status": "credentials_required",
-                                "credential_type": test_result.get("credential_type"),
-                                "message": "Please provide credentials to continue",
-                            },
-                            indent=2,
-                        )
-                    ),
-                )
-            ]
-
-        test_history.append(
-            {
-                "iteration": iteration,
-                "exit_code": test_result["exit_code"],
-                "output": test_result["output"]
-                if verbose
-                else test_result["output"][-500:],
-            }
-        )
-
-        if test_result["exit_code"] == 0:
-            summary = {
-                "status": "success",
-                "iterations": iteration,
-                "fixes_applied": all_fixes,
-                "final_output": test_result["output"]
-                if verbose
-                else "All tests passed!",
-            }
-            return [
-                TextContent(
-                    type="text",
-                    text=output
-                    + "\n[PASS] All tests passed!\n\n"
-                    + json.dumps(summary, indent=2),
-                )
-            ]
-
-        analysis = analyzer.analyze(test_result["output"], str(test_path_arg))
-
-        if not analysis.get("failures"):
-            summary = {
-                "status": "no_failures_detected",
-                "iterations": iteration,
-                "exit_code": test_result["exit_code"],
-                "fixes_applied": all_fixes,
-                "final_output": test_result["output"][-1000:],
-            }
-            return [
-                TextContent(
-                    type="text",
-                    text=(
-                        output
-                        + "\n[FAIL] Tests failed but no specific failures detected.\n\n"
-                        + json.dumps(summary, indent=2)
-                    ),
-                )
-            ]
-
-        fix_result = await fixer.apply_fixes(analysis, auto_apply=True)
-        all_fixes.append(
-            {
-                "iteration": iteration,
-                "fixes": fix_result,
-            }
-        )
-
-        # Check if there are fixes pending approval
-        if fix_result.get("fixes_pending_approval"):
-            pending_fixes = fix_result["fixes_pending_approval"]
-            summary = {
-                "status": "pending_approval",
-                "iterations": iteration,
-                "fixes_applied": all_fixes,
-                "pending_fixes": pending_fixes,
-                "message": "Proposed fixes require your approval",
-            }
-
-            # Format pending fixes for user review
-            approval_text = (
-                "\n\n[PENDING APPROVAL] The following fixes have been proposed:\n\n"
-            )
-            for idx, fix in enumerate(pending_fixes, 1):
-                proposed = fix.get("proposed_fix", {})
-                approval_text += f"\n{idx}. {fix['file']}::{fix['test']}\n"
-                approval_text += f"   File: {proposed.get('file', 'N/A')}\n"
-                approval_text += f"   Old code: {proposed.get('old_code', 'N/A')}\n"
-                approval_text += f"   New code: {proposed.get('new_code', 'N/A')}\n"
-                approval_text += f"   Reasoning: {proposed.get('reasoning', 'N/A')}\n"
-                if proposed.get("safety_note"):
-                    approval_text += f"   Safety note: {proposed.get('safety_note')}\n"
-                approval_text += "\n"
-
-            approval_text += (
-                "\nTo apply these fixes, you'll need to manually approve them. "
-                "Review each proposed change carefully to ensure it aligns with your "
-                "intended behavior.\n\n"
-            )
-
-            return [
-                TextContent(
-                    type="text",
-                    text=output + approval_text + json.dumps(summary, indent=2),
-                )
-            ]
-
-        if not fix_result.get("files_modified") and not fix_result.get(
-            "fixes_pending_approval"
-        ):
-            summary = {
-                "status": "no_fixes_available",
-                "iterations": iteration,
-                "fixes_applied": all_fixes,
-                "analysis": analysis,
-                "final_output": test_result["output"][-1000:],
-            }
-            return [
-                TextContent(
-                    type="text",
-                    text=(
-                        output
-                        + "\n[FAIL] No fixes available for current failures.\n\n"
-                        + json.dumps(summary, indent=2)
-                    ),
-                )
-            ]
-
-        if verbose:
-            output += f"Applied {len(fix_result['files_modified'])} fixes\n"
-
-    summary = {
-        "status": "max_iterations_reached",
-        "iterations": iteration,
-        "fixes_applied": all_fixes,
-        "test_history": test_history,
-    }
 
     return [
         TextContent(
             type="text",
-            text=(
-                f"\n[FAIL] Max iterations ({max_iterations}) reached without passing all tests.\n\n"
-                + json.dumps(summary, indent=2)
+            text=json.dumps(
+                {
+                    "status": "failed",
+                    "exit_code": result["exit_code"],
+                    "test_output": result["output"],
+                    "message": (
+                        "Tests failed. Analyze the output above and determine what needs to be fixed.\n\n"
+                        "Common patterns:\n"
+                        "- Import errors: Install missing package with run_command\n"
+                        "- Assertion mismatch: Update test fixture with edit_file or regenerate it\n"
+                        "- Wrong test expectations: Edit test file to fix assertions\n"
+                        "- Missing test data: Create/update fixtures\n\n"
+                        "Once you know the fix, call fix_and_run_tests with the changes."
+                    ),
+                },
+                indent=2,
             ),
         )
     ]
 
 
-def detect_test_type(path: Path) -> str:
-    """Detect what type of tests we're running.
+async def fix_and_run_tests(arguments: dict) -> list[TextContent]:
+    """Apply AI-proposed changes and re-run tests."""
+    test_type = arguments.get("test_type", "unit")
+    test_path = arguments.get("test_path")
+    soar_instance = arguments.get("soar_instance")
+    changes = arguments.get("changes", [])
 
-    Returns:
-        - "sdk_unit": SDK unit tests
-        - "sdk_integration": SDK integration tests
-        - "app": App tests
-    """
-    # Check if it's the SDK root (has src/soar_sdk)
-    if (path / "src" / "soar_sdk").exists():
-        # It's the SDK - check which type of test
-        if (path / "tests" / "integration").exists():
-            # Default to integration if the path suggests it
-            return "sdk_integration"
-        return "sdk_unit"
+    sdk_root = find_sdk_root()
+    applied_changes = []
+    errors = []
 
-    # Check if it's an app (has pyproject.toml with [tool.soar.app])
-    pyproject = path / "pyproject.toml"
-    if pyproject.exists():
+    # Apply each change
+    for change in changes:
+        change_type = change.get("type")
+        reasoning = change.get("reasoning", "No reasoning provided")
+
         try:
-            with open(pyproject) as f:
-                content = f.read()
-                if "[tool.soar.app]" in content:
-                    return "app"
-        except OSError:
-            pass
+            if change_type == "edit_file":
+                file_path = sdk_root / change["file"]
+                old_content = change["old_content"]
+                new_content = change["new_content"]
 
-    # Default to app if unsure
-    return "app"
+                if not file_path.exists():
+                    errors.append(f"File not found: {file_path}")
+                    continue
+
+                content = file_path.read_text()
+                if old_content not in content:
+                    errors.append(
+                        f"old_content not found in {change['file']}. "
+                        f"File may have changed or content doesn't match exactly."
+                    )
+                    continue
+
+                new_file_content = content.replace(old_content, new_content, 1)
+                file_path.write_text(new_file_content)
+
+                applied_changes.append(
+                    {
+                        "type": "edit_file",
+                        "file": change["file"],
+                        "reasoning": reasoning,
+                    }
+                )
+
+            elif change_type == "run_command":
+                command = change["command"]
+                result = subprocess.run(
+                    ["bash", "-c", command],
+                    cwd=sdk_root,
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
+                    check=False,
+                )
+
+                if result.returncode != 0:
+                    errors.append(f"Command failed: {command}\nError: {result.stderr}")
+                    continue
+
+                applied_changes.append(
+                    {
+                        "type": "run_command",
+                        "command": command,
+                        "reasoning": reasoning,
+                        "output": result.stdout[:200],
+                    }
+                )
+
+            else:
+                errors.append(f"Unknown change type: {change_type}")
+
+        except Exception as e:
+            errors.append(f"Error applying change: {str(e)}")
+
+    # If there were errors, return them
+    if errors and not applied_changes:
+        return [
+            TextContent(
+                type="text",
+                text=json.dumps(
+                    {
+                        "status": "error",
+                        "message": "Failed to apply changes",
+                        "errors": errors,
+                    },
+                    indent=2,
+                ),
+            )
+        ]
+
+    # Run tests again
+    test_result = await run_sdk_tests(sdk_root, test_type, test_path, soar_instance)
+
+    if test_result["exit_code"] == 0:
+        return [
+            TextContent(
+                type="text",
+                text=json.dumps(
+                    {
+                        "status": "success",
+                        "message": "All tests passed!",
+                        "applied_changes": applied_changes,
+                        "test_output": test_result["output"][-1000:],
+                    },
+                    indent=2,
+                ),
+            )
+        ]
+
+    # Tests still failing
+    return [
+        TextContent(
+            type="text",
+            text=json.dumps(
+                {
+                    "status": "still_failing",
+                    "message": "Changes applied but tests still failing. Analyze output and try again.",
+                    "applied_changes": applied_changes,
+                    "errors": errors if errors else None,
+                    "test_output": test_result["output"],
+                },
+                indent=2,
+            ),
+        )
+    ]
 
 
-async def run_tests(
-    app_path: Path,
+async def run_sdk_tests(
+    sdk_root: Path,
+    test_type: str,
     test_path: str | None = None,
-    test_type: str | None = None,
     soar_instance: dict | None = None,
 ) -> dict:
-    """Run tests based on detected or specified type.
+    """Run SDK tests and return results."""
+    import os
 
-    Args:
-        app_path: Path to test location
-        test_path: Specific test file/directory (optional)
-        test_type: Override test type detection (optional)
-        soar_instance: For integration tests: {"ip": "10.1.19.88", "username": "admin", "password": "pass"}
-    """
-    if test_type is None:
-        test_type = detect_test_type(app_path)
+    env = os.environ.copy()
 
-    env = None
-    cwd = app_path
-
-    if test_type == "sdk_unit":
-        # Run SDK unit tests
-        cmd = ["uv", "run", "soarapps", "test", "unit"]
+    if test_type == "unit":
+        cmd = ["uv", "run", "python", "-m", "pytest"]
         if test_path:
-            cmd.extend(["-t", test_path])
-        cwd = app_path
+            cmd.append(test_path)
+        else:
+            cmd.append("tests/")
+        cmd.extend(["-m", "not integration", "--tb=long", "-v"])
 
-    elif test_type == "sdk_integration":
-        # Run SDK integration tests (needs SOAR instance)
+    elif test_type == "integration":
         if not soar_instance:
             return {
                 "exit_code": 1,
                 "output": (
-                    "[CREDENTIALS REQUIRED] Integration tests require SOAR instance credentials.\n\n"
-                    "Please provide:\n"
-                    "  - SOAR instance IP address (e.g., 10.1.19.88)\n"
-                    "  - Username (e.g., admin)\n"
-                    "  - Password\n\n"
-                    "I'll ask you for these details and then re-run the tests."
+                    "ERROR: Integration tests require SOAR instance credentials.\n"
+                    'Provide soar_instance: {"ip": "10.1.19.88", "username": "admin", "password": "pass"}'
                 ),
-                "needs_credentials": True,
-                "credential_type": "soar_instance",
             }
 
-        cmd = ["uv", "run", "soarapps", "test", "integration", soar_instance["ip"]]
+        cmd = ["uv", "run", "python", "-m", "pytest"]
         if test_path:
-            cmd.extend(["-t", test_path])
+            cmd.append(test_path)
+        else:
+            cmd.append("tests/integration/")
+        cmd.extend(["-m", "integration", "--tb=short", "-v", "--reruns=2"])
 
-        # Set environment variables for authentication
-        import os
-
-        env = {
-            **os.environ,
-            "PHANTOM_USERNAME": soar_instance.get("username", "admin"),
-            "PHANTOM_PASSWORD": soar_instance.get("password", "password"),
-        }
-        cwd = app_path
-
-    elif test_type == "app":
-        # Run app tests
-        cmd = ["uv", "run", "soarapps", "app", "test", str(app_path)]
-        if test_path:
-            cmd.extend(["-t", test_path])
-        cwd = app_path.parent
+        env.update(
+            {
+                "PHANTOM_URL": f"https://{soar_instance['ip']}",
+                "PHANTOM_USERNAME": soar_instance.get("username", "admin"),
+                "PHANTOM_PASSWORD": soar_instance.get("password", "password"),
+            }
+        )
 
     else:
-        return {
-            "exit_code": 1,
-            "output": f"Error: Unknown test type: {test_type}",
-        }
+        return {"exit_code": 1, "output": f"Unknown test type: {test_type}"}
 
-    result = subprocess.run(  # noqa: S603
+    result = subprocess.run(
         cmd,
-        check=False,
+        cwd=sdk_root,
+        env=env,
         capture_output=True,
         text=True,
-        cwd=cwd,
-        env=env,
+        check=False,
     )
 
     return {
         "exit_code": result.returncode,
         "output": result.stdout + result.stderr,
-        "test_type": test_type,
     }
 
 
-async def apply_approved_fixes(arguments: dict) -> list[TextContent]:
-    """Apply fixes that have been approved by the user."""
-    app_path = Path(arguments["app_path"])
-    approved_fixes = arguments["approved_fixes"]
-
-    if not app_path.exists():
-        return [
-            TextContent(
-                type="text",
-                text=f"Error: Path does not exist: {app_path}",
-            )
-        ]
-
-    files_modified = []
-    fixes_applied = []
-    errors = []
-
-    for fix in approved_fixes:
-        try:
-            file_path = app_path / fix["file"]
-            proposed = fix["proposed_fix"]
-
-            if not file_path.exists():
-                errors.append(f"File not found: {file_path}")
-                continue
-
-            # Read current content
-            content = file_path.read_text()
-
-            # Apply the fix
-            if proposed["old_code"] in content:
-                new_content = content.replace(
-                    proposed["old_code"], proposed["new_code"], 1
-                )
-                file_path.write_text(new_content)
-
-                files_modified.append(str(file_path))
-                fixes_applied.append(
-                    {
-                        "file": fix["file"],
-                        "test": fix.get("test", "N/A"),
-                        "old_code": proposed["old_code"],
-                        "new_code": proposed["new_code"],
-                    }
-                )
-            else:
-                errors.append(
-                    f"Could not find old code in {fix['file']}: {proposed['old_code'][:50]}..."
-                )
-
-        except Exception as e:
-            errors.append(f"Error applying fix to {fix['file']}: {e!s}")
-
-    result = {
-        "status": "completed",
-        "files_modified": list(set(files_modified)),
-        "fixes_applied": fixes_applied,
-        "total_fixes": len(fixes_applied),
-        "errors": errors,
-    }
-
-    message = f"\n[APPLIED] Successfully applied {len(fixes_applied)} fixes\n\n"
-    if errors:
-        message += f"[WARNING] {len(errors)} errors occurred:\n"
-        for error in errors:
-            message += f"  - {error}\n"
-        message += "\n"
-
-    return [
-        TextContent(
-            type="text",
-            text=message + json.dumps(result, indent=2),
-        )
-    ]
+def find_sdk_root() -> Path:
+    """Find the SDK root directory by looking for src/soar_sdk."""
+    current = Path.cwd()
+    while current != current.parent:
+        if (current / "src" / "soar_sdk").exists():
+            return current
+        current = current.parent
+    return Path.cwd()
 
 
 async def main() -> None:
