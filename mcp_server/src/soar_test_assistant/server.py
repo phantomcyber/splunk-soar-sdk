@@ -1,14 +1,6 @@
-"""MCP server for SOAR SDK test analysis and fixing.
-
-This server provides two simple tools:
-1. analyze_tests: Run tests and return output for AI analysis
-2. fix_and_run_tests: Apply AI-proposed changes and re-run tests
-
-The AI does all the thinking - this server just runs tests and applies changes.
-"""
-
 import asyncio
 import json
+import os
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -138,7 +130,6 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent]:
 
 
 async def analyze_tests(arguments: dict) -> list[TextContent]:
-    """Run SDK tests and return output for AI analysis."""
     test_type = arguments.get("test_type", "unit")
     test_path = arguments.get("test_path")
     soar_instance = arguments.get("soar_instance")
@@ -169,15 +160,7 @@ async def analyze_tests(arguments: dict) -> list[TextContent]:
                     "status": "failed",
                     "exit_code": result["exit_code"],
                     "test_output": result["output"],
-                    "message": (
-                        "Tests failed. Analyze the output above and determine what needs to be fixed.\n\n"
-                        "Common patterns:\n"
-                        "- Import errors: Install missing package with run_command\n"
-                        "- Assertion mismatch: Update test fixture with edit_file or regenerate it\n"
-                        "- Wrong test expectations: Edit test file to fix assertions\n"
-                        "- Missing test data: Create/update fixtures\n\n"
-                        "Once you know the fix, call fix_and_run_tests with the changes."
-                    ),
+                    "message": "Tests failed. Analyze the output and call fix_and_run_tests with the changes.",
                 },
                 indent=2,
             ),
@@ -186,7 +169,6 @@ async def analyze_tests(arguments: dict) -> list[TextContent]:
 
 
 async def fix_and_run_tests(arguments: dict) -> list[TextContent]:
-    """Apply AI-proposed changes and re-run tests."""
     test_type = arguments.get("test_type", "unit")
     test_path = arguments.get("test_path")
     soar_instance = arguments.get("soar_instance")
@@ -196,7 +178,6 @@ async def fix_and_run_tests(arguments: dict) -> list[TextContent]:
     applied_changes = []
     errors = []
 
-    # Apply each change
     for change in changes:
         change_type = change.get("type")
         reasoning = change.get("reasoning", "No reasoning provided")
@@ -232,8 +213,8 @@ async def fix_and_run_tests(arguments: dict) -> list[TextContent]:
 
             elif change_type == "run_command":
                 command = change["command"]
-                result = subprocess.run(
-                    ["bash", "-c", command],
+                result = subprocess.run(  # noqa: S603
+                    ["bash", "-c", command],  # noqa: S607
                     cwd=sdk_root,
                     capture_output=True,
                     text=True,
@@ -258,9 +239,8 @@ async def fix_and_run_tests(arguments: dict) -> list[TextContent]:
                 errors.append(f"Unknown change type: {change_type}")
 
         except Exception as e:
-            errors.append(f"Error applying change: {str(e)}")
+            errors.append(f"Error applying change: {e!s}")
 
-    # If there were errors, return them
     if errors and not applied_changes:
         return [
             TextContent(
@@ -276,7 +256,6 @@ async def fix_and_run_tests(arguments: dict) -> list[TextContent]:
             )
         ]
 
-    # Run tests again
     test_result = await run_sdk_tests(sdk_root, test_type, test_path, soar_instance)
 
     if test_result["exit_code"] == 0:
@@ -295,7 +274,6 @@ async def fix_and_run_tests(arguments: dict) -> list[TextContent]:
             )
         ]
 
-    # Tests still failing
     return [
         TextContent(
             type="text",
@@ -319,9 +297,6 @@ async def run_sdk_tests(
     test_path: str | None = None,
     soar_instance: dict | None = None,
 ) -> dict:
-    """Run SDK tests and return results."""
-    import os
-
     env = os.environ.copy()
 
     if test_type == "unit":
@@ -360,7 +335,7 @@ async def run_sdk_tests(
     else:
         return {"exit_code": 1, "output": f"Unknown test type: {test_type}"}
 
-    result = subprocess.run(
+    result = subprocess.run(  # noqa: S603
         cmd,
         cwd=sdk_root,
         env=env,
@@ -376,7 +351,6 @@ async def run_sdk_tests(
 
 
 def find_sdk_root() -> Path:
-    """Find the SDK root directory by looking for src/soar_sdk."""
     current = Path.cwd()
     while current != current.parent:
         if (current / "src" / "soar_sdk").exists():
@@ -386,13 +360,11 @@ def find_sdk_root() -> Path:
 
 
 async def main() -> None:
-    """Run the MCP server."""
     async with stdio_server() as (read_stream, write_stream):
         await app.run(read_stream, write_stream, app.create_initialization_options())
 
 
 def cli() -> None:
-    """CLI entry point for the MCP server."""
     asyncio.run(main())
 
 
