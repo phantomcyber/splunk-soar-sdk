@@ -111,7 +111,7 @@ Or configure manually by adding to your MCP settings (`~/.config/claude-code/mcp
     "soar-test-assistant": {
       "command": "uv",
       "args": ["run", "soar-test-assistant"],
-      "cwd": "/absolute/path/to/splunk-soar-sdk/mcp_server"
+      "cwd": "/path/to/your/splunk-soar-sdk/mcp_server"
     }
   }
 }
