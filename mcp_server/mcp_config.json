@@ -4,11 +4,9 @@
       "command": "uv",
       "args": [
         "run",
-        "--directory",
-        "/Users/grokas/dev/hackathon/splunk-soar-sdk/mcp_server",
-        "soar_test_assistant"
+        "soar-test-assistant"
       ],
-      "env": {}
+      "cwd": "/path/to/splunk-soar-sdk/mcp_server"
     }
   }
 }
