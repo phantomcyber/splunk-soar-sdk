@@ -1,5 +1,6 @@
 from typing import Any
 import os
+from pathlib import Path
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.input_spec import InputSpecification
@@ -12,11 +13,6 @@ from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionRe
 from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
 from soar_sdk.logging import getLogger
 
-
-_INGEST_STATE_KEY = "ingestion_state"
-_AUTH_STATE_KEY = "auth_state"
-_CACHE_STATE_KEY = "asset_cache"
-
 logger = getLogger()
 
 
@@ -27,9 +23,7 @@ class ActionsManager(BaseConnector):
         super().__init__()
 
         self._actions: dict[str, Action] = {}
-        self.ingestion_state: dict = {}
-        self.auth_state: dict = {}
-        self.asset_cache: dict = {}
+        self.__app_dir: Path | None = None
 
     def get_action(self, identifier: str) -> Action | None:
         """Convenience method for getting an Action callable from its identifier.
@@ -95,35 +89,6 @@ class ActionsManager(BaseConnector):
         else:
             raise RuntimeError(f"Action {action_id} not found.")
 
-    def initialize(self) -> bool:
-        """Load asset state into memory at initialization, splitting it into 3 categories.
-
-        Asset state is used to store data that needs to be accessed across actions.
-        Chiefly, it is used to store ingestion state, authentication state, and/or
-        used as an asset cache. Returns True only to conform with the BaseConnector interface.
-        """
-        state = self.load_state() or {}
-        self.ingestion_state = state.get(_INGEST_STATE_KEY, {})
-        self.auth_state = state.get(_AUTH_STATE_KEY, {})
-        self.asset_cache = state.get(_CACHE_STATE_KEY, {})
-
-        return True
-
-    def finalize(self) -> bool:
-        """Save asset state from memory into persistent storage at finalization.
-
-        Joins the SDK's 3 categories of asset state into a single dictionary, conforming
-        to the platform's expectations, and saves it.
-        Returns True only to conform with the BaseConnector interface.
-        """
-        state = {
-            _INGEST_STATE_KEY: self.ingestion_state,
-            _AUTH_STATE_KEY: self.auth_state,
-            _CACHE_STATE_KEY: self.asset_cache,
-        }
-        self.save_state(state)
-        return True
-
     def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
         """Wrapper for BaseConnector's add_action_result method."""
         return self.add_action_result(action_result)
@@ -145,6 +110,10 @@ class ActionsManager(BaseConnector):
 
         Returns APP_HOME directly on brokers, which contains the correct SDK app path.
         """
+        # If the app dir has been overridden by calling `override_app_dir`, return that
+        if self.__app_dir:
+            return self.__app_dir.as_posix()
+
         # Remove when 7.1.0 is the min supported broker version
         remove_when_soar_newer_than("7.1.1")
         # On AB, APP_HOME is set by spawn to the full app path at runtime
@@ -165,3 +134,10 @@ class ActionsManager(BaseConnector):
     def get_soar_base_url(cls) -> str:
         """Get the base URL of the Splunk SOAR instance this app is running on."""
         return cls._get_phantom_base_url()
+
+    def override_app_dir(self, app_dir: Path) -> None:
+        """Request that the given app_dir be used, instead of whatever super().get_app_dir() returns.
+
+        This is useful for contexts such as Webhooks, where the app dir isn't necessarily the cwd, but we still need to load the app JSON reliably.
+        """
+        self.__app_dir = app_dir

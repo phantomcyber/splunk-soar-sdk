@@ -14,37 +14,38 @@ async def phantom_get_login_session(
         base_url=base_url,
         verify=False,  # noqa: S501
         timeout=timeout,
+        auth=(username, password),  # Use HTTP Basic Auth
     ) as client:
-        # get the cookies from the get method
-        response = await client.get("/login")
+        # Get CSRF token by hitting home page (follow redirects)
+        response = await client.get("/", follow_redirects=True)
         response.raise_for_status()
         csrf_token = response.cookies.get("csrftoken")
+        if not csrf_token:
+            raise RuntimeError("Could not obtain CSRF token from SOAR instance")
         client.cookies.update(response.cookies)
-
-        await client.post(
-            "/login",
-            data={
-                "username": username,
-                "password": password,
-                "csrfmiddlewaretoken": csrf_token,
-            },
-            headers={"Referer": f"{base_url}/login"},
-        )
 
         yield client
 
 
 async def phantom_install_app(
-    client: httpx.AsyncClient, endpoint: str, files: dict[str, bytes]
+    client: httpx.AsyncClient,
+    endpoint: str,
+    files: dict[str, bytes],
+    force: bool = False,
 ) -> httpx.Response:
     """Send a POST request with a CSRF token to the specified endpoint using an authenticated token."""
     csrftoken = client.cookies.get("csrftoken")
+    if not csrftoken:
+        raise RuntimeError("CSRF token not found in cookies")
 
     response = await client.post(
         endpoint,
         files=files,
-        data={"csrfmiddlewaretoken": csrftoken},
-        headers={"Referer": f"{client.base_url}/{endpoint}"},
+        data={"csrfmiddlewaretoken": csrftoken, "forced_installation": force},
+        headers={
+            "Referer": f"{client.base_url}/",
+            "X-CSRFToken": csrftoken,
+        },
     )
 
     return response

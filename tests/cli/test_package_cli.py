@@ -1,11 +1,14 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import httpx
+import pytest
+import respx
 from typer.testing import CliRunner
 
 from soar_sdk.cli.package.cli import package
+from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
 from soar_sdk.meta.dependencies import UvWheel
-
 from soar_sdk.cli.path_utils import context_directory
 
 import tarfile
@@ -96,15 +99,15 @@ def test_install_command(mock_install_client, app_tarball: Path):
 
     assert result.exit_code == 0
 
-    assert mock_install_client.get("login").called
-    assert mock_install_client.post("login").called
+    assert mock_install_client.get("/").called
     assert mock_install_client.post("app_install").called
 
     app_install_call = mock_install_client.post("app_install")
     assert app_install_call.call_count == 1
-    expected_cookies = "csrftoken=fake_csrf_token; sessionid=fake_session_id"
+    expected_csrf_header = "fake_csrf_token"
     assert (
-        app_install_call.calls[0].request.headers.get("Cookie", "") == expected_cookies
+        app_install_call.calls[0].request.headers.get("X-CSRFToken", "")
+        == expected_csrf_header
     )
 
 
@@ -153,6 +156,22 @@ def test_install_app_tarball_not_file():
     example_app = Path.cwd() / "tests/example_app"
     result = runner.invoke(package, ["install", example_app.as_posix(), "10.1.23.4"])
     assert result.exit_code != 0
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_csrf_token_missing():
+    respx.get("https://10.1.23.4/").respond(status_code=200)
+    with pytest.raises(RuntimeError, match="Could not obtain CSRF token"):
+        async with phantom_get_login_session("https://10.1.23.4", "admin", "password"):
+            pass
+
+
+@pytest.mark.asyncio
+async def test_csrf_token_not_in_cookies():
+    async with httpx.AsyncClient(base_url="https://10.1.23.4") as client:
+        with pytest.raises(RuntimeError, match="CSRF token not found"):
+            await phantom_install_app(client, "/app_install", {"file": b"test"})
 
 
 def test_package_build_with_app_templates(wheel_resp_mock, tmp_path: Path):

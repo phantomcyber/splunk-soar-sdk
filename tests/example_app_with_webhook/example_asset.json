@@ -3,7 +3,5 @@
     "api_key": "test",
     "key_header": "Authorization",
     "timezone": "America/New_York",
-    "ingest": {
-        "container_label": "events"
-    }
+    "timezone_with_default": "America/Denver"
 }

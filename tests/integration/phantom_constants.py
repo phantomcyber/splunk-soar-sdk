@@ -1,0 +1,29 @@
+# General/Misc
+REST_API_BASE_URI = "/rest"
+
+# Global Actions
+ACTION_TEST_CONNECTIVITY = "test connectivity"
+ACTION_ON_POLL = "on poll"
+
+# Defaults
+DEFAULT_LABEL = "events"
+DEFAULT_REQUEST_TIMEOUT_IN_SECONDS = 300
+
+# REST Endpoints
+ENDPOINT_ARTIFACT = f"{REST_API_BASE_URI}/artifact"
+ENDPOINT_APP = f"{REST_API_BASE_URI}/app"
+ENDPOINT_ASSET = f"{REST_API_BASE_URI}/asset"
+ENDPOINT_AUTOMATION_BROKER = f"{REST_API_BASE_URI}/automation_proxy"
+ENDPOINT_CONTAINER = f"{REST_API_BASE_URI}/container"
+ENDPOINT_EVENT_SETTINGS = f"{REST_API_BASE_URI}/system_settings/events"
+ENDPOINT_INGESTION_STATUS = f"{REST_API_BASE_URI}/ingestion_status"
+ENDPOINT_RUN_ACTION = f"{REST_API_BASE_URI}/action_run"
+ENDPOINT_SYSTEM_INFO = f"{REST_API_BASE_URI}/system_info"
+ENDPOINT_SYSTEM_SETTINGS = f"{REST_API_BASE_URI}/system_settings"
+ENDPOINT_VERSION = f"{REST_API_BASE_URI}/version"
+
+# Statuses
+STATUS_FAILED = "failed"
+STATUS_RUNNING = "running"
+STATUS_PENDING = "pending"
+STATUS_SUCCESS = "success"

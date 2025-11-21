@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "soar-test-assistant": {
+      "command": "uv",
+      "args": [
+        "run",
+        "soar-test-assistant"
+      ],
+      "cwd": "/path/to/splunk-soar-sdk/mcp_server"
+    }
+  }
+}

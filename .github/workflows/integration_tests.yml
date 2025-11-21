@@ -1,0 +1,195 @@
+name: Integration Tests
+
+on:
+  push:
+    branches:
+      - main
+      - next
+      - beta
+  pull_request:
+
+jobs:
+  build-example-apps:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app:
+          - example_app
+          - example_app_with_webhook
+    steps:
+      - name: Checkout SDK repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: 3.13
+
+      - name: Build ${{ matrix.app }}
+        run: |
+          echo "Building SOAR SDK from branch"
+          uv build
+          echo "Building ${{ matrix.app }} using soarapps CLI"
+          uv run soarapps package build tests/${{ matrix.app }} --output-file /tmp/${{ matrix.app }}.tgz --with-sdk-wheel-from $(ls -t dist/splunk_soar_sdk-*.whl | head -n 1)
+          echo "App build completed successfully"
+
+      - name: Upload app tar file as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.app }}-tar
+          path: /tmp/${{ matrix.app }}.tgz
+          retention-days: 1
+
+  integration-test:
+    runs-on:
+      - codebuild-github-splunk-soar-sdk-integration-tests-${{ github.run_id }}-${{ github.run_attempt }}
+      - image:custom-linux-875003031410.dkr.ecr.us-west-1.amazonaws.com/soar-connectors/pytest:mr-54
+    needs: build-example-apps
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - version: "previous"
+            ip: ${{ vars.PHANTOM_INSTANCE_PREVIOUS_VERSION_IP }}
+          - version: "current"
+            ip: ${{ vars.PHANTOM_INSTANCE_CURRENT_VERSION_IP }}
+          - version: "next"
+            ip: ${{ vars.PHANTOM_INSTANCE_NEXT_VERSION_IP }}
+    env:
+      PHANTOM_USERNAME: ${{ vars.PHANTOM_USERNAME }}
+      PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
+      NUM_TEST_RETRIES: ${{ vars.NUM_TEST_RETRIES || '2' }}
+      PHANTOM_VERSION: ${{ matrix.version }}
+      AUTOMATION_BROKER_NAME: ${{ vars.AUTOMATION_BROKER_NAME }}
+      FORCE_AUTOMATION_BROKER: ${{ vars.FORCE_AUTOMATION_BROKER }}
+      UV_LOCKED: 1
+    steps:
+      - name: Checkout SDK repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: 3.13
+
+      - name: Download example_app tar file
+        uses: actions/download-artifact@v4
+        with:
+          name: example_app-tar
+          path: /tmp/
+
+      - name: Download example_app_with_webhook tar file
+        uses: actions/download-artifact@v4
+        with:
+          name: example_app_with_webhook-tar
+          path: /tmp/
+
+      - name: Clear uv cache and sync SDK
+        run: |
+          uv cache clean
+          uv sync
+
+      - name: Check connectivity to SOAR host
+        run: |
+          apt update -y
+          apt install -y netcat-openbsd
+          phantom_ip=${{ matrix.ip }}
+          nc -zv "$phantom_ip" 443
+          nc -zv "$phantom_ip" 3500
+
+      - name: Install example_app on Phantom instance
+        env:
+          PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
+        run: |
+          phantom_ip=${{ matrix.ip }}
+          echo "Installing example_app on https://$phantom_ip"
+
+          uv run soarapps package install \
+            /tmp/example_app.tgz \
+            "$phantom_ip" \
+            --username "${{ vars.PHANTOM_USERNAME }}"
+
+      - name: Install example_app_with_webhook on Phantom instance
+        env:
+          PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
+        run: |
+          phantom_ip=${{ matrix.ip }}
+          echo "Installing example_app_with_webhook on https://$phantom_ip"
+
+          uv run soarapps package install \
+            /tmp/example_app_with_webhook.tgz \
+            "$phantom_ip" \
+            --username "${{ vars.PHANTOM_USERNAME }}" \
+            --force
+
+      - name: Run integration tests
+        env:
+          PHANTOM_URL: "https://${{ matrix.ip }}"
+        run: |
+          echo "Running integration tests against $PHANTOM_URL"
+
+          uv sync --group dev
+
+          # Run pytest with integration tests only (no coverage)
+          uv run pytest tests/integration/ \
+            -v \
+            --reruns=$NUM_TEST_RETRIES \
+            --tb=short \
+            --color=yes \
+            --no-cov \
+            -m "integration" \
+            --junitxml=test-results/junit-${{ matrix.version }}.xml \
+            || exit_code=$?
+
+          echo "Integration tests completed"
+          exit ${exit_code:-0}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results-${{ matrix.version }}
+          path: |
+            pytest-logs/
+            test-results/
+          retention-days: 1
+
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: integration-test
+    if: always()
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download all test results
+        uses: actions/download-artifact@v4
+        with:
+          pattern: integration-test-results-*
+          path: all-test-results/
+          merge-multiple: true
+
+      - name: Generate test summary
+        run: |
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          python3 .github/scripts/generate_test_summary.py all-test-results/ test-summary.md "$RUN_URL"
+
+      - name: Post summary to job
+        run: |
+          cat test-summary.md >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload summary as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-summary
+          path: test-summary.md
+          retention-days: 7
+
+      - name: Fail if tests failed
+        run: |
+          if grep -q "FAILED" test-summary.md; then
+            echo "Integration tests failed - check summary above"
+            exit 1
+          fi

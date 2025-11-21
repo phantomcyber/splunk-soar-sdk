@@ -22,13 +22,13 @@ class Asset(BaseAsset):
 
 app = App(
     asset_cls=Asset,
-    name="example_app",
-    appid="9b388c08-67de-4ca4-817f-26f8fb7cbf55",
+    name="example_app with webhook",
+    appid="1782380b-3df2-4571-bf63-a30e0b51b1ac",
     app_type="sandbox",
     product_vendor="Splunk Inc.",
     logo="logo.svg",
     logo_dark="logo_dark.svg",
-    product_name="Example App",
+    product_name="Example App with Webhook",
     publisher="Splunk Inc.",
     min_phantom_version="6.2.2.134",
 ).enable_webhooks()
@@ -59,6 +59,8 @@ def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStrin
 def test_webhook(request: WebhookRequest[Asset], soar: SOARClient) -> WebhookResponse:
     logger.debug("Webhook request: %s", request)
     soar.get("rest/version")
+    request.asset.cache_state.clear()
+    assert request.asset.cache_state == {}
     response = WebhookResponse.text_response(
         content="Webhook received",
         status_code=200,
