@@ -31,6 +31,7 @@ from soar_sdk.types import Action
 from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.exceptions import ActionRegistrationError
+from soar_sdk.asset_state import AssetState
 
 import uuid
 from soar_sdk.decorators import (
@@ -134,6 +135,8 @@ class App:
         self.actions_manager: ActionsManager = ActionsManager()
         self.soar_client: SOARClient = AppClient()
 
+        self.app_root = Path(inspect.stack()[1].filename).parent.parent
+
     def get_actions(self) -> dict[str, Action]:
         """Returns the list of actions registered in the app."""
         return self.actions_manager.get_actions()
@@ -224,6 +227,15 @@ class App:
         """Returns the asset instance for the app."""
         if not hasattr(self, "_asset"):
             self._asset = self.asset_cls.model_validate(self._raw_asset_config)
+
+            asset_id = self.soar_client.get_asset_id()
+            self._asset._auth_state = AssetState(self.actions_manager, "auth", asset_id)
+            self._asset._cache_state = AssetState(
+                self.actions_manager, "cache", asset_id
+            )
+            self._asset._ingest_state = AssetState(
+                self.actions_manager, "ingest", asset_id
+            )
         return self._asset
 
     def register_action(
@@ -799,6 +811,7 @@ class App:
         _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
         asset_id = soar_rest_client.asset_id
         soar_base_url = soar_rest_client.base_url
+        soar_base_url = soar_base_url.removesuffix("/rest")
         soar_auth = SOARClientAuth(
             user_session_token=soar_auth_token,
             base_url=soar_base_url,
@@ -817,6 +830,8 @@ class App:
             else:
                 normalized_query[key] = [value]
 
+        self.actions_manager.override_app_dir(self.app_root)
+        self.actions_manager._load_app_json()
         request = WebhookRequest(
             method=method,
             headers=headers,

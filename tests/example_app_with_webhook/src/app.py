@@ -59,6 +59,8 @@ def reverse_string(param: ReverseStringParams, soar: SOARClient) -> ReverseStrin
 def test_webhook(request: WebhookRequest[Asset], soar: SOARClient) -> WebhookResponse:
     logger.debug("Webhook request: %s", request)
     soar.get("rest/version")
+    request.asset.cache_state.clear()
+    assert request.asset.cache_state == {}
     response = WebhookResponse.text_response(
         content="Webhook received",
         status_code=200,

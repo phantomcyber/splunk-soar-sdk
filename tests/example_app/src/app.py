@@ -263,5 +263,19 @@ def generator_action(
     soar.set_summary(GeneratorActionSummary(total_iterations=5))
 
 
+@app.action()
+def write_state(params: Params, soar: SOARClient, asset: Asset) -> ActionOutput:
+    asset.cache_state.clear()
+    assert asset.cache_state == {}
+    asset.cache_state["value"] = "banana"
+    return ActionOutput()
+
+
+@app.action()
+def read_state(params: Params, soar: SOARClient, asset: Asset) -> ActionOutput:
+    assert asset.cache_state == {"value": "banana"}
+    return ActionOutput()
+
+
 if __name__ == "__main__":
     app.cli()

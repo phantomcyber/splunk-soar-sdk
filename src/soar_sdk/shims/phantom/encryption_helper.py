@@ -11,16 +11,18 @@ if TYPE_CHECKING or not _soar_is_available:
     import base64
 
     class encryption_helper:  # type: ignore[no-redef]
-        """Simulated encryption helper for environments without BaseConnector."""
+        """Simulated encryption helper for environments without BaseConnector.
+
+        Salt values are optional, as newer versions of SOAR no longer accept them."""
 
         @staticmethod
-        def encrypt(plain: str, salt: str) -> str:
+        def encrypt(plain: str, salt: str = "unused-salt") -> str:
             """Simulates the behavior of encryption_helper.encrypt."""
             salted = plain + ":" + salt
             return base64.b64encode(salted.encode("utf-8")).decode("utf-8")
 
         @staticmethod
-        def decrypt(cipher: str, salt: str) -> str:
+        def decrypt(cipher: str, salt: str = "unused-salt") -> str:
             """Simulate the behavior of encryption_helper.decrypt."""
 
             if len(cipher) == 0:
@@ -29,7 +31,7 @@ if TYPE_CHECKING or not _soar_is_available:
                     "Parameter validation failed: Invalid length for parameter SecretId, value: 0, valid min length: 1"
                 )
             decoded = base64.b64decode(cipher.encode("utf-8")).decode("utf-8")
-            plain, decrypted_salt = decoded.split(":", 1)
+            plain, decrypted_salt = decoded.rsplit(":", 1)
             if salt != decrypted_salt:
                 raise ValueError("Salt does not match")
             return plain

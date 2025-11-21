@@ -2,7 +2,6 @@ import inspect
 from functools import wraps
 from pathlib import Path
 
-from soar_sdk.cli.path_utils import relative_to_cwd
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse, WebhookHandler
 from soar_sdk.meta.webhooks import WebhookRouteMeta
 from soar_sdk.async_utils import run_async_if_needed
@@ -47,7 +46,9 @@ class WebhookDecorator:
 
         stack = inspect.stack()
         declaration_path_absolute = stack[1].filename
-        declaration_path = relative_to_cwd(Path(declaration_path_absolute))
+        declaration_path = (
+            Path(declaration_path_absolute).relative_to(self.app.app_root).as_posix()
+        )
         _, declaration_lineno = inspect.getsourcelines(function)
 
         self.app.webhook_router.add_route(
