@@ -621,31 +621,6 @@ wheels = [
 ]
 
 [[package]]
-name = "pytest-asyncio"
-version = "1.3.0"
-source = { registry = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/simple" }
-dependencies = [
-    { name = "pytest" },
-]
-sdist = { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/90/2c/8af215c0f776415f3590cac4f9086ccefd6fd463befeae41cd4d3f193e5a/pytest_asyncio-1.3.0.tar.gz", hash = "sha256:d7f52f36d231b80ee124cd216ffb19369aa168fc10095013c6b014a34d3ee9e5" }
-wheels = [
-    { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/e5/35/f8b19922b6a25bc0880171a2f1a003eaeb93657475193ab516fd87cac9da/pytest_asyncio-1.3.0-py3-none-any.whl", hash = "sha256:611e26147c7f77640e6d0a92a38ed17c3e9848063698d5c93d5aa7aa11cebff5" },
-]
-
-[[package]]
-name = "pytest-rerunfailures"
-version = "16.1"
-source = { registry = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/simple" }
-dependencies = [
-    { name = "packaging" },
-    { name = "pytest" },
-]
-sdist = { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/de/04/71e9520551fc8fe2cf5c1a1842e4e600265b0815f2016b7c27ec85688682/pytest_rerunfailures-16.1.tar.gz", hash = "sha256:c38b266db8a808953ebd71ac25c381cb1981a78ff9340a14bcb9f1b9bff1899e" }
-wheels = [
-    { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/77/54/60eabb34445e3db3d3d874dc1dfa72751bfec3265bd611cb13c8b290adea/pytest_rerunfailures-16.1-py3-none-any.whl", hash = "sha256:5d11b12c0ca9a1665b5054052fcc1084f8deadd9328962745ef6b04e26382e86" },
-]
-
-[[package]]
 name = "python-dotenv"
 version = "1.2.1"
 source = { registry = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/simple" }
@@ -702,18 +677,6 @@ dependencies = [
 sdist = { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf" }
 wheels = [
     { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6" },
-]
-
-[[package]]
-name = "respx"
-version = "0.22.0"
-source = { registry = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/simple" }
-dependencies = [
-    { name = "httpx" },
-]
-sdist = { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/f4/7c/96bd0bc759cf009675ad1ee1f96535edcb11e9666b985717eb8c87192a95/respx-0.22.0.tar.gz", hash = "sha256:3c8924caa2a50bd71aefc07aa812f2466ff489f1848c96e954a5362d17095d91" }
-wheels = [
-    { url = "https://repo.splunkdev.net/artifactory/api/pypi/pypi-test/packages/packages/8e/67/afbb0978d5399bc9ea200f1d4489a23c9a1dad4eee6376242b8182389c79/respx-0.22.0-py2.py3-none-any.whl", hash = "sha256:631128d4c9aba15e56903fb5f66fb1eff412ce28dd387ca3a81339e52dbd3ad0" },
 ]
 
 [[package]]
@@ -834,9 +797,6 @@ dependencies = [
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-rerunfailures" },
-    { name = "respx" },
 ]
 
 [package.metadata]
@@ -846,12 +806,7 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=7.4.2" },
-    { name = "pytest-asyncio", specifier = ">=0.23.8" },
-    { name = "pytest-rerunfailures", specifier = ">=15.0" },
-    { name = "respx", specifier = ">=0.22.0" },
-]
+dev = [{ name = "pytest", specifier = ">=7.4.2" }]
 
 [[package]]
 name = "soupsieve"
