@@ -120,7 +120,7 @@ required-environments = [
 ]
 
 [tool.pytest.ini_options]
-addopts = "--ignore=src/soar_sdk/app_templates --ignore=app_templates --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail --durations=5"
+addopts = "--ignore=src/soar_sdk/app_templates --ignore=app_templates --ignore=mcp_server --cov-fail-under=100 --cov --cov-report=term-missing:skip-covered --no-cov-on-fail --durations=5"
 markers = [
     "integration: Integration tests that require a live SOAR instance",
     "onprem: marks tests that use on-prem assets",
@@ -218,7 +218,7 @@ no_implicit_optional = true
 show_error_context = true
 strict_equality = true
 check_untyped_defs = true
-exclude = ['tests/.*', 'dist/.*']
+exclude = ['tests/.*', 'dist/.*', 'mcp_server/.*']
 
 [[tool.mypy.overrides]]
 module = "phantom.*"

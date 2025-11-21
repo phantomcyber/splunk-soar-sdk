@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-11-19T05:54:33.970734Z",
+    "utctime_updated": "2025-11-21T16:58:02.445763Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -1097,6 +1097,11 @@
                 "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
             },
             {
+                "module": "pyyaml",
+                "input_file": "wheels/python313/pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/pyyaml-6.0.3-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+            },
+            {
                 "module": "rich",
                 "input_file": "wheels/shared/rich-14.2.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/rich-14.2.0-py3-none-any.whl"
@@ -1304,6 +1309,11 @@
                 "module": "python-dateutil",
                 "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
+            },
+            {
+                "module": "pyyaml",
+                "input_file": "wheels/python314/pyyaml-6.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python314/pyyaml-6.0.3-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "rich",
