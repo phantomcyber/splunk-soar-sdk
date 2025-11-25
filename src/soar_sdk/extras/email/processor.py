@@ -1,5 +1,3 @@
-"""Email processing module for SOAR SDK."""
-
 import base64
 import contextlib
 import email

@@ -1,5 +1,3 @@
-"""Tests for email processing module."""
-
 from unittest.mock import MagicMock
 
 import pytest
