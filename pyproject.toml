@@ -51,6 +51,11 @@ Homepage = "https://github.com/phantomcyber/splunk-soar-sdk"
 Documentation = "https://github.com/phantomcyber/splunk-soar-sdk"
 Repository = "https://github.com/phantomcyber/splunk-soar-sdk"
 
+[project.optional-dependencies]
+email = [
+    "python-magic>=0.4.27",
+]
+
 [project.scripts]
 soarapps = "soar_sdk.cli.cli:main"
 
