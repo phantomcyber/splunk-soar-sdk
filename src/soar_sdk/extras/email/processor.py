@@ -8,44 +8,33 @@ import mimetypes
 import re
 import shutil
 import tempfile
-from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass
 from email.header import decode_header, make_header
 from email.message import Message
 from html import unescape
 from pathlib import Path
-from typing import Any
-from urllib.parse import urlparse
+from typing import Any, TypedDict
 
 from bs4 import BeautifulSoup, UnicodeDammit  # type: ignore[attr-defined]
+from pydantic import HttpUrl, ValidationError
 from requests.structures import CaseInsensitiveDict
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.logging import getLogger
 from soar_sdk.shims import phantom
 from soar_sdk.shims.phantom.app import APP_ERROR, APP_SUCCESS
-from soar_sdk.shims.phantom.vault import PhantomVault
+from soar_sdk.shims.phantom.vault import VaultBase
 
 logger = getLogger()
 
 
-class URLValidator:
-    """Simple URL validator."""
-
-    def __init__(self, schemes: Sequence[str] | None = None) -> None:
-        self.schemes = schemes or ["http", "https"]
-
-    def __call__(self, value: str) -> None:
-        """Validate a URL."""
-        try:
-            result = urlparse(value)
-            if not all([result.scheme, result.netloc]):
-                raise ValueError("Invalid URL: missing scheme or netloc")
-            if result.scheme not in self.schemes:
-                raise ValueError(f"Invalid URL scheme: {result.scheme}")
-        except Exception as e:
-            raise ValueError(f"Invalid URL: {e}") from e
+def validate_url(value: str) -> None:
+    """Validate a URL using pydantic."""
+    try:
+        HttpUrl(value)
+    except ValidationError as e:
+        raise ValueError(f"Invalid URL: {e}") from e
 
 
 _container_common = {"run_automation": False}
@@ -120,12 +109,19 @@ IPV6_REGEX += (
 IPV6_REGEX += r"|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*"
 
 
+class EmailBodyDict(TypedDict):
+    """Type definition for email body dictionary."""
+
+    file_path: str
+    charset: str | None
+
+
 @dataclass
 class ProcessEmailContext:
     """Context object for email processing with SDK components."""
 
     soar: SOARClient
-    vault: PhantomVault  # type: ignore[valid-type]
+    vault: VaultBase
     app_id: str
     folder_name: str
     is_hex: bool
@@ -179,14 +175,19 @@ class EmailProcessor:
         except ValueError:
             return False
 
+    def is_ipv6(self, input_ip: str) -> bool:
+        """Validate if input is an IPv6 address."""
+        try:
+            ip = ipaddress.ip_address(input_ip)
+            return ip.version == 6
+        except ValueError:
+            return False
+
     @staticmethod
     def _is_sha1(input_str: str) -> bool:
         """Validates if the input is a SHA1 hash."""
         sha1_regex = r"^[0-9a-fA-F]{40}$"
         return bool(re.match(sha1_regex, input_str))
-
-    def _debug_print(self, *args: object) -> None:
-        logger.debug(" ".join(str(arg) for arg in args))
 
     def _get_string(self, input_str: str, charset: str | None = None) -> str:
         """Convert string to proper encoding with charset handling.
@@ -230,9 +231,7 @@ class EmailProcessor:
         try:
             soup = BeautifulSoup(file_data, "html.parser")
         except Exception as e:
-            self._debug_print(
-                f"Error occurred while extracting domains of the URLs: {e}"
-            )
+            logger.debug(f"Error occurred while extracting domains of the URLs: {e}")
             return
 
         uris = []
@@ -262,14 +261,13 @@ class EmailProcessor:
             if uris:
                 uris = [self._clean_url(x) for x in uris]
 
-        validate_url = URLValidator(schemes=["http", "https"])
         validated_urls = []
         for url in uris:
             try:
                 validate_url(url)
                 validated_urls.append(url)
             except Exception as e:
-                self._debug_print(f"URL validation failed for {url}: {e}")
+                logger.debug(f"URL validation failed for {url}: {e}")
 
         if self._config[PROC_EMAIL_JSON_EXTRACT_URLS]:
             urls |= set(validated_urls)
@@ -291,23 +289,19 @@ class EmailProcessor:
                         domains.add(domain)
 
     def _get_ips(self, file_data: str, ips: set[str]) -> None:
-        ips_in_mail = re.findall(IP_REGEX, file_data)
-        ip6_in_mail = re.findall(IPV6_REGEX, file_data)
+        for match in re.finditer(IP_REGEX, file_data):
+            ip_candidate = match.group(0)
+            if self._is_ip(ip_candidate):
+                ips.add(ip_candidate)
 
-        if ip6_in_mail:
-            for ip6_tuple in ip6_in_mail:
-                ip6s = [x for x in ip6_tuple if x]
-                ips_in_mail.extend(ip6s)
-
-        if ips_in_mail:
-            ips_in_mail_set = set(ips_in_mail)
-            ips_in_mail_validated = [x for x in ips_in_mail_set if self._is_ip(x)]
-            if ips_in_mail_validated:
-                ips |= set(ips_in_mail_validated)
+        for match in re.finditer(IPV6_REGEX, file_data):
+            ip_candidate = match.group(0)
+            if self._is_ip(ip_candidate):
+                ips.add(ip_candidate)
 
     def _handle_body(
         self,
-        body: dict[str, Any],
+        body: EmailBodyDict,
         parsed_mail: dict[str, Any],
         body_index: int,
         email_id: str,
@@ -377,7 +371,7 @@ class EmailProcessor:
             artifact["source_data_identifier"] = str(start_index + added_artifacts)
             artifact["cef"] = {cef_key: entry}
             artifact["name"] = artifact_name
-            self._debug_print("Artifact:", artifact)
+            logger.debug(f"Artifact: {artifact}")
             artifacts.append(artifact)
             added_artifacts += 1
 
@@ -461,7 +455,7 @@ class EmailProcessor:
                 {"value": x[0], "encoding": x[1]} for x in decoded_strings
             ]
         except Exception as e:
-            self._debug_print(f"Decoding: {encoded_strings}. Error: {e}")
+            logger.debug(f"Decoding: {encoded_strings}. Error: {e}")
             return def_name
 
         decoded_strings_map = dict(enumerate(decoded_string_dicts))
@@ -484,17 +478,17 @@ class EmailProcessor:
                 if encoding != "utf-8":
                     value = str(value, encoding)
             except Exception as e:
-                self._debug_print(f"Encoding conversion failed: {e}")
+                logger.debug(f"Encoding conversion failed: {e}")
 
             try:
                 if value:
                     new_str += UnicodeDammit(value).unicode_markup
                     new_str_create_count += 1
             except Exception as e:
-                self._debug_print(f"Unicode markup conversion failed: {e}")
+                logger.debug(f"Unicode markup conversion failed: {e}")
 
         if new_str and new_str_create_count == len(encoded_strings):
-            self._debug_print(
+            logger.debug(
                 "Creating a new string entirely from the encoded_strings and assigning into input_str"
             )
             input_str = new_str
@@ -519,7 +513,7 @@ class EmailProcessor:
         content_id: str | None,
         content_type: str | None,
         part: Message,
-        bodies: list[dict[str, Any]],
+        bodies: list[EmailBodyDict],
         file_path: str,
     ) -> tuple[int, bool]:
         process_as_body = False
@@ -577,7 +571,7 @@ class EmailProcessor:
             try:
                 attach_content = curr_attach["content"]
             except Exception as e:
-                self._debug_print(f"Failed to get attachment content: {e}")
+                logger.debug(f"Failed to get attachment content: {e}")
                 continue
 
             if attach_content.strip().replace("\r\n", "") == str(
@@ -604,18 +598,18 @@ class EmailProcessor:
                         ),
                         new_file_name,
                     )
-                    self._debug_print(f"Original filename: {file_name}")
-                    self._debug_print(f"Modified filename: {new_file_name}")
+                    logger.debug(f"Original filename: {file_name}")
+                    logger.debug(f"Modified filename: {new_file_name}")
                     with open(file_path, "wb") as long_file:
                         long_file.write(part_payload)  # type: ignore[arg-type]
                 else:
-                    self._debug_print(f"Error occurred while adding file to Vault: {e}")
+                    logger.debug(f"Error occurred while adding file to Vault: {e}")
                     return APP_ERROR
             except Exception as e:
-                self._debug_print(f"Error occurred while adding file to Vault: {e}")
+                logger.debug(f"Error occurred while adding file to Vault: {e}")
                 return APP_ERROR
         except Exception as e:
-            self._debug_print(f"Error occurred while adding file to Vault: {e}")
+            logger.debug(f"Error occurred while adding file to Vault: {e}")
             return APP_ERROR
 
         files.append(
@@ -636,7 +630,7 @@ class EmailProcessor:
         extract_attach: bool,
         parsed_mail: dict[str, Any],
     ) -> int:
-        bodies = parsed_mail[PROC_EMAIL_JSON_BODIES]
+        bodies: list[EmailBodyDict] = parsed_mail[PROC_EMAIL_JSON_BODIES]
 
         file_name = part.get_filename()
         content_disp = part.get("Content-Disposition")
@@ -665,7 +659,7 @@ class EmailProcessor:
             file_name.translate(file_name.maketrans("", "", "".join(["<", ">", " "]))),
         )
 
-        self._debug_print(f"file_path: {file_path}")
+        logger.debug(f"file_path: {file_path}")
 
         _status, process_further = self._handle_if_body(
             content_disp, content_id, content_type, part, bodies, file_path
@@ -719,7 +713,7 @@ class EmailProcessor:
                     {header_item[0]: self._get_string(header_item[1], charset)}
                 )
         except Exception as e:
-            self._debug_print(
+            logger.debug(
                 f"Error converting header with charset {charset}: {e}. Using raw values."
             )
             for header_item in email_headers:
@@ -732,7 +726,7 @@ class EmailProcessor:
                 if x[0].lower() == "received"
             ]
         except Exception as e:
-            self._debug_print(f"Error converting received headers: {e}")
+            logger.debug(f"Error converting received headers: {e}")
             received_headers = [
                 x[1] for x in email_headers if x[0].lower() == "received"
             ]
@@ -841,13 +835,13 @@ class EmailProcessor:
                             try:
                                 payload = payload.decode("UTF-8")  # type: ignore[union-attr]
                             except UnicodeDecodeError:
-                                self._debug_print(
+                                logger.debug(
                                     "Email body caused unicode exception. Encoding as base64."
                                 )
                                 payload = base64.b64encode(payload).decode("UTF-8")  # type: ignore[arg-type]
                                 cef_artifact["body_base64encoded"] = True
                         except UnicodeDecodeError:
-                            self._debug_print(
+                            logger.debug(
                                 "Email body caused unicode exception. Encoding as base64."
                             )
                             payload = base64.b64encode(payload)  # type: ignore[arg-type]
@@ -901,7 +895,8 @@ class EmailProcessor:
         self._parsed_mail[PROC_EMAIL_JSON_DATE] = mail.get("Date", "")
         self._parsed_mail[PROC_EMAIL_JSON_MSG_ID] = mail.get("Message-ID", "")
         self._parsed_mail[PROC_EMAIL_JSON_FILES] = files = []  # type: ignore[var-annotated]
-        self._parsed_mail[PROC_EMAIL_JSON_BODIES] = bodies = []
+        bodies: list[EmailBodyDict] = []
+        self._parsed_mail[PROC_EMAIL_JSON_BODIES] = bodies
         self._parsed_mail[PROC_EMAIL_JSON_START_TIME] = start_time_epoch
         self._parsed_mail[PROC_EMAIL_JSON_EMAIL_HEADERS] = []
 
@@ -922,7 +917,7 @@ class EmailProcessor:
                         part, i, tmp_dir, extract_attach, self._parsed_mail
                     )
                 except Exception as e:
-                    self._debug_print(f"ErrorExp in _handle_part # {i}", e)
+                    logger.debug(f"ErrorExp in _handle_part # {i}: {e}")
                     continue
 
                 if ret_val == APP_ERROR:
@@ -976,7 +971,7 @@ class EmailProcessor:
             try:
                 self._handle_body(body, self._parsed_mail, i, email_id)
             except Exception as e:
-                self._debug_print(f"ErrorExp in _handle_body # {i}: {e!s}")
+                logger.debug(f"ErrorExp in _handle_body # {i}: {e!s}")
                 continue
 
         self._attachments.extend(files)
@@ -1005,7 +1000,7 @@ class EmailProcessor:
             )
         except Exception as e:
             message = f"ErrorExp in self._handle_mail_object: {e}"
-            self._debug_print(message)
+            logger.debug(message)
             return APP_ERROR, message, []
 
         results = [
@@ -1225,7 +1220,7 @@ class EmailProcessor:
         self, cef_artifact: dict[str, Any], vault_id: str
     ) -> tuple[int, str]:
         try:
-            vault_info_data = self.context.vault.get_attachment(vault_id=vault_id)  # type: ignore[attr-defined]
+            vault_info_data = self.context.vault.get_attachment(vault_id=vault_id)
         except Exception:
             return APP_ERROR, "Could not retrieve vault file"
 
@@ -1237,14 +1232,15 @@ class EmailProcessor:
         except Exception:
             return APP_ERROR, "Failed to get vault item metadata"
 
-        with contextlib.suppress(Exception):
-            cef_artifact["fileHashSha256"] = metadata["sha256"]
+        if metadata:
+            with contextlib.suppress(Exception):
+                cef_artifact["fileHashSha256"] = metadata["sha256"]
 
-        with contextlib.suppress(Exception):
-            cef_artifact["fileHashMd5"] = metadata["md5"]
+            with contextlib.suppress(Exception):
+                cef_artifact["fileHashMd5"] = metadata["md5"]
 
-        with contextlib.suppress(Exception):
-            cef_artifact["fileHashSha1"] = metadata["sha1"]
+            with contextlib.suppress(Exception):
+                cef_artifact["fileHashSha1"] = metadata["sha1"]
 
         return APP_SUCCESS, "Mapped hash values"
 
@@ -1275,7 +1271,7 @@ class EmailProcessor:
         file_name = self._decode_uni_string(file_name, file_name)
 
         try:
-            vault_id = self.context.vault.add_attachment(  # type: ignore[attr-defined]
+            vault_id = self.context.vault.add_attachment(
                 container_id=container_id,
                 file_location=local_file_path,
                 file_name=file_name,
