@@ -14,6 +14,8 @@ remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"
 )
 
+MAX_COUNT_VALUE = 4294967295
+
 
 def Param(
     description: str | None = None,
@@ -191,6 +193,12 @@ class OnPollParams(Params):
         required=False,
         allow_list=True,
     )
+
+    def is_manual_poll(self) -> bool:
+        """Check if this is a manual poll execution (poll now) vs scheduled polling."""
+        if not self.container_count:
+            return False
+        return int(self.container_count) != MAX_COUNT_VALUE
 
 
 class OnESPollParams(Params):

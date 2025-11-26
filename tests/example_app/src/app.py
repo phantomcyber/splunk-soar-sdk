@@ -156,6 +156,11 @@ def http_action(params: MakeRequestParamsCustom, asset: Asset) -> MakeRequestOut
 def on_poll(
     params: OnPollParams, soar: SOARClient, asset: Asset
 ) -> Iterator[Container | Artifact]:
+    if params.is_manual_poll():
+        logger.info("Manual poll (poll now) detected")
+    else:
+        logger.info("Scheduled poll detected")
+
     # Create container first for artifacts
     yield Container(
         name="Network Alerts",
