@@ -2,13 +2,12 @@ import base64
 import contextlib
 import email
 import hashlib
+import ipaddress
 import json
 import mimetypes
 import re
 import shutil
-import socket
 import tempfile
-from collections import OrderedDict
 from collections.abc import Sequence
 from copy import deepcopy
 from dataclasses import dataclass
@@ -63,11 +62,11 @@ FILE_EXTENSIONS = {
 }
 
 MAGIC_FORMATS = [
-    (re.compile("^PE.* Windows"), ["pe file", "hash"]),
-    (re.compile("^MS-DOS executable"), ["pe file", "hash"]),
-    (re.compile("^PDF "), ["pdf"]),
-    (re.compile("^MDMP crash"), ["process dump"]),
-    (re.compile("^Macromedia Flash"), ["flash"]),
+    ("^PE.* Windows", ["pe file", "hash"]),
+    ("^MS-DOS executable", ["pe file", "hash"]),
+    ("^PDF ", ["pdf"]),
+    ("^MDMP crash", ["process dump"]),
+    ("^Macromedia Flash", ["flash"]),
 ]
 
 DEFAULT_ARTIFACT_COUNT = 100
@@ -120,13 +119,6 @@ IPV6_REGEX += (
 )
 IPV6_REGEX += r"|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*"
 
-uri_regexc = re.compile(URI_REGEX)
-email_regexc = re.compile(EMAIL_REGEX, re.IGNORECASE)
-email_regexc2 = re.compile(EMAIL_REGEX2, re.IGNORECASE)
-hash_regexc = re.compile(HASH_REGEX)
-ip_regexc = re.compile(IP_REGEX)
-ipv6_regexc = re.compile(IPV6_REGEX)
-
 
 @dataclass
 class ProcessEmailContext:
@@ -153,7 +145,7 @@ class EmailProcessor:
         self._attachments: list[dict[str, Any]] = []
         self._external_headers: list[CaseInsensitiveDict] = []
         self._external_attachments: list[dict[str, Any]] = []
-        self._parsed_mail: OrderedDict[str, Any] | None = None
+        self._parsed_mail: dict[str, Any] | None = None
         self._guid_to_hash: dict[str, str] = {}
         self._tmp_dirs: list[str] = []
 
@@ -172,8 +164,8 @@ class EmailProcessor:
 
         try:
             magic_str = magic.from_file(file_path)
-            for regex, cur_contains in MAGIC_FORMATS:
-                if regex.match(magic_str):
+            for regex_pattern, cur_contains in MAGIC_FORMATS:
+                if re.match(regex_pattern, magic_str):
                     contains.extend(cur_contains)
         except Exception as e:
             logger.debug(f"Failed to detect file type with magic: {e}")
@@ -181,18 +173,11 @@ class EmailProcessor:
         return contains
 
     def _is_ip(self, input_ip: str) -> bool:
-        ip_regex = r"^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$"
-        if re.match(ip_regex, input_ip):
-            return True
-        return bool(self.is_ipv6(input_ip))
-
-    def is_ipv6(self, input_ip: str) -> bool:
-        """Validate if input is an IPv6 address."""
         try:
-            socket.inet_pton(socket.AF_INET6, input_ip)
-        except Exception:
+            ipaddress.ip_address(input_ip)
+            return True
+        except ValueError:
             return False
-        return True
 
     @staticmethod
     def _is_sha1(input_str: str) -> bool:
@@ -273,7 +258,7 @@ class EmailProcessor:
                     uris.extend(uri_text)
         else:
             file_data = unescape(file_data)
-            uris = re.findall(uri_regexc, file_data)
+            uris = re.findall(URI_REGEX, file_data)
             if uris:
                 uris = [self._clean_url(x) for x in uris]
 
@@ -306,8 +291,8 @@ class EmailProcessor:
                         domains.add(domain)
 
     def _get_ips(self, file_data: str, ips: set[str]) -> None:
-        ips_in_mail = re.findall(ip_regexc, file_data)
-        ip6_in_mail = re.findall(ipv6_regexc, file_data)
+        ips_in_mail = re.findall(IP_REGEX, file_data)
+        ip6_in_mail = re.findall(IPV6_REGEX, file_data)
 
         if ip6_in_mail:
             for ip6_tuple in ip6_in_mail:
@@ -323,7 +308,7 @@ class EmailProcessor:
     def _handle_body(
         self,
         body: dict[str, Any],
-        parsed_mail: OrderedDict[str, Any],
+        parsed_mail: dict[str, Any],
         body_index: int,
         email_id: str,
     ) -> int:
@@ -354,8 +339,8 @@ class EmailProcessor:
 
         if self._config[PROC_EMAIL_JSON_EXTRACT_DOMAINS]:
             emails = []
-            emails.extend(re.findall(email_regexc, file_data))
-            emails.extend(re.findall(email_regexc2, file_data))
+            emails.extend(re.findall(EMAIL_REGEX, file_data, re.IGNORECASE))
+            emails.extend(re.findall(EMAIL_REGEX2, file_data, re.IGNORECASE))
 
             for curr_email in emails:
                 domain = curr_email[curr_email.rfind("@") + 1 :]
@@ -368,7 +353,7 @@ class EmailProcessor:
             self._get_ips(file_data, ips)
 
         if self._config[PROC_EMAIL_JSON_EXTRACT_HASHES]:
-            hashs_in_mail = re.findall(hash_regexc, file_data)
+            hashs_in_mail = re.findall(HASH_REGEX, file_data)
             if hashs_in_mail:
                 hashes |= set(hashs_in_mail)
 
@@ -401,7 +386,7 @@ class EmailProcessor:
     def _parse_email_headers_as_inline(
         self,
         file_data: str,
-        parsed_mail: OrderedDict[str, Any],
+        parsed_mail: dict[str, Any],
         charset: str | None,
         email_id: str,
     ) -> int:
@@ -424,7 +409,7 @@ class EmailProcessor:
             added_artifacts += 1
         return added_artifacts
 
-    def _create_artifacts(self, parsed_mail: OrderedDict[str, Any]) -> int:
+    def _create_artifacts(self, parsed_mail: dict[str, Any]) -> int:
         ips = parsed_mail[PROC_EMAIL_JSON_IPS]
         hashes = parsed_mail[PROC_EMAIL_JSON_HASHES]
         urls = parsed_mail[PROC_EMAIL_JSON_URLS]
@@ -516,9 +501,7 @@ class EmailProcessor:
 
         return input_str
 
-    def _get_container_name(
-        self, parsed_mail: OrderedDict[str, Any], email_id: str
-    ) -> str:
+    def _get_container_name(self, parsed_mail: dict[str, Any], email_id: str) -> str:
         def_cont_name = f"Email ID: {email_id}"
         subject = parsed_mail.get(PROC_EMAIL_JSON_SUBJECT)
 
@@ -651,7 +634,7 @@ class EmailProcessor:
         part_index: int,
         tmp_dir: str,
         extract_attach: bool,
-        parsed_mail: OrderedDict[str, Any],
+        parsed_mail: dict[str, Any],
     ) -> int:
         bodies = parsed_mail[PROC_EMAIL_JSON_BODIES]
 
@@ -780,7 +763,7 @@ class EmailProcessor:
 
     def _parse_email_headers(
         self,
-        parsed_mail: OrderedDict[str, Any],
+        parsed_mail: dict[str, Any],
         part: Message,
         charset: str | None = None,
         add_email_id: str | None = None,
@@ -904,7 +887,7 @@ class EmailProcessor:
         tmp_dir: str,
         start_time_epoch: float,
     ) -> int:
-        self._parsed_mail = OrderedDict()
+        self._parsed_mail = {}
 
         tmp_dir_path = Path(tmp_dir)
         if not tmp_dir_path.exists():
