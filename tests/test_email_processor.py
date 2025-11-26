@@ -120,15 +120,12 @@ def test_get_container_name(
     """Test container name extraction."""
     processor = EmailProcessor(mock_context, email_config)
 
-    from collections import OrderedDict
-
-    parsed_mail = OrderedDict()
-    parsed_mail["subject"] = "Test Email Subject"
+    parsed_mail = {"subject": "Test Email Subject"}
 
     container_name = processor._get_container_name(parsed_mail, "test-email-id-123")
     assert "Test Email Subject" in container_name
 
-    parsed_mail_no_subject = OrderedDict()
+    parsed_mail_no_subject = {}
     container_name_no_subject = processor._get_container_name(
         parsed_mail_no_subject, "test-email-id-456"
     )
