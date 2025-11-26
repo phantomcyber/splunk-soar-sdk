@@ -322,3 +322,71 @@ def test_on_poll_actionmeta_dict_output_empty(app_with_action: App):
     meta_dict = action.meta.model_dump()
     assert "output" in meta_dict
     assert meta_dict["output"] == []
+
+
+def test_on_poll_is_manual_poll_with_limited_container_count():
+    """Test that is_manual_poll returns True when container_count is limited."""
+    params = OnPollParams(
+        start_time=0,
+        end_time=1,
+        container_count=100,
+    )
+    assert params.is_manual_poll() is True
+
+
+def test_on_poll_is_manual_poll_with_max_container_count():
+    """Test that is_manual_poll returns False when container_count is MAX_COUNT_VALUE."""
+    MAX_COUNT_VALUE = 4294967295
+    params = OnPollParams(
+        start_time=0,
+        end_time=1,
+        container_count=MAX_COUNT_VALUE,
+    )
+    assert params.is_manual_poll() is False
+
+
+def test_on_poll_is_manual_poll_without_container_count():
+    """Test that is_manual_poll returns False when no container_count is provided."""
+    params = OnPollParams(
+        start_time=0,
+        end_time=1,
+    )
+    assert params.is_manual_poll() is False
+
+
+def test_on_poll_is_manual_poll_with_zero_container_count():
+    """Test that is_manual_poll returns False when container_count is zero."""
+    params = OnPollParams(
+        start_time=0,
+        end_time=1,
+        container_count=0,
+    )
+    assert params.is_manual_poll() is False
+
+
+def test_on_poll_is_manual_poll_in_function(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that is_manual_poll can be used within an on_poll function."""
+    poll_type_captured = []
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams):
+        poll_type_captured.append(params.is_manual_poll())
+        yield Container(name="test")
+
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 1),
+    )
+
+    params_manual = OnPollParams(container_count=100)
+    on_poll_function(params_manual)
+    assert poll_type_captured[-1] is True
+
+    params_scheduled = OnPollParams(
+        start_time=0, end_time=1, container_count=4294967295
+    )
+    on_poll_function(params_scheduled)
+    assert poll_type_captured[-1] is False
