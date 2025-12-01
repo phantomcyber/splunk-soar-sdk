@@ -251,10 +251,8 @@ class EmailProcessor:
                     uri_text.append(self._clean_url(x.get_text()))
                     uris.append(x["src"])
 
-            if uri_text:
-                uri_text = [x for x in uri_text if x.startswith("http")]
-                if uri_text:
-                    uris.extend(uri_text)
+            uri_text = [x for x in uri_text if x.startswith("http")]
+            uris.extend(uri_text)
         else:
             file_data = unescape(file_data)
             uris = re.findall(URI_REGEX, file_data)
@@ -290,14 +288,13 @@ class EmailProcessor:
 
     def _get_ips(self, file_data: str, ips: set[str]) -> None:
         for match in re.finditer(IP_REGEX, file_data):
-            ip_candidate = match.group(0)
+            ip_candidate = match.group(0).strip()
             if self._is_ip(ip_candidate):
                 ips.add(ip_candidate)
 
         for match in re.finditer(IPV6_REGEX, file_data):
-            ip_candidate = match.group(0)
-            if self._is_ip(ip_candidate):
-                ips.add(ip_candidate)
+            ip_candidate = match.group(0).strip()
+            ips.add(ip_candidate)
 
     def _handle_body(
         self,
@@ -338,8 +335,7 @@ class EmailProcessor:
 
             for curr_email in emails:
                 domain = curr_email[curr_email.rfind("@") + 1 :]
-                if domain and (not self._is_ip(domain)):
-                    domains.add(domain)
+                domains.add(domain)
 
         self._extract_urls_domains(file_data, urls, domains)
 
@@ -458,18 +454,11 @@ class EmailProcessor:
             logger.debug(f"Decoding: {encoded_strings}. Error: {e}")
             return def_name
 
-        decoded_strings_map = dict(enumerate(decoded_string_dicts))
-
         new_str = ""
         new_str_create_count = 0
-        for i, _encoded_string in enumerate(encoded_strings):
-            decoded_string = decoded_strings_map.get(i)
-
-            if not decoded_string:
-                continue
-
-            value = decoded_string.get("value")
-            encoding = decoded_string.get("encoding")
+        for _i, decoded_string_dict in enumerate(decoded_string_dicts):
+            value = decoded_string_dict.get("value")
+            encoding = decoded_string_dict.get("encoding")
 
             if not encoding or not value:
                 continue
@@ -481,9 +470,8 @@ class EmailProcessor:
                 logger.debug(f"Encoding conversion failed: {e}")
 
             try:
-                if value:
-                    new_str += UnicodeDammit(value).unicode_markup
-                    new_str_create_count += 1
+                new_str += UnicodeDammit(value).unicode_markup
+                new_str_create_count += 1
             except Exception as e:
                 logger.debug(f"Unicode markup conversion failed: {e}")
 
@@ -773,14 +761,10 @@ class EmailProcessor:
         cef_types: dict[str, list[str]] = {}
 
         if headers.get("From"):
-            emails = headers["From"]
-            if emails:
-                cef_artifact.update({"fromEmail": emails})
+            cef_artifact.update({"fromEmail": headers["From"]})
 
         if headers.get("To"):
-            emails = headers["To"]
-            if emails:
-                cef_artifact.update({"toEmail": emails})
+            cef_artifact.update({"toEmail": headers["To"]})
 
         message_id = headers.get("message-id")
         if (not cef_artifact) and (message_id is None):
@@ -788,76 +772,66 @@ class EmailProcessor:
 
         cef_types.update({"fromEmail": ["email"], "toEmail": ["email"]})
 
-        if headers:
-            self._update_headers(headers)
-            cef_artifact["emailHeaders"] = dict(headers)
+        self._update_headers(headers)
+        cef_artifact["emailHeaders"] = dict(headers)
 
         body = None
-        body_key = None
 
         for curr_key in list(cef_artifact["emailHeaders"].keys()):
             if curr_key.lower().startswith("body"):
                 body = cef_artifact["emailHeaders"].pop(curr_key)
-                body_key = None
             elif curr_key in ("parentInternetMessageId", "parentGuid", "emailGuid"):
                 curr_value = cef_artifact["emailHeaders"].pop(curr_key)
                 cef_artifact.update({curr_key: curr_value})
 
-        if self._config.get(PROC_EMAIL_JSON_EXTRACT_BODY, False):
-            if body:
-                if body_key:
-                    cef_artifact.update({body_key: body})
-            else:
-                queue: list[Message] = [part]
-                i = 1
-                while len(queue) > 0:
-                    cur_part = queue.pop(0)
-                    payload = cur_part.get_payload()
-                    if isinstance(payload, list):
-                        queue.extend(payload)  # type: ignore[arg-type]
-                    else:
-                        encoding = cur_part["Content-Transfer-Encoding"]
-                        if encoding:
-                            if "base64" in encoding.lower():
-                                payload = base64.b64decode(
-                                    "".join(str(payload).splitlines())
-                                )
-                            elif encoding != "8bit":
-                                payload = cur_part.get_payload(decode=True)
-                                payload = (
-                                    UnicodeDammit(payload)
-                                    .unicode_markup.encode("utf-8")
-                                    .decode("utf-8")
-                                )
+        if self._config.get(PROC_EMAIL_JSON_EXTRACT_BODY, False) and not body:
+            queue: list[Message] = [part]
+            i = 1
+            while len(queue) > 0:
+                cur_part = queue.pop(0)
+                payload = cur_part.get_payload()
+                if isinstance(payload, list):
+                    queue.extend(payload)  # type: ignore[arg-type]
+                else:
+                    encoding = cur_part["Content-Transfer-Encoding"]
+                    if encoding:
+                        if "base64" in encoding.lower():
+                            payload = base64.b64decode(
+                                "".join(str(payload).splitlines())
+                            )
+                        elif encoding != "8bit":
+                            payload = cur_part.get_payload(decode=True)
+                            payload = (
+                                UnicodeDammit(payload)
+                                .unicode_markup.encode("utf-8")
+                                .decode("utf-8")
+                            )
+                    try:
+                        json.dumps({"body": payload})
+                    except (TypeError, UnicodeDecodeError):
                         try:
-                            json.dumps({"body": payload})
-                        except TypeError:
-                            try:
-                                payload = payload.decode("UTF-8")  # type: ignore[union-attr]
-                            except UnicodeDecodeError:
-                                logger.debug(
-                                    "Email body caused unicode exception. Encoding as base64."
-                                )
-                                payload = base64.b64encode(payload).decode("UTF-8")  # type: ignore[arg-type]
-                                cef_artifact["body_base64encoded"] = True
-                        except UnicodeDecodeError:
+                            payload = payload.decode("UTF-8")  # type: ignore[union-attr]
+                        except (UnicodeDecodeError, AttributeError):
                             logger.debug(
                                 "Email body caused unicode exception. Encoding as base64."
                             )
-                            payload = base64.b64encode(payload)  # type: ignore[arg-type]
+                            if isinstance(payload, bytes):
+                                payload = base64.b64encode(payload).decode("UTF-8")
+                            else:
+                                payload = base64.b64encode(
+                                    str(payload).encode("UTF-8")
+                                ).decode("UTF-8")
                             cef_artifact["body_base64encoded"] = True
 
-                        cef_artifact.update(
-                            {f"bodyPart{i}": payload if payload else None}
-                        )
-                        cef_artifact.update(
-                            {
-                                f"bodyPart{i}ContentType": cur_part["Content-Type"]
-                                if cur_part["Content-Type"]
-                                else None
-                            }
-                        )
-                        i += 1
+                    cef_artifact.update({f"bodyPart{i}": payload if payload else None})
+                    cef_artifact.update(
+                        {
+                            f"bodyPart{i}ContentType": cur_part["Content-Type"]
+                            if cur_part["Content-Type"]
+                            else None
+                        }
+                    )
+                    i += 1
 
         if add_email_id:
             cef_artifact["emailId"] = add_email_id
@@ -1153,16 +1127,7 @@ class EmailProcessor:
     def _parse_results(
         self, results: list[dict[str, Any]], container_id: int | None = None
     ) -> int:
-        param: dict[str, Any] = {}
-
         container_count = DEFAULT_CONTAINER_COUNT
-
-        if param:
-            container_count = param.get(
-                phantom.APP_JSON_CONTAINER_COUNT,  # type: ignore[attr-defined]
-                DEFAULT_CONTAINER_COUNT,
-            )
-
         results = results[:container_count]
 
         for result in results:
@@ -1282,17 +1247,13 @@ class EmailProcessor:
             return APP_ERROR, APP_ERROR
 
         cef_artifact = curr_file.get("meta_info", {})
-        if file_name:
-            cef_artifact.update({"fileName": file_name})
+        cef_artifact.update({"fileName": file_name})
 
         if vault_id:
             cef_artifact.update(
                 {"vaultId": vault_id, "cs6": vault_id, "cs6Label": "Vault ID"}
             )
             self._add_vault_hashes_to_dictionary(cef_artifact, vault_id)
-
-        if not cef_artifact:
-            return APP_SUCCESS, APP_ERROR
 
         artifact: dict[str, Any] = {}
         artifact.update(_artifact_common)
