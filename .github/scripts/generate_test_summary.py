@@ -92,38 +92,36 @@ def generate_markdown_summary(
     """Generate markdown summary from test results."""
     total_passed = sum(r.passed for r in results)
     total_failed = sum(r.failed for r in results)
-    total_skipped = sum(r.skipped for r in results)
     total_errors = sum(r.errors for r in results)
-    total_tests = total_passed + total_failed + total_skipped + total_errors
 
-    md = "Integration Test Results\n"
-    md += "━" * 63 + "\n\n"
+    md = "# Integration Test Results\n"
 
-    status = "PASSED" if total_failed + total_errors == 0 else "FAILED"
-    md += f"{total_tests} tests: {total_passed} passed, {total_failed + total_errors} failed, {total_skipped} skipped\n"
-    md += f"Status: {status}\n\n"
+    if total_failed + total_errors == 0:
+        md += f"## ✅ {total_passed} tests passed!\n"
+    else:
+        md += "## ⚠️ Some tests failed.\n"
 
-    md += f"{'Version':<12} {'✓ Passed':<12} {'✗ Failed':<12} {'⊘ Skipped':<12} Duration\n"
+    md += "| Version | ✅ Passed | ❌ Failed | ⏭️ Skipped | Duration |\n"
+    md += "| ------- | --------- | --------- | ---------- | -------- |\n"
 
     for result in sorted(results, key=lambda r: r.version):
-        md += f"{result.version:<12} {result.passed:<12} {result.failed + result.errors:<12} {result.skipped:<12} {format_duration(result.duration)}\n"
+        md += f"| {result.version} | {result.passed} | {result.failed + result.errors} | {result.skipped} | {format_duration(result.duration)} |\n"
 
     has_failures = any(r.failures for r in results)
     if has_failures:
-        md += "\nFailed Tests\n"
-        md += "━" * 63 + "\n\n"
+        md += "## Failed Tests\n"
+        md += "| Version | Name | Message | Type |\n"
+        md += "| ------- | ---- | ------- | ---- |\n"
         for result in results:
             if result.failures:
                 for failure in result.failures:
-                    md += f"Version: {result.version}\n"
-                    md += f"{failure['name']}\n"
-                    message = failure["message"][:200].strip()
-                    if len(failure["message"]) > 200:
-                        message += "..."
-                    md += f"  {failure['type']}: {message}\n\n"
+                    message = failure["message"]
+                    if len(message) > 200:
+                        message = message[:200].strip() + "…"
+                    md += f"| {result.version} | {failure['name']} | {message} | {failure['type']} |\n"
 
-    if has_failures and run_url:
-        md += "[View full logs and artifacts](" + run_url + ")\n"
+    if run_url:
+        md += "---\n[View full logs and artifacts](" + run_url + ")\n"
 
     return md
 
