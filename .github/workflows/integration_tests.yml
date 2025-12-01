@@ -44,7 +44,7 @@ jobs:
   integration-test:
     runs-on:
       - codebuild-github-splunk-soar-sdk-integration-tests-${{ github.run_id }}-${{ github.run_attempt }}
-      - image:custom-linux-875003031410.dkr.ecr.us-west-1.amazonaws.com/soar-connectors/pytest:mr-54
+      - image:custom-linux-875003031410.dkr.ecr.us-west-1.amazonaws.com/soar-connectors/pytest:3ea28df603962918dc8e72ead393c40b3ce6e20e
     needs: build-example-apps
     strategy:
       fail-fast: false
