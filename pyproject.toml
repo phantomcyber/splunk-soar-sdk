@@ -124,7 +124,6 @@ addopts = "--ignore=src/soar_sdk/app_templates --ignore=app_templates --ignore=m
 markers = [
     "integration: Integration tests that require a live SOAR instance",
     "onprem: marks tests that use on-prem assets",
-    "psaas_release: marks tests used for PSaaS/AB release validation",
     "require_ab: marks tests that require an AB for the main asset(s)",
 ]
 
