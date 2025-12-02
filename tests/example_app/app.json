@@ -379,7 +379,8 @@
                 }
             ],
             "render": {
-                "type": "custom"
+                "type": "custom",
+                "view": "src.actions.reverse_string.render_reverse_string_view"
             }
         },
         {
@@ -446,7 +447,8 @@
                 }
             ],
             "render": {
-                "type": "custom"
+                "type": "custom",
+                "view": "src.actions.generate_category.render_statistics_chart"
             }
         },
         {
