@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-11-19T21:56:14.068861Z",
+    "utctime_updated": "2025-12-02T04:37:31.904405Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -558,7 +558,6 @@
         ]
     },
     "webhook": {
-        "handler": "src.app.app.handle_webhook",
         "requires_auth": true,
         "allowed_headers": [],
         "ip_allowlist": [
