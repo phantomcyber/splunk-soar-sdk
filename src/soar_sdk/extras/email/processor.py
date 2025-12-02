@@ -380,8 +380,9 @@ class EmailProcessor:
         charset: str | None,
         email_id: str,
     ) -> int:
-        p = re.compile(r".*Forwarded Message.*\r\n(.*)", re.IGNORECASE)
-        email_text = p.sub(r"\1", file_data.strip())
+        email_text = re.sub(
+            r"(?im)^.*forwarded message.*\r?\n", "", file_data.strip(), count=1
+        )
         mail = email.message_from_string(email_text)
         self._parse_email_headers(parsed_mail, mail, charset, add_email_id=email_id)
         return APP_SUCCESS

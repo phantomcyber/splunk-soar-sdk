@@ -2243,6 +2243,31 @@ def test_parse_email_headers_inline_extract(
     )
 
 
+def test_parse_email_headers_inline_strips_forwarded_message(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Test _parse_email_headers_as_inline strips forwarded message header."""
+    processor = EmailProcessor(mock_context, email_config)
+
+    parsed_mail = {"email_headers": []}
+    file_data = (
+        "---------- Forwarded Message ----------\r\n"
+        "From: sender@example.com\r\n"
+        "To: recipient@example.com\r\n"
+        "Subject: Forwarded Test\r\n"
+    )
+
+    processor._parse_email_headers_as_inline(
+        file_data, parsed_mail, "utf-8", "email-id"
+    )
+
+    assert len(parsed_mail["email_headers"]) == 1
+    cef = parsed_mail["email_headers"][0]["cef"]
+    assert cef["fromEmail"] == "sender@example.com"
+    assert cef["toEmail"] == "recipient@example.com"
+    assert cef["emailHeaders"]["Subject"] == "Forwarded Test"
+
+
 def test_add_vault_hashes_old_phantom(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
