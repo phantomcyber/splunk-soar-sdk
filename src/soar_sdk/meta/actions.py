@@ -39,6 +39,15 @@ class ActionMeta(BaseModel):
                 "type": self.render_as,
             }
 
+        if self.view_handler:
+            module = self.view_handler.__module__
+            module_parts = module.split(".")
+            if len(module_parts) > 1:
+                relative_module = ".".join(module_parts[1:])
+            else:
+                relative_module = module
+            data["render"]["view"] = f"{relative_module}.{self.view_handler.__name__}"
+
         # Remove view_handler from the output since in render
         data.pop("view_handler", None)
         data.pop("render_as", None)
