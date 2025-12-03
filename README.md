@@ -23,7 +23,7 @@ The recommended installation method is via [uv](https://docs.astral.sh/uv/).
 
 ## Find us at .conf25
 
-To learn more about the SDK, check out our presentation at [.conf25](https://conf.splunk.com/sessions/catalog.html?search=DEV1495#/)!
+To learn more about the SDK, check out our (presentation slides)[https://conf.splunk.com/files/2025/slides/DEV1495.pdf] from .conf25!
 
 ## Installing the SDK as a tool
 
