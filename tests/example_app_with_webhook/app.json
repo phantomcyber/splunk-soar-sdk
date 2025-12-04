@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-04T21:56:26.853043Z",
+    "utctime_updated": "2025-12-04T21:59:52.321320Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -148,8 +148,8 @@
             },
             {
                 "module": "anyio",
-                "input_file": "wheels/shared/anyio-4.11.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/anyio-4.11.0-py3-none-any.whl"
+                "input_file": "wheels/shared/anyio-4.12.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/anyio-4.12.0-py3-none-any.whl"
             },
             {
                 "module": "bleach",
@@ -158,13 +158,13 @@
             },
             {
                 "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.40.74-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.40.74-py3-none-any.whl"
+                "input_file": "wheels/shared/boto3-1.42.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/boto3-1.42.3-py3-none-any.whl"
             },
             {
                 "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.40.74-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.40.74-py3-none-any.whl"
+                "input_file": "wheels/shared/botocore-1.42.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/botocore-1.42.3-py3-none-any.whl"
             },
             {
                 "module": "build",
@@ -258,8 +258,8 @@
             },
             {
                 "module": "pydantic",
-                "input_file": "wheels/shared/pydantic-2.12.4-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pydantic-2.12.4-py3-none-any.whl"
+                "input_file": "wheels/shared/pydantic-2.12.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pydantic-2.12.5-py3-none-any.whl"
             },
             {
                 "module": "pydantic-core",
@@ -288,8 +288,8 @@
             },
             {
                 "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.14.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.14.0-py3-none-any.whl"
+                "input_file": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl"
             },
             {
                 "module": "setuptools",
@@ -302,14 +302,9 @@
                 "input_file_aarch64": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl"
             },
             {
-                "module": "sniffio",
-                "input_file": "wheels/shared/sniffio-1.3.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/sniffio-1.3.1-py3-none-any.whl"
-            },
-            {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-3.2.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.2.1-py3-none-any.whl"
+                "input_file": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl"
             },
             {
                 "module": "toml",
@@ -357,8 +352,8 @@
             },
             {
                 "module": "anyio",
-                "input_file": "wheels/shared/anyio-4.11.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/anyio-4.11.0-py3-none-any.whl"
+                "input_file": "wheels/shared/anyio-4.12.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/anyio-4.12.0-py3-none-any.whl"
             },
             {
                 "module": "bleach",
@@ -367,13 +362,13 @@
             },
             {
                 "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.40.74-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.40.74-py3-none-any.whl"
+                "input_file": "wheels/shared/boto3-1.42.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/boto3-1.42.3-py3-none-any.whl"
             },
             {
                 "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.40.74-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.40.74-py3-none-any.whl"
+                "input_file": "wheels/shared/botocore-1.42.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/botocore-1.42.3-py3-none-any.whl"
             },
             {
                 "module": "build",
@@ -467,8 +462,8 @@
             },
             {
                 "module": "pydantic",
-                "input_file": "wheels/shared/pydantic-2.12.4-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pydantic-2.12.4-py3-none-any.whl"
+                "input_file": "wheels/shared/pydantic-2.12.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pydantic-2.12.5-py3-none-any.whl"
             },
             {
                 "module": "pydantic-core",
@@ -497,8 +492,8 @@
             },
             {
                 "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.14.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.14.0-py3-none-any.whl"
+                "input_file": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl"
             },
             {
                 "module": "setuptools",
@@ -511,14 +506,9 @@
                 "input_file_aarch64": "wheels/shared/shellingham-1.5.4-py2.py3-none-any.whl"
             },
             {
-                "module": "sniffio",
-                "input_file": "wheels/shared/sniffio-1.3.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/sniffio-1.3.1-py3-none-any.whl"
-            },
-            {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-3.2.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.2.1-py3-none-any.whl"
+                "input_file": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl"
             },
             {
                 "module": "toml",
@@ -558,6 +548,7 @@
         ]
     },
     "webhook": {
+        "handler": "src.app.app.handle_webhook",
         "requires_auth": true,
         "allowed_headers": [],
         "ip_allowlist": [
