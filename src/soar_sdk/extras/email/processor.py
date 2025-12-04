@@ -2,7 +2,6 @@ import base64
 import contextlib
 import email
 import hashlib
-import ipaddress
 import json
 import mimetypes
 import re
@@ -21,6 +20,16 @@ from pydantic import HttpUrl, ValidationError
 from requests.structures import CaseInsensitiveDict
 
 from soar_sdk.abstract import SOARClient
+from soar_sdk.extras.email.utils import (
+    clean_url,
+    create_dict_hash,
+    decode_uni_string,
+    get_file_contains,
+    get_string,
+    is_ip,
+    is_sha1,
+    remove_child_info,
+)
 from soar_sdk.logging import getLogger
 from soar_sdk.shims import phantom
 from soar_sdk.shims.phantom.app import APP_ERROR, APP_SUCCESS
@@ -39,24 +48,6 @@ def validate_url(value: str) -> None:
 
 _container_common = {"run_automation": False}
 _artifact_common = {"run_automation": False}
-
-FILE_EXTENSIONS = {
-    ".vmsn": ["os memory dump", "vm snapshot file"],
-    ".vmss": ["os memory dump", "vm suspend file"],
-    ".js": ["javascript"],
-    ".doc": ["doc"],
-    ".docx": ["doc"],
-    ".xls": ["xls"],
-    ".xlsx": ["xls"],
-}
-
-MAGIC_FORMATS = [
-    ("^PE.* Windows", ["pe file", "hash"]),
-    ("^MS-DOS executable", ["pe file", "hash"]),
-    ("^PDF ", ["pdf"]),
-    ("^MDMP crash", ["process dump"]),
-    ("^Macromedia Flash", ["flash"]),
-]
 
 DEFAULT_ARTIFACT_COUNT = 100
 DEFAULT_CONTAINER_COUNT = 100
@@ -145,81 +136,6 @@ class EmailProcessor:
         self._guid_to_hash: dict[str, str] = {}
         self._tmp_dirs: list[str] = []
 
-    def _get_file_contains(self, file_path: str) -> list[str]:
-        try:
-            import magic  # type: ignore[import-not-found]
-        except ImportError:
-            logger.warning(
-                "python-magic not installed, file type detection will be limited"
-            )
-            return []
-
-        contains = []
-        ext = Path(file_path).suffix
-        contains.extend(FILE_EXTENSIONS.get(ext, []))
-
-        try:
-            magic_str = magic.from_file(file_path)
-            for regex_pattern, cur_contains in MAGIC_FORMATS:
-                if re.match(regex_pattern, magic_str):
-                    contains.extend(cur_contains)
-        except Exception as e:
-            logger.debug(f"Failed to detect file type with magic: {e}")
-
-        return contains
-
-    def _is_ip(self, input_ip: str) -> bool:
-        try:
-            ipaddress.ip_address(input_ip)
-            return True
-        except ValueError:
-            return False
-
-    def is_ipv6(self, input_ip: str) -> bool:
-        """Validate if input is an IPv6 address."""
-        try:
-            ip = ipaddress.ip_address(input_ip)
-            return ip.version == 6
-        except ValueError:
-            return False
-
-    @staticmethod
-    def _is_sha1(input_str: str) -> bool:
-        """Validates if the input is a SHA1 hash."""
-        sha1_regex = r"^[0-9a-fA-F]{40}$"
-        return bool(re.match(sha1_regex, input_str))
-
-    def _get_string(self, input_str: str, charset: str | None = None) -> str:
-        """Convert string to proper encoding with charset handling.
-
-        This method attempts to convert a string using UnicodeDammit and the specified
-        charset. If that fails, it falls back to decode_header and _decode_uni_string.
-        """
-        if not input_str:
-            return input_str
-
-        if charset is None:
-            charset = "utf-8"
-
-        try:
-            return (
-                UnicodeDammit(input_str).unicode_markup.encode(charset).decode(charset)
-            )
-        except Exception:
-            try:
-                return str(make_header(decode_header(input_str)))
-            except Exception:
-                return self._decode_uni_string(input_str, input_str)
-
-    def _clean_url(self, url: str) -> str:
-        url = url.strip(">),.]\r\n")
-        if "<" in url:
-            url = url[: url.find("<")]
-        if ">" in url:
-            url = url[: url.find(">")]
-        url = url.rstrip("]")
-        return url.strip()
-
     def _extract_urls_domains(
         self, file_data: str, urls: set[str], domains: set[str]
     ) -> None:
@@ -242,13 +158,13 @@ class EmailProcessor:
             uri_text = []
             if links:
                 for x in links:
-                    uri_text.append(self._clean_url(x.get_text()))
+                    uri_text.append(clean_url(x.get_text()))
                     if not x["href"].startswith("mailto:"):
                         uris.append(x["href"])
 
             if srcs:
                 for x in srcs:
-                    uri_text.append(self._clean_url(x.get_text()))
+                    uri_text.append(clean_url(x.get_text()))
                     uris.append(x["src"])
 
             uri_text = [x for x in uri_text if x.startswith("http")]
@@ -257,7 +173,7 @@ class EmailProcessor:
             file_data = unescape(file_data)
             uris = re.findall(URI_REGEX, file_data)
             if uris:
-                uris = [self._clean_url(x) for x in uris]
+                uris = [clean_url(x) for x in uris]
 
         validated_urls = []
         for url in uris:
@@ -273,7 +189,7 @@ class EmailProcessor:
         if self._config[PROC_EMAIL_JSON_EXTRACT_DOMAINS]:
             for uri in validated_urls:
                 domain = phantom.get_host_from_url(uri)  # type: ignore[attr-defined]
-                if domain and (not self._is_ip(domain)):
+                if domain and (not is_ip(domain)):
                     domains.add(domain)
             if links:
                 mailtos = [
@@ -281,7 +197,7 @@ class EmailProcessor:
                 ]
                 for curr_email in mailtos:
                     domain = curr_email[curr_email.find("@") + 1 :]
-                    if domain and (not self._is_ip(domain)):
+                    if domain and (not is_ip(domain)):
                         if "?" in domain:
                             domain = domain[: domain.find("?")]
                         domains.add(domain)
@@ -289,7 +205,7 @@ class EmailProcessor:
     def _get_ips(self, file_data: str, ips: set[str]) -> None:
         for match in re.finditer(IP_REGEX, file_data):
             ip_candidate = match.group(0).strip()
-            if self._is_ip(ip_candidate):
+            if is_ip(ip_candidate):
                 ips.add(ip_candidate)
 
         for match in re.finditer(IPV6_REGEX, file_data):
@@ -440,50 +356,6 @@ class EmailProcessor:
 
         return APP_SUCCESS
 
-    def _decode_uni_string(self, input_str: str, def_name: str) -> str:
-        encoded_strings = re.findall(r"=\?.*?\?=", input_str, re.I)
-
-        if not encoded_strings:
-            return input_str
-
-        try:
-            decoded_strings = [decode_header(x)[0] for x in encoded_strings]
-            decoded_string_dicts = [
-                {"value": x[0], "encoding": x[1]} for x in decoded_strings
-            ]
-        except Exception as e:
-            logger.debug(f"Decoding: {encoded_strings}. Error: {e}")
-            return def_name
-
-        new_str = ""
-        new_str_create_count = 0
-        for _i, decoded_string_dict in enumerate(decoded_string_dicts):
-            value = decoded_string_dict.get("value")
-            encoding = decoded_string_dict.get("encoding")
-
-            if not encoding or not value:
-                continue
-
-            try:
-                if encoding != "utf-8":
-                    value = str(value, encoding)
-            except Exception as e:
-                logger.debug(f"Encoding conversion failed: {e}")
-
-            try:
-                new_str += UnicodeDammit(value).unicode_markup
-                new_str_create_count += 1
-            except Exception as e:
-                logger.debug(f"Unicode markup conversion failed: {e}")
-
-        if new_str and new_str_create_count == len(encoded_strings):
-            logger.debug(
-                "Creating a new string entirely from the encoded_strings and assigning into input_str"
-            )
-            input_str = new_str
-
-        return input_str
-
     def _get_container_name(self, parsed_mail: dict[str, Any], email_id: str) -> str:
         def_cont_name = f"Email ID: {email_id}"
         subject = parsed_mail.get(PROC_EMAIL_JSON_SUBJECT)
@@ -494,7 +366,7 @@ class EmailProcessor:
         try:
             return str(make_header(decode_header(subject)))
         except Exception:
-            return self._decode_uni_string(subject, def_cont_name)
+            return decode_uni_string(subject, def_cont_name)
 
     def _handle_if_body(
         self,
@@ -528,12 +400,6 @@ class EmailProcessor:
         bodies.append({"file_path": file_path, "charset": part.get_content_charset()})
 
         return APP_SUCCESS, False
-
-    def remove_child_info(self, file_path: str) -> str:
-        """Remove child info suffix from file path."""
-        if file_path.endswith("_True"):
-            return file_path.rstrip("_True")
-        return file_path.rstrip("_False")
 
     def _handle_attachment(self, part: Message, file_name: str, file_path: str) -> int:
         if self._parsed_mail is None:
@@ -582,7 +448,7 @@ class EmailProcessor:
                 if "File name too long" in str(e):
                     new_file_name = "ph_long_file_name_temp"
                     file_path = "{}{}".format(
-                        self.remove_child_info(file_path).rstrip(
+                        remove_child_info(file_path).rstrip(
                             file_name.replace("<", "").replace(">", "").replace(" ", "")
                         ),
                         new_file_name,
@@ -640,7 +506,7 @@ class EmailProcessor:
 
             file_name = f"{name}{extension}"
         else:
-            file_name = self._decode_uni_string(file_name, file_name)
+            file_name = decode_uni_string(file_name, file_name)
 
         file_path = "{}/{}_{}".format(
             tmp_dir,
@@ -698,9 +564,7 @@ class EmailProcessor:
         headers: CaseInsensitiveDict = CaseInsensitiveDict()
         try:
             for header_item in email_headers:
-                headers.update(
-                    {header_item[0]: self._get_string(header_item[1], charset)}
-                )
+                headers.update({header_item[0]: get_string(header_item[1], charset)})
         except Exception as e:
             logger.debug(
                 f"Error converting header with charset {charset}: {e}. Using raw values."
@@ -710,7 +574,7 @@ class EmailProcessor:
 
         try:
             received_headers = [
-                self._get_string(x[1], charset)
+                get_string(x[1], charset)
                 for x in email_headers
                 if x[0].lower() == "received"
             ]
@@ -728,19 +592,19 @@ class EmailProcessor:
             try:
                 headers["decodedSubject"] = str(make_header(decode_header(subject)))
             except Exception:
-                headers["decodedSubject"] = self._decode_uni_string(subject, subject)
+                headers["decodedSubject"] = decode_uni_string(subject, subject)
 
         to_data = headers.get("To")
         if to_data:
-            headers["decodedTo"] = self._decode_uni_string(to_data, to_data)
+            headers["decodedTo"] = decode_uni_string(to_data, to_data)
 
         from_data = headers.get("From")
         if from_data:
-            headers["decodedFrom"] = self._decode_uni_string(from_data, from_data)
+            headers["decodedFrom"] = decode_uni_string(from_data, from_data)
 
         cc_data = headers.get("CC")
         if cc_data:
-            headers["decodedCC"] = self._decode_uni_string(cc_data, cc_data)
+            headers["decodedCC"] = decode_uni_string(cc_data, cc_data)
 
         return headers
 
@@ -958,7 +822,7 @@ class EmailProcessor:
     def _set_email_id_contains(self, email_id: str) -> None:
         email_id_str = str(email_id)
 
-        if self._is_sha1(email_id_str):
+        if is_sha1(email_id_str):
             self._email_id_contains = ["vault id"]
 
     def _int_process_email(
@@ -1222,7 +1086,7 @@ class EmailProcessor:
 
         local_file_path = curr_file["file_path"]
 
-        contains = self._get_file_contains(local_file_path)
+        contains = get_file_contains(local_file_path)
 
         vault_attach_dict: dict[str, Any] = {}
 
@@ -1234,7 +1098,7 @@ class EmailProcessor:
         vault_attach_dict[phantom.APP_JSON_ACTION_NAME] = self.context.action_name  # type: ignore[attr-defined]
         vault_attach_dict[phantom.APP_JSON_APP_RUN_ID] = self.context.app_run_id  # type: ignore[attr-defined]
 
-        file_name = self._decode_uni_string(file_name, file_name)
+        file_name = decode_uni_string(file_name, file_name)
 
         try:
             vault_id = self.context.vault.add_attachment(
@@ -1300,27 +1164,12 @@ class EmailProcessor:
             if curr_email_guid is not None:
                 del cef["emailGuid"]
 
-        input_dict["source_data_identifier"] = self._create_dict_hash(input_dict_hash)
+        input_dict["source_data_identifier"] = create_dict_hash(input_dict_hash)
 
         if curr_email_guid:
             self._guid_to_hash[curr_email_guid] = input_dict["source_data_identifier"]
 
         return APP_SUCCESS
-
-    def _create_dict_hash(self, input_dict: dict[str, Any]) -> str | None:
-        if not input_dict:
-            return None
-
-        try:
-            input_dict_str = json.dumps(input_dict, sort_keys=True)
-        except Exception as e:
-            logger.debug(f"Handled exception in _create_dict_hash: {e}")
-            return None
-
-        try:
-            return hashlib.sha256(input_dict_str).hexdigest()  # type: ignore[arg-type]
-        except TypeError:
-            return hashlib.sha256(input_dict_str.encode("UTF-8")).hexdigest()
 
     def _del_tmp_dirs(self) -> None:
         """Remove any tmp_dirs that were created."""
