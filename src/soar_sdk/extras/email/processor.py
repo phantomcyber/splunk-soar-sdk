@@ -154,26 +154,20 @@ class EmailProcessor:
         links = soup.find_all(href=True)
         srcs = soup.find_all(src=True)
 
-        if links or srcs:
-            uri_text = []
-            if links:
-                for x in links:
-                    uri_text.append(clean_url(x.get_text()))
-                    if not x["href"].startswith("mailto:"):
-                        uris.append(x["href"])
+        if links:
+            for x in links:
+                uris.append(clean_url(x.get_text()))
+                if not x["href"].startswith("mailto:"):
+                    uris.append(x["href"])
 
-            if srcs:
-                for x in srcs:
-                    uri_text.append(clean_url(x.get_text()))
-                    uris.append(x["src"])
+        if srcs:
+            for x in srcs:
+                uris.append(clean_url(x.get_text()))
+                uris.append(x["src"])
 
-            uri_text = [x for x in uri_text if x.startswith("http")]
-            uris.extend(uri_text)
-        else:
-            file_data = unescape(file_data)
-            uris = re.findall(URI_REGEX, file_data)
-            if uris:
-                uris = [clean_url(x) for x in uris]
+        file_data = unescape(file_data)
+        regex_uris = re.findall(URI_REGEX, file_data)
+        uris.extend(clean_url(x) for x in regex_uris)
 
         validated_urls = []
         for url in uris:
