@@ -7,6 +7,17 @@ import pytest
 
 from soar_sdk.extras.email import EmailProcessor, ProcessEmailContext
 from soar_sdk.extras.email.processor import validate_url
+from soar_sdk.extras.email.utils import (
+    clean_url,
+    create_dict_hash,
+    decode_uni_string,
+    get_file_contains,
+    get_string,
+    is_ip,
+    is_ipv6,
+    is_sha1,
+    remove_child_info,
+)
 
 
 def _create_context(
@@ -63,68 +74,48 @@ def test_email_processor_initialization(
     assert isinstance(processor._attachments, list)
 
 
-def test_is_ipv4(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
+def test_is_ipv4() -> None:
     """Test IPv4 validation."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    assert processor._is_ip("192.168.1.1")
-    assert processor._is_ip("10.0.0.1")
-    assert processor._is_ip("255.255.255.255")
-    assert not processor._is_ip("256.1.1.1")
-    assert not processor._is_ip("not.an.ip.address")
+    assert is_ip("192.168.1.1")
+    assert is_ip("10.0.0.1")
+    assert is_ip("255.255.255.255")
+    assert not is_ip("256.1.1.1")
+    assert not is_ip("not.an.ip.address")
 
 
-def test_is_ipv6(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
+def test_is_ipv6_validation() -> None:
     """Test IPv6 validation."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    assert processor.is_ipv6("2001:0db8:85a3:0000:0000:8a2e:0370:7334")
-    assert processor.is_ipv6("::1")
-    assert processor.is_ipv6("fe80::1")
-    assert not processor.is_ipv6("not-an-ipv6")
-    assert not processor.is_ipv6("192.168.1.1")
+    assert is_ipv6("2001:0db8:85a3:0000:0000:8a2e:0370:7334")
+    assert is_ipv6("::1")
+    assert is_ipv6("fe80::1")
+    assert not is_ipv6("not-an-ipv6")
+    assert not is_ipv6("192.168.1.1")
 
 
-def test_is_sha1(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
+def test_is_sha1_validation() -> None:
     """Test SHA1 hash validation."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    assert processor._is_sha1("356a192b7913b04c54574d18c28d46e6395428ab")
-    assert processor._is_sha1("da39a3ee5e6b4b0d3255bfef95601890afd80709")
-    assert not processor._is_sha1("not-a-sha1-hash")
-    assert not processor._is_sha1("356a192b")
+    assert is_sha1("356a192b7913b04c54574d18c28d46e6395428ab")
+    assert is_sha1("da39a3ee5e6b4b0d3255bfef95601890afd80709")
+    assert not is_sha1("not-a-sha1-hash")
+    assert not is_sha1("356a192b")
 
 
-def test_clean_url(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
+def test_clean_url_util() -> None:
     """Test URL cleaning."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    assert processor._clean_url("https://example.com>") == "https://example.com"
-    assert processor._clean_url("https://example.com<") == "https://example.com"
-    assert processor._clean_url("https://example.com]") == "https://example.com"
-    assert processor._clean_url("https://example.com,") == "https://example.com"
-    assert processor._clean_url("https://example.com> ") == "https://example.com"
+    assert clean_url("https://example.com>") == "https://example.com"
+    assert clean_url("https://example.com<") == "https://example.com"
+    assert clean_url("https://example.com]") == "https://example.com"
+    assert clean_url("https://example.com,") == "https://example.com"
+    assert clean_url("https://example.com> ") == "https://example.com"
 
 
-def test_decode_uni_string(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
+def test_decode_uni_string_util() -> None:
     """Test unicode string decoding."""
-    processor = EmailProcessor(mock_context, email_config)
-
     plain_string = "Hello World"
-    assert processor._decode_uni_string(plain_string, "default") == plain_string
+    assert decode_uni_string(plain_string, "default") == plain_string
 
     encoded_string = "=?UTF-8?Q?Hello?= World"
-    result = processor._decode_uni_string(encoded_string, "default")
+    result = decode_uni_string(encoded_string, "default")
     assert "Hello" in result
 
 
@@ -161,49 +152,34 @@ def test_validate_url_invalid() -> None:
         validate_url("ftp://invalid")
 
 
-def test_get_string_empty(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_string with empty input."""
-    processor = EmailProcessor(mock_context, email_config)
-    assert processor._get_string("") == ""
-    assert processor._get_string(None) is None
+def test_get_string_empty() -> None:
+    """Test get_string with empty input."""
+    assert get_string("") == ""
+    assert get_string(None) is None
 
 
-def test_get_string_with_charset(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_string with charset."""
-    processor = EmailProcessor(mock_context, email_config)
-    result = processor._get_string("Hello World", "utf-8")
+def test_get_string_with_charset() -> None:
+    """Test get_string with charset."""
+    result = get_string("Hello World", "utf-8")
     assert result == "Hello World"
 
 
-def test_get_string_fallback(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_string fallback handling."""
-    processor = EmailProcessor(mock_context, email_config)
+def test_get_string_fallback() -> None:
+    """Test get_string fallback handling."""
     encoded = "=?UTF-8?B?SGVsbG8gV29ybGQ=?="
-    result = processor._get_string(encoded)
+    result = get_string(encoded)
     assert "Hello" in result or result == encoded
 
 
-def test_get_file_contains_no_magic(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_file_contains when magic is not available."""
-    processor = EmailProcessor(mock_context, email_config)
+def test_get_file_contains_no_magic() -> None:
+    """Test get_file_contains when magic is not available."""
     with patch.dict("sys.modules", {"magic": None}):
-        result = processor._get_file_contains("/fake/path.txt")
+        result = get_file_contains("/fake/path.txt")
         assert result == []
 
 
-def test_get_file_contains_with_extension(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_file_contains with known extension."""
-    processor = EmailProcessor(mock_context, email_config)
+def test_get_file_contains_with_extension() -> None:
+    """Test get_file_contains with known extension."""
     mock_magic = MagicMock()
     mock_magic.from_file.return_value = "ASCII text"
 
@@ -213,16 +189,13 @@ def test_get_file_contains_with_extension(
     ):
         f.write(b"console.log('test');")
         f.flush()
-        result = processor._get_file_contains(f.name)
+        result = get_file_contains(f.name)
         Path(f.name).unlink()
     assert "javascript" in result
 
 
-def test_get_file_contains_magic_pe(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_file_contains with PE file magic."""
-    processor = EmailProcessor(mock_context, email_config)
+def test_get_file_contains_magic_pe() -> None:
+    """Test get_file_contains with PE file magic."""
     mock_magic = MagicMock()
     mock_magic.from_file.return_value = "PE32 Windows executable"
 
@@ -232,17 +205,14 @@ def test_get_file_contains_magic_pe(
     ):
         f.write(b"MZ")
         f.flush()
-        result = processor._get_file_contains(f.name)
+        result = get_file_contains(f.name)
         Path(f.name).unlink()
     assert "pe file" in result
     assert "hash" in result
 
 
-def test_get_file_contains_magic_pdf(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_file_contains with PDF magic."""
-    processor = EmailProcessor(mock_context, email_config)
+def test_get_file_contains_magic_pdf() -> None:
+    """Test get_file_contains with PDF magic."""
     mock_magic = MagicMock()
     mock_magic.from_file.return_value = "PDF document"
 
@@ -252,16 +222,13 @@ def test_get_file_contains_magic_pdf(
     ):
         f.write(b"%PDF-1.4")
         f.flush()
-        result = processor._get_file_contains(f.name)
+        result = get_file_contains(f.name)
         Path(f.name).unlink()
     assert "pdf" in result
 
 
-def test_get_file_contains_magic_exception(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_file_contains when magic raises an exception."""
-    processor = EmailProcessor(mock_context, email_config)
+def test_get_file_contains_magic_exception() -> None:
+    """Test get_file_contains when magic raises an exception."""
     mock_magic = MagicMock()
     mock_magic.from_file.side_effect = Exception("Magic error")
 
@@ -271,7 +238,7 @@ def test_get_file_contains_magic_exception(
     ):
         f.write(b"test")
         f.flush()
-        result = processor._get_file_contains(f.name)
+        result = get_file_contains(f.name)
         Path(f.name).unlink()
     assert "doc" in result
 
@@ -429,16 +396,12 @@ def test_add_email_header_artifacts(
     assert artifacts[0]["source_data_identifier"] == "0"
 
 
-def test_remove_child_info(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
+def test_remove_child_info_util() -> None:
     """Test remove_child_info removes suffixes using rstrip behavior."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    result_true = processor.remove_child_info("/path/xyz_True")
+    result_true = remove_child_info("/path/xyz_True")
     assert "_True" not in result_true
 
-    result_false = processor.remove_child_info("/path/xyz_False")
+    result_false = remove_child_info("/path/xyz_False")
     assert "_False" not in result_false
 
 
@@ -462,24 +425,16 @@ def test_set_email_id_contains_non_sha1(
     assert processor._email_id_contains == []
 
 
-def test_create_dict_hash(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _create_dict_hash generates hash."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    result = processor._create_dict_hash({"key": "value"})
+def test_create_dict_hash_util() -> None:
+    """Test create_dict_hash generates hash."""
+    result = create_dict_hash({"key": "value"})
     assert result is not None
     assert len(result) == 64
 
 
-def test_create_dict_hash_empty(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _create_dict_hash with empty dict."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    result = processor._create_dict_hash({})
+def test_create_dict_hash_empty() -> None:
+    """Test create_dict_hash with empty dict."""
+    result = create_dict_hash({})
     assert result is None
 
 
@@ -1516,25 +1471,17 @@ def test_handle_attachment_empty_payload(
     assert len(processor._parsed_mail["files"]) == 0
 
 
-def test_get_string_unicode_exception(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_string handles unicode exceptions."""
-    processor = EmailProcessor(mock_context, email_config)
-
+def test_get_string_unicode_exception() -> None:
+    """Test get_string handles unicode exceptions."""
     malformed = b"\xff\xfe".decode("latin-1")
-    result = processor._get_string(malformed, "utf-8")
+    result = get_string(malformed, "utf-8")
     assert result is not None
 
 
-def test_decode_uni_string_malformed(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _decode_uni_string with malformed encoding."""
-    processor = EmailProcessor(mock_context, email_config)
-
+def test_decode_uni_string_malformed() -> None:
+    """Test decode_uni_string with malformed encoding."""
     malformed = "=?UTF-8?Q?Malformed=ZZ?="
-    result = processor._decode_uni_string(malformed, "default")
+    result = decode_uni_string(malformed, "default")
     assert result is not None
 
 
@@ -1948,32 +1895,25 @@ def test_handle_body_with_ips(
     assert "10.0.0.1" in parsed_mail["ips"]
 
 
-def test_create_dict_hash_json_error(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _create_dict_hash handles JSON serialization errors."""
-    processor = EmailProcessor(mock_context, email_config)
+def test_create_dict_hash_json_error() -> None:
+    """Test create_dict_hash handles JSON serialization errors."""
 
     class NonSerializable:
         pass
 
     input_dict = {"obj": NonSerializable()}
-    result = processor._create_dict_hash(input_dict)
+    result = create_dict_hash(input_dict)
     assert result is None
 
 
-def test_get_string_double_decode_fallback(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _get_string double fallback on decode error."""
-    processor = EmailProcessor(mock_context, email_config)
-
+def test_get_string_double_decode_fallback() -> None:
+    """Test get_string double fallback on decode error."""
     malformed = "=?UTF-8?Q?Test=FF=FE?="
-    with patch("soar_sdk.extras.email.processor.UnicodeDammit") as mock_ud:
+    with patch("soar_sdk.extras.email.utils.UnicodeDammit") as mock_ud:
         mock_ud.return_value.unicode_markup.encode.side_effect = Exception(
             "Encode error"
         )
-        result = processor._get_string(malformed, "utf-8")
+        result = get_string(malformed, "utf-8")
     assert result is not None
 
 
@@ -2131,28 +2071,20 @@ Body content."""
     assert result == 1
 
 
-def test_decode_uni_string_exception(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _decode_uni_string with exception in decode."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+def test_decode_uni_string_exception() -> None:
+    """Test decode_uni_string with exception in decode."""
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.side_effect = Exception("Decode error")
-        result = processor._decode_uni_string("=?UTF-8?B?test?=", "fallback")
+        result = decode_uni_string("=?UTF-8?B?test?=", "fallback")
 
     assert result == "fallback"
 
 
-def test_decode_uni_string_no_value(
-    mock_context: ProcessEmailContext, email_config: dict[str, bool]
-) -> None:
-    """Test _decode_uni_string with empty decoded values."""
-    processor = EmailProcessor(mock_context, email_config)
-
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+def test_decode_uni_string_no_value() -> None:
+    """Test decode_uni_string with empty decoded values."""
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(None, "utf-8")]
-        result = processor._decode_uni_string("test", "fallback")
+        result = decode_uni_string("test", "fallback")
 
     assert result is not None
 
@@ -2357,11 +2289,11 @@ def test_decode_uni_string_non_utf8_encoding(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with non-UTF-8 encoding."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Test", "iso-8859-1")]
-        result = processor._decode_uni_string("=?iso-8859-1?Q?Test?=", "fallback")
+        result = decode_uni_string("=?iso-8859-1?Q?Test?=", "fallback")
 
     assert result is not None
 
@@ -2370,11 +2302,11 @@ def test_decode_uni_string_encoding_error(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with encoding conversion error."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"\xff\xfe", "iso-8859-1")]
-        result = processor._decode_uni_string("test", "fallback")
+        result = decode_uni_string("test", "fallback")
 
     assert result is not None
 
@@ -2383,13 +2315,13 @@ def test_decode_uni_string_unicode_dammit_error(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with UnicodeDammit error."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Test", "utf-8")]
-        with patch("soar_sdk.extras.email.processor.UnicodeDammit") as mock_ud:
+        with patch("soar_sdk.extras.email.utils.UnicodeDammit") as mock_ud:
             mock_ud.side_effect = Exception("Unicode error")
-            result = processor._decode_uni_string("test", "fallback")
+            result = decode_uni_string("test", "fallback")
 
     assert result is not None
 
@@ -2402,7 +2334,7 @@ def test_get_container_name_decode_exception(
 
     parsed_mail = {"subject": "=?INVALID?Q?Test?="}
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.side_effect = Exception("Decode error")
         result = processor._get_container_name(parsed_mail, "email-id")
 
@@ -2419,7 +2351,10 @@ def test_get_email_headers_from_part_charset_error(
     msg["From"] = "sender@example.com"
     msg["Subject"] = "Test"
 
-    with patch.object(processor, "_get_string", side_effect=Exception("Charset error")):
+    with patch(
+        "soar_sdk.extras.email.processor.get_string",
+        side_effect=Exception("Charset error"),
+    ):
         result = processor._get_email_headers_from_part(msg, charset="invalid")
 
     assert "From" in result or len(result) >= 0
@@ -2435,14 +2370,16 @@ def test_get_email_headers_from_part_received_error(
     msg["Received"] = "from server"
     msg["From"] = "sender@example.com"
 
-    original_get_string = processor._get_string
+    original_get_string = get_string
 
     def mock_get_string(value, charset=None):
         if "server" in str(value):
             raise Exception("Received error")
         return original_get_string(value, charset)
 
-    with patch.object(processor, "_get_string", side_effect=mock_get_string):
+    with patch(
+        "soar_sdk.extras.email.processor.get_string", side_effect=mock_get_string
+    ):
         result = processor._get_email_headers_from_part(msg)
 
     assert len(result) >= 0
@@ -3103,11 +3040,11 @@ def test_decode_uni_string_partial_match(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with partial decoded strings."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Part1", "utf-8"), (b"Part2", "utf-8")]
-        result = processor._decode_uni_string("=?UTF-8?B?test?=", "fallback")
+        result = decode_uni_string("=?UTF-8?B?test?=", "fallback")
 
     assert result is not None
 
@@ -3145,11 +3082,11 @@ def test_decode_uni_string_no_decoded_string(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with no decoded string at index."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = []
-        result = processor._decode_uni_string("test", "fallback")
+        result = decode_uni_string("test", "fallback")
 
     assert result is not None
 
@@ -3158,11 +3095,11 @@ def test_decode_uni_string_no_encoding(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with no encoding."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Test", None)]
-        result = processor._decode_uni_string("test", "fallback")
+        result = decode_uni_string("test", "fallback")
 
     assert result is not None
 
@@ -3171,7 +3108,7 @@ def test_decode_uni_string_unicode_dammit_append_error(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with UnicodeDammit append error."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
     call_count = [0]
 
@@ -3183,12 +3120,12 @@ def test_decode_uni_string_unicode_dammit_append_error(
         mock_result.unicode_markup = "Test"
         return mock_result
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Test1", "utf-8"), (b"Test2", "utf-8")]
         with patch(
             "soar_sdk.extras.email.processor.UnicodeDammit", side_effect=mock_ud
         ):
-            result = processor._decode_uni_string("test", "fallback")
+            result = decode_uni_string("test", "fallback")
 
     assert result is not None
 
@@ -3197,15 +3134,15 @@ def test_decode_uni_string_all_decoded(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when all parts are decoded."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
     mock_ud = MagicMock()
     mock_ud.return_value.unicode_markup = "Test"
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Test", "utf-8")]
         with patch("soar_sdk.extras.email.processor.UnicodeDammit", mock_ud):
-            result = processor._decode_uni_string("=?UTF-8?B?VGVzdA==?=", "fallback")
+            result = decode_uni_string("=?UTF-8?B?VGVzdA==?=", "fallback")
 
     assert result is not None
 
@@ -3482,9 +3419,9 @@ def test_decode_uni_string_no_decoded_at_index(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when decoded_string is None at index."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    result = processor._decode_uni_string("plain text without encoding", "fallback")
+    result = decode_uni_string("plain text without encoding", "fallback")
     assert result is not None
 
 
@@ -3492,11 +3429,11 @@ def test_decode_uni_string_no_value_in_decoded(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when value is None."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(None, "utf-8")]
-        result = processor._decode_uni_string("test", "fallback")
+        result = decode_uni_string("test", "fallback")
 
     assert result is not None
 
@@ -3505,9 +3442,9 @@ def test_decode_uni_string_all_parts_decoded(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when all parts successfully decode."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    result = processor._decode_uni_string("=?UTF-8?B?SGVsbG8=?=", "fallback")
+    result = decode_uni_string("=?UTF-8?B?SGVsbG8=?=", "fallback")
     assert result is not None
 
 
@@ -3968,10 +3905,10 @@ def test_decode_uni_string_successful_decode(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with successful complete decode."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
     encoded = "=?UTF-8?B?SGVsbG8gV29ybGQ=?="
-    result = processor._decode_uni_string(encoded, "fallback")
+    result = decode_uni_string(encoded, "fallback")
 
     assert "Hello World" in result or result != "fallback"
 
@@ -3980,10 +3917,10 @@ def test_decode_uni_string_with_more_encoded_strings(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string with multiple encoded strings."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
     encoded = "=?UTF-8?B?SGVsbG8=?= =?UTF-8?B?V29ybGQ=?="
-    result = processor._decode_uni_string(encoded, "fallback")
+    result = decode_uni_string(encoded, "fallback")
     assert result is not None
 
 
@@ -3991,11 +3928,11 @@ def test_decode_uni_string_value_none(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when value is None but encoding exists."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(None, "utf-8")]
-        result = processor._decode_uni_string("=?UTF-8?Q?test?=", "fallback")
+        result = decode_uni_string("=?UTF-8?Q?test?=", "fallback")
     assert result is not None
 
 
@@ -4003,11 +3940,11 @@ def test_decode_uni_string_encoding_none_value_exists(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when encoding is None but value exists."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Value", None)]
-        result = processor._decode_uni_string("=?UTF-8?Q?test?=", "fallback")
+        result = decode_uni_string("=?UTF-8?Q?test?=", "fallback")
     assert result is not None
 
 
@@ -4434,15 +4371,15 @@ def test_decode_uni_string_unicode_markup_exception(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when UnicodeDammit.unicode_markup fails."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Test", "utf-8")]
-        with patch("soar_sdk.extras.email.processor.UnicodeDammit") as mock_ud:
+        with patch("soar_sdk.extras.email.utils.UnicodeDammit") as mock_ud:
             mock_instance = MagicMock()
             mock_instance.unicode_markup = None
             mock_ud.return_value = mock_instance
-            result = processor._decode_uni_string("=?UTF-8?Q?test?=", "fallback")
+            result = decode_uni_string("=?UTF-8?Q?test?=", "fallback")
 
     assert result is not None
 
@@ -4654,11 +4591,11 @@ def test_decode_uni_string_empty_dict_map(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when decoded_string is not in map."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = []
-        result = processor._decode_uni_string("=?UTF-8?Q?test?=", "fallback")
+        result = decode_uni_string("=?UTF-8?Q?test?=", "fallback")
 
     assert result == "fallback"
 
@@ -4695,11 +4632,11 @@ def test_decode_uni_string_continue_on_empty_decoded(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string continues when decoded_string is not in map."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"First", "utf-8")]
-        result = processor._decode_uni_string(
+        result = decode_uni_string(
             "=?UTF-8?B?Rmlyc3Q=?= =?UTF-8?B?TWlzc2luZw==?=", "fallback"
         )
 
@@ -4710,15 +4647,15 @@ def test_decode_uni_string_unicode_markup_is_none(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string when unicode_markup returns empty string."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"Test", "utf-8")]
-        with patch("soar_sdk.extras.email.processor.UnicodeDammit") as mock_ud:
+        with patch("soar_sdk.extras.email.utils.UnicodeDammit") as mock_ud:
             mock_instance = MagicMock()
             mock_instance.unicode_markup = ""
             mock_ud.return_value = mock_instance
-            result = processor._decode_uni_string("=?UTF-8?Q?test?=", "fallback")
+            result = decode_uni_string("=?UTF-8?Q?test?=", "fallback")
 
     assert result is not None
 
@@ -4890,11 +4827,11 @@ def test_decode_uni_string_skip_empty_in_map(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string continues when decoded_string is None."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(b"First", "utf-8"), (None, None)]
-        result = processor._decode_uni_string(
+        result = decode_uni_string(
             "=?UTF-8?B?Rmlyc3Q=?= =?UTF-8?B?U2Vjb25k?=", "fallback"
         )
 
@@ -4905,11 +4842,11 @@ def test_decode_uni_string_value_none_encoding_exists(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _decode_uni_string continues when value is None."""
-    processor = EmailProcessor(mock_context, email_config)
+    EmailProcessor(mock_context, email_config)
 
-    with patch("soar_sdk.extras.email.processor.decode_header") as mock_decode:
+    with patch("soar_sdk.extras.email.utils.decode_header") as mock_decode:
         mock_decode.return_value = [(None, "utf-8"), (b"Second", "utf-8")]
-        result = processor._decode_uni_string(
+        result = decode_uni_string(
             "=?UTF-8?B?Rmlyc3Q=?= =?UTF-8?B?U2Vjb25k?=", "fallback"
         )
 
