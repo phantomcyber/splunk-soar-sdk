@@ -1,20 +1,16 @@
 import inspect
+from collections.abc import Callable, Iterator
 from functools import wraps
-from typing import Any
-from collections.abc import Callable
-from collections.abc import Iterator
+from typing import TYPE_CHECKING, Any
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
-from soar_sdk.params import OnPollParams
-from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.types import Action, action_protocol
-from soar_sdk.exceptions import ActionFailure
 from soar_sdk.async_utils import run_async_if_needed
+from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
-
-
-from typing import TYPE_CHECKING
+from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.params import OnPollParams
+from soar_sdk.types import Action, action_protocol
 
 if TYPE_CHECKING:
     from soar_sdk.app import App
@@ -75,8 +71,8 @@ class OnPollDecorator:
             **kwargs: Any,  # noqa: ANN401
         ) -> bool:
             # Lazy imports to avoid circular dependencies
-            from soar_sdk.models.container import Container
             from soar_sdk.models.artifact import Artifact
+            from soar_sdk.models.container import Container
 
             try:
                 # Validate poll params

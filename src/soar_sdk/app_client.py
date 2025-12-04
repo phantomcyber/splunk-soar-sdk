@@ -1,14 +1,13 @@
-from dataclasses import dataclass
-from typing import Any, TYPE_CHECKING
 from collections.abc import Mapping
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
 import httpx
 
+from soar_sdk.abstract import SOARClient, SOARClientAuth, SummaryType
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
-
-from soar_sdk.abstract import SOARClient, SOARClientAuth, SummaryType
 
 if TYPE_CHECKING:
     pass

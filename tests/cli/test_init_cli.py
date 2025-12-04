@@ -1,10 +1,12 @@
 import json
 import textwrap
+from unittest.mock import patch
 from uuid import uuid4
+
 import pytest
 from typer.testing import CliRunner
-from soar_sdk.cli.init.cli import init, resolve_dependencies, get_app_json
-from unittest.mock import patch
+
+from soar_sdk.cli.init.cli import get_app_json, init, resolve_dependencies
 
 
 @pytest.fixture

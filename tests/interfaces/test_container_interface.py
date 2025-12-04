@@ -1,10 +1,11 @@
-from soar_sdk.abstract import SOARClient
-from soar_sdk.app import App
-from soar_sdk.params import Params
-from soar_sdk.action_results import ActionOutput
-from httpx import Response, RequestError
 import pytest
-from soar_sdk.exceptions import SoarAPIError, ActionFailure
+from httpx import RequestError, Response
+
+from soar_sdk.abstract import SOARClient
+from soar_sdk.action_results import ActionOutput
+from soar_sdk.app import App
+from soar_sdk.exceptions import ActionFailure, SoarAPIError
+from soar_sdk.params import Params
 
 
 @pytest.mark.parametrize(

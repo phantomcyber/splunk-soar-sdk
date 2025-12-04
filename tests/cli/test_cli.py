@@ -6,7 +6,6 @@ from typer.testing import CliRunner
 from soar_sdk.cli import cli
 from soar_sdk.paths import SDK_ROOT
 
-
 # Create a test runner
 runner = CliRunner()
 

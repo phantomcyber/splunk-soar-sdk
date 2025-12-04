@@ -1,8 +1,8 @@
-from soar_sdk.cli.manifests.serializers import ParamsSerializer, OutputsSerializer
-from soar_sdk.params import Param, Params
-from soar_sdk.action_results import ActionOutput, OutputField
-
 import pytest
+
+from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.cli.manifests.serializers import OutputsSerializer, ParamsSerializer
+from soar_sdk.params import Param, Params
 
 
 def test_params_get_sorted_fields_keys_sorts_by_field_order_value():

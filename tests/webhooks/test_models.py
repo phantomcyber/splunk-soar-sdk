@@ -1,7 +1,7 @@
 import base64
 from io import BytesIO, StringIO
-import pytest
 
+import pytest
 
 from soar_sdk.webhooks.models import WebhookResponse
 

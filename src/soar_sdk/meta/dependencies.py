@@ -1,23 +1,20 @@
 import functools
+import hashlib
 import io
 import os
-from pathlib import Path
 import subprocess
 import tarfile
+from collections.abc import AsyncGenerator, Mapping, Sequence
+from logging import getLogger
+from pathlib import Path
 from tempfile import TemporaryDirectory
-import build
-
 from typing import ClassVar
-from collections.abc import Mapping, Sequence, AsyncGenerator
+
+import build
+import httpx
 from pydantic import BaseModel, Field
 
-from logging import getLogger
-
-import httpx
-import hashlib
-
 from soar_sdk.compat import remove_when_soar_newer_than
-
 
 logger = getLogger(__name__)
 

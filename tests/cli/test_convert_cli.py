@@ -1,16 +1,15 @@
-from unittest.mock import patch
-import pytest
-from pathlib import Path
 import ast
 import json
+from pathlib import Path
+from unittest.mock import patch
 
+import pytest
 from typer.testing import CliRunner
 
+from soar_sdk.cli.init import cli
 from soar_sdk.compat import PythonVersion
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.meta.app import AppMeta, AssetFieldSpecification
-
-from soar_sdk.cli.init import cli
 
 
 @pytest.fixture

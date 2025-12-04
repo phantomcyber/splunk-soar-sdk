@@ -1,7 +1,8 @@
-from uuid import uuid4
-from pydantic import BaseModel, Field, field_validator, ConfigDict
-from typing import Literal, Any
 import random
+from typing import Any, Literal
+from uuid import uuid4
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def id_factory() -> int:

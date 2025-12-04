@@ -1,18 +1,18 @@
-from unittest import mock
 import json
+from unittest import mock
 
+import pytest
+
+from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
+from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.crypto import encrypt
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.params import Params
-import pytest
-
-from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
-from soar_sdk.abstract import SOARClientAuth, SOARClient
-from soar_sdk.asset import BaseAsset, AssetField
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 
 def test_app_run(example_app):

@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 from unittest.mock import Mock
 
-from soar_sdk.async_utils import is_coroutine, run_async_if_needed, is_async_generator
+from soar_sdk.async_utils import is_async_generator, is_coroutine, run_async_if_needed
 
 
 def test_is_async_generator():

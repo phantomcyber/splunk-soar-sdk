@@ -1,27 +1,27 @@
+import asyncio
 import contextlib
+import json
+import os
+import tarfile
+import time
 from datetime import timedelta
+from io import BytesIO
+from itertools import chain
+from pathlib import Path
+from typing import Annotated
+
+import httpx
 import humanize
 import typer
-
-import tarfile
-from io import BytesIO
-import json
-from pathlib import Path
-import asyncio
-import time
-from typing import Annotated
-from tqdm import tqdm
 from rich.console import Console
 from rich.panel import Panel
+from tqdm import tqdm
 
 from soar_sdk.cli.manifests.processors import ManifestProcessor
-from soar_sdk.meta.dependencies import DependencyWheel
-from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
-from soar_sdk.paths import SDK_TEMPLATES, APP_TEMPLATES
-from itertools import chain
-import os
-import httpx
+from soar_sdk.cli.path_utils import context_directory
+from soar_sdk.meta.dependencies import DependencyWheel
+from soar_sdk.paths import APP_TEMPLATES, SDK_TEMPLATES
 
 package = typer.Typer()
 console = Console()  # For printing lots of pretty colors and stuff

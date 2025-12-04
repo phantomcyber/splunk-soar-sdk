@@ -1,10 +1,11 @@
-import pytest
 from unittest import mock
+
+import pytest
 from pydantic import BaseModel
 
-from soar_sdk.views.view_parser import ViewFunctionParser
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.models.view import ViewContext
+from soar_sdk.views.view_parser import ViewFunctionParser
 
 
 class SampleViewOutput(ActionOutput):

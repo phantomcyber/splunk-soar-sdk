@@ -1,6 +1,6 @@
-from .soar_client import AppOnStackClient
-
 import httpx
+
+from .soar_client import AppOnStackClient
 
 
 def test_connectivity(webhook_app_client: AppOnStackClient):

@@ -1,5 +1,5 @@
-from pydantic import Field
 import pytest
+from pydantic import Field
 
 from soar_sdk.asset import AssetField, AssetFieldSpecification, BaseAsset
 from soar_sdk.exceptions import AppContextRequired

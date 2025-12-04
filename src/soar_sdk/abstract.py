@@ -1,14 +1,15 @@
 from abc import abstractmethod
+from collections.abc import AsyncIterable, Iterable, Mapping
 from typing import Any, Generic, TypeVar
-from collections.abc import Mapping, Iterable, AsyncIterable
 
-from soar_sdk.apis.vault import Vault
+import httpx
+from pydantic import field_validator
+from pydantic.dataclasses import dataclass
+
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
-from soar_sdk.action_results import ActionOutput
-import httpx
-from pydantic.dataclasses import dataclass
-from pydantic import field_validator
+from soar_sdk.apis.vault import Vault
 
 JSONType = dict[str, Any] | list[Any] | str | int | float | bool | None
 SummaryType = TypeVar("SummaryType", bound=ActionOutput)

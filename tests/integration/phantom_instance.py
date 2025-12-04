@@ -1,20 +1,20 @@
 from __future__ import annotations
 
 import logging
+import ssl
 import time
 import uuid
-import ssl
 from contextlib import asynccontextmanager
+from urllib.parse import urlparse
 
 import httpx
 import urllib3
-from urllib.parse import urlparse
 import websockets
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.apis.vault import Vault
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
+from soar_sdk.apis.vault import Vault
 
 from . import phantom_constants
 

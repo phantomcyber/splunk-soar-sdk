@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-02T04:43:17.112301Z",
+    "utctime_updated": "2025-12-04T21:56:26.853043Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -558,7 +558,6 @@
         ]
     },
     "webhook": {
-        "handler": "src.app.app.handle_webhook",
         "requires_auth": true,
         "allowed_headers": [],
         "ip_allowlist": [
@@ -573,7 +572,7 @@
                     "POST"
                 ],
                 "declaration_path": "src/app.py",
-                "declaration_lineno": 58
+                "declaration_lineno": 59
             },
             {
                 "url_pattern": "test_webhook/<asset_id>",
@@ -583,7 +582,7 @@
                     "DELETE"
                 ],
                 "declaration_path": "src/app.py",
-                "declaration_lineno": 72
+                "declaration_lineno": 73
             },
             {
                 "url_pattern": "test_webhook_file",
@@ -592,7 +591,7 @@
                     "POST"
                 ],
                 "declaration_path": "src/app.py",
-                "declaration_lineno": 85
+                "declaration_lineno": 86
             }
         ]
     }

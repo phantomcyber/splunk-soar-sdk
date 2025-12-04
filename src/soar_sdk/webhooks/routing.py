@@ -4,13 +4,12 @@ This module provides a router for mapping URL patterns to handler functions.
 """
 
 import re
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import TypeVar, Generic
-from collections.abc import Callable
-from collections.abc import Sequence
+from typing import Generic, TypeVar
 
-from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.asset import BaseAsset
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 
 class RouteConflictError(Exception):

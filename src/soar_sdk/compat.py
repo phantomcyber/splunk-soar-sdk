@@ -1,5 +1,6 @@
-from enum import Enum
 import functools
+from enum import Enum
+
 from packaging.version import Version
 
 MIN_PHANTOM_VERSION = "7.0.0"

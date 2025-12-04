@@ -1,9 +1,10 @@
 import pytest
 import pytest_mock
+
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
-from soar_sdk.exceptions import AssetMisconfiguration
 from soar_sdk.app import App
+from soar_sdk.exceptions import AssetMisconfiguration
 
 
 def test_connectivity_decoration_fails_when_used_more_than_once(app_with_action: App):

@@ -1,9 +1,8 @@
 import argparse
-
-from tomlkit import parse, dumps
-from tomlkit.container import Container
-
 from typing import cast
+
+from tomlkit import dumps, parse
+from tomlkit.container import Container
 
 
 def update_version(version: str) -> None:

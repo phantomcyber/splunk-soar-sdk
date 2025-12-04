@@ -1,14 +1,13 @@
-from typing import Any, ClassVar
-from typing_extensions import TypedDict
-from typing import NotRequired
+from typing import Any, ClassVar, NotRequired
 
 from pydantic import Field
-from pydantic_core import PydanticUndefined
 from pydantic.main import BaseModel
+from pydantic_core import PydanticUndefined
+from typing_extensions import TypedDict
 
 from soar_sdk.compat import remove_when_soar_newer_than
-from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.meta.datatypes import as_datatype
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"

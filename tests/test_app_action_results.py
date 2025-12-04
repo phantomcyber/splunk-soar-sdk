@@ -1,8 +1,8 @@
 from soar_sdk.abstract import SOARClient
-from soar_sdk.app import App
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.app import App
 from tests.mocks.dynamic_mocks import ArgReturnMock
-from tests.stubs import SampleActionParams, SampleOutput, SampleNestedOutput
+from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 
 
 def test_app_action_called_with_simple_result_creates_the_result(app_with_action: App):

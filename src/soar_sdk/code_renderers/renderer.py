@@ -1,9 +1,9 @@
 import abc
-from typing import TypeVar, Generic
-import jinja2 as j2
 import ast
 from collections.abc import Iterator
+from typing import Generic, TypeVar
 
+import jinja2 as j2
 
 ContextT = TypeVar("ContextT")
 

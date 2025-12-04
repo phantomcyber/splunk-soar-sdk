@@ -1,18 +1,19 @@
 import json
-import pytest
 from unittest.mock import Mock, patch
 
+import pytest
+
+from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
 from soar_sdk.cli.manifests.deserializers import (
-    AppMetaDeserializer,
     ActionDeserializer,
+    AppMetaDeserializer,
     DeserializedActionMeta,
 )
 from soar_sdk.cli.manifests.serializers import OutputsSerializer
 from soar_sdk.compat import PythonVersion
-from soar_sdk.meta.app import AppMeta
 from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.meta.app import AppMeta
 from soar_sdk.params import Params
-from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
 
 
 # Fixtures

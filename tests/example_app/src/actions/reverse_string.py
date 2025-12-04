@@ -1,6 +1,6 @@
-from soar_sdk.logging import getLogger
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.logging import getLogger
 from soar_sdk.params import Params
 
 logger = getLogger()

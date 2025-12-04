@@ -1,48 +1,45 @@
 import importlib.util
 import inspect
 import json
-from pathlib import Path
 import sys
+import uuid
+from collections.abc import Callable, Iterator
+from pathlib import Path
 from typing import Any
-from collections.abc import Callable
-from collections.abc import Iterator
 from zoneinfo import ZoneInfo
 
+from soar_sdk.abstract import SOARClient, SOARClientAuth
+from soar_sdk.action_results import ActionOutput, ActionResult
+from soar_sdk.actions_manager import ActionsManager
+from soar_sdk.app_cli_runner import AppCliRunner
+from soar_sdk.app_client import AppClient
 from soar_sdk.asset import BaseAsset
-from soar_sdk.input_spec import InputSpecification
+from soar_sdk.asset_state import AssetState
 from soar_sdk.compat import (
     MIN_PHANTOM_VERSION,
     PythonVersion,
 )
+from soar_sdk.decorators import (
+    ActionDecorator,
+    ConnectivityTestDecorator,
+    MakeRequestDecorator,
+    OnESPollDecorator,
+    OnPollDecorator,
+    ViewHandlerDecorator,
+    WebhookDecorator,
+)
+from soar_sdk.exceptions import ActionRegistrationError
+from soar_sdk.input_spec import InputSpecification
+from soar_sdk.logging import getLogger
+from soar_sdk.meta.webhooks import WebhookMeta
+from soar_sdk.params import Params
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
     platform_encryption_backend,
 )
-from soar_sdk.abstract import SOARClient, SOARClientAuth
-from soar_sdk.action_results import ActionResult
-from soar_sdk.actions_manager import ActionsManager
-from soar_sdk.app_cli_runner import AppCliRunner
-from soar_sdk.meta.webhooks import WebhookMeta
-from soar_sdk.params import Params
-from soar_sdk.app_client import AppClient
-from soar_sdk.action_results import ActionOutput
-from soar_sdk.logging import getLogger
 from soar_sdk.types import Action
-from soar_sdk.webhooks.routing import Router
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
-from soar_sdk.exceptions import ActionRegistrationError
-from soar_sdk.asset_state import AssetState
-
-import uuid
-from soar_sdk.decorators import (
-    ConnectivityTestDecorator,
-    ActionDecorator,
-    ViewHandlerDecorator,
-    OnPollDecorator,
-    OnESPollDecorator,
-    WebhookDecorator,
-    MakeRequestDecorator,
-)
+from soar_sdk.webhooks.routing import Router
 
 
 def is_valid_uuid(value: str) -> bool:

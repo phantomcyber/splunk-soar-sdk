@@ -1,10 +1,10 @@
 import asyncio
 
-from soar_sdk.params import Params, Param
 from soar_sdk.action_results import ActionOutput
-from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
-from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
+from soar_sdk.models.container import Container
+from soar_sdk.params import Param, Params
+from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 
 class _TestParams(Params):

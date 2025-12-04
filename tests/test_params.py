@@ -1,8 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from soar_sdk.params import Param, Params, MakeRequestParams
-
+from soar_sdk.params import MakeRequestParams, Param, Params
 from tests.stubs import SampleActionParams
 
 

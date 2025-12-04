@@ -1,20 +1,19 @@
-from unittest import mock
-from uuid import uuid4
-
-import pytest
 import inspect
 import sys
 import types
+from unittest import mock
+from uuid import uuid4
 
+import httpx
+import pytest
 import pytest_mock
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.app import App
-from soar_sdk.params import Param, Params
 from soar_sdk.action_results import ActionOutput
-from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
+from soar_sdk.app import App
 from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
-import httpx
+from soar_sdk.params import Param, Params
+from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 
 
 class SampleParams(Params):

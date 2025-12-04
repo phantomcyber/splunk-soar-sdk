@@ -1,6 +1,7 @@
 import textwrap
-import pytest
 from unittest import mock
+
+import pytest
 
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 
@@ -193,7 +194,7 @@ class TestResolveDependencies:
 
     def test_shared_prefix_when_wheels_identical(self):
         """When both versions resolve to identical wheels, should use 'shared' prefix."""
-        from soar_sdk.meta.dependencies import UvLock, DependencyWheel, UvWheel
+        from soar_sdk.meta.dependencies import DependencyWheel, UvLock, UvWheel
 
         package = mock.Mock()
 

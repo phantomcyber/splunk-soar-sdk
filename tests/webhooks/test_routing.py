@@ -2,7 +2,7 @@ import pytest
 
 from soar_sdk.asset import BaseAsset
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
-from soar_sdk.webhooks.routing import Router, RouteConflictError
+from soar_sdk.webhooks.routing import RouteConflictError, Router
 
 
 def test_route_invalid_method() -> None:

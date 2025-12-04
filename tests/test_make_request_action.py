@@ -1,11 +1,12 @@
 import pytest
 import pytest_mock
+
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import MakeRequestOutput, OutputField
 from soar_sdk.app import App
-from soar_sdk.params import MakeRequestParams, Params
-from soar_sdk.exceptions import ActionFailure
 from soar_sdk.asset import BaseAsset
+from soar_sdk.exceptions import ActionFailure
+from soar_sdk.params import MakeRequestParams, Params
 
 
 class ValidAsset(BaseAsset):

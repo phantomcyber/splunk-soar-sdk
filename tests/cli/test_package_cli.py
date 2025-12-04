@@ -1,3 +1,4 @@
+import tarfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -8,10 +9,8 @@ from typer.testing import CliRunner
 
 from soar_sdk.cli.package.cli import package
 from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
-from soar_sdk.meta.dependencies import UvWheel
 from soar_sdk.cli.path_utils import context_directory
-
-import tarfile
+from soar_sdk.meta.dependencies import UvWheel
 
 runner = CliRunner()
 

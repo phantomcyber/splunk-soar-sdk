@@ -1,6 +1,6 @@
 import json
-from pathlib import Path
 import tempfile
+from pathlib import Path
 from unittest import mock
 
 import pytest
@@ -8,7 +8,6 @@ from typer.testing import CliRunner
 
 from soar_sdk.cli.manifests.cli import manifests
 from soar_sdk.cli.manifests.processors import ManifestProcessor
-
 
 # Create a test runner
 runner = CliRunner()

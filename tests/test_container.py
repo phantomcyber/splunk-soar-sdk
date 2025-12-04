@@ -1,5 +1,5 @@
-from soar_sdk.models.container import Container
 from soar_sdk.models.artifact import Artifact
+from soar_sdk.models.container import Container
 
 
 def test_container_basic():
@@ -22,8 +22,8 @@ def test_container_basic():
 
 def test_container_invalid_attribute():
     """Test setting an invalid attribute should raise ValidationError."""
-    from pydantic import ValidationError
     import pytest
+    from pydantic import ValidationError
 
     try:
         Container(name="Test Container", not_allowed="fail")
@@ -34,8 +34,8 @@ def test_container_invalid_attribute():
 
 def test_container_missing_required_field():
     """Test that missing required fields raises ValidationError."""
-    from pydantic import ValidationError
     import pytest
+    from pydantic import ValidationError
 
     try:
         Container()
@@ -46,8 +46,8 @@ def test_container_missing_required_field():
 
 def test_container_type_validation():
     """Test that invalid types raise ValidationError."""
-    from pydantic import ValidationError
     import pytest
+    from pydantic import ValidationError
 
     try:
         Container(name={"invalid": "type"})
@@ -113,8 +113,8 @@ def test_artifact_with_data():
 
 def test_artifact_invalid_attribute():
     """Test setting an invalid attribute should raise ValidationError."""
-    from pydantic import ValidationError
     import pytest
+    from pydantic import ValidationError
 
     try:
         Artifact(name="Test Artifact", not_allowed="fail")
@@ -125,8 +125,8 @@ def test_artifact_invalid_attribute():
 
 def test_artifact_type_validation():
     """Test that invalid types raise ValidationError for Artifact."""
-    from pydantic import ValidationError
     import pytest
+    from pydantic import ValidationError
 
     try:
         Artifact(name={"invalid": "type"})

@@ -1,6 +1,6 @@
 import typing
-from typing import Any, Protocol
 from collections.abc import Callable
+from typing import Any, Protocol
 
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params

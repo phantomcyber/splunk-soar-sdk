@@ -1,10 +1,10 @@
 import importlib
 import json
-import toml
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from pathlib import Path
 from pprint import pprint
 
+import toml
 from packaging.specifiers import SpecifierSet
 
 from soar_sdk.app import App

@@ -1,6 +1,7 @@
-import httpx
-from typing import Any
 from collections.abc import Generator
+from typing import Any
+
+import httpx
 
 
 def is_client_authenticated(client: httpx.Client) -> bool:

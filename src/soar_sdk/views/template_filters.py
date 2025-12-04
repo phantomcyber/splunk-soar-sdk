@@ -7,12 +7,12 @@ import hashlib
 import json
 import re
 import uuid
-import humanize
-import bleach  # type: ignore[import-untyped]
+from collections.abc import Iterable, Iterator
 from datetime import datetime, timedelta
 from typing import TypeVar
-from collections.abc import Iterable
-from collections.abc import Iterator
+
+import bleach  # type: ignore[import-untyped]
+import humanize
 from jinja2 import Environment
 
 

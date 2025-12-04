@@ -1,5 +1,7 @@
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict
+
 from soar_sdk.action_results import ActionResult
 
 

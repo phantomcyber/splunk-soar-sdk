@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
-from jinja2 import Environment, FileSystemLoader, select_autoescape
-from soar_sdk.views.template_filters import setup_jinja_env
-from soar_sdk.paths import SDK_TEMPLATES
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+from soar_sdk.paths import SDK_TEMPLATES
+from soar_sdk.views.template_filters import setup_jinja_env
 
 # Only Jinja2 is supported (Django is not used in the SDK now)
 DEFAULT_TEMPLATE_ENGINE = "jinja"

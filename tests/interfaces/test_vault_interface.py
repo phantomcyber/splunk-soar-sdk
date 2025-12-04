@@ -1,8 +1,9 @@
-from httpx import Response, RequestError
-from soar_sdk.exceptions import SoarAPIError
-from soar_sdk.app_client import BasicAuth
 import pytest
+from httpx import RequestError, Response
+
 from soar_sdk.apis.utils import get_request_iter_pages
+from soar_sdk.app_client import BasicAuth
+from soar_sdk.exceptions import SoarAPIError
 
 
 def test_vault_get_temp_dir(app_connector):

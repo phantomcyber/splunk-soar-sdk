@@ -1,5 +1,5 @@
-import dataclasses
 import ast
+import dataclasses
 from collections.abc import Iterator
 
 from soar_sdk.code_renderers.renderer import AstRenderer

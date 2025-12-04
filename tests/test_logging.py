@@ -1,20 +1,21 @@
 from unittest import mock
+
 import pytest
 import pytest_mock
 
+import soar_sdk.logging
+from soar_sdk.colors import ANSIColor
 from soar_sdk.logging import (
-    getLogger,
+    PhantomLogger,
+    SOARHandler,
+    critical,
     debug,
     error,
+    getLogger,
     info,
     progress,
-    critical,
     warning,
-    SOARHandler,
-    PhantomLogger,
 )
-from soar_sdk.colors import ANSIColor
-import soar_sdk.logging
 from soar_sdk.shims.phantom.ph_ipc import ph_ipc
 
 

@@ -1,10 +1,10 @@
-from typing import Any, Type, Callable  # noqa: UP035
+from typing import Any, Callable, Type  # noqa: UP035
 
 from pydantic import BaseModel, Field
 
-from soar_sdk.cli.manifests.serializers import ParamsSerializer, OutputsSerializer
-from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.cli.manifests.serializers import OutputsSerializer, ParamsSerializer
+from soar_sdk.params import Params
 
 
 class ActionMeta(BaseModel):

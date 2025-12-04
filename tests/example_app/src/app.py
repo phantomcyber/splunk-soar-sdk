@@ -1,22 +1,23 @@
 from collections.abc import Iterator
-from datetime import datetime, UTC
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
+
 from soar_sdk.abstract import SOARClient
+from soar_sdk.action_results import ActionOutput, MakeRequestOutput, OutputField
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.params import (
-    OnPollParams,
-    OnESPollParams,
-    MakeRequestParams,
-    Params,
-    Param,
-)
-from soar_sdk.models.container import Container
-from soar_sdk.models.artifact import Artifact
-from soar_sdk.models.finding import Finding
-from soar_sdk.models.attachment_input import AttachmentInput
-from soar_sdk.action_results import ActionOutput, MakeRequestOutput, OutputField
 from soar_sdk.logging import getLogger
+from soar_sdk.models.artifact import Artifact
+from soar_sdk.models.attachment_input import AttachmentInput
+from soar_sdk.models.container import Container
+from soar_sdk.models.finding import Finding
+from soar_sdk.params import (
+    MakeRequestParams,
+    OnESPollParams,
+    OnPollParams,
+    Param,
+    Params,
+)
 
 logger = getLogger()
 

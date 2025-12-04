@@ -1,5 +1,5 @@
 try:
-    from phantom.app import APP_SUCCESS, APP_ERROR
+    from phantom.app import APP_ERROR, APP_SUCCESS
 
     _soar_is_available = True
 except ImportError:
