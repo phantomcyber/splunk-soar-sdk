@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-04T22:00:51.873938Z",
+    "utctime_updated": "2025-12-04T22:36:27.053309Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -974,16 +974,6 @@
                 "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
             },
             {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.42.3-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.42.3-py3-none-any.whl"
-            },
-            {
                 "module": "build",
                 "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
@@ -1039,11 +1029,6 @@
                 "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
             },
             {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
-            },
-            {
                 "module": "markdown-it-py",
                 "input_file": "wheels/shared/markdown_it_py-4.0.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/markdown_it_py-4.0.0-py3-none-any.whl"
@@ -1094,11 +1079,6 @@
                 "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
             },
             {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
                 "module": "pyyaml",
                 "input_file": "wheels/python313/pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
                 "input_file_aarch64": "wheels/python313/pyyaml-6.0.3-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
@@ -1107,11 +1087,6 @@
                 "module": "rich",
                 "input_file": "wheels/shared/rich-14.2.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/rich-14.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl"
             },
             {
                 "module": "setuptools",
@@ -1183,16 +1158,6 @@
                 "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
             },
             {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.42.3-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.42.3-py3-none-any.whl"
-            },
-            {
                 "module": "build",
                 "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
@@ -1248,11 +1213,6 @@
                 "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
             },
             {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
-            },
-            {
                 "module": "markdown-it-py",
                 "input_file": "wheels/shared/markdown_it_py-4.0.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/markdown_it_py-4.0.0-py3-none-any.whl"
@@ -1303,11 +1263,6 @@
                 "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
             },
             {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
                 "module": "pyyaml",
                 "input_file": "wheels/python314/pyyaml-6.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
                 "input_file_aarch64": "wheels/python314/pyyaml-6.0.3-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
@@ -1316,11 +1271,6 @@
                 "module": "rich",
                 "input_file": "wheels/shared/rich-14.2.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/rich-14.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl"
             },
             {
                 "module": "setuptools",
