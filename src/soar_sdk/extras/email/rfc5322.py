@@ -154,9 +154,7 @@ def _extract_urls_from_content(content: str, urls: set[str], is_html: bool) -> N
     content = unescape(content)
     uri_matches = re.findall(URI_REGEX, content)
     for uri in uri_matches:
-        cleaned = clean_url(uri)
-        if cleaned.startswith("http"):
-            urls.add(cleaned)
+        urls.add(clean_url(uri))
 
 
 def extract_email_headers(mail: Message, email_id: str | None = None) -> EmailHeaders:
@@ -222,8 +220,6 @@ def extract_email_body(mail: Message) -> EmailBody:
 
         if content_type == "text/plain" and not body.plain_text:
             body.plain_text = decoded
-            if not body.charset:
-                body.charset = part_charset
         elif content_type == "text/html" and not body.html:
             body.html = decoded
 
