@@ -1,5 +1,5 @@
-from soar_sdk.app_client import AppClient
 from soar_sdk.abstract import SOARClientAuth
+from soar_sdk.app_client import AppClient
 
 
 def test_update_client(

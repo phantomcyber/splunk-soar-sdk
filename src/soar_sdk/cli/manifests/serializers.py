@@ -1,12 +1,12 @@
-from typing import Any
+import itertools
 from collections.abc import Iterator
 from logging import getLogger
-import itertools
+from typing import Any
 
-from soar_sdk.meta.datatypes import as_datatype
-from soar_sdk.params import Params
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
 from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.meta.datatypes import as_datatype
+from soar_sdk.params import Params
 
 logger = getLogger(__name__)
 

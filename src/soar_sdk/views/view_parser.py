@@ -1,17 +1,19 @@
+import inspect
+from collections.abc import Callable
 from typing import (
     Any,
-    TypeVar,
-    get_origin,
-    get_args,
     Generic,
+    TypeVar,
     cast,
+    get_args,
+    get_origin,
 )
-from collections.abc import Callable
-import inspect
+
 from pydantic import BaseModel
+
 from soar_sdk.action_results import ActionOutput
-from soar_sdk.models.view import ViewContext, AllAppRuns
 from soar_sdk.async_utils import run_async_if_needed
+from soar_sdk.models.view import AllAppRuns, ViewContext
 
 T = TypeVar("T", bound=ActionOutput)
 

@@ -1,33 +1,32 @@
+import re
+from pathlib import Path
 from unittest import mock
 
 import pytest
+from httpx import Response
 
+from soar_sdk.abstract import SOARClient, SOARClientAuth
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
-from soar_sdk.asset import BaseAsset
-from soar_sdk.compat import PythonVersion
 from soar_sdk.app_client import AppClient
-from soar_sdk.abstract import SOARClientAuth
+from soar_sdk.asset import BaseAsset
+from soar_sdk.asset_state import AssetState
+from soar_sdk.compat import PythonVersion
 from soar_sdk.input_spec import (
     AppConfig,
     InputSpecification,
     SoarAuth,
 )
-from soar_sdk.action_results import ActionOutput
 from soar_sdk.meta.dependencies import (
+    UvDependency,
+    UvLock,
     UvPackage,
     UvSourceDistribution,
     UvWheel,
-    UvLock,
-    UvDependency,
 )
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
-from soar_sdk.asset_state import AssetState
 from tests.stubs import SampleActionParams
-from pathlib import Path
-from httpx import Response
-import re
-from soar_sdk.abstract import SOARClient
 
 APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
 

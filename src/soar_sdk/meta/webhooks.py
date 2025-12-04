@@ -1,5 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
 from ipaddress import ip_network
+
+from pydantic import BaseModel, Field, field_validator
 
 
 class WebhookRouteMeta(BaseModel):

@@ -7,7 +7,6 @@ except ImportError:
 
 from typing import TYPE_CHECKING
 
-
 if TYPE_CHECKING or not _soar_is_available:
     import traceback
 

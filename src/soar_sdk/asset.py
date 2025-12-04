@@ -1,18 +1,16 @@
-from typing import Any
+from typing import Any, NotRequired
 from zoneinfo import ZoneInfo
-from pydantic import BaseModel, model_validator, ConfigDict, Field
+
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_core import PydanticUndefined
-
 from typing_extensions import TypedDict
-from typing import NotRequired
 
-
-from soar_sdk.compat import remove_when_soar_newer_than
-from soar_sdk.meta.datatypes import as_datatype
-from soar_sdk.input_spec import AppConfig
-from soar_sdk.field_utils import parse_json_schema_extra
 from soar_sdk.asset_state import AssetState
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.exceptions import AppContextRequired
+from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.input_spec import AppConfig
+from soar_sdk.meta.datatypes import as_datatype
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"

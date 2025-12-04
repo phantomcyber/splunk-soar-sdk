@@ -2,10 +2,11 @@ import ast
 import textwrap
 
 import pytest
-from soar_sdk.code_renderers.action_renderer import ActionRenderer
+
 from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.code_renderers.action_renderer import ActionRenderer
 from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.params import Params, Param
+from soar_sdk.params import Param, Params
 
 
 class ExampleEmptyOutput(ActionOutput):

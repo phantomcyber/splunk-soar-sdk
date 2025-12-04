@@ -1,10 +1,10 @@
 import json
 from typing import TYPE_CHECKING
 
-from soar_sdk.shims.phantom.json_keys import json_keys as ph_jsons
+from soar_sdk.apis.utils import is_client_authenticated
 from soar_sdk.exceptions import ActionFailure, SoarAPIError
 from soar_sdk.logging import getLogger
-from soar_sdk.apis.utils import is_client_authenticated
+from soar_sdk.shims.phantom.json_keys import json_keys as ph_jsons
 
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient

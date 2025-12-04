@@ -3,8 +3,9 @@ from typing import TYPE_CHECKING, Any
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
 from abc import abstractmethod
-from soar_sdk.exceptions import SoarAPIError
 from datetime import UTC
+
+from soar_sdk.exceptions import SoarAPIError
 
 
 class VaultBase:
@@ -139,13 +140,14 @@ if _soar_is_available:
     PhantomVault = PhantomVaultPlatform
 
 else:
-    from soar_sdk.apis.utils import is_client_authenticated, get_request_iter_pages
-    import tempfile
-    from pathlib import Path
-    import secrets
-    import random
-    from datetime import datetime
     import hashlib
+    import random
+    import secrets
+    import tempfile
+    from datetime import datetime
+    from pathlib import Path
+
+    from soar_sdk.apis.utils import get_request_iter_pages, is_client_authenticated
     from soar_sdk.logging import getLogger
     from soar_sdk.models.vault_attachment import VaultAttachment
 

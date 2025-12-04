@@ -1,8 +1,8 @@
 from unittest import mock
 
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.params import Params
-from soar_sdk.action_results import ActionOutput
 from tests.stubs import SampleActionParams
 
 

@@ -1,19 +1,19 @@
-from io import BytesIO
-from collections.abc import Iterator
-from unittest import mock
 import json
+import os
+from collections.abc import Iterator
+from io import BytesIO
 from pathlib import Path
+from unittest import mock
+
 import pytest
 import pytest_mock
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.app_cli_runner import AppCliRunner
-import os
-
+from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.params import Params
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
-from soar_sdk.asset import AssetField, BaseAsset
 
 
 class Asset(BaseAsset):

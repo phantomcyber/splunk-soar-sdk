@@ -1,13 +1,11 @@
 import inspect
 from functools import wraps
 from pathlib import Path
-
-from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse, WebhookHandler
-from soar_sdk.meta.webhooks import WebhookRouteMeta
-from soar_sdk.async_utils import run_async_if_needed
-
-
 from typing import TYPE_CHECKING
+
+from soar_sdk.async_utils import run_async_if_needed
+from soar_sdk.meta.webhooks import WebhookRouteMeta
+from soar_sdk.webhooks.models import WebhookHandler, WebhookRequest, WebhookResponse
 
 if TYPE_CHECKING:
     from soar_sdk.app import App

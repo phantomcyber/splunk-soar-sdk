@@ -1,7 +1,9 @@
 import base64
-from soar_sdk.shims.phantom.encryption_helper import encryption_helper
-from soar_sdk import crypto
+
 import pytest
+
+from soar_sdk import crypto
+from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 
 
 def test_encryption_helper_not_available():

@@ -1,9 +1,8 @@
-import pytest
-from unittest import mock
-
 import json
 from datetime import datetime
+from unittest import mock
 
+import pytest
 import pytest_mock
 
 from soar_sdk.cli.manifests.processors import ManifestProcessor

@@ -1,5 +1,6 @@
-import pytest
 import keyword
+
+import pytest
 
 from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.meta.app import AppMeta

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+import json
 import logging
 import time
+from asyncio import timeout
 from contextlib import suppress
 from dataclasses import dataclass
-import json
-from asyncio import timeout
 
 from .phantom_constants import ACTION_TEST_CONNECTIVITY, STATUS_SUCCESS
 from .phantom_instance import PhantomInstance

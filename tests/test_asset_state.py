@@ -1,7 +1,8 @@
-from soar_sdk.asset_state import AssetState
+import json
 
 import pytest
-import json
+
+from soar_sdk.asset_state import AssetState
 
 
 def test_asset_state_full_accessors(example_state: AssetState):

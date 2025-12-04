@@ -1,17 +1,17 @@
-from typing import Any
 import os
 from pathlib import Path
+from typing import Any
+
+from pydantic import ValidationError
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.input_spec import InputSpecification
-from soar_sdk.shims.phantom.base_connector import BaseConnector
-
-from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.types import Action
-from pydantic import ValidationError
-from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
-from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
 from soar_sdk.logging import getLogger
+from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
+from soar_sdk.shims.phantom.base_connector import BaseConnector
+from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
+from soar_sdk.types import Action
 
 logger = getLogger()
 

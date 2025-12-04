@@ -1,8 +1,9 @@
+from httpx import RequestError, Response
+
 from soar_sdk.abstract import SOARClient
+from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.params import Params
-from soar_sdk.action_results import ActionOutput
-from httpx import Response, RequestError
 
 
 def test_create_artifact(app_with_action: App, app_connector, mock_post_artifact):

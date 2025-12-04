@@ -8,8 +8,9 @@ except ImportError:
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING or not _soar_is_available:
-    from soar_sdk.shims.phantom.install_info import get_product_version
     from packaging.version import Version
+
+    from soar_sdk.shims.phantom.install_info import get_product_version
 
     if Version(get_product_version()) >= Version("7.0.0"):
 

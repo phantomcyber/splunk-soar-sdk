@@ -1,6 +1,7 @@
-from soar_sdk.models.finding import Finding, DrilldownSearch, DrilldownDashboard
-from pydantic import ValidationError
 import pytest
+from pydantic import ValidationError
+
+from soar_sdk.models.finding import DrilldownDashboard, DrilldownSearch, Finding
 
 
 def test_finding_basic():

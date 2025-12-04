@@ -173,6 +173,7 @@ select = [
     "PL",  # pylint
     "UP",  # pyupgrade
     "RUF", # ruff's own rules
+    "I",   # isort
 ]
 ignore = [
     "E402",   # Module level import not at top of file.

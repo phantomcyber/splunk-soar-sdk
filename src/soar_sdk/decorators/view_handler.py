@@ -1,19 +1,18 @@
 import inspect
-from functools import wraps
-from typing import Any
 from collections.abc import Callable
+from functools import wraps
+from typing import TYPE_CHECKING, Any
+
+from pydantic import BaseModel
 
 from soar_sdk.action_results import ActionResult
+from soar_sdk.models.view import AllAppRuns, ResultSummary, ViewContext
 from soar_sdk.views.component_registry import COMPONENT_REGISTRY
-from pydantic import BaseModel
-from soar_sdk.models.view import ViewContext, AllAppRuns, ResultSummary
-from soar_sdk.views.view_parser import ViewFunctionParser
 from soar_sdk.views.template_renderer import (
     get_template_renderer,
     get_templates_dir,
 )
-
-from typing import TYPE_CHECKING
+from soar_sdk.views.view_parser import ViewFunctionParser
 
 if TYPE_CHECKING:
     from soar_sdk.app import App

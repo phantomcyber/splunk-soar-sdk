@@ -1,20 +1,16 @@
 import inspect
+import traceback
+from collections.abc import AsyncGenerator, Callable, Iterator
 from functools import wraps
-from collections.abc import Iterator
-from typing import Any, get_args, get_origin
-from collections.abc import Callable
-from collections.abc import AsyncGenerator
+from typing import TYPE_CHECKING, Any, get_args, get_origin
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionResult, ActionOutput
-from soar_sdk.params import Params
-from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.types import Action, action_protocol
-from soar_sdk.exceptions import ActionFailure
+from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.async_utils import run_async_if_needed
-import traceback
-
-from typing import TYPE_CHECKING
+from soar_sdk.exceptions import ActionFailure
+from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.params import Params
+from soar_sdk.types import Action, action_protocol
 
 if TYPE_CHECKING:
     from soar_sdk.app import App

@@ -1,19 +1,19 @@
-from typing import Annotated, cast
+import ast
 import datetime
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import subprocess
 import uuid
-import ast
+from pathlib import Path
+from typing import Annotated, cast
 
 import typer
-from rich.console import Console
-from rich.panel import Panel
 from rich import print as rprint
+from rich.console import Console
 from rich.markup import escape as rescape
+from rich.panel import Panel
 
 from soar_sdk.cli.manifests.deserializers import AppMetaDeserializer
 from soar_sdk.cli.utils import normalize_field_name

@@ -1,5 +1,5 @@
-import dataclasses
 import ast
+import dataclasses
 from collections.abc import Iterator
 
 

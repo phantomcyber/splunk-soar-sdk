@@ -1,11 +1,12 @@
 import logging
-from soar_sdk.colors import ANSIColor
-
-from soar_sdk.shims.phantom.install_info import is_soar_available, get_product_version
-from soar_sdk.shims.phantom.ph_ipc import ph_ipc
-from packaging.version import Version
 from typing import Any
+
+from packaging.version import Version
+
+from soar_sdk.colors import ANSIColor
 from soar_sdk.compat import remove_when_soar_newer_than
+from soar_sdk.shims.phantom.install_info import get_product_version, is_soar_available
+from soar_sdk.shims.phantom.ph_ipc import ph_ipc
 
 PROGRESS_LEVEL = 25
 logging.addLevelName(PROGRESS_LEVEL, "PROGRESS")

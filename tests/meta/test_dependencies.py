@@ -1,17 +1,17 @@
 import logging
 from unittest import mock
-from soar_sdk.compat import remove_when_soar_newer_than
-from soar_sdk.meta.dependencies import (
-    UvSourceDistribution,
-    UvWheel,
-    UvPackage,
-    UvLock,
-    DependencyWheel,
-    UvDependency,
-)
-
 
 from typing_extensions import TypedDict
+
+from soar_sdk.compat import remove_when_soar_newer_than
+from soar_sdk.meta.dependencies import (
+    DependencyWheel,
+    UvDependency,
+    UvLock,
+    UvPackage,
+    UvSourceDistribution,
+    UvWheel,
+)
 
 remove_when_soar_newer_than(
     "7.0.0", "NotRequired from typing_extensions is in typing in Python 3.11+"

@@ -1,10 +1,12 @@
 from unittest import mock
+
 import pytest
-from soar_sdk.app import App
+from pydantic import BaseModel
+
 from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.app import App
 from soar_sdk.params import Params
 from soar_sdk.views.components.pie_chart import PieChartData
-from pydantic import BaseModel
 
 
 class SampleViewOutput(ActionOutput):

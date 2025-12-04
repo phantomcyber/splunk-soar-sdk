@@ -1,4 +1,4 @@
-from soar_sdk.input_spec import InputSpecification, AppConfig
+from soar_sdk.input_spec import AppConfig, InputSpecification
 
 
 def test_input_spec_without_action():

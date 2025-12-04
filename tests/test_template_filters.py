@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta, UTC
 import re
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from jinja2 import Environment
+
 from soar_sdk.views import template_filters
 
 

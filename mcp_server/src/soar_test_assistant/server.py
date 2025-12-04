@@ -7,7 +7,7 @@ from typing import Any
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
-from mcp.types import Tool, TextContent
+from mcp.types import TextContent, Tool
 
 app = Server("soar-test-assistant")
 

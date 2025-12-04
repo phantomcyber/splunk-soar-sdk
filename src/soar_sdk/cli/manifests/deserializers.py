@@ -2,15 +2,16 @@ import dataclasses
 import json
 from pathlib import Path
 from typing import Any, NamedTuple, TypeVar, cast
+
 import pydantic
 
-from soar_sdk.action_results import ActionOutput, OutputFieldSpecification, OutputField
-from soar_sdk.cli.utils import normalize_field_name, NormalizationResult
+from soar_sdk.action_results import ActionOutput, OutputField, OutputFieldSpecification
+from soar_sdk.cli.utils import NormalizationResult, normalize_field_name
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.meta.app import AppMeta
-from soar_sdk.params import Params, Param
 from soar_sdk.meta.datatypes import to_python_type
+from soar_sdk.params import Param, Params
 
 
 class DeserializedAppMeta(NamedTuple):

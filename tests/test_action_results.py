@@ -1,4 +1,5 @@
 import pytest
+
 from soar_sdk.action_results import ActionOutput, OutputField
 
 

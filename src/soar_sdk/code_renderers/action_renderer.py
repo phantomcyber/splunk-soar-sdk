@@ -1,15 +1,16 @@
-from typing import ClassVar
-from collections.abc import Iterator
-import typing
 import ast
+import typing
+from collections.abc import Iterator
+from typing import ClassVar
+
 from pydantic_core import PydanticUndefined
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.code_renderers.renderer import AstRenderer
+from soar_sdk.field_utils import parse_json_schema_extra
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
-from soar_sdk.field_utils import parse_json_schema_extra
 
 
 class ActionRenderer(AstRenderer[ActionMeta]):

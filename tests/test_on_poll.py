@@ -1,13 +1,13 @@
 from collections.abc import Iterator
-import pytest
 
+import pytest
 import pytest_mock
 
 from soar_sdk.app import App
-from soar_sdk.params import OnPollParams
-from soar_sdk.models.container import Container
-from soar_sdk.models.artifact import Artifact
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.models.artifact import Artifact
+from soar_sdk.models.container import Container
+from soar_sdk.params import OnPollParams
 
 
 def test_on_poll_decoration_fails_when_used_more_than_once(app_with_action: App):

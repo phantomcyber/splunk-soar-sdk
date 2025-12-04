@@ -1,5 +1,6 @@
 import pytest
-from soar_sdk.compat import remove_when_soar_newer_than, PythonVersion
+
+from soar_sdk.compat import PythonVersion, remove_when_soar_newer_than
 
 
 def test_raises_runtime_error_when_version_below_minimum():

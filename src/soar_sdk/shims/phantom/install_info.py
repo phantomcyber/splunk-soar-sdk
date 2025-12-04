@@ -1,7 +1,7 @@
 try:
     from phantom_common.install_info import (
-        get_verify_ssl_setting,
         get_product_version,
+        get_verify_ssl_setting,
         is_onprem_broker_install,
     )
 

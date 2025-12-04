@@ -11,16 +11,15 @@ from typing import TYPE_CHECKING
 from soar_sdk.compat import remove_when_soar_newer_than
 
 if TYPE_CHECKING or not _soar_is_available:
-    import json
     import abc
     import hashlib
+    import json
     import os
+    from contextlib import suppress
+    from typing import Any
 
     from soar_sdk.shims.phantom.action_result import ActionResult
     from soar_sdk.shims.phantom.connector_result import ConnectorResult
-
-    from typing import Any
-    from contextlib import suppress
 
     class BaseConnector:  # type: ignore[no-redef]
         def __init__(self) -> None:

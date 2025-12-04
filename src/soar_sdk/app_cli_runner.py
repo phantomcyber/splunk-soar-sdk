@@ -1,22 +1,23 @@
 import argparse
 import inspect
 import json
-from pathlib import Path
-import typing
-from typing import Any
 import os
-from pydantic import ValidationError
-from urllib.parse import urlparse, parse_qs
+import typing
+from pathlib import Path
+from typing import Any
+from urllib.parse import parse_qs, urlparse
 
+from pydantic import ValidationError
+
+from soar_sdk.abstract import SOARClientAuth
 from soar_sdk.input_spec import ActionParameter, AppConfig, InputSpecification, SoarAuth
+from soar_sdk.logging import PhantomLogger
+from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
     platform_encryption_backend,
 )
 from soar_sdk.types import Action
 from soar_sdk.webhooks.models import WebhookRequest
-from soar_sdk.logging import PhantomLogger
-from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
-from soar_sdk.abstract import SOARClientAuth
 
 if typing.TYPE_CHECKING:
     from .app import App

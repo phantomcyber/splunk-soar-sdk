@@ -1,19 +1,17 @@
 import inspect
+import traceback
+from collections.abc import Callable
+from functools import wraps
+from typing import TYPE_CHECKING, Any
 
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionResult
-from soar_sdk.params import MakeRequestParams
-from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.action_results import ActionOutput, MakeRequestOutput
-from soar_sdk.types import Action, action_protocol
-from soar_sdk.exceptions import ActionFailure
+from soar_sdk.action_results import ActionOutput, ActionResult, MakeRequestOutput
 from soar_sdk.async_utils import run_async_if_needed
+from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
-from functools import wraps
-import traceback
-
-from typing import TYPE_CHECKING, Any
-from collections.abc import Callable
+from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.params import MakeRequestParams
+from soar_sdk.types import Action, action_protocol
 
 if TYPE_CHECKING:
     from soar_sdk.app import App

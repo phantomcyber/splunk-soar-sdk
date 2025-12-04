@@ -1,9 +1,9 @@
-import json
 import base64
+import json
 import mimetypes
-
-from typing import TypeVar, Generic, Any, IO
 from collections.abc import Callable
+from typing import IO, Any, Generic, TypeVar
+
 from pydantic import BaseModel, Field
 
 from soar_sdk.asset import BaseAsset
