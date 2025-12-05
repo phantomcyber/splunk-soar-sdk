@@ -1,5 +1,5 @@
 import email
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from soar_sdk.extras.email.rfc5322 import (
     EmailAttachment,
@@ -17,7 +17,6 @@ from soar_sdk.extras.email.rfc5322 import (
     extract_email_urls,
     extract_rfc5322_email_data,
 )
-
 
 SIMPLE_EMAIL = """From: sender@example.com
 To: recipient@example.com
