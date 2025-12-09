@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-04T22:36:27.053309Z",
+    "utctime_updated": "2025-12-09T17:49:29.468742Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -699,6 +699,24 @@
                     "required": false,
                     "primary": false,
                     "allow_list": false
+                },
+                "es_base_url": {
+                    "order": 3,
+                    "name": "es_base_url",
+                    "description": "Base URL for the Splunk Enterprise Security API",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "es_session_key": {
+                    "order": 4,
+                    "name": "es_session_key",
+                    "description": "Session token for the Splunk Enterprise Security API",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
                 }
             },
             "output": []
@@ -1100,8 +1118,8 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl"
+                "input_file": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl"
             },
             {
                 "module": "toml",
@@ -1284,8 +1302,8 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.4.0-py3-none-any.whl"
+                "input_file": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl"
             },
             {
                 "module": "toml",

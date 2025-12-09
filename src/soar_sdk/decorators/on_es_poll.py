@@ -1,15 +1,17 @@
+import asyncio
 import inspect
-from collections.abc import Callable, Iterator
+from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, get_args
+
+from pydantic import ValidationError
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
-from soar_sdk.async_utils import run_async_if_needed
+from soar_sdk.es_client import ESClient
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.models.attachment_input import AttachmentInput
 from soar_sdk.models.container import Container
 from soar_sdk.models.finding import Finding
 from soar_sdk.params import OnESPollParams
@@ -19,6 +21,10 @@ if TYPE_CHECKING:
     from soar_sdk.app import App
 
 
+ESPollingYieldType = Finding
+ESPollingSendType = int | None
+
+
 class OnESPollDecorator:
     """Class-based decorator for tagging a function as the special 'on es poll' action."""
 
@@ -26,12 +32,12 @@ class OnESPollDecorator:
         self.app = app
 
     def __call__(self, function: Callable) -> Action:
-        """Decorator for the 'on es poll' action.
-
-        The decorated function must be a generator (using yield) or return an Iterator that yields tuples of (Finding, list[AttachmentInput]). Only one on_es_poll action is allowed per app.
+        """Decorator for the 'on es poll' action. The decorated function must be a Generator or AsyncGenerator. Only one on_es_poll action is allowed per app.
 
         Usage:
-        Each yielded tuple creates a Container from the Finding metadata. All AttachmentInput items in the list are added as vault attachments to that container.
+        The generator should yield a `Finding`. Upon receiving an event from the generator, the SDK will submit the Finding to Splunk Enterprise Security and create a linked SOAR Container.
+        The generator should accept a "send type" of `int | None`. When a Finding is successfully delivered to ES and linked to a Container, the SDK will send the Container ID back into the generator. The Container is useful for storing large attachments included with the Finding.
+        If the Finding cannot be successfully delivered to ES, the SDK will stop polling and return a failed result for the action run.
         """
         if self.app.actions_manager.get_action("on_es_poll"):
             raise TypeError(
@@ -40,16 +46,25 @@ class OnESPollDecorator:
 
         is_generator = inspect.isgeneratorfunction(function)
         is_async_generator = inspect.isasyncgenfunction(function)
-        signature = inspect.signature(function)
 
-        has_iterator_return = (
-            signature.return_annotation != inspect.Signature.empty
-            and getattr(signature.return_annotation, "__origin__", None) is Iterator
-        )
+        generator_type = inspect.signature(function).return_annotation
+        generator_type_args = get_args(generator_type)
 
-        if not (is_generator or is_async_generator or has_iterator_return):
+        if not (is_generator or is_async_generator) or len(generator_type_args) < 2:
             raise TypeError(
-                "The on_es_poll function must be a generator (use 'yield') or return an Iterator."
+                "The on_es_poll function must be a Generator or AsyncGenerator (use 'yield')."
+            )
+
+        yield_type = generator_type_args[0]
+        send_type = generator_type_args[1]
+
+        if yield_type != ESPollingYieldType:
+            raise TypeError(
+                f"@on_es_poll generator should have yield type {ESPollingYieldType}."
+            )
+        if send_type != ESPollingSendType:
+            raise TypeError(
+                f"@on_es_poll generator should have send type {ESPollingSendType}."
             )
 
         action_identifier = "on_es_poll"
@@ -67,129 +82,85 @@ class OnESPollDecorator:
             **kwargs: Any,  # noqa: ANN401
         ) -> bool:
             try:
+                action_params = validated_params_class.model_validate(params)
+            except ValidationError as e:
+                logger.info(f"Parameter validation error: {e!s}")
+                return self.app._adapt_action_result(
+                    ActionResult(status=False, message=f"Invalid parameters: {e!s}"),
+                    self.app.actions_manager,
+                )
+            es = ESClient(params.es_base_url, params.es_session_key)
+            kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
+            generator = function(action_params, *args, **kwargs)
+
+            if is_async_generator:
+
+                def polling_step(
+                    last_container_id: ESPollingSendType,
+                ) -> ESPollingYieldType:
+                    return asyncio.run(generator.asend(last_container_id))
+            else:
+
+                def polling_step(
+                    last_container_id: ESPollingSendType,
+                ) -> ESPollingYieldType:
+                    return generator.send(last_container_id)
+
+            last_container_id = None
+            while True:
                 try:
-                    action_params = validated_params_class.parse_obj(params)
-                except Exception as e:
-                    logger.info(f"Parameter validation error: {e!s}")
+                    item = polling_step(last_container_id)
+                except (StopIteration, StopAsyncIteration):
                     return self.app._adapt_action_result(
                         ActionResult(
-                            status=False, message=f"Invalid parameters: {e!s}"
+                            status=True, message="Finding processing complete"
                         ),
                         self.app.actions_manager,
                     )
+                except ActionFailure as e:
+                    e.set_action_name(action_name)
+                    return self.app._adapt_action_result(
+                        ActionResult(status=False, message=str(e)),
+                        self.app.actions_manager,
+                    )
+                except Exception as e:
+                    self.app.actions_manager.add_exception(e)
+                    logger.info(f"Error during finding processing: {e!s}")
+                    return self.app._adapt_action_result(
+                        ActionResult(status=False, message=str(e)),
+                        self.app.actions_manager,
+                    )
 
-                kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
+                if type(item) is not ESPollingYieldType:
+                    logger.info(
+                        f"Warning: expected {ESPollingYieldType}, got {type(item)}, skipping"
+                    )
+                    continue
+                finding = es.findings.create(item)
+                logger.info(f"Created finding {finding.finding_id}")
 
-                result = function(action_params, *args, **kwargs)
-                result = run_async_if_needed(result)
-
-                for item in result:
-                    if not isinstance(item, tuple) or len(item) != 2:
-                        logger.info(
-                            f"Warning: Expected tuple of (Finding, list[AttachmentInput]), got: {type(item)}"
-                        )
-                        continue
-
-                    finding, attachments = item
-
-                    if not isinstance(finding, Finding):
-                        logger.info(
-                            f"Warning: First element must be Finding, got: {type(finding)}"
-                        )
-                        continue
-
-                    if not isinstance(attachments, list):
-                        logger.info(
-                            f"Warning: Second element must be list[AttachmentInput], got: {type(attachments)}"
-                        )
-                        continue
-
-                    for attachment in attachments:
-                        if not isinstance(attachment, AttachmentInput):
-                            logger.info(
-                                f"Warning: Attachment must be AttachmentInput, got: {type(attachment)}"
-                            )
-                            break
-                    else:
-                        finding_dict = finding.to_dict()
-                        logger.info(
-                            f"Processing finding: {finding_dict.get('rule_title', 'Unnamed finding')}"
-                        )
-
-                        # Send finding to ES and get finding_id back
-                        finding_id = self.app.actions_manager.send_finding_to_es(
-                            finding_dict
-                        )
-
-                        container = Container(
-                            name=finding.rule_title,
-                            description=finding.rule_description,
-                            severity=finding.urgency or "medium",
-                            status=finding.status,
-                            owner_id=finding.owner,
-                            sensitivity=finding.disposition,
-                            tags=finding.source,
-                            external_id=finding_id,
-                            data={
-                                "security_domain": finding.security_domain,
-                                "risk_score": finding.risk_score,
-                                "risk_object": finding.risk_object,
-                                "risk_object_type": finding.risk_object_type,
-                            },
-                        )
-
-                        ret_val, message, container_id = (
-                            self.app.actions_manager.save_container(container.to_dict())
-                        )
-                        logger.info(
-                            f"Creating container for finding: {finding.rule_title}"
-                        )
-
-                        if not ret_val:
-                            logger.info(f"Failed to create container: {message}")
-                            continue
-
-                        for attachment in attachments:
-                            try:
-                                if attachment.file_content is not None:
-                                    vault_id = soar.vault.create_attachment(
-                                        container_id=container_id,
-                                        file_content=attachment.file_content,
-                                        file_name=attachment.file_name,
-                                        metadata=attachment.metadata,
-                                    )
-                                else:
-                                    vault_id = soar.vault.add_attachment(
-                                        container_id=container_id,
-                                        file_location=attachment.file_location,
-                                        file_name=attachment.file_name,
-                                        metadata=attachment.metadata,
-                                    )
-                                logger.info(
-                                    f"Added attachment {attachment.file_name} with vault_id: {vault_id}"
-                                )
-                            except Exception as e:
-                                logger.info(
-                                    f"Failed to add attachment {attachment.file_name}: {e!s}"
-                                )
-
-                return self.app._adapt_action_result(
-                    ActionResult(status=True, message="Finding processing complete"),
-                    self.app.actions_manager,
+                container = Container(
+                    name=finding.rule_title,
+                    description=finding.rule_description,
+                    severity=finding.urgency or "medium",
+                    status=finding.status,
+                    owner_id=finding.owner,
+                    sensitivity=finding.disposition,
+                    tags=finding.source,
+                    external_id=finding.finding_id,
+                    data={
+                        "security_domain": finding.security_domain,
+                        "risk_score": finding.risk_score,
+                        "risk_object": finding.risk_object,
+                        "risk_object_type": finding.risk_object_type,
+                    },
                 )
-            except ActionFailure as e:
-                e.set_action_name(action_name)
-                return self.app._adapt_action_result(
-                    ActionResult(status=False, message=str(e)),
-                    self.app.actions_manager,
+                ret_val, message, last_container_id = (
+                    self.app.actions_manager.save_container(container.to_dict())
                 )
-            except Exception as e:
-                self.app.actions_manager.add_exception(e)
-                logger.info(f"Error during finding processing: {e!s}")
-                return self.app._adapt_action_result(
-                    ActionResult(status=False, message=str(e)),
-                    self.app.actions_manager,
-                )
+                logger.info(f"Creating container for finding: {finding.rule_title}")
+                if not ret_val:
+                    raise ActionFailure(f"Failed to create container: {message}")
 
         inner.params_class = validated_params_class
 
