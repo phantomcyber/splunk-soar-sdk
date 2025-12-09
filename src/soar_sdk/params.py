@@ -207,15 +207,22 @@ class OnESPollParams(Params):
         description="Start of time range, in epoch time (milliseconds).",
         required=False,
     )
-
     end_time: int = Param(
         description="End of time range, in epoch time (milliseconds).",
         required=False,
     )
-
     container_count: int = Param(
         description="Maximum number of container records to query for.",
         required=False,
+    )
+
+    es_base_url: str = Param(
+        description="Base URL for the Splunk Enterprise Security API",
+        required=True,
+    )
+    es_session_key: str = Param(
+        description="Session token for the Splunk Enterprise Security API",
+        required=True,
     )
 
 

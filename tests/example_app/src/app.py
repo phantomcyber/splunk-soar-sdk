@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
@@ -8,7 +8,6 @@ from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.logging import getLogger
 from soar_sdk.models.artifact import Artifact
-from soar_sdk.models.attachment_input import AttachmentInput
 from soar_sdk.models.container import Container
 from soar_sdk.models.finding import Finding
 from soar_sdk.params import (
@@ -195,11 +194,11 @@ def on_poll(
 @app.on_es_poll()
 def on_es_poll(
     params: OnESPollParams, soar: SOARClient, asset: Asset
-) -> Iterator[tuple[Finding, list[AttachmentInput]]]:
+) -> Generator[Finding, int | None]:
     for i in range(1, 3):
         logger.info(f"Processing ES finding {i}")
 
-        finding = Finding(
+        container_id = yield Finding(
             rule_title=f"Risk threshold exceeded for user-{i}",
             rule_description="Risk Threshold Exceeded for an object over a 24 hour period",
             security_domain="threat",
@@ -225,20 +224,18 @@ def on_es_poll(
             secondary_score=50.0 + (i * 5),
         )
 
-        attachments = [
-            AttachmentInput(
-                file_content=email_evidence,
-                file_name=f"suspicious_email_user{i}.eml",
-                metadata={"type": "email_evidence", "source": "investigation_mailbox"},
-            ),
-            AttachmentInput(
-                file_content=event_data,
-                file_name=f"risk_events_user{i}.csv",
-                metadata={"type": "event_log", "event_count": "2"},
-            ),
-        ]
-
-        yield (finding, attachments)
+        soar.vault.create_attachment(
+            container_id,
+            file_content=email_evidence,
+            file_name=f"suspicious_email_user{i}.eml",
+            metadata={"type": "email_evidence", "source": "investigation_mailbox"},
+        )
+        soar.vault.create_attachment(
+            container_id,
+            file_content=event_data,
+            file_name=f"risk_events_user{i}.csv",
+            metadata={"type": "event_log", "event_count": "2"},
+        )
 
 
 app.register_action(
