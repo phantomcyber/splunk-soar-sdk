@@ -198,7 +198,7 @@ def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
         )
     }
 
-    app_meta.python_version = [PythonVersion.PY_3_13]
+    app_meta.python_version = PythonVersion.PY_3_13
 
     app_dir = tmp_path / "test_app"
     app_dir.mkdir()
