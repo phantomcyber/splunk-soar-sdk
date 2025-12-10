@@ -135,3 +135,20 @@ class ActionsManager(BaseConnector):
         This is useful for contexts such as Webhooks, where the app dir isn't necessarily the cwd, but we still need to load the app JSON reliably.
         """
         self.__app_dir = app_dir
+
+    def reload_state_from_file(self, app_id: str, asset_id: str) -> dict:
+        """Reload state from file and update in-memory state.
+
+        This is needed for OAuth flows where one process (webhook) updates the state file
+        and another process (polling action) needs to see those changes.
+        """
+        import json
+
+        state_dir = Path("/opt/phantom/local_data/app_states") / app_id
+        state_file = state_dir / f"{asset_id}_state.json"
+        if state_file.exists():
+            with open(state_file) as f:
+                state = json.load(f)
+                self.save_state(state)
+                return state
+        return self.load_state()
