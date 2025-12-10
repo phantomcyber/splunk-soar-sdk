@@ -9,7 +9,7 @@ from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.crypto import encrypt
-from soar_sdk.input_spec import InputSpecification
+from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.params import Params
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
@@ -29,13 +29,13 @@ def test_handle(example_app: App, simple_action_input: InputSpecification):
 
     example_app.asset_cls = TestAsset
 
-    simple_action_input.config = {
-        "app_version": "1.0.0",
-        "directory": ".",
-        "main_module": "example_connector.py",
-        "client_id": "test_client_id",
-        "client_secret": encrypt("test_client_secret", simple_action_input.asset_id),
-    }
+    simple_action_input.config = AppConfig(
+        app_version="1.0.0",
+        directory=".",
+        main_module="example_connector.py",
+        client_id="test_client_id",
+        client_secret=encrypt("test_client_secret", simple_action_input.asset_id),
+    )
 
     with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
         example_app.handle(simple_action_input.model_dump_json())
@@ -80,13 +80,13 @@ def test_decrypted_field_not_present(
 
     example_app.asset_cls = TestAsset
 
-    simple_action_input.config = {
-        "app_version": "1.0.0",
-        "directory": ".",
-        "main_module": "example_connector.py",
-        "client_id": "test_client_id",
+    simple_action_input.config = AppConfig(
+        app_version="1.0.0",
+        directory=".",
+        main_module="example_connector.py",
+        client_id="test_client_id",
         # client_secret is not provided, so it should not be decrypted
-    }
+    )
 
     with mock.patch.object(example_app.actions_manager, "handle") as mock_handle:
         example_app.handle(simple_action_input.model_dump_json())
@@ -117,13 +117,13 @@ def test_handle_with_sensitive_field_no_errors(
             message="Action completed successfully with sensitive fields"
         )
 
-    simple_action_input.config = {
-        "app_version": "1.0",
-        "directory": ".",
-        "main_module": "example_connector.py",
-        "username": "test_user",
-        "password": "",
-    }
+    simple_action_input.config = AppConfig(
+        app_version="1.0",
+        directory=".",
+        main_module="example_connector.py",
+        username="test_user",
+        password="",
+    )
 
     # Call handle - this should not throw any errors
     _ = example_app.handle(simple_action_input.model_dump_json())

@@ -158,7 +158,7 @@ def test_convert_cli(runner, tmp_path, app_meta):
 
     app_dir = tmp_path / "test_app"
     app_dir.mkdir()
-    (app_dir / "app.json").write_text(app_meta.json())
+    (app_dir / "app.json").write_text(app_meta.model_dump_json())
     (app_dir / app_meta.logo).touch()
     (app_dir / app_meta.logo_dark).touch()
 
@@ -202,7 +202,7 @@ def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
 
     app_dir = tmp_path / "test_app"
     app_dir.mkdir()
-    (app_dir / "app.json").write_text(app_meta.json())
+    (app_dir / "app.json").write_text(app_meta.model_dump_json())
     (app_dir / app_meta.logo).touch()
     (app_dir / app_meta.logo_dark).touch()
 
@@ -244,7 +244,7 @@ def test_convert_cli_with_default_output(runner, tmp_path, app_meta):
 
     app_dir = tmp_path / "test_app"
     app_dir.mkdir()
-    (app_dir / "app.json").write_text(app_meta.json())
+    (app_dir / "app.json").write_text(app_meta.model_dump_json())
     (app_dir / app_meta.logo).touch()
     (app_dir / app_meta.logo_dark).touch()
 

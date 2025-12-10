@@ -574,7 +574,7 @@ def test_action_deserializer_with_underscored_params():
         "test_action", {"_underscore": {"data_type": "string"}}
     )
 
-    field = result.__fields__["underscore"]
+    field = result.model_fields["underscore"]
     assert field.alias == "_underscore"
 
 
@@ -717,8 +717,8 @@ def test_parse_parameters_with_complex_params():
     assert "param3" in result.__annotations__
     assert "param4" not in result.__annotations__
 
-    assert "param5" in result.__fields__
-    assert result.__fields__["param5"].alias == "_param5"
+    assert "param5" in result.model_fields
+    assert result.model_fields["param5"].alias == "_param5"
 
 
 def test_complex_output_specification():

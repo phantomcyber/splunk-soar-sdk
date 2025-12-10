@@ -162,7 +162,9 @@ def test_es_on_poll_yields_finding_success(
     create_finding = mocker.patch(
         "soar_sdk.apis.es.findings.Findings.create",
         side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding", _time="2025-12-09T11:30:00.0000Z", **f.dict()
+            finding_id="new_finding",
+            _time="2025-12-09T11:30:00.0000Z",
+            **f.model_dump(),
         ),
     )
 
@@ -230,7 +232,9 @@ def test_es_on_poll_throws_when_fail_to_create_container(
     mocker.patch(
         "soar_sdk.apis.es.findings.Findings.create",
         side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding", _time="2025-12-09T11:30:00.0000Z", **f.dict()
+            finding_id="new_finding",
+            _time="2025-12-09T11:30:00.0000Z",
+            **f.model_dump(),
         ),
     )
 
@@ -268,7 +272,9 @@ def test_es_on_poll_yields_finding_async_generator(
     create_finding = mocker.patch(
         "soar_sdk.apis.es.findings.Findings.create",
         side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding", _time="2025-12-09T11:30:00.0000Z", **f.dict()
+            finding_id="new_finding",
+            _time="2025-12-09T11:30:00.0000Z",
+            **f.model_dump(),
         ),
     )
 
@@ -367,7 +373,9 @@ def test_es_on_poll_container_data_mapping(
     create_finding = mocker.patch(
         "soar_sdk.apis.es.findings.Findings.create",
         side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding", _time="2025-12-09T11:30:00.0000Z", **f.dict()
+            finding_id="new_finding",
+            _time="2025-12-09T11:30:00.0000Z",
+            **f.model_dump(),
         ),
     )
 
@@ -423,7 +431,9 @@ def test_es_on_poll_container_data_mapping_defaults(
     create_finding = mocker.patch(
         "soar_sdk.apis.es.findings.Findings.create",
         side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding", _time="2025-12-09T11:30:00.0000Z", **f.dict()
+            finding_id="new_finding",
+            _time="2025-12-09T11:30:00.0000Z",
+            **f.model_dump(),
         ),
     )
 

@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DrilldownSearch(BaseModel):
@@ -27,10 +27,7 @@ class Finding(BaseModel):
     for investigation workflow.
     """
 
-    class Config:
-        """Pydantic config."""
-
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
     rule_title: str
     rule_description: str
@@ -52,4 +49,4 @@ class Finding(BaseModel):
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the finding to a dictionary."""
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)
