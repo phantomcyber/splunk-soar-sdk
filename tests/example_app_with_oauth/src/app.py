@@ -7,7 +7,12 @@ from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.logging import getLogger
-from soar_sdk.oauth import AuthorizationCodeFlow, ClientCredentialsFlow, OAuthBearerAuth, SOARAssetOAuthClient
+from soar_sdk.oauth import (
+    AuthorizationCodeFlow,
+    ClientCredentialsFlow,
+    OAuthBearerAuth,
+    SOARAssetOAuthClient,
+)
 from soar_sdk.oauth.models import OAuthConfig
 from soar_sdk.params import Param, Params
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
@@ -44,7 +49,9 @@ class Asset(BaseAsset):
 
     @property
     def auth_url(self) -> str:
-        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
+        return (
+            f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
+        )
 
 
 app = App(
@@ -75,7 +82,9 @@ def get_webhook_redirect_uri(soar: SOARClient, asset: Asset) -> str:
     return f"{webhook_base}/webhook/{APP_NAME}_{APP_ID}/{asset_id}/oauth_callback"
 
 
-def get_oauth_client(asset: Asset, redirect_uri: str | None = None) -> SOARAssetOAuthClient:
+def get_oauth_client(
+    asset: Asset, redirect_uri: str | None = None
+) -> SOARAssetOAuthClient:
     config = OAuthConfig(
         client_id=asset.client_id,
         client_secret=asset.client_secret,
@@ -138,7 +147,9 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
         if response.status_code == 200:
             logger.info("API connection verified successfully")
         else:
-            logger.warning(f"API returned status {response.status_code}: {response.text}")
+            logger.warning(
+                f"API returned status {response.status_code}: {response.text}"
+            )
 
 
 @app.webhook("oauth_callback")
@@ -156,9 +167,13 @@ def oauth_callback(request: WebhookRequest[Asset]) -> WebhookResponse:
     asset_id = query_params.get("state")
 
     if not code:
-        return WebhookResponse.text_response(content="Missing authorization code", status_code=400)
+        return WebhookResponse.text_response(
+            content="Missing authorization code", status_code=400
+        )
     if not asset_id:
-        return WebhookResponse.text_response(content="Missing state parameter", status_code=400)
+        return WebhookResponse.text_response(
+            content="Missing state parameter", status_code=400
+        )
 
     # Store code in state using the OAuth client
     oauth_client = get_oauth_client(request.asset)

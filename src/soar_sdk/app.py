@@ -226,10 +226,12 @@ class App:
             self._asset = self.asset_cls.model_validate(self._raw_asset_config)
 
             asset_id = self.soar_client.get_asset_id()
-            app_id = self.app_meta_info["appid"]
+            app_id = str(self.app_meta_info["appid"])
 
             def make_reload_fn() -> Callable[[], dict]:
-                return lambda: self.actions_manager.reload_state_from_file(app_id, asset_id)
+                return lambda: self.actions_manager.reload_state_from_file(
+                    app_id, asset_id
+                )
 
             reload_fn = make_reload_fn()
             self._asset._auth_state = AssetState(
@@ -799,7 +801,7 @@ class App:
 
     def _get_state_file_path(self, asset_id: str) -> Path:
         """Get the canonical state file path for an asset."""
-        app_id = self.app_meta_info["appid"]
+        app_id = str(self.app_meta_info["appid"])
         state_dir = Path("/opt/phantom/local_data/app_states") / app_id
         return state_dir / f"{asset_id}_state.json"
 
