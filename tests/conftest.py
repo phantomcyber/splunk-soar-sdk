@@ -22,6 +22,7 @@ from soar_sdk.meta.dependencies import (
     UvDependency,
     UvLock,
     UvPackage,
+    UvSource,
     UvSourceDistribution,
     UvWheel,
 )
@@ -308,8 +309,14 @@ def fake_uv_lockfile(fake_wheel) -> UvLock:
                 dependencies=[
                     UvDependency(name="fakepkg"),
                 ],
+                source=UvSource(registry="https://pypi.python.org/simple"),
             ),
-            UvPackage(name="fakepkg", version="1.0.0", wheels=[fake_wheel]),
+            UvPackage(
+                name="fakepkg",
+                version="1.0.0",
+                wheels=[fake_wheel],
+                source=UvSource(registry="https://pypi.python.org/simple"),
+            ),
         ]
     )
 

@@ -52,7 +52,8 @@ remove_when_soar_newer_than(
     "If the Splunk SDK is available as a wheel now, remove it, and remove all of the code for building wheels from source.",
 )
 DEPENDENCIES_TO_BUILD = {
-    "splunk_sdk",  # https://github.com/splunk/splunk-sdk-python/pull/656
+    "splunk_sdk",  # https://github.com/splunk/splunk-sdk-python/pull/656,
+    "splunk_soar_sdk",  # Useful to build from source when developing the SDK
 }
 
 
@@ -189,6 +190,23 @@ class UvSourceDistribution(BaseModel):
                 return Path(wheel_path).name, f.read()
 
 
+class UvSourceDirectory(BaseModel):
+    """Represents a Python dependency to be built from a source directory on the local filesystem."""
+
+    directory: str
+
+    def build(self) -> tuple[str, bytes]:
+        """Build a wheel from a local source directory."""
+        with TemporaryDirectory() as build_dir:
+            builder = build.ProjectBuilder(
+                self.directory,
+                runner=UvSourceDistribution._builder_runner,
+            )
+            wheel_path = builder.build("wheel", build_dir)
+            with open(wheel_path, "rb") as f:
+                return Path(wheel_path).name, f.read()
+
+
 class DependencyWheel(BaseModel):
     """Represents a Python package dependency with all the information required to fetch its wheel(s) from the CDN."""
 
@@ -199,12 +217,19 @@ class DependencyWheel(BaseModel):
     wheel: UvWheel | None = Field(exclude=True, default=None)
     wheel_aarch64: UvWheel | None = Field(exclude=True, default=None)
     sdist: UvSourceDistribution | None = Field(exclude=True, default=None)
+    source_dir: UvSourceDirectory | None = Field(exclude=True, default=None)
 
     async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes]]:
         """Collect a list of wheel files to fetch for this dependency across all platforms."""
         if self.wheel is None and self.sdist is not None:
             logger.info(f"Building sdist for {self.input_file}")
             wheel_name, wheel_bytes = await self.sdist.fetch_and_build()
+            yield (f"wheels/shared/{wheel_name}", wheel_bytes)
+            return
+
+        if self.wheel is None and self.source_dir is not None:
+            logger.info(f"Building local sources for {self.input_file}")
+            wheel_name, wheel_bytes = self.source_dir.build()
             yield (f"wheels/shared/{wheel_name}", wheel_bytes)
             return
 
@@ -247,6 +272,13 @@ class UvDependency(BaseModel):
     name: str
 
 
+class UvSource(BaseModel):
+    """Represents the source of a Python package in the uv lock."""
+
+    registry: str | None = None
+    directory: str | None = None
+
+
 class UvPackage(BaseModel):
     """Represents a Python package loaded from the uv lock."""
 
@@ -258,6 +290,7 @@ class UvPackage(BaseModel):
     )
     wheels: list[UvWheel] = []
     sdist: UvSourceDistribution | None = None
+    source: UvSource
 
     def _find_wheel(
         self,
@@ -366,6 +399,12 @@ class UvPackage(BaseModel):
         ):
             wheel.sdist = self.sdist
 
+        if (
+            self.source.directory is not None
+            and UvLock.normalize_package_name(self.name) in DEPENDENCIES_TO_BUILD
+        ):
+            wheel.source_dir = UvSourceDirectory(directory=self.source.directory)
+
         try:
             wheel_x86_64 = self._find_wheel(
                 abi_precedence, python_precedence, self.platform_precedence_x86_64
@@ -373,7 +412,7 @@ class UvPackage(BaseModel):
             wheel.input_file = f"{wheel_x86_64.basename}.whl"
             wheel.wheel = wheel_x86_64
         except FileNotFoundError as e:
-            if wheel.sdist is None:
+            if wheel.sdist is None and wheel.source_dir is None:
                 raise FileNotFoundError(
                     f"Could not find a suitable x86_64 wheel or source distribution for {self.name}"
                 ) from e

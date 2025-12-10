@@ -9,6 +9,7 @@ from soar_sdk.meta.dependencies import (
     UvDependency,
     UvLock,
     UvPackage,
+    UvSource,
     UvSourceDistribution,
     UvWheel,
 )
@@ -123,6 +124,7 @@ class TestUvPackage:
                     size=166393,
                 )
             ],
+            source=UvSource(registry="https://pypi.python.org/simple"),
         )
         wheel = package._find_wheel(
             abi_precedence=["cp313", "abi3", "none"],
@@ -160,6 +162,7 @@ class TestUvPackage:
                     size=1000000,
                 ),
             ],
+            source=UvSource(registry="https://pypi.python.org/simple"),
         )
 
         # Python 3.13 should match both abi3 wheels since 3.13 >= 3.8 and 3.13 >= 3.11
@@ -185,6 +188,7 @@ class TestUvPackage:
                     size=12190233,
                 )
             ],
+            source=UvSource(registry="https://pypi.python.org/simple"),
         )
         wheel = package.resolve_py313()
         wheel.add_platform_prefix("python313")
@@ -204,6 +208,7 @@ class TestUvPackage:
                 hash="sha256:deadbeef",
                 size=123456,
             ),
+            source=UvSource(registry="https://pypi.python.org/simple"),
         )
 
         wheel = package.resolve_py313()
@@ -218,6 +223,7 @@ class TestUvPackage:
                 hash="sha256:deadbeef",
                 size=123456,
             ),
+            source=UvSource(registry="https://pypi.python.org/simple"),
         )
 
         with pytest.raises(
@@ -235,6 +241,7 @@ class TestUvPackage:
                 hash="sha256:deadbeef",
                 size=123456,
             ),
+            source=UvSource(registry="https://pypi.python.org/simple"),
         )
 
         logger = logging.getLogger("soar_sdk.meta.dependencies")
@@ -266,7 +273,12 @@ class TestUvLock:
         self, wheel_resp_mock, fake_wheel: UvWheel, fake_uv_lockfile: UvLock
     ):
         fake_uv_lockfile.package.append(
-            UvPackage(name="simplejson", version="3.20.1", wheels=[fake_wheel])
+            UvPackage(
+                name="simplejson",
+                version="3.20.1",
+                wheels=[fake_wheel],
+                source=UvSource(registry="https://pypi.python.org/simple"),
+            )
         )
         fake_uv_lockfile.package[0].dependencies.append(UvDependency(name="simplejson"))
 
