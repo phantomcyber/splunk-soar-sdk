@@ -110,7 +110,7 @@ def build(
         app_name = app_meta.name
 
         if output_file is None:
-            output_file = cwd / f"{app_name}.tgz"
+            output_file = cwd / f"{app_name}.tar.xz"
             console.print(f"[blue]Output file:[/] {output_file}")
 
         console.print(f"Generated manifest for app:[green] {app_name}[/]")
@@ -122,7 +122,7 @@ def build(
                 return t
             return None
 
-        with tarfile.open(output_file, "w:gz") as app_tarball:
+        with tarfile.open(output_file, "w:xz") as app_tarball:
             # Collect all wheels from both Python versions
             all_wheels = set(
                 app_meta.pip313_dependencies.wheel + app_meta.pip314_dependencies.wheel

@@ -17,7 +17,7 @@ runner = CliRunner()
 
 def test_package_build_command(wheel_resp_mock, tmp_path: Path):
     example_app = Path.cwd() / "tests/example_app"
-    destination = tmp_path / "example_app.tgz"
+    destination = tmp_path / "example_app.tar.xz"
 
     # Create the patch for hash validation
     with (
@@ -40,7 +40,7 @@ def test_package_build_command(wheel_resp_mock, tmp_path: Path):
 
 def test_package_build_command_specifying_outdir(wheel_resp_mock, tmp_path: Path):
     example_app = Path.cwd() / "tests/example_app"
-    destination = tmp_path / "example_app.tgz"
+    destination = tmp_path / "example_app.tar.xz"
 
     fake_wheel = tmp_path / "fake.whl"
     with fake_wheel.open("wb") as whl:
@@ -175,7 +175,7 @@ async def test_csrf_token_not_in_cookies():
 
 def test_package_build_with_app_templates(wheel_resp_mock, tmp_path: Path):
     example_app = Path.cwd() / "tests/example_app"
-    destination = tmp_path / "example_app.tgz"
+    destination = tmp_path / "example_app.tar.xz"
 
     with (
         context_directory(tmp_path),
@@ -193,14 +193,14 @@ def test_package_build_with_app_templates(wheel_resp_mock, tmp_path: Path):
     assert "Adding app templates to package" in result.stdout
 
     # Verify templates are in the tarball
-    with tarfile.open(destination, "r:gz") as tar:
+    with tarfile.open(destination) as tar:
         members = tar.getnames()
         assert any("templates/reverse_string.html" in name for name in members)
 
 
 def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
     example_app = Path.cwd() / "tests/example_app"
-    destination = tmp_path / "example_app.tgz"
+    destination = tmp_path / "example_app.tar.xz"
 
     with (
         context_directory(tmp_path),
@@ -217,7 +217,7 @@ def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
         assert result.exit_code == 0
         assert "Adding SDK base template to package" in result.stdout
 
-        with tarfile.open(destination, "r:gz") as tar:
+        with tarfile.open(destination) as tar:
             members = tar.getnames()
             # Check for the specific base template file
             assert any("templates/base/base_template.html" in name for name in members)
