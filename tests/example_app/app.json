@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-09T17:49:29.468742Z",
+    "utctime_updated": "2025-12-10T20:14:27.600897Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -1017,6 +1017,11 @@
                 "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
             },
             {
+                "module": "hatchling",
+                "input_file": "wheels/shared/hatchling-1.28.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/hatchling-1.28.0-py3-none-any.whl"
+            },
+            {
                 "module": "hpack",
                 "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
@@ -1030,6 +1035,11 @@
                 "module": "httpx",
                 "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
+            },
+            {
+                "module": "httpx-retries",
+                "input_file": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl"
             },
             {
                 "module": "humanize",
@@ -1070,6 +1080,16 @@
                 "module": "packaging",
                 "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
+            },
+            {
+                "module": "pathspec",
+                "input_file": "wheels/shared/pathspec-0.12.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pathspec-0.12.1-py3-none-any.whl"
+            },
+            {
+                "module": "pluggy",
+                "input_file": "wheels/shared/pluggy-1.6.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pluggy-1.6.0-py3-none-any.whl"
             },
             {
                 "module": "propcache",
@@ -1118,8 +1138,7 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl"
+                "input_file": "wheels/shared/"
             },
             {
                 "module": "toml",
@@ -1130,6 +1149,11 @@
                 "module": "tqdm",
                 "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
+            },
+            {
+                "module": "trove-classifiers",
+                "input_file": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl"
             },
             {
                 "module": "typer",
@@ -1201,6 +1225,11 @@
                 "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
             },
             {
+                "module": "hatchling",
+                "input_file": "wheels/shared/hatchling-1.28.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/hatchling-1.28.0-py3-none-any.whl"
+            },
+            {
                 "module": "hpack",
                 "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
@@ -1214,6 +1243,11 @@
                 "module": "httpx",
                 "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
+            },
+            {
+                "module": "httpx-retries",
+                "input_file": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl"
             },
             {
                 "module": "humanize",
@@ -1254,6 +1288,16 @@
                 "module": "packaging",
                 "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
+            },
+            {
+                "module": "pathspec",
+                "input_file": "wheels/shared/pathspec-0.12.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pathspec-0.12.1-py3-none-any.whl"
+            },
+            {
+                "module": "pluggy",
+                "input_file": "wheels/shared/pluggy-1.6.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pluggy-1.6.0-py3-none-any.whl"
             },
             {
                 "module": "propcache",
@@ -1302,8 +1346,7 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.5.0-py3-none-any.whl"
+                "input_file": "wheels/shared/"
             },
             {
                 "module": "toml",
@@ -1314,6 +1357,11 @@
                 "module": "tqdm",
                 "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
+            },
+            {
+                "module": "trove-classifiers",
+                "input_file": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl"
             },
             {
                 "module": "typer",
