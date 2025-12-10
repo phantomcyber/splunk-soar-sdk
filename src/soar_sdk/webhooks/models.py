@@ -23,7 +23,7 @@ class WebhookRequest(BaseModel, Generic[AssetType]):
     asset: AssetType
     soar_base_url: str
     soar_auth_token: str
-    asset_id: int
+    asset_id: str
 
     @property
     def path(self) -> str:
