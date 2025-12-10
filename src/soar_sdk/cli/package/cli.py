@@ -199,10 +199,12 @@ def build(
 
     # Calculate elapsed time
     elapsed = humanize.precisedelta(timedelta(seconds=time.time() - start_time))
+    size = humanize.naturalsize(output_file.stat().st_size)
 
     console.print(f"[green]✓ App name:[/] {app_name}")
     console.print(f"[green]✓ Package successfully built and saved to:[/] {output_file}")
     console.print(f"[blue]⏱ Total build time:[/] {elapsed}")
+    console.print(f"[blue]𐄷 Total package size:[/] {size}")
 
 
 async def upload_app(
