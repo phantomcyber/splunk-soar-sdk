@@ -144,5 +144,15 @@ if TYPE_CHECKING or not _soar_is_available:
         def _load_app_json(self) -> None:
             pass
 
+        def _load_state_for_asset(self, app_id: str, asset_id: str) -> None:
+            """Load state from file for webhooks (SOAR doesn't pre-populate state for webhooks)."""
+            state_dir = Path("/opt/phantom/local_data/app_states") / app_id
+            state_file = state_dir / f"{asset_id}_state.json"
+            if state_file.exists():
+                with open(state_file) as f:
+                    self.__state = json.load(f)
+            else:
+                self.__state = {}
+
 
 __all__ = ["BaseConnector"]

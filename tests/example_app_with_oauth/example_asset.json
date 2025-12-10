@@ -1,0 +1,11 @@
+{
+    "base_url": "https://graph.microsoft.com",
+    "auth_type": "Client Credentials",
+    "client_id": "your-client-id",
+    "client_secret": "your-client-secret",
+    "tenant_id": "your-tenant-id",
+    "scopes": "https://graph.microsoft.com/.default",
+    "auth_url": "https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize",
+    "token_url": "https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",
+    "redirect_uri": ""
+}

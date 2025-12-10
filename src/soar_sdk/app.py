@@ -226,12 +226,20 @@ class App:
             self._asset = self.asset_cls.model_validate(self._raw_asset_config)
 
             asset_id = self.soar_client.get_asset_id()
-            self._asset._auth_state = AssetState(self.actions_manager, "auth", asset_id)
+            app_id = self.app_meta_info["appid"]
+
+            def make_reload_fn() -> Callable[[], dict]:
+                return lambda: self.actions_manager.reload_state_from_file(app_id, asset_id)
+
+            reload_fn = make_reload_fn()
+            self._asset._auth_state = AssetState(
+                self.actions_manager, "auth", asset_id, reload_fn=reload_fn
+            )
             self._asset._cache_state = AssetState(
-                self.actions_manager, "cache", asset_id
+                self.actions_manager, "cache", asset_id, reload_fn=reload_fn
             )
             self._asset._ingest_state = AssetState(
-                self.actions_manager, "ingest", asset_id
+                self.actions_manager, "ingest", asset_id, reload_fn=reload_fn
             )
         return self._asset
 
@@ -789,6 +797,32 @@ class App:
         """Decorator for registering a webhook handler."""
         return WebhookDecorator(self, url_pattern, allowed_methods)
 
+    def _get_state_file_path(self, asset_id: str) -> Path:
+        """Get the canonical state file path for an asset."""
+        app_id = self.app_meta_info["appid"]
+        state_dir = Path("/opt/phantom/local_data/app_states") / app_id
+        return state_dir / f"{asset_id}_state.json"
+
+    def _load_webhook_state(self, asset_id: str) -> None:
+        """Load state from file for webhooks.
+
+        SOAR's BaseConnector.load_state() relies on asset_id being set from input JSON,
+        which doesn't happen for webhooks. So we read directly from the state file.
+        """
+        state_file = self._get_state_file_path(asset_id)
+        if state_file.exists():
+            with open(state_file) as f:
+                state = json.load(f)
+                self.actions_manager.save_state(state)
+
+    def _save_webhook_state(self, asset_id: str) -> None:
+        """Save state to file for webhooks."""
+        state_file = self._get_state_file_path(asset_id)
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        state = self.actions_manager.load_state()
+        with open(state_file, "w") as f:
+            json.dump(state, f)
+
     def handle_webhook(
         self,
         method: str,
@@ -806,7 +840,7 @@ class App:
         self._raw_asset_config = asset
 
         _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
-        asset_id = soar_rest_client.asset_id
+        asset_id = str(soar_rest_client.asset_id)  # Ensure asset_id is always a string
         soar_base_url = soar_rest_client.base_url
         soar_base_url = soar_base_url.removesuffix("/rest")
         soar_auth = SOARClientAuth(
@@ -829,6 +863,8 @@ class App:
 
         self.actions_manager.override_app_dir(self.app_root)
         self.actions_manager._load_app_json()
+        # Load state for webhooks - SOAR doesn't pre-populate state like it does for actions
+        self._load_webhook_state(str(asset_id))
         request = WebhookRequest(
             method=method,
             headers=headers,
@@ -846,4 +882,6 @@ class App:
             raise TypeError(
                 f"Webhook handler must return a WebhookResponse, got {type(response)}"
             )
+        # Save state for webhooks - SOAR doesn't auto-persist webhook state
+        self._save_webhook_state(asset_id)
         return response.model_dump()
