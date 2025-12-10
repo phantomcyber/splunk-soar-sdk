@@ -79,11 +79,11 @@ def build(
         ),
     ] = None,
 ) -> None:
-    """Build a SOAR app package in TGZ format.
+    """Build a SOAR app package in a compressed tarball format.
 
     Args:
         project_context: Path to the app project directory
-        output_file: Path where the app TGZ should be created
+        output_file: Path where the app tarball should be created
         with_sdk_wheel_from: Optional path in which to find a wheel for this SDK
     Options:
         --output-file, -o: Path where the packaged app will be saved
@@ -214,7 +214,7 @@ async def upload_app(
     app_tarball: Path,
     force: bool = False,
 ) -> httpx.Response:
-    """Asynchronously upload an app tgz to a Splunk SOAR system, via REST API."""
+    """Asynchronously upload an app tarball to a Splunk SOAR system, via REST API."""
     base_url = (
         soar_instance
         if soar_instance.startswith("https://")
@@ -231,7 +231,7 @@ async def upload_app(
 def install(
     app_tarball: Path, soar_instance: str, username: str = "", force: bool = False
 ) -> None:
-    """Install the app tgz to the specified Splunk SOAR system.
+    """Install the app tarball to the specified Splunk SOAR system.
 
     ..note:
         To authenticate with Splunk SOAR, you can either set the PHANTOM_PASSWORD

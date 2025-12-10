@@ -31,14 +31,14 @@ jobs:
           echo "Building SOAR SDK from branch"
           uv build
           echo "Building ${{ matrix.app }} using soarapps CLI"
-          uv run soarapps package build tests/${{ matrix.app }} --output-file /tmp/${{ matrix.app }}.tgz --with-sdk-wheel-from $(ls -t dist/splunk_soar_sdk-*.whl | head -n 1)
+          uv run soarapps package build tests/${{ matrix.app }} --output-file /tmp/${{ matrix.app }}.tar.xz
           echo "App build completed successfully"
 
       - name: Upload app tar file as artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.app }}-tar
-          path: /tmp/${{ matrix.app }}.tgz
+          path: /tmp/${{ matrix.app }}.tar.xz
           retention-days: 1
 
   integration-test:
@@ -107,7 +107,7 @@ jobs:
           echo "Installing example_app on https://$phantom_ip"
 
           uv run soarapps package install \
-            /tmp/example_app.tgz \
+            /tmp/example_app.tar.xz \
             "$phantom_ip" \
             --username "${{ vars.PHANTOM_USERNAME }}"
 
@@ -119,7 +119,7 @@ jobs:
           echo "Installing example_app_with_webhook on https://$phantom_ip"
 
           uv run soarapps package install \
-            /tmp/example_app_with_webhook.tgz \
+            /tmp/example_app_with_webhook.tar.xz \
             "$phantom_ip" \
             --username "${{ vars.PHANTOM_USERNAME }}" \
             --force

@@ -366,7 +366,7 @@ def mock_install_client(respx_mock):
 @pytest.fixture
 def app_tarball(tmp_path: Path) -> Path:
     """Create a dummy app tarball for testing."""
-    tarball_path = tmp_path / "example.tgz"
+    tarball_path = tmp_path / "example.tar.xz"
     tarball_path.touch()
     return tarball_path
 

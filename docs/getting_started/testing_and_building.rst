@@ -17,7 +17,7 @@ This command will run your action on your local machine, and print its output to
 Building an App Package
 -----------------------
 
-Run ``soarapps package build`` to generate an app package. By default, this creates ``<appname>.tgz`` in the root directory of your app.
+Run ``soarapps package build`` to generate an app package. By default, this creates ``<appname>.tar.xz`` in the root directory of your app.
 
 This package contains all the code and metadata for your app. It also contains all the dependency wheels for your app, which are sourced from the PyPI CDN based on ``uv.lock``.
 
@@ -30,7 +30,7 @@ Now you can install the app in your Splunk SOAR platform to test how it works. Y
 
 You can also do this from the command line::
 
-    soarapps package install myapp.tgz soar.example.com
+    soarapps package install myapp.tar.xz soar.example.com
 
 Getting Help
 ============
