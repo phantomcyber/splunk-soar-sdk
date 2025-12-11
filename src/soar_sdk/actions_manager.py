@@ -24,6 +24,7 @@ class ActionsManager(BaseConnector):
 
         self._actions: dict[str, Action] = {}
         self.__app_dir: Path | None = None
+        self.supports_es_polling: bool = False
 
     def get_action(self, identifier: str) -> Action | None:
         """Convenience method for getting an Action callable from its identifier.

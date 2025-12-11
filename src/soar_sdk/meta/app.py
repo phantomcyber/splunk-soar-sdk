@@ -45,6 +45,7 @@ class AppMeta(BaseModel):
     pip314_dependencies: DependencyList = Field(default_factory=DependencyList)
 
     webhook: WebhookMeta | None = None
+    supports_es_polling: bool = False
 
     @field_validator("python_version", mode="before")
     @classmethod
