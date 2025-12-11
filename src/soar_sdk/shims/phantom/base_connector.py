@@ -146,8 +146,9 @@ if TYPE_CHECKING or not _soar_is_available:
 
         def _load_state_for_asset(self, app_id: str, asset_id: str) -> None:
             """Load state from file for webhooks (SOAR doesn't pre-populate state for webhooks)."""
-            state_dir = Path("/opt/phantom/local_data/app_states") / app_id
-            state_file = state_dir / f"{asset_id}_state.json"
+            from soar_sdk.paths import get_asset_state_file
+
+            state_file = get_asset_state_file(app_id, asset_id)
             if state_file.exists():
                 with open(state_file) as f:
                     self.__state = json.load(f)

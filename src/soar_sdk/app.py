@@ -794,17 +794,19 @@ class App:
         return WebhookDecorator(self, url_pattern, allowed_methods)
 
     def _get_state_file_path(self, asset_id: str) -> Path:
-        """Get the canonical state file path for an asset."""
+        """Get the state file path for an asset.
+
+        BaseConnector has get_state_file_path() but it requires asset_id to be set
+        from input JSON, which doesn't happen for webhooks. We construct the path
+        directly using the same convention as SOAR.
+        """
+        from soar_sdk.paths import get_asset_state_file
+
         app_id = str(self.app_meta_info["appid"])
-        state_dir = Path("/opt/phantom/local_data/app_states") / app_id
-        return state_dir / f"{asset_id}_state.json"
+        return get_asset_state_file(app_id, asset_id)
 
     def _load_webhook_state(self, asset_id: str) -> None:
-        """Load state from file for webhooks.
-
-        SOAR's BaseConnector.load_state() relies on asset_id being set from input JSON,
-        which doesn't happen for webhooks. So we read directly from the state file.
-        """
+        """Load state from file for webhooks."""
         state_file = self._get_state_file_path(asset_id)
         if state_file.exists():
             with open(state_file) as f:
