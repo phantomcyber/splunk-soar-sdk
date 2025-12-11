@@ -160,9 +160,7 @@ else:
             self.__storage: dict[str, VaultAttachment] = {}
 
         def get_vault_tmp_dir(self) -> str:
-            from soar_sdk.paths import PHANTOM_VAULT_TMP
-
-            return str(PHANTOM_VAULT_TMP)
+            return "/opt/phantom/vault/tmp"
 
         def create_attachment(
             self,
