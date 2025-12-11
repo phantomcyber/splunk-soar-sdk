@@ -1,6 +1,5 @@
 import json
-from collections.abc import Callable, Iterator, MutableMapping
-from typing import Any
+from collections.abc import Iterator, MutableMapping
 
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
@@ -18,23 +17,23 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         backend: BaseConnector,
         state_key: str,
         asset_id: str,
-        reload_fn: Callable[[], dict[str, Any]] | None = None,
+        app_id: str | None = None,
     ) -> None:
         self.backend = backend
         self.state_key = state_key
         self.asset_id = asset_id
-        self._reload_fn = reload_fn
+        self.app_id = app_id
 
     def get_all(self, *, force_reload: bool = False) -> AssetStateType:
         """Get the entirety of this part of the asset state.
 
         Args:
-            force_reload: If True and a reload_fn was provided, reload state from
-                file before returning. This is useful for OAuth polling where state
-                may have been updated by a webhook in another process.
+            force_reload: If True, reload state from file before returning.
+                This is useful for OAuth polling where state may have been
+                updated by a webhook in another process.
         """
-        if force_reload and self._reload_fn:
-            self._reload_fn()
+        if force_reload and self.app_id:
+            self.backend.reload_state_from_file(self.app_id, self.asset_id)
         state = self.backend.load_state() or {}
         if not (part_encrypted := state.get(self.state_key)):
             return {}

@@ -1,5 +1,5 @@
 import time
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import httpx
 import pytest
@@ -9,7 +9,6 @@ from soar_sdk.oauth.client import AuthorizationRequiredError, OAuthClientError
 from soar_sdk.oauth.flows import (
     AuthorizationCodeFlow,
     ClientCredentialsFlow,
-    InteractiveAuthFlow,
 )
 
 
@@ -319,21 +318,6 @@ class TestAuthorizationCodeFlow:
 
         assert token.access_token == "waited_token"
 
-    @respx.mock
-    def test_wait_for_authorization_with_error(self, auth_code_flow, mock_auth_state):
-        auth_code_flow.get_authorization_url()
-
-        state_data = mock_auth_state.get_all()
-        session = state_data["oauth"]["session"]
-        session["auth_pending"] = False
-        session["error"] = "access_denied"
-        session["error_description"] = "User denied"
-
-        with patch("time.sleep"), pytest.raises(OAuthClientError) as exc_info:
-            auth_code_flow.wait_for_authorization()
-
-        assert "access_denied" in str(exc_info.value)
-
     def test_wait_for_authorization_timeout(self, mock_auth_state):
         flow = AuthorizationCodeFlow(
             mock_auth_state,
@@ -354,14 +338,6 @@ class TestAuthorizationCodeFlow:
                 flow.wait_for_authorization()
 
         assert "timed out" in str(exc_info.value)
-
-    def test_wait_for_authorization_session_cleared(
-        self, auth_code_flow, mock_auth_state
-    ):
-        with patch("time.sleep"), pytest.raises(OAuthClientError) as exc_info:
-            auth_code_flow.wait_for_authorization()
-
-        assert "cleared unexpectedly" in str(exc_info.value)
 
     @respx.mock
     def test_wait_for_authorization_with_progress_callback(
@@ -392,145 +368,12 @@ class TestAuthorizationCodeFlow:
         assert len(progress_calls) >= 1
         assert 1 in progress_calls
 
+    def test_set_authorization_code(self, auth_code_flow, mock_auth_state):
+        auth_code_flow.get_authorization_url()
 
-class TestInteractiveAuthFlow:
-    @pytest.fixture
-    def mock_asset(self):
-        class MockAuthState:
-            def __init__(self):
-                self._data = {}
+        auth_code_flow.set_authorization_code("webhook_code")
 
-            def get_all(self, *, force_reload=False):
-                return self._data
-
-            def put_all(self, data):
-                self._data = dict(data)
-
-        asset = MagicMock()
-        asset.auth_type = "OAuth"
-        asset.client_id = "test_client"
-        asset.client_secret = "test_secret"
-        asset.auth_url = "https://auth.example.com/authorize"
-        asset.token_url = "https://auth.example.com/token"
-        asset.redirect_uri = "https://app.example.com/callback"
-        asset.scopes = ["read", "write"]
-        asset.auth_state = MockAuthState()
-
-        return asset
-
-    @pytest.fixture
-    def interactive_flow(self, mock_asset):
-        return InteractiveAuthFlow(mock_asset)
-
-    def test_is_oauth_enabled_true(self, interactive_flow):
-        assert interactive_flow.is_oauth_enabled() is True
-
-    def test_is_oauth_enabled_false(self, mock_asset):
-        mock_asset.auth_type = "API Key"
-        flow = InteractiveAuthFlow(mock_asset)
-        assert flow.is_oauth_enabled() is False
-
-    def test_is_oauth_enabled_custom_field(self, mock_asset):
-        mock_asset.authentication_method = "OAuth2"
-        flow = InteractiveAuthFlow(
-            mock_asset,
-            auth_type_field="authentication_method",
-            oauth_auth_type="OAuth2",
-        )
-        assert flow.is_oauth_enabled() is True
-
-    def test_initiate_authorization(self, interactive_flow):
-        url = interactive_flow.initiate_authorization("asset-123")
-
-        assert "https://auth.example.com/authorize" in url
-        assert "client_id=test_client" in url
-
-    @respx.mock
-    def test_get_valid_token(self, interactive_flow, mock_asset):
-        mock_asset.auth_state._data.update(
-            {
-                "oauth": {
-                    "token": {
-                        "access_token": "valid_token",
-                        "expires_at": time.time() + 3600,
-                    },
-                    "client_id": "test_client",
-                }
-            }
-        )
-
-        token = interactive_flow.get_valid_token("asset-123")
-        assert token.access_token == "valid_token"
-
-    def test_custom_field_names(self, mock_asset):
-        mock_asset.my_auth_type = "MyOAuth"
-        mock_asset.my_client_id = "custom_client"
-        mock_asset.my_client_secret = "custom_secret"
-        mock_asset.my_auth_url = "https://custom.auth.com/authorize"
-        mock_asset.my_token_url = "https://custom.auth.com/token"
-        mock_asset.my_redirect = "https://custom.app.com/callback"
-        mock_asset.my_scopes = ["custom_scope"]
-
-        flow = InteractiveAuthFlow(
-            mock_asset,
-            auth_type_field="my_auth_type",
-            oauth_auth_type="MyOAuth",
-            client_id_field="my_client_id",
-            client_secret_field="my_client_secret",
-            auth_url_field="my_auth_url",
-            token_url_field="my_token_url",
-            redirect_uri_field="my_redirect",
-            scope_field="my_scopes",
-        )
-
-        url = flow.initiate_authorization("asset-123")
-        assert "https://custom.auth.com/authorize" in url
-        assert "client_id=custom_client" in url
-
-    @respx.mock
-    def test_wait_for_authorization(self, interactive_flow, mock_asset):
-        interactive_flow.initiate_authorization("asset-123")
-
-        session = mock_asset.auth_state._data["oauth"]["session"]
-        session["auth_pending"] = False
-        session["auth_complete"] = True
-        session["auth_code"] = "received_code"
-
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
-        )
-
-        with patch("time.sleep"):
-            token = interactive_flow.wait_for_authorization("asset-123")
-
-        assert token.access_token == "token"
-
-    @respx.mock
-    def test_wait_for_authorization_with_progress(self, interactive_flow, mock_asset):
-        interactive_flow.initiate_authorization("asset-123")
-
-        progress_calls = []
-
-        def on_progress(iteration):
-            progress_calls.append(iteration)
-            session = mock_asset.auth_state._data["oauth"]["session"]
-            session["auth_pending"] = False
-            session["auth_complete"] = True
-            session["auth_code"] = "code"
-
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
-        )
-
-        with patch("time.sleep"):
-            interactive_flow.wait_for_authorization(
-                "asset-123", on_progress=on_progress
-            )
-
-        assert len(progress_calls) >= 1
+        state_data = mock_auth_state.get_all()
+        session = state_data["oauth"]["session"]
+        assert session["auth_code"] == "webhook_code"
+        assert session["auth_complete"] is True

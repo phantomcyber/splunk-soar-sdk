@@ -228,20 +228,14 @@ class App:
             asset_id = self.soar_client.get_asset_id()
             app_id = str(self.app_meta_info["appid"])
 
-            def make_reload_fn() -> Callable[[], dict]:
-                return lambda: self.actions_manager.reload_state_from_file(
-                    app_id, asset_id
-                )
-
-            reload_fn = make_reload_fn()
             self._asset._auth_state = AssetState(
-                self.actions_manager, "auth", asset_id, reload_fn=reload_fn
+                self.actions_manager, "auth", asset_id, app_id=app_id
             )
             self._asset._cache_state = AssetState(
-                self.actions_manager, "cache", asset_id, reload_fn=reload_fn
+                self.actions_manager, "cache", asset_id, app_id=app_id
             )
             self._asset._ingest_state = AssetState(
-                self.actions_manager, "ingest", asset_id, reload_fn=reload_fn
+                self.actions_manager, "ingest", asset_id, app_id=app_id
             )
         return self._asset
 
