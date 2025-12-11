@@ -48,6 +48,7 @@ Contents
    getting_started/index
    app_structure/index
    custom_views/index
+   oauth
    api_reference
    cli_reference
    changelog
