@@ -141,14 +141,9 @@ class ActionsManager(BaseConnector):
 
         This is needed for OAuth flows where one process (webhook) updates the state file
         and another process (polling action) needs to see those changes.
-        """
-        import json
 
-        state_dir = Path("/opt/phantom/local_data/app_states") / app_id
-        state_file = state_dir / f"{asset_id}_state.json"
-        if state_file.exists():
-            with open(state_file) as f:
-                state = json.load(f)
-                self.save_state(state)
-                return state
-        return self.load_state()
+        SOAR's BaseConnector.load_state() reads from the state file, so we just call it.
+        The app_id and asset_id params are kept for interface compatibility but aren't
+        needed since BaseConnector already knows the asset context.
+        """
+        return self.load_state() or {}
