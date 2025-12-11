@@ -206,6 +206,20 @@ class SOARClient(Generic[SummaryType]):
         """
         return "https://localhost:9999/"
 
+    def load_asset_state(self, asset_id: str) -> dict:
+        """Load asset state via SOAR REST API."""
+        try:
+            response = self.get(f"asset_state/{asset_id}")
+            return response.json().get("state_json", {})
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 404:
+                return {}
+            raise
+
+    def save_asset_state(self, asset_id: str, state: dict) -> None:
+        """Save asset state via SOAR REST API."""
+        self.post(f"asset_state/{asset_id}", json={"state_json": state})
+
     @abstractmethod
     def update_client(
         self, soar_auth: SOARClientAuth, asset_id: str, container_id: int = 0

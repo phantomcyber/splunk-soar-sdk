@@ -793,33 +793,15 @@ class App:
         """Decorator for registering a webhook handler."""
         return WebhookDecorator(self, url_pattern, allowed_methods)
 
-    def _get_state_file_path(self, asset_id: str) -> Path:
-        """Get the state file path for an asset.
-
-        BaseConnector has get_state_file_path() but it requires asset_id to be set
-        from input JSON, which doesn't happen for webhooks. We construct the path
-        directly using the same convention as SOAR.
-        """
-        from soar_sdk.paths import get_asset_state_file
-
-        app_id = str(self.app_meta_info["appid"])
-        return get_asset_state_file(app_id, asset_id)
-
     def _load_webhook_state(self, asset_id: str) -> None:
-        """Load state from file for webhooks."""
-        state_file = self._get_state_file_path(asset_id)
-        if state_file.exists():
-            with open(state_file) as f:
-                state = json.load(f)
-                self.actions_manager.save_state(state)
+        """Load state via SOAR REST API for webhooks."""
+        state = self.soar_client.load_asset_state(asset_id)
+        self.actions_manager.save_state(state)
 
     def _save_webhook_state(self, asset_id: str) -> None:
-        """Save state to file for webhooks."""
-        state_file = self._get_state_file_path(asset_id)
-        state_file.parent.mkdir(parents=True, exist_ok=True)
-        state = self.actions_manager.load_state()
-        with open(state_file, "w") as f:
-            json.dump(state, f)
+        """Save state via SOAR REST API for webhooks."""
+        state = self.actions_manager.load_state() or {}
+        self.soar_client.save_asset_state(asset_id, state)
 
     def handle_webhook(
         self,
