@@ -725,3 +725,60 @@ class TestExtractErrorDetail:
         response = httpx.Response(400, json={"status": "failed", "code": 123})
         detail = oauth_client._extract_error_detail(response)
         assert "failed" in detail or "123" in detail
+
+
+class TestSetAuthorizationCode:
+    def test_set_authorization_code_with_session(self, oauth_client, mock_auth_state):
+        oauth_client.create_authorization_url("asset-123")
+
+        oauth_client.set_authorization_code("auth_code_abc")
+
+        state = oauth_client._load_state()
+        assert state.session.auth_code == "auth_code_abc"
+        assert state.session.auth_pending is False
+        assert state.session.auth_complete is True
+
+    def test_set_authorization_code_without_session(self, oauth_client):
+        oauth_client.set_authorization_code("auth_code_abc")
+        state = oauth_client._load_state()
+        assert state.session is None
+
+
+class TestGetAuthorizationCode:
+    def test_get_authorization_code_returns_code_when_complete(
+        self, oauth_client, mock_auth_state
+    ):
+        oauth_client.create_authorization_url("asset-123")
+        oauth_client.set_authorization_code("the_code")
+
+        code = oauth_client.get_authorization_code()
+
+        assert code == "the_code"
+
+    def test_get_authorization_code_returns_none_when_not_complete(
+        self, oauth_client, mock_auth_state
+    ):
+        oauth_client.create_authorization_url("asset-123")
+
+        code = oauth_client.get_authorization_code()
+
+        assert code is None
+
+    def test_get_authorization_code_with_force_reload(
+        self, oauth_client, mock_auth_state
+    ):
+        oauth_client.create_authorization_url("asset-123")
+        oauth_client.set_authorization_code("the_code")
+
+        reload_called = []
+        original_get_all = mock_auth_state.get_all
+
+        def tracking_get_all(*, force_reload=False):
+            reload_called.append(force_reload)
+            return original_get_all(force_reload=force_reload)
+
+        mock_auth_state.get_all = tracking_get_all
+
+        oauth_client.get_authorization_code(force_reload=True)
+
+        assert True in reload_called
