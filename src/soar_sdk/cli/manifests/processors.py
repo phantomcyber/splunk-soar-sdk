@@ -74,6 +74,8 @@ class ManifestProcessor:
                 f"{module_name}.{app_instance_name}.handle_webhook"
             )
 
+        app_meta.supports_es_polling = app.actions_manager.supports_es_polling
+
         return app_meta
 
     def create(self) -> None:

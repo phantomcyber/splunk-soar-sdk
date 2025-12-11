@@ -182,5 +182,6 @@ class OnESPollDecorator:
         )
 
         self.app.actions_manager.set_action(action_identifier, inner)
+        self.app.actions_manager.supports_es_polling = True
         self.app._dev_skip_in_pytest(function, inner)
         return inner

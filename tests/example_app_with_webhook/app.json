@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-10T20:14:41.943543Z",
+    "utctime_updated": "2025-12-11T18:07:29.807371Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -633,5 +633,6 @@
                 "declaration_lineno": 86
             }
         ]
-    }
+    },
+    "supports_es_polling": false
 }

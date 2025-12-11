@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-10T20:14:27.600897Z",
+    "utctime_updated": "2025-12-11T18:07:07.208512Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -1389,5 +1389,6 @@
                 "input_file_aarch64": "wheels/python314/yarl-1.22.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             }
         ]
-    }
+    },
+    "supports_es_polling": true
 }
