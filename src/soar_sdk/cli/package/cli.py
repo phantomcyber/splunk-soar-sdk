@@ -27,35 +27,51 @@ package = typer.Typer()
 console = Console()  # For printing lots of pretty colors and stuff
 
 
-async def collect_all_wheels(wheels: set[DependencyWheel]) -> list[tuple[str, bytes]]:
-    """Asynchronously collect all wheels from the given set of DependencyWheel objects."""
-    # Create progress bar for tracking wheel collection
+async def collect_all_wheels(wheels: list[DependencyWheel]) -> list[tuple[str, bytes]]:
+    """Asynchronously collect all wheels from the given list of DependencyWheel objects.
+
+    Downloads/builds each unique wheel once while updating every DependencyWheel instance
+    so the manifest records the final wheel filenames.
+    """
+    dedupe_map: dict[int, list[DependencyWheel]] = {}
+    for wheel in wheels:
+        key = hash(wheel)
+        dedupe_map.setdefault(key, []).append(wheel)
+
     progress = tqdm(
-        total=len(wheels),
+        total=len(dedupe_map),
         desc="Downloading wheels",
         unit="wheel",
         colour="green",
         ncols=80,
     )
 
-    async def collect_from_wheel(wheel: DependencyWheel) -> list[tuple[str, bytes]]:
-        result = []
-        # This actually is covered, but pytest-cov branch coverage
-        # has a bug with the end of async for loops
+    async def collect_from_wheel(
+        cache_key: int, wheel: DependencyWheel
+    ) -> tuple[int, list[tuple[str, bytes]]]:
+        result: list[tuple[str, bytes]] = []
         async for path, data in wheel.collect_wheels():  # pragma: no cover
             result.append((path, data))
-        # Update progress bar after each wheel is processed
         progress.update(1)
-        return result
+        return cache_key, result
 
-    # Use asyncio.gather to truly run all wheel collections concurrently
     with contextlib.closing(progress):
-        wheel_data_lists = await asyncio.gather(
-            *(collect_from_wheel(wheel) for wheel in wheels)
+        gathered_results = await asyncio.gather(
+            *(
+                collect_from_wheel(key, wheel_group[0])
+                for key, wheel_group in dedupe_map.items()
+            )
         )
 
-    # Use itertools.chain to flatten the list of lists
-    return list(chain.from_iterable(wheel_data_lists))
+    cache = dict(gathered_results)
+
+    for key, wheel_group in dedupe_map.items():
+        for path, _ in cache[key]:
+            wheel_name = Path(path).name
+            for wheel in wheel_group:
+                wheel._record_built_wheel(wheel_name)
+
+    return list(chain.from_iterable(cache.values()))
 
 
 @package.command()
@@ -124,13 +140,13 @@ def build(
 
         with tarfile.open(output_file, "w:gz") as app_tarball:
             # Collect all wheels from both Python versions
-            all_wheels = set(
+            all_wheels = (
                 app_meta.pip313_dependencies.wheel + app_meta.pip314_dependencies.wheel
             )
 
             # Run the async collection function within an event loop
             console.print(
-                f"[yellow]Collecting [bold]{len(all_wheels)}[/bold] wheel{'' if len(all_wheels) == 1 else 's'} for package[/]"
+                f"[yellow]Collecting [bold]{len(all_wheels)}[/bold] wheel{'' if len(set(all_wheels)) == 1 else 's'} for package[/]"
             )
             wheel_data = asyncio.run(collect_all_wheels(all_wheels))
 

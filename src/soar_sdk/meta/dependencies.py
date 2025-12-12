@@ -219,18 +219,41 @@ class DependencyWheel(BaseModel):
     sdist: UvSourceDistribution | None = Field(exclude=True, default=None)
     source_dir: UvSourceDirectory | None = Field(exclude=True, default=None)
 
+    def _set_wheel_paths(self, wheel_name: str) -> str:
+        """Assign the final wheel path (with any existing prefix) to both arches."""
+        base_path = Path(self.input_file or "wheels/shared")
+        # If there's already a filename component, replace it instead of nesting it
+        if base_path.suffix == ".whl":
+            base_path = base_path.parent
+        wheel_path = (base_path / wheel_name).as_posix()
+        self.input_file = wheel_path
+        self.input_file_aarch64 = wheel_path
+        return wheel_path
+
+    def set_placeholder_wheel_name(self, version: str) -> None:
+        """Populate a clearly placeholder wheel path when we expect to build from source."""
+        # Use only a filename here; platform-specific prefixes are added later.
+        self.input_file = "<to_be_built>.whl"
+        self.input_file_aarch64 = "<to_be_built>.whl"
+
+    def _record_built_wheel(self, wheel_name: str) -> str:
+        """Fill in missing wheel paths once a wheel has been built from source."""
+        return self._set_wheel_paths(wheel_name)
+
     async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes]]:
         """Collect a list of wheel files to fetch for this dependency across all platforms."""
         if self.wheel is None and self.sdist is not None:
             logger.info(f"Building sdist for {self.input_file}")
             wheel_name, wheel_bytes = await self.sdist.fetch_and_build()
-            yield (f"wheels/shared/{wheel_name}", wheel_bytes)
+            wheel_path = self._record_built_wheel(wheel_name)
+            yield (wheel_path, wheel_bytes)
             return
 
         if self.wheel is None and self.source_dir is not None:
             logger.info(f"Building local sources for {self.input_file}")
             wheel_name, wheel_bytes = self.source_dir.build()
-            yield (f"wheels/shared/{wheel_name}", wheel_bytes)
+            wheel_path = self._record_built_wheel(wheel_name)
+            yield (wheel_path, wheel_bytes)
             return
 
         if self.wheel is None:
@@ -398,12 +421,14 @@ class UvPackage(BaseModel):
             and UvLock.normalize_package_name(self.name) in DEPENDENCIES_TO_BUILD
         ):
             wheel.sdist = self.sdist
+            wheel.set_placeholder_wheel_name(self.version)
 
         if (
             self.source.directory is not None
             and UvLock.normalize_package_name(self.name) in DEPENDENCIES_TO_BUILD
         ):
             wheel.source_dir = UvSourceDirectory(directory=self.source.directory)
+            wheel.set_placeholder_wheel_name(self.version)
 
         try:
             wheel_x86_64 = self._find_wheel(
@@ -429,7 +454,7 @@ class UvPackage(BaseModel):
             wheel.input_file_aarch64 = f"{wheel_aarch64.basename}.whl"
             wheel.wheel_aarch64 = wheel_aarch64
         except FileNotFoundError:
-            if wheel.sdist is None:
+            if wheel.sdist is None and wheel.source_dir is None:
                 logger.warning(
                     f"Could not find a suitable aarch64 wheel for {self.name=}, {self.version=}, {abi_precedence=}, {python_precedence=} -- the built package might not work on ARM systems"
                 )

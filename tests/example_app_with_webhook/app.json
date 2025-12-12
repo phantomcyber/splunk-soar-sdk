@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-11T18:07:29.807371Z",
+    "utctime_updated": "2025-12-12T23:36:44.577977Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -323,7 +323,8 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/"
+                "input_file": "wheels/shared/<to_be_built>.whl",
+                "input_file_aarch64": "wheels/shared/<to_be_built>.whl"
             },
             {
                 "module": "toml",
@@ -551,7 +552,8 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/"
+                "input_file": "wheels/shared/<to_be_built>.whl",
+                "input_file_aarch64": "wheels/shared/<to_be_built>.whl"
             },
             {
                 "module": "toml",

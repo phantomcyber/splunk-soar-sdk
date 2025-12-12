@@ -1,3 +1,4 @@
+import json
 import tarfile
 from pathlib import Path
 from unittest.mock import patch
@@ -10,7 +11,7 @@ from typer.testing import CliRunner
 from soar_sdk.cli.package.cli import package
 from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
 from soar_sdk.cli.path_utils import context_directory
-from soar_sdk.meta.dependencies import UvWheel
+from soar_sdk.meta.dependencies import UvSourceDirectory, UvWheel
 
 runner = CliRunner()
 
@@ -221,6 +222,57 @@ def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
             members = tar.getnames()
             # Check for the specific base template file
             assert any("templates/base/base_template.html" in name for name in members)
+
+
+def test_package_build_writes_manifest_wheel_paths(
+    wheel_resp_mock, tmp_path: Path
+) -> None:
+    """Ensure built package includes a manifest with real wheel filenames."""
+    example_app = Path.cwd() / "tests/example_app"
+    destination = tmp_path / "example_app.tgz"
+
+    local_wheel = "local-sdk-1.0.0.whl"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+        patch.object(UvSourceDirectory, "build", return_value=(local_wheel, b"data")),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0, result.stdout
+
+    with tarfile.open(destination, "r:gz") as tar:
+        manifest_member = next(
+            (m for m in tar.getmembers() if m.name.endswith("manifest.json")), None
+        )
+        assert manifest_member is not None
+
+        manifest_file = tar.extractfile(manifest_member)
+        assert manifest_file is not None
+
+        manifest = json.loads(manifest_file.read())
+
+    expected_path = f"wheels/shared/{local_wheel}"
+    expected_wheel = {
+        "module": "splunk-soar-sdk",
+        "input_file": expected_path,
+        "input_file_aarch64": expected_path,
+    }
+    for py_version in ["313", "314"]:
+        section = f"pip{py_version}_dependencies"
+        for wheel in manifest[section]["wheel"]:
+            print(wheel)
+            if wheel == expected_wheel:
+                break
+        else:
+            raise AssertionError(f"Expected wheel not found in {section}")
 
 
 def test_package_build_without_app_templates(wheel_resp_mock, tmp_path: Path):
