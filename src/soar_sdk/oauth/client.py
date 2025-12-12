@@ -131,7 +131,7 @@ class SOARAssetOAuthClient:
     def _save_state(self, state: OAuthState) -> None:
         """Save OAuth state to asset storage."""
         current = self._auth_state.get_all()
-        current["oauth"] = state.model_dump(mode="json", exclude_none=True)  # type: ignore[assignment]
+        current["oauth"] = state.model_dump(mode="json", exclude_none=True)
         self._auth_state.put_all(current)
 
     def _clear_tokens(self) -> None:
