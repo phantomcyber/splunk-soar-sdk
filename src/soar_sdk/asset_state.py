@@ -1,11 +1,12 @@
 import json
 from collections.abc import Iterator, MutableMapping
+from typing import Any
 
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 
 AssetStateKeyType = str
-AssetStateValueType = str | bool | int | float | None
+AssetStateValueType = Any
 AssetStateType = dict[AssetStateKeyType, AssetStateValueType]
 
 

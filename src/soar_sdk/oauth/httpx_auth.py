@@ -8,15 +8,11 @@ refresh for HTTP requests.
 from __future__ import annotations
 
 from collections.abc import Generator
-from typing import TYPE_CHECKING
 
 import httpx
 
 from soar_sdk.oauth.client import AuthorizationRequiredError, SOARAssetOAuthClient
 from soar_sdk.oauth.models import OAuthToken
-
-if TYPE_CHECKING:
-    pass
 
 
 class OAuthBearerAuth(httpx.Auth):
