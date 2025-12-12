@@ -136,9 +136,33 @@ class ActionsManager(BaseConnector):
         """
         self.__app_dir = app_dir
 
+    def _get_state_file_path(self, asset_id: str) -> Path:
+        """Get the state file path for an asset."""
+        return Path(self.get_state_dir()) / f"{asset_id}_state.json"
+
+    def load_state_from_file(self, asset_id: str) -> dict:
+        """Load state directly from file."""
+        import json
+
+        state_file = self._get_state_file_path(asset_id)
+        if state_file.exists():
+            return json.loads(state_file.read_text())
+        return {}
+
+    def save_state_to_file(self, asset_id: str, state: dict) -> None:
+        """Save state directly to file."""
+        import json
+
+        state_file = self._get_state_file_path(asset_id)
+        state_file.parent.mkdir(parents=True, exist_ok=True)
+        state_file.write_text(json.dumps(state))
+
     def reload_state_from_file(self, app_id: str, asset_id: str) -> dict:
         """Reload state from file and update in-memory state.
 
-        Need for OAuth flow where one process (webhook) updates the state file and another process (connection action) needs to see those changes.
+        Needed for OAuth flow where one process (webhook) updates the state file and another process (action) needs to see those changes.
         """
-        return self.load_state() or {}
+        state = self.load_state_from_file(asset_id)
+        if state:
+            self.save_state(state)
+        return state
