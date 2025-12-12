@@ -120,14 +120,30 @@ For certificate-based authentication (e.g., Microsoft Entra ID):
 OAuth Callback Webhook
 ----------------------
 
-For Authorization Code flow, the SDK can handle the OAuth callback. Register a webhook in your app:
+For Authorization Code flow, register a webhook to receive the OAuth callback:
 
 .. code-block:: python
 
-    @app.webhook("/oauth/callback")
-    def oauth_callback(request: WebhookRequest) -> WebhookResponse:
-        flow = AuthorizationCodeFlow(...)
-        code = request.query.get("code")
-        if code:
-            flow.set_authorization_code(code)
-        return WebhookResponse(status_code=200, body="Authorization complete")
+    from soar_sdk.auth import OAuthConfig, SOARAssetOAuthClient
+
+    @app.webhook("oauth_callback")
+    def oauth_callback(request: WebhookRequest[Asset]) -> WebhookResponse:
+        code = request.query.get("code", [""])[0]
+        if not code:
+            return WebhookResponse.text_response(
+                content="Missing authorization code",
+                status_code=400,
+            )
+
+        config = OAuthConfig(
+            client_id=request.asset.client_id,
+            client_secret=request.asset.client_secret,
+            token_endpoint=request.asset.token_url,
+        )
+        oauth_client = SOARAssetOAuthClient(config, request.asset.auth_state)
+        oauth_client.set_authorization_code(code)
+
+        return WebhookResponse.text_response(
+            content="Authorization successful! You can close this window.",
+            status_code=200,
+        )
