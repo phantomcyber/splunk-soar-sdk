@@ -794,14 +794,15 @@ class App:
         return WebhookDecorator(self, url_pattern, allowed_methods)
 
     def _load_webhook_state(self, asset_id: str) -> None:
-        """Load state for webhooks."""
-        state = self.soar_client.load_asset_state(asset_id)
-        self.actions_manager.save_state(state)
+        """Load state from file for webhooks."""
+        state = self.actions_manager.load_state_from_file(asset_id)
+        if state:
+            self.actions_manager.save_state(state)
 
     def _save_webhook_state(self, asset_id: str) -> None:
-        """Save state for webhooks."""
+        """Save state to file for webhooks."""
         state = self.actions_manager.load_state() or {}
-        self.soar_client.save_asset_state(asset_id, state)
+        self.actions_manager.save_state_to_file(asset_id, state)
 
     def handle_webhook(
         self,

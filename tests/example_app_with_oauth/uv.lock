@@ -930,7 +930,7 @@ dependencies = [
     { name = "typer", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
 ]
 wheels = [
-    { filename = "splunk_soar_sdk-3.4.0-py3-none-any.whl", hash = "sha256:88e9dbcc6e46e59880a34ae2afda4c37ca42a399ae6d149ad7de3258074d2bb0" },
+    { filename = "splunk_soar_sdk-3.4.0-py3-none-any.whl", hash = "sha256:4a37fda8ff887ddde5cc174ca78784363d7df5f38b882f44c6f8fba8fe2d7d37" },
 ]
 
 [package.metadata]

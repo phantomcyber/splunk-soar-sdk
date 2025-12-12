@@ -121,6 +121,13 @@ if TYPE_CHECKING or not _soar_is_available:
         def get_config(self) -> dict:
             return self.config
 
+        def get_app_id(self) -> str:
+            return self.__app_json.get("appid", "")
+
+        def get_state_dir(self) -> str:
+            phantom_home = os.getenv("PHANTOM_HOME", "/opt/phantom")
+            return f"{phantom_home}/local_data/app_states/{self.get_app_id()}/"
+
         def save_state(self, state: dict) -> None:
             self.__state = state
 
