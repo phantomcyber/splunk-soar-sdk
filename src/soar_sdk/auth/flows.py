@@ -1,5 +1,3 @@
-"""OAuth 2.0 authentication flow implementations."""
-
 from __future__ import annotations
 
 import time
@@ -35,7 +33,7 @@ class OAuthFlow(ABC):
 
 
 class ClientCredentialsFlow(OAuthFlow):
-    """OAuth 2.0 Client Credentials flow implementation."""
+    """OAuth 2.0 Client Credentials flow."""
 
     def __init__(
         self,
@@ -75,7 +73,7 @@ class ClientCredentialsFlow(OAuthFlow):
 
 
 class AuthorizationCodeFlow(OAuthFlow):
-    """OAuth 2.0 Authorization Code flow implementation using state for cross-process communication."""
+    """OAuth 2.0 Authorization Code flow."""
 
     def __init__(
         self,

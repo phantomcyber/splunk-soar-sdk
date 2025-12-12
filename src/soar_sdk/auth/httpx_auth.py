@@ -1,5 +1,3 @@
-"""HTTPX authentication handlers."""
-
 from __future__ import annotations
 
 import base64
@@ -12,17 +10,7 @@ from soar_sdk.auth.models import OAuthToken
 
 
 class BasicAuth(httpx.Auth):
-    """HTTPX authentication using HTTP Basic Authentication.
-
-    Args:
-        username: The username.
-        password: The password.
-
-    Example:
-        >>> auth = BasicAuth(asset.username, asset.password)
-        >>> with httpx.Client(auth=auth) as client:
-        ...     response = client.get("https://api.example.com/data")
-    """
+    """HTTPX authentication using HTTP Basic Authentication."""
 
     def __init__(self, username: str, password: str) -> None:
         self._username = username
@@ -40,20 +28,7 @@ class BasicAuth(httpx.Auth):
 
 
 class StaticTokenAuth(httpx.Auth):
-    """HTTPX authentication using a static token.
-
-    Use this when you have a pre-obtained token (API key, bearer token, etc.)
-    that doesn't require refresh logic.
-
-    Args:
-        token: The token string or OAuthToken object.
-        token_type: The token type for the Authorization header. Defaults to "Bearer".
-
-    Example:
-        >>> auth = StaticTokenAuth(asset.api_key)
-        >>> with httpx.Client(auth=auth) as client:
-        ...     response = client.get("https://api.example.com/data")
-    """
+    """HTTPX authentication using a static token."""
 
     def __init__(
         self,
@@ -78,21 +53,7 @@ class StaticTokenAuth(httpx.Auth):
 
 
 class OAuthBearerAuth(httpx.Auth):
-    """HTTPX authentication using OAuth Bearer tokens.
-
-    This auth handler automatically injects the OAuth access token into
-    request headers and can optionally refresh expired tokens.
-
-    Args:
-        oauth_client: The SOAR OAuth client for token management.
-        auto_refresh: Whether to automatically refresh expired tokens.
-            Defaults to True.
-
-    Example:
-        >>> oauth_client = SOARAssetOAuthClient(config, auth_state)
-        >>> auth = OAuthBearerAuth(oauth_client)
-        >>> response = httpx.get("https://api.example.com/data", auth=auth)
-    """
+    """HTTPX authentication using OAuth Bearer tokens."""
 
     requires_response_body = True
 

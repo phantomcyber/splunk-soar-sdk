@@ -1,9 +1,3 @@
-"""OAuth 2.0 data models for the SOAR SDK.
-
-This module defines Pydantic models for OAuth tokens, configurations,
-and authentication session state management.
-"""
-
 from __future__ import annotations
 
 import time
@@ -21,11 +15,7 @@ class OAuthGrantType(StrEnum):
 
 
 class OAuthToken(BaseModel):
-    """Represents an OAuth 2.0 token response.
-
-    This model stores the access token and optional refresh token received
-    from an OAuth provider, along with metadata about token expiration.
-    """
+    """OAuth 2.0 token response."""
 
     model_config = ConfigDict(extra="allow")
 
@@ -44,26 +34,14 @@ class OAuthToken(BaseModel):
             self.expires_at = time.time() + self.expires_in
 
     def is_expired(self, leeway: int = 30) -> bool:
-        """Check if the token is expired.
-
-        Args:
-            leeway: Number of seconds before actual expiration to consider
-                the token expired. Defaults to 30 seconds for safety.
-
-        Returns:
-            True if the token is expired or will expire within the leeway period.
-        """
+        """Check if the token is expired."""
         if self.expires_at is None:
             return False
         return time.time() >= (self.expires_at - leeway)
 
 
 class OAuthConfig(BaseModel):
-    """Configuration for OAuth 2.0 authentication.
-
-    This model holds the OAuth provider configuration including endpoints,
-    client credentials, and scope settings.
-    """
+    """Configuration for OAuth 2.0 authentication."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -85,12 +63,7 @@ class OAuthConfig(BaseModel):
 
 
 class OAuthSession(BaseModel):
-    """Represents an active OAuth authentication session.
-
-    Used to track the state of an in-progress authorization flow,
-    ensuring thread-safety by associating a unique session ID with
-    each authentication attempt.
-    """
+    """Represents an active OAuth authentication session."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -106,11 +79,7 @@ class OAuthSession(BaseModel):
 
 
 class OAuthState(BaseModel):
-    """State persisted in auth_state for OAuth authentication.
-
-    This model represents all OAuth-related data that needs to be
-    persisted between action runs.
-    """
+    """State persisted in auth_state for OAuth authentication."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -123,11 +92,7 @@ class OAuthState(BaseModel):
 
 
 class CertificateCredentials(BaseModel):
-    """Certificate-based authentication credentials.
-
-    Used for OAuth 2.0 Client Credentials flow with certificate
-    authentication instead of a client secret.
-    """
+    """Certificate-based authentication credentials."""
 
     model_config = ConfigDict(extra="forbid")
 

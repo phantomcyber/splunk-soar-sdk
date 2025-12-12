@@ -6,9 +6,6 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 import httpx
-from authlib.integrations.httpx_client import (  # type: ignore[import-untyped]
-    OAuth2Client,
-)
 from authlib.oauth2.rfc7636 import (  # type: ignore[import-untyped]
     create_s256_code_challenge,
 )
@@ -50,37 +47,7 @@ class ConfigurationChangedError(OAuthClientError):
 
 
 class SOARAssetOAuthClient:
-    """OAuth 2.0 client for SOAR asset authentication.
-
-    This client provides a complete OAuth 2.0 implementation that integrates
-    with the SOAR SDK's asset state management for secure token persistence.
-    It supports multiple grant types including authorization code flow and
-    client credentials flow.
-
-    The client uses authlib with httpx for HTTP transport, providing both
-    synchronous and asynchronous capabilities with proper timeout and
-    error handling.
-
-    Args:
-        config: OAuth configuration containing client credentials and endpoints.
-        auth_state: SOAR asset state for persisting OAuth tokens securely.
-        http_client: Optional httpx client for making HTTP requests. If not
-            provided, a new client will be created.
-        verify_ssl: Whether to verify SSL certificates. Defaults to True.
-        timeout: Request timeout in seconds. Defaults to 30.
-
-    Example:
-        >>> config = OAuthConfig(
-        ...     client_id="my-client-id",
-        ...     client_secret="my-client-secret",
-        ...     authorization_endpoint="https://auth.example.com/authorize",
-        ...     token_endpoint="https://auth.example.com/token",
-        ...     redirect_uri="https://soar.example.com/oauth/callback",
-        ...     scope=["read", "write"],
-        ... )
-        >>> oauth_client = SOARAssetOAuthClient(config, asset.auth_state)
-        >>> token = oauth_client.get_valid_token()
-    """
+    """Complete OAuth 2.0 client for SOAR asset authentication."""
 
     def __init__(
         self,
@@ -99,14 +66,6 @@ class SOARAssetOAuthClient:
         self._http_client = http_client or httpx.Client(
             verify=verify_ssl,
             timeout=timeout,
-        )
-
-        self._oauth2_client = OAuth2Client(
-            client_id=config.client_id,
-            client_secret=config.client_secret,
-            redirect_uri=config.redirect_uri,
-            scope=config.get_scope_string(),
-            token_endpoint=config.token_endpoint,
         )
 
     @property
@@ -148,15 +107,7 @@ class SOARAssetOAuthClient:
         return state.client_id != self._config.client_id
 
     def get_stored_token(self) -> OAuthToken | None:
-        """Retrieve the stored OAuth token if available.
-
-        Returns:
-            The stored OAuthToken or None if no token is stored.
-
-        Raises:
-            ConfigurationChangedError: If the client_id has changed since
-                the token was stored, indicating re-authorization is needed.
-        """
+        """Retrieve the stored OAuth token if available."""
         if self._check_client_id_changed():
             self._clear_tokens()
             raise ConfigurationChangedError(
@@ -167,26 +118,7 @@ class SOARAssetOAuthClient:
         return state.token
 
     def get_valid_token(self, auto_refresh: bool = True) -> OAuthToken:
-        """Get a valid access token, refreshing if necessary.
-
-        This method retrieves the stored token and checks if it's still valid.
-        If the token is expired and a refresh token is available, it will
-        automatically attempt to refresh the token.
-
-        Args:
-            auto_refresh: Whether to automatically refresh expired tokens.
-                Defaults to True.
-
-        Returns:
-            A valid OAuthToken.
-
-        Raises:
-            AuthorizationRequiredError: If no token is available or the token
-                cannot be refreshed.
-            TokenExpiredError: If the token is expired and auto_refresh is False
-                or refresh fails.
-            ConfigurationChangedError: If client credentials have changed.
-        """
+        """Get a valid access token, refreshing if necessary."""
         token = self.get_stored_token()
 
         if token is None:
@@ -208,17 +140,7 @@ class SOARAssetOAuthClient:
         return self.refresh_token(token.refresh_token)
 
     def refresh_token(self, refresh_token: str) -> OAuthToken:
-        """Refresh an access token using a refresh token.
-
-        Args:
-            refresh_token: The refresh token to use.
-
-        Returns:
-            A new OAuthToken with updated access token.
-
-        Raises:
-            TokenRefreshError: If the refresh request fails.
-        """
+        """Refresh an access token using a refresh token."""
         try:
             response = self._http_client.post(
                 self._config.token_endpoint,
@@ -266,20 +188,7 @@ class SOARAssetOAuthClient:
         *,
         extra_params: dict[str, Any] | None = None,
     ) -> OAuthToken:
-        """Fetch an access token using client credentials grant.
-
-        This flow is used for server-to-server authentication where no
-        user interaction is required.
-
-        Args:
-            extra_params: Additional parameters to include in the token request.
-
-        Returns:
-            The obtained OAuthToken.
-
-        Raises:
-            OAuthClientError: If the token request fails.
-        """
+        """Fetch an access token using client credentials grant."""
         data: dict[str, Any] = {
             "grant_type": OAuthGrantType.CLIENT_CREDENTIALS.value,
             "client_id": self._config.client_id,
@@ -327,25 +236,7 @@ class SOARAssetOAuthClient:
         use_pkce: bool = True,
         extra_params: dict[str, Any] | None = None,
     ) -> tuple[str, OAuthSession]:
-        """Create an authorization URL for the authorization code flow.
-
-        This method generates a URL that the user should be redirected to
-        in order to authorize the application. It also creates a session
-        object to track the authorization state.
-
-        Args:
-            asset_id: The SOAR asset ID, used to correlate the callback.
-            use_pkce: Whether to use PKCE (Proof Key for Code Exchange) for
-                enhanced security. Defaults to True.
-            extra_params: Additional parameters to include in the authorization URL.
-
-        Returns:
-            A tuple of (authorization_url, session) where session contains
-            the state needed to complete the authorization.
-
-        Raises:
-            OAuthClientError: If authorization_endpoint is not configured.
-        """
+        """Create a sessioned authorization URL for the authorization code flow."""
         if not self._config.authorization_endpoint:
             raise OAuthClientError(
                 "authorization_endpoint is required for authorization code flow"
@@ -407,20 +298,7 @@ class SOARAssetOAuthClient:
         code_verifier: str | None = None,
         extra_params: dict[str, Any] | None = None,
     ) -> OAuthToken:
-        """Exchange an authorization code for an access token.
-
-        Args:
-            code: The authorization code received from the authorization callback.
-            code_verifier: The PKCE code verifier if PKCE was used during
-                authorization. If not provided, attempts to retrieve from session.
-            extra_params: Additional parameters to include in the token request.
-
-        Returns:
-            The obtained OAuthToken.
-
-        Raises:
-            OAuthClientError: If the token exchange fails.
-        """
+        """Exchange an authorization code for an access token."""
         state = self._load_state()
         session = state.session
 
@@ -477,22 +355,7 @@ class SOARAssetOAuthClient:
         self,
         callback_params: dict[str, str],
     ) -> OAuthToken:
-        """Handle the OAuth authorization callback.
-
-        This method processes the callback from the authorization server,
-        validates the state parameter, and exchanges the authorization
-        code for tokens.
-
-        Args:
-            callback_params: The query parameters from the callback URL.
-
-        Returns:
-            The obtained OAuthToken.
-
-        Raises:
-            OAuthClientError: If the callback indicates an error or state
-                validation fails.
-        """
+        """Handle the OAuth authorization callback."""
         if "error" in callback_params:
             error = callback_params.get("error", "unknown_error")
             error_description = callback_params.get(
@@ -515,11 +378,7 @@ class SOARAssetOAuthClient:
         return self.fetch_token_with_authorization_code(code)
 
     def get_pending_session(self) -> OAuthSession | None:
-        """Get the current pending authorization session if any.
-
-        Returns:
-            The pending OAuthSession or None if no session is pending.
-        """
+        """Get the current pending authorization session if any."""
         state = self._load_state()
         if state.session and state.session.auth_pending:
             return state.session
@@ -533,17 +392,7 @@ class SOARAssetOAuthClient:
         error: str | None = None,
         error_description: str | None = None,
     ) -> None:
-        """Mark an authorization session as complete.
-
-        This method is called from the webhook handler when the authorization
-        callback is received.
-
-        Args:
-            session_id: The session ID to complete.
-            auth_code: The authorization code if successful.
-            error: Error code if authorization failed.
-            error_description: Error description if authorization failed.
-        """
+        """Mark an authorization session as complete."""
         state = self._load_state()
         if state.session is None or state.session.session_id != session_id:
             return
@@ -596,12 +445,7 @@ class SOARAssetOAuthClient:
 
 
 class CertificateOAuthClient(SOARAssetOAuthClient):
-    """OAuth client for certificate-based authentication.
-
-    This client extends SOARAssetOAuthClient to support OAuth 2.0 Client
-    Credentials flow using a certificate for authentication instead of
-    a client secret.
-    """
+    """Complete OAuth client for certificate-based authentication."""
 
     def __init__(
         self,
@@ -627,21 +471,7 @@ class CertificateOAuthClient(SOARAssetOAuthClient):
         *,
         extra_params: dict[str, Any] | None = None,
     ) -> OAuthToken:
-        """Fetch an access token using certificate-based client credentials.
-
-        This method implements the OAuth 2.0 Client Credentials flow using
-        a client assertion (JWT signed with the certificate private key)
-        for authentication.
-
-        Args:
-            extra_params: Additional parameters to include in the token request.
-
-        Returns:
-            The obtained OAuthToken.
-
-        Raises:
-            OAuthClientError: If the token request fails.
-        """
+        """Fetch an access token using certificate-based client credentials."""
         import time
 
         import jwt
@@ -669,10 +499,11 @@ class CertificateOAuthClient(SOARAssetOAuthClient):
             headers=headers,
         )
 
+        assertion_type = "urn:ietf:params:oauth:client-assertion-type:jwt-bearer"
         data: dict[str, Any] = {
             "grant_type": OAuthGrantType.CLIENT_CREDENTIALS.value,
             "client_id": self._config.client_id,
-            "client_assertion_type": "urn:ietf:params:oauth:client-assertion-type:jwt-bearer",
+            "client_assertion_type": assertion_type,
             "client_assertion": client_assertion,
         }
 
