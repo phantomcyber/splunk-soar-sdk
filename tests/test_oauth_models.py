@@ -3,7 +3,7 @@ import time
 import pytest
 from pydantic import ValidationError
 
-from soar_sdk.oauth.models import (
+from soar_sdk.auth.models import (
     CertificateCredentials,
     OAuthConfig,
     OAuthGrantType,

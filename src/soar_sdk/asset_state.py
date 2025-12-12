@@ -26,14 +26,9 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         self.app_id = app_id
 
     def get_all(self, *, force_reload: bool = False) -> AssetStateType:
-        """Get the entirety of this part of the asset state.
-
-        Args:
-            force_reload: If True, reload state from file before returning.
-                This is useful for OAuth polling where state may have been
-                updated by a webhook in another process.
-        """
+        """Get the entirety of this part of the asset state."""
         if force_reload and self.app_id:
+            # Reload state from file before returning (needed for OAuth flow).
             self.backend.reload_state_from_file(self.app_id, self.asset_id)
         state = self.backend.load_state() or {}
         if not (part_encrypted := state.get(self.state_key)):

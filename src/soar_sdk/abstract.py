@@ -207,7 +207,7 @@ class SOARClient(Generic[SummaryType]):
         return "https://localhost:9999/"
 
     def load_asset_state(self, asset_id: str) -> dict:
-        """Load asset state via SOAR REST API."""
+        """Load asset state."""
         try:
             response = self.get(f"asset_state/{asset_id}")
             return response.json().get("state_json", {})
@@ -217,7 +217,7 @@ class SOARClient(Generic[SummaryType]):
             raise
 
     def save_asset_state(self, asset_id: str, state: dict) -> None:
-        """Save asset state via SOAR REST API."""
+        """Save asset state."""
         self.post(f"asset_state/{asset_id}", json={"state_json": state})
 
     @abstractmethod

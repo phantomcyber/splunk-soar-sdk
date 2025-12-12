@@ -4,7 +4,7 @@ import httpx
 import pytest
 import respx
 
-from soar_sdk.oauth.client import (
+from soar_sdk.auth.client import (
     AuthorizationRequiredError,
     ConfigurationChangedError,
     OAuthClientError,
@@ -12,7 +12,7 @@ from soar_sdk.oauth.client import (
     TokenExpiredError,
     TokenRefreshError,
 )
-from soar_sdk.oauth.models import OAuthConfig, OAuthState, OAuthToken
+from soar_sdk.auth.models import OAuthConfig, OAuthState, OAuthToken
 
 
 @pytest.fixture
