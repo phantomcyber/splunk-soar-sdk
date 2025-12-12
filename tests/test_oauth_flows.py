@@ -5,8 +5,8 @@ import httpx
 import pytest
 import respx
 
-from soar_sdk.oauth.client import AuthorizationRequiredError, OAuthClientError
-from soar_sdk.oauth.flows import (
+from soar_sdk.auth.client import AuthorizationRequiredError, OAuthClientError
+from soar_sdk.auth.flows import (
     AuthorizationCodeFlow,
     ClientCredentialsFlow,
 )

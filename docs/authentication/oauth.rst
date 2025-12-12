@@ -3,7 +3,7 @@
 OAuth 2.0 Authentication
 ========================
 
-The SDK provides OAuth 2.0 support for SOAR connectors, with automatic token management and secure storage via the asset's ``auth_state``.
+The SDK provides OAuth 2.0 support for SOAR connectors, with automatic token management and secure storage.
 
 Supported Flows
 ---------------
@@ -19,7 +19,7 @@ The simplest flow for service accounts:
 
 .. code-block:: python
 
-    from soar_sdk.oauth import ClientCredentialsFlow
+    from soar_sdk.auth import ClientCredentialsFlow
 
     flow = ClientCredentialsFlow(
         auth_state=asset.auth_state,
@@ -30,7 +30,6 @@ The simplest flow for service accounts:
     )
 
     token = flow.get_token()
-    # Use token.access_token for API calls
 
 Authorization Code Flow
 -----------------------
@@ -39,7 +38,7 @@ For user-delegated access requiring browser authorization:
 
 .. code-block:: python
 
-    from soar_sdk.oauth import AuthorizationCodeFlow
+    from soar_sdk.auth import AuthorizationCodeFlow
 
     flow = AuthorizationCodeFlow(
         auth_state=asset.auth_state,
@@ -50,29 +49,32 @@ For user-delegated access requiring browser authorization:
         token_endpoint=asset.token_url,
         redirect_uri=redirect_uri,
         scope=["openid", "profile", "email"],
-        use_pkce=True,  # Recommended for security
+        use_pkce=True,
     )
 
-    # In test_connectivity action:
     auth_url = flow.get_authorization_url()
     print(f"Please visit: {auth_url}")
     token = flow.wait_for_authorization()
 
-    # In subsequent actions:
     token = flow.get_token()
 
 Using with HTTPX
 ----------------
 
-For automatic token injection in HTTP requests:
+For automatic token injection in HTTP requests, use ``OAuthBearerAuth``:
 
 .. code-block:: python
 
-    from soar_sdk.oauth import ClientCredentialsFlow, OAuthClientCredentialsAuth
+    from soar_sdk.auth import OAuthBearerAuth, OAuthConfig, SOARAssetOAuthClient
     import httpx
 
-    flow = ClientCredentialsFlow(...)
-    auth = OAuthClientCredentialsAuth(flow.client)
+    config = OAuthConfig(
+        client_id=asset.client_id,
+        client_secret=asset.client_secret,
+        token_endpoint=asset.token_url,
+    )
+    oauth_client = SOARAssetOAuthClient(config, asset.auth_state)
+    auth = OAuthBearerAuth(oauth_client)
 
     with httpx.Client(auth=auth) as client:
         response = client.get("https://api.example.com/resource")
@@ -80,7 +82,7 @@ For automatic token injection in HTTP requests:
 The auth handler automatically:
 
 - Fetches tokens on first request
-- Refreshes expired tokens
+- Refreshes expired tokens when a refresh token is available
 - Retries on 401 responses
 
 Token Storage
@@ -91,6 +93,29 @@ Tokens are automatically stored in the asset's ``auth_state`` and encrypted at r
 - Token persistence across action runs
 - Automatic refresh when tokens expire
 - Credential change detection (forces re-authorization if client_id changes)
+
+Certificate-based Authentication
+---------------------------------
+
+For certificate-based authentication (e.g., Microsoft Entra ID):
+
+.. code-block:: python
+
+    from soar_sdk.auth import CertificateCredentials, CertificateOAuthClient, OAuthConfig
+
+    config = OAuthConfig(
+        client_id=asset.client_id,
+        token_endpoint=f"https://login.microsoftonline.com/{asset.tenant_id}/oauth2/v2.0/token",
+        scope=["https://graph.microsoft.com/.default"],
+    )
+
+    certificate = CertificateCredentials(
+        certificate_thumbprint=asset.cert_thumbprint,
+        private_key=asset.private_key,
+    )
+
+    client = CertificateOAuthClient(config, asset.auth_state, certificate)
+    token = client.fetch_token_with_certificate()
 
 OAuth Callback Webhook
 ----------------------

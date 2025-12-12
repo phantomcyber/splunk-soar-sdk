@@ -13,8 +13,7 @@ from authlib.oauth2.rfc7636 import (  # type: ignore[import-untyped]
     create_s256_code_challenge,
 )
 
-from soar_sdk.logging import getLogger
-from soar_sdk.oauth.models import (
+from soar_sdk.auth.models import (
     CertificateCredentials,
     OAuthConfig,
     OAuthGrantType,
@@ -22,6 +21,7 @@ from soar_sdk.oauth.models import (
     OAuthState,
     OAuthToken,
 )
+from soar_sdk.logging import getLogger
 
 if TYPE_CHECKING:
     from soar_sdk.asset_state import AssetState

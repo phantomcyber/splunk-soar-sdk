@@ -139,11 +139,6 @@ class ActionsManager(BaseConnector):
     def reload_state_from_file(self, app_id: str, asset_id: str) -> dict:
         """Reload state from file and update in-memory state.
 
-        This is needed for OAuth flows where one process (webhook) updates the state file
-        and another process (polling action) needs to see those changes.
-
-        SOAR's BaseConnector.load_state() reads from the state file, so we just call it.
-        The app_id and asset_id params are kept for interface compatibility but aren't
-        needed since BaseConnector already knows the asset context.
+        Need for OAuth flow where one process (webhook) updates the state file and another process (connection action) needs to see those changes.
         """
         return self.load_state() or {}

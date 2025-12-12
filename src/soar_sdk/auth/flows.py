@@ -7,14 +7,14 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
-from soar_sdk.logging import getLogger
-from soar_sdk.oauth.client import (
+from soar_sdk.auth.client import (
     AuthorizationRequiredError,
     OAuthClientError,
     SOARAssetOAuthClient,
     TokenExpiredError,
 )
-from soar_sdk.oauth.models import OAuthConfig, OAuthGrantType, OAuthToken
+from soar_sdk.auth.models import OAuthConfig, OAuthGrantType, OAuthToken
+from soar_sdk.logging import getLogger
 
 if TYPE_CHECKING:
     from soar_sdk.asset_state import AssetState

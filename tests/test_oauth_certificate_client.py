@@ -2,8 +2,8 @@ import httpx
 import pytest
 import respx
 
-from soar_sdk.oauth.client import CertificateOAuthClient, OAuthClientError
-from soar_sdk.oauth.models import CertificateCredentials, OAuthConfig
+from soar_sdk.auth.client import CertificateOAuthClient, OAuthClientError
+from soar_sdk.auth.models import CertificateCredentials, OAuthConfig
 
 RSA_PRIVATE_KEY = """-----BEGIN RSA PRIVATE KEY-----
 MIIEowIBAAKCAQEAvK/ZhjoDqbSxOimg6gPoPMotudDwmKAKi8W8dKfeYLQOLj0U

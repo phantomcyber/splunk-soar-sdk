@@ -794,12 +794,12 @@ class App:
         return WebhookDecorator(self, url_pattern, allowed_methods)
 
     def _load_webhook_state(self, asset_id: str) -> None:
-        """Load state via SOAR REST API for webhooks."""
+        """Load state for webhooks."""
         state = self.soar_client.load_asset_state(asset_id)
         self.actions_manager.save_state(state)
 
     def _save_webhook_state(self, asset_id: str) -> None:
-        """Save state via SOAR REST API for webhooks."""
+        """Save state for webhooks."""
         state = self.actions_manager.load_state() or {}
         self.soar_client.save_asset_state(asset_id, state)
 
@@ -820,7 +820,7 @@ class App:
         self._raw_asset_config = asset
 
         _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
-        asset_id = str(soar_rest_client.asset_id)  # Ensure asset_id is always a string
+        asset_id = soar_rest_client.asset_id
         soar_base_url = soar_rest_client.base_url
         soar_base_url = soar_base_url.removesuffix("/rest")
         soar_auth = SOARClientAuth(
@@ -843,7 +843,6 @@ class App:
 
         self.actions_manager.override_app_dir(self.app_root)
         self.actions_manager._load_app_json()
-        # Load state for webhooks - SOAR doesn't pre-populate state like it does for actions
         self._load_webhook_state(str(asset_id))
         request = WebhookRequest(
             method=method,
@@ -862,6 +861,5 @@ class App:
             raise TypeError(
                 f"Webhook handler must return a WebhookResponse, got {type(response)}"
             )
-        # Save state for webhooks - SOAR doesn't auto-persist webhook state
         self._save_webhook_state(asset_id)
         return response.model_dump()

@@ -6,14 +6,14 @@ from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
-from soar_sdk.logging import getLogger
-from soar_sdk.oauth import (
+from soar_sdk.auth import (
     AuthorizationCodeFlow,
     ClientCredentialsFlow,
     OAuthBearerAuth,
+    OAuthConfig,
     SOARAssetOAuthClient,
 )
-from soar_sdk.oauth.models import OAuthConfig
+from soar_sdk.logging import getLogger
 from soar_sdk.params import Param, Params
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
