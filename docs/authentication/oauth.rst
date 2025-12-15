@@ -47,7 +47,7 @@ For user-delegated access requiring browser authorization:
         client_secret=asset.client_secret,
         authorization_endpoint=asset.auth_url,
         token_endpoint=asset.token_url,
-        redirect_uri=redirect_uri,
+        redirect_uri=app.get_webhook_url("oauth_callback"),
         scope=["openid", "profile", "email"],
         use_pkce=True,
     )
