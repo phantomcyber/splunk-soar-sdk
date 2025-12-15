@@ -67,3 +67,24 @@ def test_state_is_encrypted(example_state: AssetState):
     with pytest.raises(json.JSONDecodeError):
         # If the state string is encrypted, then it won't be JSON-decodable.
         json.loads(raw_state)
+
+
+def test_get_all_with_force_reload(example_state: AssetState):
+    example_state.app_id = "test_app_id"
+
+    example_state.put_all({"key": "original_value"})
+
+    reload_called = False
+    original_reload = example_state.backend.reload_state_from_file
+
+    def mock_reload(app_id, asset_id):
+        nonlocal reload_called
+        reload_called = True
+        return original_reload(app_id, asset_id) if callable(original_reload) else {}
+
+    example_state.backend.reload_state_from_file = mock_reload
+
+    result = example_state.get_all(force_reload=True)
+
+    assert reload_called is True
+    assert result == {"key": "original_value"}
