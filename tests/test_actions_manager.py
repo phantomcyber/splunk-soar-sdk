@@ -297,3 +297,69 @@ def test_get_app_dir_non_broker(
 def test_override_app_dir(app_actions_manager: ActionsManager, tmp_path: Path):
     app_actions_manager.override_app_dir(tmp_path)
     assert app_actions_manager.get_app_dir() == tmp_path.as_posix()
+
+
+def test_state_file_operations(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+    tmp_path: Path,
+):
+    mocker.patch.object(
+        app_actions_manager, "get_state_dir", return_value=str(tmp_path)
+    )
+
+    asset_id = "test_asset_123"
+    test_state = {"oauth": {"access_token": "test_token"}}
+
+    app_actions_manager.save_state_to_file(asset_id, test_state)
+
+    loaded_state = app_actions_manager.load_state_from_file(asset_id)
+    assert loaded_state == test_state
+
+
+def test_load_state_from_file_not_exists(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+    tmp_path: Path,
+):
+    mocker.patch.object(
+        app_actions_manager, "get_state_dir", return_value=str(tmp_path)
+    )
+
+    loaded_state = app_actions_manager.load_state_from_file("nonexistent_asset")
+    assert loaded_state == {}
+
+
+def test_reload_state_from_file(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+    tmp_path: Path,
+):
+    mocker.patch.object(
+        app_actions_manager, "get_state_dir", return_value=str(tmp_path)
+    )
+
+    asset_id = "test_asset_456"
+    app_id = "test_app_123"
+    test_state = {"oauth": {"access_token": "refreshed_token"}}
+
+    app_actions_manager.save_state_to_file(asset_id, test_state)
+
+    result = app_actions_manager.reload_state_from_file(app_id, asset_id)
+
+    assert result == test_state
+    assert app_actions_manager.load_state() == test_state
+
+
+def test_reload_state_from_file_empty(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+    tmp_path: Path,
+):
+    mocker.patch.object(
+        app_actions_manager, "get_state_dir", return_value=str(tmp_path)
+    )
+
+    result = app_actions_manager.reload_state_from_file("app_123", "nonexistent_asset")
+
+    assert result == {}

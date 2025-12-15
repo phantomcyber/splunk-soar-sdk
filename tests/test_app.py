@@ -1,6 +1,7 @@
 import json
 from unittest import mock
 
+import httpx
 import pytest
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
@@ -377,3 +378,56 @@ def test_create_soar_client_auth_token_object(auth_token_input):
     assert isinstance(result, SOARClientAuth)
     assert result.base_url == "https://localhost:9999/"
     assert result.user_session_token == "example_token"
+
+
+def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
+    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={"base_url": "https://soar.example.com/"},
+        )
+    )
+
+    app_with_asset_webhook.soar_client.update_client(
+        SOARClientAuth(base_url="https://soar.example.com"),
+        asset_id="123",
+    )
+
+    with mock.patch.object(
+        app_with_asset_webhook.actions_manager,
+        "get_config",
+        return_value={"directory": "my_test_app_dir"},
+    ):
+        url = app_with_asset_webhook.get_webhook_url("oauth/callback")
+
+    assert (
+        url
+        == "https://soar.example.com:3500/webhook/my_test_app_dir/123/oauth/callback"
+    )
+
+
+def test_get_webhook_url_without_directory(app_with_asset_webhook: App, respx_mock):
+    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={"base_url": "https://soar.example.com"},
+        )
+    )
+
+    app_with_asset_webhook.soar_client.update_client(
+        SOARClientAuth(base_url="https://soar.example.com"),
+        asset_id="456",
+    )
+
+    with mock.patch.object(
+        app_with_asset_webhook.actions_manager,
+        "get_config",
+        return_value={},
+    ):
+        url = app_with_asset_webhook.get_webhook_url("callback")
+
+    expected_directory = f"{app_with_asset_webhook.app_meta_info['name']}_{app_with_asset_webhook.app_meta_info['appid']}"
+    assert (
+        url
+        == f"https://soar.example.com:3500/webhook/{expected_directory}/456/callback"
+    )
