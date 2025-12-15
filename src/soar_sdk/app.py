@@ -6,6 +6,7 @@ import uuid
 from collections.abc import Callable, Iterator
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
@@ -793,6 +794,23 @@ class App:
         """Decorator for registering a webhook handler."""
         return WebhookDecorator(self, url_pattern, allowed_methods)
 
+    def get_webhook_url(self, route: str) -> str:
+        """Build the full URL for a webhook route (used for OAuth flow)."""
+        system_info = self.soar_client.get("rest/system_info").json()
+        base_url = system_info.get("base_url", "").rstrip("/")
+        parsed = urlparse(base_url)
+
+        webhook_port = 3500
+        webhook_base = f"{parsed.scheme}://{parsed.hostname}:{webhook_port}"
+
+        config = self.actions_manager.get_config()
+        directory = config.get(
+            "directory", f"{self.app_meta_info['name']}_{self.app_meta_info['appid']}"
+        )
+        asset_id = str(self.soar_client.get_asset_id())
+
+        return f"{webhook_base}/webhook/{directory}/{asset_id}/{route}"
+
     def _load_webhook_state(self, asset_id: str) -> None:
         """Load state from file for webhooks."""
         state = self.actions_manager.load_state_from_file(asset_id)
@@ -828,7 +846,7 @@ class App:
             user_session_token=soar_auth_token,
             base_url=soar_base_url,
         )
-        self.soar_client.update_client(soar_auth, asset_id)
+        self.soar_client.update_client(soar_auth, str(asset_id))
 
         normalized_query = {}
         for key, value in query.items():
@@ -862,5 +880,5 @@ class App:
             raise TypeError(
                 f"Webhook handler must return a WebhookResponse, got {type(response)}"
             )
-        self._save_webhook_state(asset_id)
+        self._save_webhook_state(str(asset_id))
         return response.model_dump()
