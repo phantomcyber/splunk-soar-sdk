@@ -14,9 +14,6 @@ dependencies = [
     "splunk-soar-sdk",
 ]
 
-[tool.uv.sources]
-splunk-soar-sdk = { path = "../../dist/splunk_soar_sdk-3.4.0-py3-none-any.whl" }
-
 [dependency-groups]
 dev = [
     "coverage>=7.6.7,<8",
