@@ -1,13 +1,18 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any
+
+import httpx
 
 from soar_sdk.auth.client import SOARAssetOAuthClient
 from soar_sdk.auth.httpx_auth import OAuthBearerAuth
 from soar_sdk.auth.models import OAuthConfig
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from soar_sdk.asset import BaseAsset
     from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
@@ -36,14 +41,47 @@ def create_oauth_auth(
         msg = "token_endpoint must be provided or available as asset.token_endpoint or asset.token_url"
         raise ValueError(msg)
 
+    resolved_scope = scope
+    if resolved_scope is None:
+        asset_scope = getattr(asset, "scope", None)
+        if isinstance(asset_scope, str) and asset_scope:
+            resolved_scope = asset_scope.split()
+        elif isinstance(asset_scope, list):
+            resolved_scope = asset_scope
+
     config = OAuthConfig(
         client_id=resolved_client_id,
         client_secret=client_secret or getattr(asset, "client_secret", None),
         token_endpoint=resolved_token_endpoint,
-        scope=scope,
+        scope=resolved_scope,
     )
     oauth_client = SOARAssetOAuthClient(config, asset.auth_state)
     return OAuthBearerAuth(oauth_client, auto_refresh=auto_refresh)
+
+
+@contextmanager
+def create_oauth_client(
+    asset: BaseAsset,
+    *,
+    client_id: str | None = None,
+    client_secret: str | None = None,
+    token_endpoint: str | None = None,
+    scope: list[str] | None = None,
+    auto_refresh: bool = True,
+    timeout: float = 30.0,
+    **httpx_kwargs: Any,  # noqa: ANN401
+) -> Iterator[httpx.Client]:
+    """Create an httpx.Client with OAuth authentication from an asset."""
+    auth = create_oauth_auth(
+        asset,
+        client_id=client_id,
+        client_secret=client_secret,
+        token_endpoint=token_endpoint,
+        scope=scope,
+        auto_refresh=auto_refresh,
+    )
+    with httpx.Client(auth=auth, timeout=timeout, **httpx_kwargs) as client:
+        yield client
 
 
 def create_oauth_callback_handler(

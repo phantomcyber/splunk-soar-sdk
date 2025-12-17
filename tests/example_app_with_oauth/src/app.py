@@ -1,5 +1,3 @@
-import httpx
-
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.app import App
@@ -7,9 +5,9 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.auth import (
     AuthorizationCodeFlow,
     ClientCredentialsFlow,
-    OAuthBearerAuth,
     OAuthConfig,
     SOARAssetOAuthClient,
+    create_oauth_client,
 )
 from soar_sdk.logging import getLogger
 from soar_sdk.params import Params
@@ -129,10 +127,7 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
         logger.info("Successfully obtained token via authorization code flow")
 
     logger.info("Testing API connection...")
-    oauth_client = get_oauth_client(asset)
-    auth = OAuthBearerAuth(oauth_client)
-
-    with httpx.Client(auth=auth, timeout=30.0) as client:
+    with create_oauth_client(asset) as client:
         response = client.get(asset.domain)
         if response.is_success:
             logger.info("API connection verified successfully")
@@ -175,10 +170,7 @@ class TestOutput(ActionOutput):
 
 @app.action(action_type="investigate", verbose="Test API endpoint with OAuth")
 def test_endpoint(params: Params, asset: Asset) -> TestOutput:
-    oauth_client = get_oauth_client(asset)
-    auth = OAuthBearerAuth(oauth_client)
-
-    with httpx.Client(auth=auth, timeout=30.0) as client:
+    with create_oauth_client(asset) as client:
         response = client.get(asset.domain)
 
     return TestOutput(

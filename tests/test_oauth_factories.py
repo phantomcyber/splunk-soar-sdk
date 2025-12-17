@@ -1,6 +1,11 @@
+import httpx
 import pytest
 
-from soar_sdk.auth.factories import create_oauth_auth, create_oauth_callback_handler
+from soar_sdk.auth.factories import (
+    create_oauth_auth,
+    create_oauth_callback_handler,
+    create_oauth_client,
+)
 from soar_sdk.auth.httpx_auth import OAuthBearerAuth
 
 
@@ -93,6 +98,80 @@ class TestCreateOAuthAuth:
             auth._oauth_client._config.token_endpoint
             == "https://auth.example.com/oauth/token"
         )
+
+    def test_infers_scope_from_string(self, mock_auth_state):
+        class AssetWithStringScope:
+            auth_state = mock_auth_state
+            client_id = "test_client_id"
+            client_secret = "test_secret"
+            token_endpoint = "https://auth.example.com/token"
+            scope = "read write admin"
+
+        auth = create_oauth_auth(AssetWithStringScope())
+        assert auth._oauth_client._config.scope == ["read", "write", "admin"]
+
+    def test_infers_scope_from_list(self, mock_auth_state):
+        class AssetWithListScope:
+            def __init__(self):
+                self.auth_state = mock_auth_state
+                self.client_id = "test_client_id"
+                self.client_secret = "test_secret"
+                self.token_endpoint = "https://auth.example.com/token"
+                self.scope = ["read", "write"]
+
+        auth = create_oauth_auth(AssetWithListScope())
+        assert auth._oauth_client._config.scope == ["read", "write"]
+
+    def test_empty_string_scope_results_in_none(self, mock_auth_state):
+        class AssetWithEmptyScope:
+            auth_state = mock_auth_state
+            client_id = "test_client_id"
+            client_secret = "test_secret"
+            token_endpoint = "https://auth.example.com/token"
+            scope = ""
+
+        auth = create_oauth_auth(AssetWithEmptyScope())
+        assert auth._oauth_client._config.scope is None
+
+    def test_explicit_scope_overrides_asset_scope(self, mock_auth_state):
+        class AssetWithScope:
+            auth_state = mock_auth_state
+            client_id = "test_client_id"
+            client_secret = "test_secret"
+            token_endpoint = "https://auth.example.com/token"
+            scope = "asset_scope"
+
+        auth = create_oauth_auth(AssetWithScope(), scope=["explicit"])
+        assert auth._oauth_client._config.scope == ["explicit"]
+
+
+class TestCreateOAuthClient:
+    def test_creates_httpx_client(self, mock_asset):
+        with create_oauth_client(mock_asset) as client:
+            assert isinstance(client, httpx.Client)
+
+    def test_client_has_oauth_auth(self, mock_asset):
+        with create_oauth_client(mock_asset) as client:
+            assert isinstance(client._auth, OAuthBearerAuth)
+
+    def test_uses_default_timeout(self, mock_asset):
+        with create_oauth_client(mock_asset) as client:
+            assert client.timeout.connect == 30.0
+
+    def test_uses_custom_timeout(self, mock_asset):
+        with create_oauth_client(mock_asset, timeout=60.0) as client:
+            assert client.timeout.connect == 60.0
+
+    def test_passes_httpx_kwargs(self, mock_asset):
+        with create_oauth_client(mock_asset, follow_redirects=True) as client:
+            assert client.follow_redirects is True
+
+    def test_passes_oauth_params_to_auth(self, mock_asset):
+        with create_oauth_client(
+            mock_asset, scope=["custom_scope"], auto_refresh=False
+        ) as client:
+            assert client._auth._oauth_client._config.scope == ["custom_scope"]
+            assert client._auth._auto_refresh is False
 
 
 class TestCreateOAuthCallbackHandler:
