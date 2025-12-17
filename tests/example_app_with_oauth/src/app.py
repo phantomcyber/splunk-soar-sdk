@@ -19,11 +19,12 @@ logger = getLogger()
 
 APP_NAME = "example_app_with_oauth"
 APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf56"
-BASE_URL = "https://graph.microsoft.com"
-DEFAULT_SCOPE = "https://graph.microsoft.com/.default"
 
 
 class Asset(BaseAsset):
+    domain: str = AssetField(
+        description="URL of service to authenticate against",
+    )
     auth_type: str = AssetField(
         default="credentials",
         value_list=["credentials", "interactive"],
@@ -34,17 +35,30 @@ class Asset(BaseAsset):
         sensitive=True,
         description="OAuth Client Secret",
     )
-    tenant_id: str = AssetField(description="Azure AD Tenant ID")
+    tenant_id: str | None = AssetField(
+        default=None,
+        description="Service Tenant ID (appended to domain if provided)",
+    )
+    token_uri: str = AssetField(default="/oauth2/v2.0/token")
+    auth_uri: str = AssetField(default="/oauth2/v2.0/authorize")
+    scope: str = AssetField(
+        default="",
+        description="OAuth scope (space-separated if multiple)",
+    )
 
     @property
     def token_url(self) -> str:
-        return f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
+        base = self.domain.rstrip("/")
+        if self.tenant_id:
+            return f"{base}/{self.tenant_id}/{self.token_uri.lstrip('/')}"
+        return f"{base}/{self.token_uri.lstrip('/')}"
 
     @property
     def auth_url(self) -> str:
-        return (
-            f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
-        )
+        base = self.domain.rstrip("/")
+        if self.tenant_id:
+            return f"{base}/{self.tenant_id}/{self.auth_uri.lstrip('/')}"
+        return f"{base}/{self.auth_uri.lstrip('/')}"
 
 
 app = App(
@@ -60,6 +74,10 @@ app = App(
 ).enable_webhooks(default_requires_auth=False)
 
 
+def get_scopes(asset: Asset) -> list[str]:
+    return asset.scope.split() if asset.scope else []
+
+
 def get_oauth_client(
     asset: Asset, redirect_uri: str | None = None
 ) -> SOARAssetOAuthClient:
@@ -69,7 +87,7 @@ def get_oauth_client(
         authorization_endpoint=asset.auth_url,
         token_endpoint=asset.token_url,
         redirect_uri=redirect_uri,
-        scope=[DEFAULT_SCOPE],
+        scope=get_scopes(asset),
     )
     return SOARAssetOAuthClient(config, asset.auth_state)
 
@@ -84,7 +102,7 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
             client_id=asset.client_id,
             client_secret=asset.client_secret,
             token_endpoint=asset.token_url,
-            scope=[DEFAULT_SCOPE],
+            scope=get_scopes(asset),
         )
         flow.get_token()
         logger.info("Successfully obtained token via client credentials flow")
@@ -98,7 +116,7 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
             authorization_endpoint=asset.auth_url,
             token_endpoint=asset.token_url,
             redirect_uri=app.get_webhook_url("oauth_callback"),
-            scope=[DEFAULT_SCOPE],
+            scope=get_scopes(asset),
         )
 
         auth_url = flow.get_authorization_url()
@@ -115,7 +133,7 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     auth = OAuthBearerAuth(oauth_client)
 
     with httpx.Client(auth=auth, timeout=30.0) as client:
-        response = client.get(f"{BASE_URL}/v1.0/me")
+        response = client.get(asset.domain)
         if response.is_success:
             logger.info("API connection verified successfully")
         else:
@@ -150,26 +168,22 @@ def oauth_callback(request: WebhookRequest[Asset]) -> WebhookResponse:
     )
 
 
-class UserInfoOutput(ActionOutput):
-    display_name: str = OutputField(column_name="Display Name")
-    email: str = OutputField(column_name="Email")
-    id: str = OutputField(column_name="User ID")
+class TestOutput(ActionOutput):
+    status: str = OutputField(column_name="Status")
+    response: str = OutputField(column_name="Response")
 
 
-@app.action(action_type="investigate", verbose="Get information about the current user")
-def get_current_user(params: Params, asset: Asset) -> UserInfoOutput:
+@app.action(action_type="investigate", verbose="Test API endpoint with OAuth")
+def test_endpoint(params: Params, asset: Asset) -> TestOutput:
     oauth_client = get_oauth_client(asset)
     auth = OAuthBearerAuth(oauth_client)
 
     with httpx.Client(auth=auth, timeout=30.0) as client:
-        response = client.get(f"{BASE_URL}/v1.0/me")
-        response.raise_for_status()
-        data = response.json()
+        response = client.get(asset.domain)
 
-    return UserInfoOutput(
-        display_name=data.get("displayName", ""),
-        email=data.get("mail", data.get("userPrincipalName", "")),
-        id=data.get("id", ""),
+    return TestOutput(
+        status=str(response.status_code),
+        response=response.text[:500] if response.text else "",
     )
 
 
