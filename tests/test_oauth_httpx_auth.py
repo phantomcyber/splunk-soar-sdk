@@ -96,6 +96,13 @@ class TestStaticTokenAuth:
         authenticated_request = next(flow)
         assert authenticated_request.headers["Authorization"] == "ApiKey api_key_value"
 
+    def test_auth_without_token_type(self):
+        auth = StaticTokenAuth("raw_token_value", token_type=None)
+        request = httpx.Request("GET", "https://api.example.com/data")
+        flow = auth.auth_flow(request)
+        authenticated_request = next(flow)
+        assert authenticated_request.headers["Authorization"] == "raw_token_value"
+
     @respx.mock
     def test_integration_with_httpx_client(self):
         respx.get("https://api.example.com/data").mock(

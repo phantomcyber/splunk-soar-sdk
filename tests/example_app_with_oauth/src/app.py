@@ -57,7 +57,6 @@ app = App(
     logo_dark="logo_dark.svg",
     product_name="Example OAuth App",
     publisher="Splunk Inc.",
-    min_phantom_version="6.2.2.134",
 ).enable_webhooks(default_requires_auth=False)
 
 
@@ -87,7 +86,7 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
             token_endpoint=asset.token_url,
             scope=[DEFAULT_SCOPE],
         )
-        token = flow.get_token()
+        flow.get_token()
         logger.info("Successfully obtained token via client credentials flow")
 
     elif asset.auth_type == "interactive":
@@ -108,19 +107,16 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
         def on_progress(iteration: int) -> None:
             logger.info(f"Waiting for authorization... ({iteration})")
 
-        token = flow.wait_for_authorization(on_progress=on_progress)
+        flow.wait_for_authorization(on_progress=on_progress)
         logger.info("Successfully obtained token via authorization code flow")
 
     logger.info("Testing API connection...")
-    with httpx.Client(
-        transport=httpx.HTTPTransport(verify=False, local_address="0.0.0.0"),
-        timeout=30.0,
-    ) as client:
-        response = client.get(
-            f"{BASE_URL}/v1.0/me",
-            headers={"Authorization": f"Bearer {token.access_token}"},
-        )
-        if response.status_code == 200:
+    oauth_client = get_oauth_client(asset)
+    auth = OAuthBearerAuth(oauth_client)
+
+    with httpx.Client(auth=auth, timeout=30.0) as client:
+        response = client.get(f"{BASE_URL}/v1.0/me")
+        if response.is_success:
             logger.info("API connection verified successfully")
         else:
             logger.warning(
@@ -131,12 +127,11 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
 @app.webhook("oauth_callback")
 def oauth_callback(request: WebhookRequest[Asset]) -> WebhookResponse:
     query_params = {k: v[0] if v else "" for k, v in request.query.items()}
-    oauth_client = get_oauth_client(request.asset)
 
     if "error" in query_params:
-        error_description = query_params.get("error_description", "No description")
+        reason = query_params.get("error_description", "Unknown error")
         return WebhookResponse.text_response(
-            content=f"Authorization failed: {error_description}",
+            content=f"Authorization failed: {reason}",
             status_code=400,
         )
 
@@ -146,6 +141,7 @@ def oauth_callback(request: WebhookRequest[Asset]) -> WebhookResponse:
             content="Missing authorization code", status_code=400
         )
 
+    oauth_client = get_oauth_client(request.asset)
     oauth_client.set_authorization_code(code)
 
     return WebhookResponse.text_response(
@@ -165,11 +161,7 @@ def get_current_user(params: Params, asset: Asset) -> UserInfoOutput:
     oauth_client = get_oauth_client(asset)
     auth = OAuthBearerAuth(oauth_client)
 
-    with httpx.Client(
-        auth=auth,
-        transport=httpx.HTTPTransport(verify=False, local_address="0.0.0.0"),
-        timeout=30.0,
-    ) as client:
+    with httpx.Client(auth=auth, timeout=30.0) as client:
         response = client.get(f"{BASE_URL}/v1.0/me")
         response.raise_for_status()
         data = response.json()
