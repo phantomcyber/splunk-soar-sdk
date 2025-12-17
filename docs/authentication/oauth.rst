@@ -59,7 +59,26 @@ For user-delegated access requiring browser authorization:
 Using with HTTPX
 ----------------
 
-For automatic token injection in HTTP requests, use ``create_oauth_auth``:
+For automatic token injection in HTTP requests, use ``create_oauth_client``:
+
+.. code-block:: python
+
+    from soar_sdk.auth import create_oauth_client
+
+    with create_oauth_client(asset) as client:
+        response = client.get("https://api.example.com/resource")
+
+The factory infers ``client_id``, ``client_secret``, and ``token_endpoint`` from common
+asset field names and returns a fully configured ``httpx.Client``.
+
+For more control over the client, you can pass additional httpx options:
+
+.. code-block:: python
+
+    with create_oauth_client(asset, timeout=60.0, follow_redirects=True) as client:
+        response = client.get("https://api.example.com/resource")
+
+If you need just the auth handler (e.g., for async clients), use ``create_oauth_auth``:
 
 .. code-block:: python
 
@@ -71,8 +90,7 @@ For automatic token injection in HTTP requests, use ``create_oauth_auth``:
     with httpx.Client(auth=auth) as client:
         response = client.get("https://api.example.com/resource")
 
-The factory infers ``client_id``, ``client_secret``, and ``token_endpoint`` from common
-asset field names. For custom configuration:
+For custom configuration:
 
 .. code-block:: python
 

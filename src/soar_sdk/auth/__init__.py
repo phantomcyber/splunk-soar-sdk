@@ -6,6 +6,7 @@ from soar_sdk.auth.client import (
 from soar_sdk.auth.factories import (
     create_oauth_auth,
     create_oauth_callback_handler,
+    create_oauth_client,
 )
 from soar_sdk.auth.flows import (
     AuthorizationCodeFlow,
@@ -36,4 +37,5 @@ __all__ = [
     "StaticTokenAuth",
     "create_oauth_auth",
     "create_oauth_callback_handler",
+    "create_oauth_client",
 ]
