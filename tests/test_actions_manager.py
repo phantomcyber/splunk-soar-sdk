@@ -330,6 +330,47 @@ def test_load_state_from_file_not_exists(
     assert loaded_state == {}
 
 
+def test_save_state_to_file_cleans_up_on_error(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+    tmp_path: Path,
+):
+    mocker.patch.object(
+        app_actions_manager, "get_state_dir", return_value=str(tmp_path)
+    )
+
+    mocker.patch("shutil.move", side_effect=OSError("Simulated move failure"))
+
+    import pytest
+
+    with pytest.raises(OSError, match="Simulated move failure"):
+        app_actions_manager.save_state_to_file("test_asset", {"key": "value"})
+
+    temp_files = list(tmp_path.glob("tmp*"))
+    assert len(temp_files) == 0
+
+
+def test_save_state_to_file_handles_missing_temp_file_on_error(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+    tmp_path: Path,
+):
+    mocker.patch.object(
+        app_actions_manager, "get_state_dir", return_value=str(tmp_path)
+    )
+
+    def move_and_delete_temp(src, dst):
+        Path(src).unlink()
+        raise OSError("Simulated move failure after temp deleted")
+
+    mocker.patch("shutil.move", side_effect=move_and_delete_temp)
+
+    import pytest
+
+    with pytest.raises(OSError, match="Simulated move failure"):
+        app_actions_manager.save_state_to_file("test_asset", {"key": "value"})
+
+
 def test_reload_state_from_file(
     app_actions_manager: ActionsManager,
     mocker: pytest_mock.MockerFixture,
@@ -340,12 +381,11 @@ def test_reload_state_from_file(
     )
 
     asset_id = "test_asset_456"
-    app_id = "test_app_123"
     test_state = {"oauth": {"access_token": "refreshed_token"}}
 
     app_actions_manager.save_state_to_file(asset_id, test_state)
 
-    result = app_actions_manager.reload_state_from_file(app_id, asset_id)
+    result = app_actions_manager.reload_state_from_file(asset_id)
 
     assert result == test_state
     assert app_actions_manager.load_state() == test_state
@@ -360,6 +400,6 @@ def test_reload_state_from_file_empty(
         app_actions_manager, "get_state_dir", return_value=str(tmp_path)
     )
 
-    result = app_actions_manager.reload_state_from_file("app_123", "nonexistent_asset")
+    result = app_actions_manager.reload_state_from_file("nonexistent_asset")
 
     assert result == {}

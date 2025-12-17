@@ -1,4 +1,7 @@
+import json
 import os
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -142,22 +145,28 @@ class ActionsManager(BaseConnector):
 
     def load_state_from_file(self, asset_id: str) -> dict:
         """Load state directly from file."""
-        import json
-
         state_file = self._get_state_file_path(asset_id)
         if state_file.exists():
             return json.loads(state_file.read_text())
         return {}
 
     def save_state_to_file(self, asset_id: str, state: dict) -> None:
-        """Save state directly to file."""
-        import json
-
+        """Save state directly to file using atomic write."""
         state_file = self._get_state_file_path(asset_id)
         state_file.parent.mkdir(parents=True, exist_ok=True)
-        state_file.write_text(json.dumps(state))
 
-    def reload_state_from_file(self, app_id: str, asset_id: str) -> dict:
+        fd, tmp_path = tempfile.mkstemp(dir=state_file.parent)
+        tmp_file = Path(tmp_path)
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write(json.dumps(state))
+            shutil.move(tmp_file, state_file)
+        except Exception:
+            if tmp_file.exists():
+                tmp_file.unlink()
+            raise
+
+    def reload_state_from_file(self, asset_id: str) -> dict:
         """Reload state from file and update in-memory state.
 
         Needed for OAuth flow where one process (webhook) updates the state file and another process (action) needs to see those changes.

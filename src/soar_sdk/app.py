@@ -800,7 +800,7 @@ class App:
         base_url = system_info.get("base_url", "").rstrip("/")
         parsed = urlparse(base_url)
 
-        webhook_port = 3500
+        webhook_port = self._get_webhook_port()
         webhook_base = f"{parsed.scheme}://{parsed.hostname}:{webhook_port}"
 
         config = self.actions_manager.get_config()
@@ -810,6 +810,19 @@ class App:
         asset_id = str(self.soar_client.get_asset_id())
 
         return f"{webhook_base}/webhook/{directory}/{asset_id}/{route}"
+
+    def _get_webhook_port(self) -> int:
+        """Get the webhook port from the feature flag configuration."""
+        try:
+            response = self.soar_client.get("rest/feature_flag/webhooks")
+            if response.status_code == 200:
+                data = response.json()
+                config = data.get("config", {})
+                if port := config.get("webhooks_port"):
+                    return int(port)
+        except Exception:  # noqa: S110
+            pass
+        return 3500
 
     def _load_webhook_state(self, asset_id: str) -> None:
         """Load state from file for webhooks."""
