@@ -70,17 +70,15 @@ def test_state_is_encrypted(example_state: AssetState):
 
 
 def test_get_all_with_force_reload(example_state: AssetState):
-    example_state.app_id = "test_app_id"
-
     example_state.put_all({"key": "original_value"})
 
     reload_called = False
     original_reload = example_state.backend.reload_state_from_file
 
-    def mock_reload(app_id, asset_id):
+    def mock_reload(asset_id):
         nonlocal reload_called
         reload_called = True
-        return original_reload(app_id, asset_id) if callable(original_reload) else {}
+        return original_reload(asset_id) if callable(original_reload) else {}
 
     example_state.backend.reload_state_from_file = mock_reload
 

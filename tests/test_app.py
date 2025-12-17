@@ -387,6 +387,12 @@ def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
             json={"base_url": "https://soar.example.com/"},
         )
     )
+    respx_mock.get(url__regex=r".*rest/feature_flag/webhooks.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={"config": {"webhooks_port": 4500}},
+        )
+    )
 
     app_with_asset_webhook.soar_client.update_client(
         SOARClientAuth(base_url="https://soar.example.com"),
@@ -402,7 +408,7 @@ def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
 
     assert (
         url
-        == "https://soar.example.com:3500/webhook/my_test_app_dir/123/oauth/callback"
+        == "https://soar.example.com:4500/webhook/my_test_app_dir/123/oauth/callback"
     )
 
 
@@ -431,3 +437,54 @@ def test_get_webhook_url_without_directory(app_with_asset_webhook: App, respx_mo
         url
         == f"https://soar.example.com:3500/webhook/{expected_directory}/456/callback"
     )
+
+
+def test_get_webhook_port_fallback_on_non_200(app_with_asset_webhook: App):
+    app_with_asset_webhook.soar_client.update_client(
+        SOARClientAuth(base_url="https://soar.example.com"),
+        asset_id="123",
+    )
+
+    mock_response = mock.MagicMock()
+    mock_response.status_code = 404
+
+    with mock.patch.object(
+        app_with_asset_webhook.soar_client, "get", return_value=mock_response
+    ):
+        port = app_with_asset_webhook._get_webhook_port()
+
+    assert port == 3500
+
+
+def test_get_webhook_port_fallback_on_missing_port(app_with_asset_webhook: App):
+    app_with_asset_webhook.soar_client.update_client(
+        SOARClientAuth(base_url="https://soar.example.com"),
+        asset_id="123",
+    )
+
+    mock_response = mock.MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {"config": {}}
+
+    with mock.patch.object(
+        app_with_asset_webhook.soar_client, "get", return_value=mock_response
+    ):
+        port = app_with_asset_webhook._get_webhook_port()
+
+    assert port == 3500
+
+
+def test_get_webhook_port_fallback_on_exception(app_with_asset_webhook: App):
+    app_with_asset_webhook.soar_client.update_client(
+        SOARClientAuth(base_url="https://soar.example.com"),
+        asset_id="123",
+    )
+
+    with mock.patch.object(
+        app_with_asset_webhook.soar_client,
+        "get",
+        side_effect=Exception("Network error"),
+    ):
+        port = app_with_asset_webhook._get_webhook_port()
+
+    assert port == 3500
