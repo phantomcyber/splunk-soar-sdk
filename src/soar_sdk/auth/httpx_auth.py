@@ -35,6 +35,7 @@ class StaticTokenAuth(httpx.Auth):
         token: OAuthToken | str,
         *,
         token_type: str = "Bearer",  # noqa: S107
+        header_name: str = "Authorization",
     ) -> None:
         if isinstance(token, str):
             self._access_token = token
@@ -42,13 +43,19 @@ class StaticTokenAuth(httpx.Auth):
             self._access_token = token.access_token
             token_type = token.token_type or token_type
         self._token_type = token_type
+        self._header_name = header_name
 
     def auth_flow(
         self,
         request: httpx.Request,
     ) -> Generator[httpx.Request, httpx.Response]:
         """Add authentication header to the request."""
-        request.headers["Authorization"] = f"{self._token_type} {self._access_token}"
+        if self._token_type:
+            request.headers[self._header_name] = (
+                f"{self._token_type} {self._access_token}"
+            )
+        else:
+            request.headers[self._header_name] = self._access_token
         yield request
 
 

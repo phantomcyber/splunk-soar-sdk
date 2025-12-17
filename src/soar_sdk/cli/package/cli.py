@@ -66,10 +66,12 @@ async def collect_all_wheels(wheels: list[DependencyWheel]) -> list[tuple[str, b
     cache = dict(gathered_results)
 
     for key, wheel_group in dedupe_map.items():
-        for path, _ in cache[key]:
-            wheel_name = Path(path).name
-            for wheel in wheel_group:
-                wheel._record_built_wheel(wheel_name)
+        representative = wheel_group[0]
+        if representative.sdist is not None or representative.source_dir is not None:
+            for path, _ in cache[key]:
+                wheel_name = Path(path).name
+                for wheel in wheel_group:
+                    wheel._record_built_wheel(wheel_name)
 
     return list(chain.from_iterable(cache.values()))
 

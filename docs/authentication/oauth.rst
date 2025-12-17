@@ -53,31 +53,39 @@ For user-delegated access requiring browser authorization:
     )
 
     auth_url = flow.get_authorization_url()
-    print(f"Please visit: {auth_url}")
+    logger.progress(f"Please authorize: {auth_url}")
     token = flow.wait_for_authorization()
-
-    token = flow.get_token()
 
 Using with HTTPX
 ----------------
 
-For automatic token injection in HTTP requests, use ``OAuthBearerAuth``:
+For automatic token injection in HTTP requests, use ``create_oauth_auth``:
+
+.. code-block:: python
+
+    from soar_sdk.auth import create_oauth_auth
+    import httpx
+
+    auth = create_oauth_auth(asset)
+
+    with httpx.Client(auth=auth) as client:
+        response = client.get("https://api.example.com/resource")
+
+The factory infers ``client_id``, ``client_secret``, and ``token_endpoint`` from common
+asset field names. For custom configuration:
 
 .. code-block:: python
 
     from soar_sdk.auth import OAuthBearerAuth, OAuthConfig, SOARAssetOAuthClient
-    import httpx
 
     config = OAuthConfig(
         client_id=asset.client_id,
         client_secret=asset.client_secret,
         token_endpoint=asset.token_url,
+        scope=["custom_scope"],
     )
     oauth_client = SOARAssetOAuthClient(config, asset.auth_state)
     auth = OAuthBearerAuth(oauth_client)
-
-    with httpx.Client(auth=auth) as client:
-        response = client.get("https://api.example.com/resource")
 
 The auth handler automatically:
 
@@ -120,30 +128,23 @@ For certificate-based authentication (e.g., Microsoft Entra ID):
 OAuth Callback Webhook
 ----------------------
 
-For Authorization Code flow, register a webhook to receive the OAuth callback:
+For Authorization Code flow, register a webhook to receive the OAuth callback.
+Use ``create_oauth_callback_handler`` to reduce boilerplate:
 
 .. code-block:: python
 
-    from soar_sdk.auth import OAuthConfig, SOARAssetOAuthClient
+    from soar_sdk.auth import create_oauth_callback_handler, OAuthConfig, SOARAssetOAuthClient
+
+    def get_oauth_client(asset: Asset) -> SOARAssetOAuthClient:
+        config = OAuthConfig(
+            client_id=asset.client_id,
+            client_secret=asset.client_secret,
+            token_endpoint=asset.token_url,
+        )
+        return SOARAssetOAuthClient(config, asset.auth_state)
 
     @app.webhook("oauth_callback")
     def oauth_callback(request: WebhookRequest[Asset]) -> WebhookResponse:
-        code = request.query.get("code", [""])[0]
-        if not code:
-            return WebhookResponse.text_response(
-                content="Missing authorization code",
-                status_code=400,
-            )
+        return create_oauth_callback_handler(get_oauth_client)(request)
 
-        config = OAuthConfig(
-            client_id=request.asset.client_id,
-            client_secret=request.asset.client_secret,
-            token_endpoint=request.asset.token_url,
-        )
-        oauth_client = SOARAssetOAuthClient(config, request.asset.auth_state)
-        oauth_client.set_authorization_code(code)
-
-        return WebhookResponse.text_response(
-            content="Authorization successful! You can close this window.",
-            status_code=200,
-        )
+The factory handles error checking, code extraction, and success responses automatically.
