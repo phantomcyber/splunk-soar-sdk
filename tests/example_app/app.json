@@ -24,13 +24,15 @@
             "required": true,
             "description": "Base Url",
             "order": 0,
-            "default": "https://example"
+            "default": "https://example",
+            "category": "connectivity"
         },
         "api_key": {
             "data_type": "password",
             "required": true,
             "description": "API key for authentication",
-            "order": 1
+            "order": 1,
+            "category": "connectivity"
         },
         "key_header": {
             "data_type": "string",
@@ -41,20 +43,23 @@
             "value_list": [
                 "Authorization",
                 "X-API-Key"
-            ]
+            ],
+            "category": "connectivity"
         },
         "timezone": {
             "data_type": "timezone",
             "required": true,
             "description": "Timezone",
-            "order": 3
+            "order": 3,
+            "category": "connectivity"
         },
         "timezone_with_default": {
             "data_type": "timezone",
             "required": true,
             "description": "Timezone With Default",
             "order": 4,
-            "default": "America/Denver"
+            "default": "America/Denver",
+            "category": "action"
         }
     },
     "actions": [

@@ -6,6 +6,7 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
+from soar_sdk.asset import FieldCategory
 from soar_sdk.cli.init import cli
 from soar_sdk.compat import PythonVersion
 from soar_sdk.meta.actions import ActionMeta
@@ -153,6 +154,7 @@ def test_convert_cli(runner, tmp_path, app_meta):
             description="The username for the application",
             required=True,
             data_type="string",
+            category=FieldCategory.CONNECTIVITY,
         )
     }
 
@@ -195,6 +197,7 @@ def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
             description="The username for the application",
             required=True,
             data_type="string",
+            category=FieldCategory.CONNECTIVITY,
         )
     }
 
@@ -239,6 +242,7 @@ def test_convert_cli_with_default_output(runner, tmp_path, app_meta):
             description="The username for the application",
             required=True,
             data_type="string",
+            category=FieldCategory.CONNECTIVITY,
         )
     }
 

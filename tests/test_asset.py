@@ -1,7 +1,7 @@
 import pytest
 from pydantic import Field
 
-from soar_sdk.asset import AssetField, AssetFieldSpecification, BaseAsset
+from soar_sdk.asset import AssetField, AssetFieldSpecification, BaseAsset, FieldCategory
 from soar_sdk.exceptions import AppContextRequired
 
 
@@ -13,7 +13,11 @@ def test_asset_with_aliased_field():
 
     result = AliasedAsset.to_json_schema()
     assert result["_aliased_field"] == AssetFieldSpecification(
-        data_type="string", required=True, description="Aliased Field", order=0
+        data_type="string",
+        required=True,
+        description="Aliased Field",
+        order=0,
+        category=FieldCategory.CONNECTIVITY,
     )
 
 
