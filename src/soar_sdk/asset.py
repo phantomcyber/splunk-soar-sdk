@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Any, NotRequired
 from zoneinfo import ZoneInfo
 
@@ -17,6 +18,14 @@ remove_when_soar_newer_than(
 )
 
 
+class FieldCategory(str, Enum):
+    """Categories used to group asset configuration fields in the SOAR UI."""
+
+    CONNECTIVITY = "connectivity"
+    ACTION = "action"
+    INGEST = "ingest"
+
+
 def AssetField(
     description: str | None = None,
     required: bool = True,
@@ -24,27 +33,25 @@ def AssetField(
     value_list: list | None = None,
     sensitive: bool = False,
     alias: str | None = None,
+    category: FieldCategory = FieldCategory.CONNECTIVITY,
 ) -> Any:  # noqa: ANN401
-    """Representation of an asset configuration field.
-
-    The field needs extra metadata that is later used for the configuration of the app.
-    This function takes care of the required information for the manifest JSON file and fills in defaults.
+    """Define an asset configuration field with SOAR-specific metadata.
 
     Args:
-        description: A short description of this parameter. The description is shown
-            in the asset form as the input's title.
-        required: Whether or not this config key is mandatory for this asset to function.
-            If this configuration is not provided, actions cannot be executed on the app.
-        value_list: To allow the user to choose from a pre-defined list of values
-            displayed in a drop-down for this configuration key, specify them as a list
-            for example, ["one", "two", "three"].
-        sensitive: When True, the field is treated as a password and will be encrypted
-            and hidden from logs.
+        description: Human-friendly label for the field shown in the asset form.
+        required: Whether the field must be provided. When True and ``default`` is
+            ``None``, the field is marked as required in the manifest.
+        default: Default value for optional fields. Ignored when ``required`` is
+            True and no explicit default is provided.
+        value_list: Optional dropdown options presented to the user.
+        sensitive: Marks the field as secret so it is encrypted and hidden from logs.
+        alias: Alternate name to emit in the manifest instead of the attribute name.
+        category: Grouping used to organize fields in the SOAR UI.
 
     Returns:
-        The FieldInfo object as pydantic.Field.
+        A Pydantic ``Field`` carrying the metadata needed for manifest generation.
     """
-    json_schema_extra: dict[str, Any] = {}
+    json_schema_extra: dict[str, Any] = {"category": category}
     if required is not None:
         json_schema_extra["required"] = required
     if value_list is not None:
@@ -59,7 +66,7 @@ def AssetField(
         default=field_default,
         description=description,
         alias=alias,
-        json_schema_extra=json_schema_extra if json_schema_extra else None,
+        json_schema_extra=json_schema_extra,
     )
 
 
@@ -80,6 +87,7 @@ class AssetFieldSpecification(TypedDict):
     """
 
     data_type: str
+    category: FieldCategory
     description: NotRequired[str]
     required: NotRequired[bool]
     default: NotRequired[str | int | float | bool]
@@ -114,7 +122,10 @@ class BaseAsset(BaseModel):
 
     Note:
         Field names cannot start with "_reserved_" or use names reserved by
-        the SOAR platform to avoid conflicts with internal fields.
+        the SOAR platform to avoid conflicts with internal fields. The runtime
+        attaches ``auth_state``, ``cache_state``, and ``ingest_state`` when an
+        app context is available; accessing them without that context raises
+        ``AppContextRequired``.
     """
 
     model_config = ConfigDict(
@@ -124,25 +135,15 @@ class BaseAsset(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_no_reserved_fields(cls, values: dict[str, Any]) -> dict[str, Any]:
-        """Prevents subclasses from defining fields starting with "_reserved_".
+        """Prevent subclasses from using names reserved by the platform.
 
-        This validator ensures that asset field names don't conflict with
-        platform-reserved fields or internal SOAR configuration fields.
-
-        Args:
-            values: Dictionary of field values being validated.
-
-        Returns:
-            The validated values dictionary.
+        The validator inspects annotated field names to ensure they do not start
+        with ``_reserved_`` and do not collide with fields injected by the SOAR
+        service (see ``AppConfig``). The ``values`` argument is unused but kept
+        for Pydantic compatibility.
 
         Raises:
-            ValueError: If a field name starts with "_reserved_" or conflicts
-                with platform-reserved field names.
-
-        Note:
-            The SOAR platform injects fields like "_reserved_credential_management"
-            into asset configs, so this prevents the entire "_reserved_" namespace
-            from being used in user-defined assets.
+            ValueError: If a reserved or injected field name is used.
         """
         for field_name in cls.__annotations__:
             # The platform injects fields like "_reserved_credential_management" into asset configs,
@@ -183,33 +184,20 @@ class BaseAsset(BaseModel):
 
     @classmethod
     def to_json_schema(cls) -> dict[str, AssetFieldSpecification]:
-        """Generate a JSON schema representation of the asset configuration.
+        """Generate manifest-ready schema entries from the asset definition.
 
-        Converts the Pydantic model fields into a format compatible with SOAR's
-        asset configuration system. This includes data type mapping, validation
-        rules, and UI hints for the SOAR platform.
+        Each field is converted into a SOAR manifest dictionary that includes the
+        data type, requirement flag, default value, dropdown options, and an order
+        index. Alias names are honored when present. Sensitive fields are emitted
+        as ``password`` data types and must be annotated as ``str``. Defaults are
+        serialized directly, with ``ZoneInfo`` defaults represented by their key.
 
         Returns:
-            A dictionary mapping field names to their schema specifications,
-            including data types, descriptions, requirements, and other metadata.
+            Mapping of field (or alias) names to schema specifications.
 
         Raises:
-            TypeError: If a field type cannot be serialized or if a sensitive
-                field is not of type str.
-
-        Example:
-            >>> class MyAsset(BaseAsset):
-            ...     host: str = AssetField(description="Server hostname")
-            ...     port: int = AssetField(description="Server port", default=443)
-            >>> schema = MyAsset.to_json_schema()
-            >>> schema["host"]["data_type"]
-            'string'
-            >>> schema["host"]["required"]
-            True
-
-        Note:
-            Sensitive fields are automatically converted to "password" type
-            regardless of their Python type annotation, and must be str type.
+            TypeError: If a field type cannot be serialized or a sensitive field is
+                not declared as ``str``.
         """
         params: dict[str, AssetFieldSpecification] = {}
 
@@ -242,6 +230,7 @@ class BaseAsset(BaseModel):
                 required=bool(json_schema_extra.get("required", True)),
                 description=description,
                 order=field_order,
+                category=json_schema_extra.get("category", FieldCategory.CONNECTIVITY),
             )
 
             if (default := field.default) not in (PydanticUndefined, None):
@@ -258,12 +247,7 @@ class BaseAsset(BaseModel):
 
     @classmethod
     def fields_requiring_decryption(cls) -> set[str]:
-        """Set of fields that require decryption.
-
-        Returns:
-            A set of field names that are marked as sensitive and need
-            decryption before use.
-        """
+        """Return attribute names marked as sensitive (aliases are ignored)."""
         return {
             field_name
             for field_name, field in cls.model_fields.items()
@@ -273,11 +257,7 @@ class BaseAsset(BaseModel):
 
     @classmethod
     def timezone_fields(cls) -> set[str]:
-        """Set of fields that use the ZoneInfo type.
-
-        Returns:
-            A set of field names that use the ZoneInfo type.
-        """
+        """Return attribute names typed as ``ZoneInfo`` (aliases are ignored)."""
         return {
             field_name
             for field_name, field in cls.model_fields.items()
@@ -290,21 +270,21 @@ class BaseAsset(BaseModel):
 
     @property
     def auth_state(self) -> AssetState:
-        """A place to store authentication data, such as session and refresh tokens, between action runs. This data is stored by the SOAR service, and is encrypted at rest."""
+        """Authentication state persisted by SOAR (encrypted at rest); raises if no app context."""
         if self._auth_state is None:
             raise AppContextRequired()
         return self._auth_state
 
     @property
     def cache_state(self) -> AssetState:
-        """A place to cache miscellaneous data between action runs. This data is stored by the SOAR service, and is encrypted at rest."""
+        """Cache for miscellaneous data persisted by SOAR (encrypted at rest); raises if no app context."""
         if self._cache_state is None:
             raise AppContextRequired()
         return self._cache_state
 
     @property
     def ingest_state(self) -> AssetState:
-        """A place to store ingestion information, such as checkpoints, between action runs. This data is stored by the SOAR service, and is encrypted at rest."""
+        """Ingestion checkpoints persisted by SOAR (encrypted at rest); raises if no app context."""
         if self._ingest_state is None:
             raise AppContextRequired()
         return self._ingest_state

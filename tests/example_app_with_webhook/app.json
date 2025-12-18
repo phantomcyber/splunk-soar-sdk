@@ -23,13 +23,15 @@
             "data_type": "string",
             "required": true,
             "description": "Base Url",
-            "order": 0
+            "order": 0,
+            "category": "connectivity"
         },
         "api_key": {
             "data_type": "password",
             "required": true,
             "description": "API key for authentication",
-            "order": 1
+            "order": 1,
+            "category": "connectivity"
         },
         "key_header": {
             "data_type": "string",
@@ -40,7 +42,8 @@
             "value_list": [
                 "Authorization",
                 "X-API-Key"
-            ]
+            ],
+            "category": "connectivity"
         }
     },
     "actions": [

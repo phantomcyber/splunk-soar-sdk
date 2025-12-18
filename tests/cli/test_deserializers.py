@@ -279,6 +279,7 @@ def test_from_app_json_complex_example(create_app_json):
                 "required": True,
                 "description": "Base Url",
                 "order": 0,
+                "category": "connectivity",
             },
             "port": {
                 "data_type": "numeric",
@@ -286,6 +287,7 @@ def test_from_app_json_complex_example(create_app_json):
                 "description": "Port Number",
                 "default": 8080,
                 "order": 1,
+                "category": "connectivity",
             },
             "verify": {
                 "data_type": "boolean",
@@ -293,6 +295,7 @@ def test_from_app_json_complex_example(create_app_json):
                 "description": "Verify",
                 "default": True,
                 "order": 2,
+                "category": "connectivity",
             },
         },
         "actions": [
@@ -370,6 +373,7 @@ def test_from_app_json_preserves_original_data(basic_app_data, create_app_json):
                     "data_type": "string",
                     "required": True,
                     "order": 0,
+                    "category": "connectivity",
                 }
             },
         }

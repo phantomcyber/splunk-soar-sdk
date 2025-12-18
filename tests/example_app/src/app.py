@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, MakeRequestOutput, OutputField
 from soar_sdk.app import App
-from soar_sdk.asset import AssetField, BaseAsset
+from soar_sdk.asset import AssetField, BaseAsset, FieldCategory
 from soar_sdk.logging import getLogger
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.models.container import Container
@@ -46,7 +46,9 @@ class Asset(BaseAsset):
         description="Header for API key authentication",
     )
     timezone: ZoneInfo
-    timezone_with_default: ZoneInfo = AssetField(default=ZoneInfo("America/Denver"))
+    timezone_with_default: ZoneInfo = AssetField(
+        default=ZoneInfo("America/Denver"), category=FieldCategory.ACTION
+    )
 
 
 app = App(
