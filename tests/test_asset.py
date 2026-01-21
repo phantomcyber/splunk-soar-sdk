@@ -125,3 +125,19 @@ def test_asset_state_unavailable_outside_action():
         _ = BaseAsset().cache_state
     with pytest.raises(AppContextRequired):
         _ = BaseAsset().ingest_state
+
+
+def test_file_field():
+    class FileAsset(BaseAsset):
+        certificate: str = AssetField(is_file=True, description="Upload certificate")
+
+    schema = FileAsset.to_json_schema()
+    assert schema["certificate"]["data_type"] == "file"
+
+
+def test_file_field_must_be_str():
+    class BrokenFileAsset(BaseAsset):
+        certificate: int = AssetField(is_file=True)
+
+    with pytest.raises(TypeError, match="must be type str"):
+        BrokenFileAsset.to_json_schema()

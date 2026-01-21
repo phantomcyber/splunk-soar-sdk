@@ -34,6 +34,7 @@ def AssetField(
     sensitive: bool = False,
     alias: str | None = None,
     category: FieldCategory = FieldCategory.CONNECTIVITY,
+    is_file: bool = False,
 ) -> Any:  # noqa: ANN401
     """Define an asset configuration field with SOAR-specific metadata.
 
@@ -47,6 +48,8 @@ def AssetField(
         sensitive: Marks the field as secret so it is encrypted and hidden from logs.
         alias: Alternate name to emit in the manifest instead of the attribute name.
         category: Grouping used to organize fields in the SOAR UI.
+        is_file: Marks the field as a file upload field. The field must be typed as
+            str and will receive the file contents as a string.
 
     Returns:
         A Pydantic ``Field`` carrying the metadata needed for manifest generation.
@@ -58,6 +61,8 @@ def AssetField(
         json_schema_extra["value_list"] = value_list
     if sensitive is not None:
         json_schema_extra["sensitive"] = sensitive
+    if is_file:
+        json_schema_extra["is_file"] = True
 
     # Use ... for required fields
     field_default: Any = ... if default is None and required else default
@@ -221,6 +226,13 @@ class BaseAsset(BaseModel):
                         f"Sensitive parameter {field_name} must be type str, not {field_type.__name__}"
                     )
                 type_name = "password"
+
+            if json_schema_extra.get("is_file", False):
+                if field_type is not str:
+                    raise TypeError(
+                        f"File parameter {field_name} must be type str, not {field_type.__name__}"
+                    )
+                type_name = "file"
 
             if not (description := field.description):
                 description = cls._default_field_description(field_name)
