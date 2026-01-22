@@ -133,7 +133,7 @@ def OutputField(
         json_schema_extra["column_name"] = column_name
 
     return Field(
-        default=...,
+        default=None,
         alias=alias,
         json_schema_extra=json_schema_extra if json_schema_extra else None,
     )
