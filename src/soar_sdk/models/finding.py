@@ -21,20 +21,26 @@ class DrilldownDashboard(BaseModel):
 
 
 class Finding(BaseModel):
-    """Represents a finding to be created during on_finding.
+    """Represents a finding to be created during on_es_poll.
 
     Findings are stored in ES and can be associated with SOAR containers/artifacts
     for investigation workflow.
+
+    Only rule_title and security_domain are required. All other fields are optional
+    and will use ES defaults if not provided.
     """
 
     model_config = ConfigDict(extra="forbid")
 
+    # Required fields
     rule_title: str
-    rule_description: str
     security_domain: str
-    risk_object: str
-    risk_object_type: str
-    risk_score: float
+
+    # Optional fields
+    rule_description: str | None = None
+    risk_object: str | None = None
+    risk_object_type: str | None = None
+    risk_score: float | None = None
     status: str | None = None
     urgency: str | None = None
     owner: str | None = None
