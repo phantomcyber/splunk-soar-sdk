@@ -1284,7 +1284,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "3.8.1"
+version = "3.8.2"
 source = { editable = "." }
 dependencies = [
     { name = "authlib", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
