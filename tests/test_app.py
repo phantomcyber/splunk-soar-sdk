@@ -263,6 +263,33 @@ def test_handle_webhook_with_state(app_with_asset_webhook: App, mock_get_any_soa
     assert mock_get_any_soar_call.call_count == 1
 
 
+def test_handle_webhook_loads_existing_state(
+    app_with_asset_webhook: App, mock_get_any_soar_call
+):
+    asset_id = "1"
+    app_with_asset_webhook.actions_manager.save_state_to_file(
+        asset_id, {"pre_existing": "state_value"}
+    )
+
+    @app_with_asset_webhook.webhook("check_state_webhook")
+    def check_state_webhook(request: WebhookRequest) -> WebhookResponse:
+        return WebhookResponse.json_response(
+            {"loaded": app_with_asset_webhook.actions_manager.load_state()}
+        )
+
+    response = app_with_asset_webhook.handle_webhook(
+        method="GET",
+        headers={},
+        path_parts=["check_state_webhook"],
+        query={},
+        body=None,
+        asset={"base_url": "https://example.com"},
+        soar_rest_client=SoarRestClient(token="test_token", asset_id=asset_id),
+    )
+    assert response["status_code"] == 200
+    assert json.loads(response["content"])["loaded"] == {"pre_existing": "state_value"}
+
+
 def test_handle_webhook_normalizes_querystring(
     app_with_asset_webhook: App, mock_get_any_soar_call
 ):

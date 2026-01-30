@@ -165,7 +165,7 @@ def app_with_simple_asset() -> App:
 
 
 @pytest.fixture
-def app_with_asset_webhook() -> App:
+def app_with_asset_webhook(tmp_path: Path) -> App:
     """Create an app with a pre-configured action that requires an asset and webhook."""
 
     class Asset(BaseAsset):
@@ -182,6 +182,9 @@ def app_with_asset_webhook() -> App:
         product_name="Example App",
         publisher="Splunk",
     ).enable_webhooks()
+
+    # Mock get_state_dir to use tmp_path instead of /opt/phantom
+    app.actions_manager.get_state_dir = lambda: str(tmp_path)
 
     @app.webhook("test_webhook")
     def test_webhook_handler(request: WebhookRequest) -> WebhookResponse:
@@ -192,7 +195,7 @@ def app_with_asset_webhook() -> App:
 
 
 @pytest.fixture
-def app_with_client_webhook() -> App:
+def app_with_client_webhook(tmp_path: Path) -> App:
     """Create an app with a pre-configured action that requires an asset and webhook."""
 
     class Asset(BaseAsset):
@@ -209,6 +212,8 @@ def app_with_client_webhook() -> App:
         product_name="Example App",
         publisher="Splunk",
     ).enable_webhooks()
+
+    app.actions_manager.get_state_dir = lambda: str(tmp_path)
 
     @app.webhook("test_webhook")
     def test_webhook_handler(
