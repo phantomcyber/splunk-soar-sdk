@@ -56,11 +56,19 @@ class AssetRenderer(AstRenderer[list[AssetContext]]):
 
         for field in self.context:
             field_name = ast.Name(id=field.name, ctx=ast.Store())
-            field_type = ast.Name(id=field.py_type, ctx=ast.Load())
+            field_type: ast.expr = ast.Name(id=field.py_type, ctx=ast.Load())
+            if not field.required:
+                field_type = ast.BinOp(
+                    left=field_type,
+                    op=ast.BitOr(),
+                    right=ast.Constant(value=None),
+                )
 
-            field_kwargs = [
-                ast.keyword(arg="required", value=ast.Constant(value=field.required)),
-            ]
+            field_kwargs = []
+            if field.required:
+                field_kwargs.append(
+                    ast.keyword(arg="required", value=ast.Constant(value=True))
+                )
             if field.description is not None:
                 field_kwargs.append(
                     ast.keyword(

@@ -174,6 +174,23 @@ class ActionRenderer(AstRenderer[ActionMeta]):
         """
         return self.context
 
+    @staticmethod
+    def _build_annotation(base_type: type, list_depth: int, required: bool) -> ast.expr:
+        annotation: ast.expr = ast.Name(id=base_type.__name__, ctx=ast.Load())
+        for _ in range(list_depth):
+            annotation = ast.Subscript(
+                value=ast.Name(id="list", ctx=ast.Load()),
+                slice=annotation,
+                ctx=ast.Load(),
+            )
+        if not required:
+            annotation = ast.BinOp(
+                left=annotation,
+                op=ast.BitOr(),
+                right=ast.Constant(value=None),
+            )
+        return annotation
+
     def render_ast(self) -> Iterator[ast.stmt]:
         """Generates the AST for the action.
 
@@ -294,9 +311,8 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 allow_list=True,
             )
 
-            annotation_str = normalized.base_type.__name__
-            for _ in range(normalized.list_depth):
-                annotation_str = f"list[{annotation_str}]"
+            json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
+            required = resolve_required(json_schema_extra, normalized.is_optional)
 
             field_name = normalize_field_name(field_name_str)
             if field.alias is not None and field.alias != field_name.normalized:
@@ -305,7 +321,9 @@ class ActionRenderer(AstRenderer[ActionMeta]):
 
             field_def_ast = ast.AnnAssign(
                 target=ast.Name(id=field_name.normalized, ctx=ast.Store()),
-                annotation=ast.Name(id=annotation_str, ctx=ast.Load()),
+                annotation=self._build_annotation(
+                    normalized.base_type, normalized.list_depth, required
+                ),
                 simple=1,
             )
 
@@ -328,7 +346,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                     )
             else:
                 keywords = []
-                extras = {**parse_json_schema_extra(field.json_schema_extra)}
+                extras = {**json_schema_extra}
 
                 if extras or field_name.modified:
                     extras["example_values"] = extras.pop("examples", None)
@@ -398,7 +416,11 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 allow_list=False,
             )
 
-            field_type = ast.Name(id=normalized.base_type.__name__, ctx=ast.Load())
+            json_schema_extra = parse_json_schema_extra(field_def.json_schema_extra)
+            required = resolve_required(json_schema_extra, normalized.is_optional)
+            field_type = self._build_annotation(
+                normalized.base_type, normalized.list_depth, required
+            )
 
             param = ast.Call(
                 func=ast.Name(id="Param", ctx=ast.Load()),
@@ -406,18 +428,12 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 keywords=[],
             )
 
-            json_schema_extra = parse_json_schema_extra(field_def.json_schema_extra)
-
             if field_def.description:
                 param.keywords.append(
                     ast.keyword(
                         arg="description",
                         value=ast.Constant(value=field_def.description),
                     )
-                )
-            if not resolve_required(json_schema_extra, normalized.is_optional):
-                param.keywords.append(
-                    ast.keyword(arg="required", value=ast.Constant(value=False))
                 )
             if json_schema_extra.get("primary", False):
                 param.keywords.append(
