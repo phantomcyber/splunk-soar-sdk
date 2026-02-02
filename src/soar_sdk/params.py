@@ -1,12 +1,16 @@
 from typing import Any, ClassVar, NotRequired
 
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic.main import BaseModel
 from pydantic_core import PydanticUndefined
 from typing_extensions import TypedDict
 
 from soar_sdk.compat import remove_when_soar_newer_than
-from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.field_utils import (
+    normalize_field_annotation,
+    parse_json_schema_extra,
+    resolve_required,
+)
 from soar_sdk.meta.datatypes import as_datatype
 
 remove_when_soar_newer_than(
@@ -18,7 +22,7 @@ MAX_COUNT_VALUE = 4294967295
 
 def Param(
     description: str | None = None,
-    required: bool = True,
+    required: bool | None = None,
     primary: bool = False,
     default: Any | None = None,  # noqa: ANN401
     value_list: list | None = None,
@@ -40,6 +44,8 @@ def Param(
       This key also works in conjunction with value_list.
     :param required: Whether or not this parameter is mandatory for this action
       to function. If this parameter is not provided, the action fails.
+      Deprecated: this will be removed in the next major version. Prefer
+      using Optional type hints (``str | None``) to indicate optional fields.
     :param primary: Specifies if the action acts primarily on this parameter or not.
       It is used in conjunction with the contains field to display a list of contextual
       actions where the user clicks on a piece of data in the UI.
@@ -74,13 +80,19 @@ def Param(
         json_schema_extra["column_name"] = column_name
 
     # Use ... for required fields
-    field_default: Any = ... if default is None and required else default
+    field_default: Any = ... if default is None and required is not False else default
+
+    validate_default = None
+    if required is False and default is None:
+        # Preserve legacy optional behavior for non-optional type hints
+        validate_default = False
 
     return Field(
         default=field_default,
         description=description,
         alias=alias,
         json_schema_extra=json_schema_extra if json_schema_extra else None,
+        validate_default=validate_default,
     )
 
 
@@ -108,6 +120,30 @@ class Params(BaseModel):
     Params fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.
     """
 
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_optional_defaults(cls, values: Any) -> Any:  # noqa: ANN401
+        """Populate missing optional fields with ``None`` before validation."""
+        if not isinstance(values, dict):
+            return values
+
+        for field_name, field in cls.model_fields.items():
+            if field_name in values or (field.alias and field.alias in values):
+                continue
+            if field.annotation is None:
+                continue
+
+            normalized = normalize_field_annotation(
+                field.annotation,
+                field_name=field_name,
+                context="Action parameter",
+                allow_list=False,
+            )
+            if normalized.is_optional:
+                values[field_name] = None
+
+        return values
+
     @staticmethod
     def _default_field_description(field_name: str) -> str:
         words = field_name.split("_")
@@ -123,8 +159,15 @@ class Params(BaseModel):
             if field_type is None:
                 raise TypeError(f"Parameter {field_name} has no type annotation")
 
+            normalized = normalize_field_annotation(
+                field_type,
+                field_name=field_name,
+                context="Action parameter",
+                allow_list=False,
+            )
+
             try:
-                type_name = as_datatype(field_type)
+                type_name = as_datatype(normalized.base_type)
             except TypeError as e:
                 raise TypeError(
                     f"Failed to serialize action parameter {field_name}: {e}"
@@ -133,9 +176,9 @@ class Params(BaseModel):
             json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
 
             if json_schema_extra.get("sensitive", False):
-                if field_type is not str:
+                if normalized.base_type is not str:
                     raise TypeError(
-                        f"Sensitive parameter {field_name} must be type str, not {field_type.__name__}"
+                        f"Sensitive parameter {field_name} must be type str, not {normalized.base_type.__name__}"
                     )
                 type_name = "password"
 
@@ -147,7 +190,7 @@ class Params(BaseModel):
                 name=field_name,
                 description=description,
                 data_type=type_name,
-                required=bool(json_schema_extra.get("required", True)),
+                required=resolve_required(json_schema_extra, normalized.is_optional),
                 primary=bool(json_schema_extra.get("primary", False)),
                 allow_list=bool(json_schema_extra.get("allow_list", False)),
             )

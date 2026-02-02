@@ -4,7 +4,7 @@ from logging import getLogger
 from typing import Any
 
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
-from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.field_utils import normalize_field_annotation, parse_json_schema_extra
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.params import Params
 
@@ -42,9 +42,18 @@ class OutputsSerializer:
             if annotation is None:
                 continue
 
+            normalized = normalize_field_annotation(
+                annotation,
+                field_name=field_name,
+                context="Action parameter",
+                allow_list=False,
+            )
+
+            parameter_name = field.alias or field_name
+
             spec = OutputFieldSpecification(
-                data_path=f"action_result.parameter.{field_name}",
-                data_type=as_datatype(annotation),
+                data_path=f"action_result.parameter.{parameter_name}",
+                data_type=as_datatype(normalized.base_type),
             )
 
             json_schema_extra = parse_json_schema_extra(field.json_schema_extra)

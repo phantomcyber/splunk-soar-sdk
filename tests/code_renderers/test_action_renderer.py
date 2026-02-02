@@ -318,9 +318,8 @@ def test_render_outputs_with_non_type_after_unwrap():
     )
 
     renderer = ActionRenderer(action_meta)
-    output_models = list(renderer.render_outputs_ast())
-
-    assert len(output_models) == 1
+    with pytest.raises(TypeError, match="invalid type annotation"):
+        list(renderer.render_outputs_ast())
 
 
 def test_render_params_with_none_annotation():

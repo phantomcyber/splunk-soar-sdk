@@ -1,5 +1,4 @@
 import ast
-import typing
 from collections.abc import Iterator
 from typing import ClassVar
 
@@ -8,7 +7,11 @@ from pydantic_core import PydanticUndefined
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.code_renderers.renderer import AstRenderer
-from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.field_utils import (
+    normalize_field_annotation,
+    parse_json_schema_extra,
+    resolve_required,
+)
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
 
@@ -284,16 +287,16 @@ class ActionRenderer(AstRenderer[ActionMeta]):
             if annotation is None:
                 continue
 
-            annotation_str = "{name}"
-            while typing.get_origin(annotation) is list:
+            normalized = normalize_field_annotation(
+                annotation,
+                field_name=field_name_str,
+                context="Output",
+                allow_list=True,
+            )
+
+            annotation_str = normalized.base_type.__name__
+            for _ in range(normalized.list_depth):
                 annotation_str = f"list[{annotation_str}]"
-                annotation = typing.get_args(annotation)[0]
-
-            # Ensure annotation is a valid type after unwrapping
-            if not isinstance(annotation, type):
-                continue
-
-            annotation_str = annotation_str.format(name=annotation.__name__)
 
             field_name = normalize_field_name(field_name_str)
             if field.alias is not None and field.alias != field_name.normalized:
@@ -306,10 +309,10 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                 simple=1,
             )
 
-            if isinstance(annotation, type) and issubclass(annotation, ActionOutput):
+            if issubclass(normalized.base_type, ActionOutput):
                 # If the field is a Pydantic model, recursively print its fields
                 # In Pydantic v2, use annotation directly (no field.type_)
-                for model_ast in self.render_outputs_ast(annotation):
+                for model_ast in self.render_outputs_ast(normalized.base_type):
                     model_tree[model_ast.name] = model_ast
 
                 if field_name.modified:
@@ -388,7 +391,14 @@ class ActionRenderer(AstRenderer[ActionMeta]):
             if field_def.annotation is None:
                 continue
 
-            field_type = ast.Name(id=field_def.annotation.__name__, ctx=ast.Load())
+            normalized = normalize_field_annotation(
+                field_def.annotation,
+                field_name=field_name,
+                context="Action parameter",
+                allow_list=False,
+            )
+
+            field_type = ast.Name(id=normalized.base_type.__name__, ctx=ast.Load())
 
             param = ast.Call(
                 func=ast.Name(id="Param", ctx=ast.Load()),
@@ -405,7 +415,7 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                         value=ast.Constant(value=field_def.description),
                     )
                 )
-            if not json_schema_extra.get("required", True):
+            if not resolve_required(json_schema_extra, normalized.is_optional):
                 param.keywords.append(
                     ast.keyword(arg="required", value=ast.Constant(value=False))
                 )
@@ -443,6 +453,14 @@ class ActionRenderer(AstRenderer[ActionMeta]):
             if json_schema_extra.get("allow_list", False):
                 param.keywords.append(
                     ast.keyword(arg="allow_list", value=ast.Constant(value=True))
+                )
+
+            if field_def.alias and field_def.alias != field_name:
+                param.keywords.append(
+                    ast.keyword(
+                        arg="alias",
+                        value=ast.Constant(value=field_def.alias),
+                    )
                 )
 
             field_def_ast = ast.AnnAssign(

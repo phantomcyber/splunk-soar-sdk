@@ -9,7 +9,11 @@ from typing_extensions import TypedDict
 from soar_sdk.asset_state import AssetState
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.exceptions import AppContextRequired
-from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.field_utils import (
+    normalize_field_annotation,
+    parse_json_schema_extra,
+    resolve_required,
+)
 from soar_sdk.input_spec import AppConfig
 from soar_sdk.meta.datatypes import as_datatype
 
@@ -28,7 +32,7 @@ class FieldCategory(str, Enum):
 
 def AssetField(
     description: str | None = None,
-    required: bool = True,
+    required: bool | None = None,
     default: Any | None = None,  # noqa: ANN401
     value_list: list | None = None,
     sensitive: bool = False,
@@ -41,7 +45,9 @@ def AssetField(
     Args:
         description: Human-friendly label for the field shown in the asset form.
         required: Whether the field must be provided. When True and ``default`` is
-            ``None``, the field is marked as required in the manifest.
+            ``None``, the field is marked as required in the manifest. Deprecated:
+            this will be removed in the next major version. Prefer Optional type
+            hints (``str | None``) to indicate optional fields.
         default: Default value for optional fields. Ignored when ``required`` is
             True and no explicit default is provided.
         value_list: Optional dropdown options presented to the user.
@@ -65,13 +71,19 @@ def AssetField(
         json_schema_extra["is_file"] = True
 
     # Use ... for required fields
-    field_default: Any = ... if default is None and required else default
+    field_default: Any = ... if default is None and required is not False else default
+
+    validate_default = None
+    if required is False and default is None:
+        # Preserve legacy optional behavior for non-optional type hints
+        validate_default = False
 
     return Field(
         default=field_default,
         description=description,
         alias=alias,
         json_schema_extra=json_schema_extra,
+        validate_default=validate_default,
     )
 
 
@@ -136,6 +148,30 @@ class BaseAsset(BaseModel):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_optional_defaults(cls, values: Any) -> Any:  # noqa: ANN401
+        """Populate missing optional fields with ``None`` before validation."""
+        if not isinstance(values, dict):
+            return values
+
+        for field_name, field in cls.model_fields.items():
+            if field_name in values or (field.alias and field.alias in values):
+                continue
+            if field.annotation is None:
+                continue
+
+            normalized = normalize_field_annotation(
+                field.annotation,
+                field_name=field_name,
+                context="Asset field",
+                allow_list=False,
+            )
+            if normalized.is_optional:
+                values[field_name] = None
+
+        return values
 
     @model_validator(mode="before")
     @classmethod
@@ -211,8 +247,15 @@ class BaseAsset(BaseModel):
             if field_type is None:
                 continue
 
+            normalized = normalize_field_annotation(
+                field_type,
+                field_name=field_name,
+                context="Asset field",
+                allow_list=False,
+            )
+
             try:
-                type_name = as_datatype(field_type)
+                type_name = as_datatype(normalized.base_type)
             except TypeError as e:
                 raise TypeError(
                     f"Failed to serialize asset field {field_name}: {e}"
@@ -221,16 +264,16 @@ class BaseAsset(BaseModel):
             json_schema_extra = parse_json_schema_extra(field.json_schema_extra)
 
             if json_schema_extra.get("sensitive", False):
-                if field_type is not str:
+                if normalized.base_type is not str:
                     raise TypeError(
-                        f"Sensitive parameter {field_name} must be type str, not {field_type.__name__}"
+                        f"Sensitive parameter {field_name} must be type str, not {normalized.base_type.__name__}"
                     )
                 type_name = "password"
 
             if json_schema_extra.get("is_file", False):
-                if field_type is not str:
+                if normalized.base_type is not str:
                     raise TypeError(
-                        f"File parameter {field_name} must be type str, not {field_type.__name__}"
+                        f"File parameter {field_name} must be type str, not {normalized.base_type.__name__}"
                     )
                 type_name = "file"
 
@@ -239,7 +282,7 @@ class BaseAsset(BaseModel):
 
             params_field = AssetFieldSpecification(
                 data_type=type_name,
-                required=bool(json_schema_extra.get("required", True)),
+                required=resolve_required(json_schema_extra, normalized.is_optional),
                 description=description,
                 order=field_order,
                 category=json_schema_extra.get("category", FieldCategory.CONNECTIVITY),
