@@ -80,7 +80,9 @@ def Param(
         json_schema_extra["column_name"] = column_name
 
     # Use ... for required fields
-    field_default: Any = ... if default is None and required is not False else default
+    field_default: Any = (
+        ... if default is None and (required is True or required is None) else default
+    )
 
     validate_default = None
     if required is False and default is None:

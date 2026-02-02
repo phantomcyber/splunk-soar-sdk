@@ -71,8 +71,9 @@ def AssetField(
         json_schema_extra["is_file"] = True
 
     # Use ... for required fields
-    field_default: Any = ... if default is None and required is not False else default
-
+    field_default: Any = (
+        ... if default is None and (required is True or required is None) else default
+    )
     validate_default = None
     if required is False and default is None:
         # Preserve legacy optional behavior for non-optional type hints

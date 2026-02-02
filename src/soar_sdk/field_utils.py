@@ -58,9 +58,7 @@ def normalize_field_annotation(
         if origin in (types.UnionType, Union):
             # types.UnionType is for `X | Y` (Python 3.10+)
             type_args = tuple(
-                arg
-                for arg in get_args(annotation)
-                if arg is not type(None) and arg is not None
+                arg for arg in get_args(annotation) if arg is not type(None)
             )
             if len(type_args) != 1:
                 raise TypeError(
