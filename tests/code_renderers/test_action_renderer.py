@@ -149,6 +149,20 @@ def test_render_empty_params(action_meta) -> None:
     assert params == expected_params
 
 
+def test_render_params_with_alias(action_meta) -> None:
+    """Test that params with aliases render the alias keyword."""
+
+    class ParamsWithAlias(Params):
+        api_key: str = Param(description="API key for authentication", alias="apiKey")
+
+    action_meta.parameters = ParamsWithAlias
+    renderer = ActionRenderer(action_meta)
+    params_code = ast.unparse(renderer.render_params_ast())
+
+    # Should include the alias keyword when alias differs from field name
+    assert "alias='apiKey'" in params_code
+
+
 def test_render_action(action_meta) -> None:
     expected_action = "\n".join(
         [

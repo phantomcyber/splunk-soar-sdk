@@ -67,3 +67,18 @@ def test_param_with_none_values():
     # This should work without errors - None values should skip the if blocks
     schema = TestParams._to_json_schema()
     assert "field1" in schema
+
+
+def test_params_with_optional_type_hint():
+    """Test that optional params via type hints get populated with None."""
+
+    class OptionalParams(Params):
+        optional_field: str | None = Param()
+
+    # Should populate with None when not provided
+    params = OptionalParams()
+    assert params.optional_field is None
+
+    # Should also work when provided
+    params2 = OptionalParams(optional_field="value")
+    assert params2.optional_field == "value"

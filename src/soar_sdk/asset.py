@@ -153,13 +153,8 @@ class BaseAsset(BaseModel):
     @classmethod
     def _apply_optional_defaults(cls, values: Any) -> Any:  # noqa: ANN401
         """Populate missing optional fields with ``None`` before validation."""
-        if not isinstance(values, dict):
-            return values
-
         for field_name, field in cls.model_fields.items():
             if field_name in values or (field.alias and field.alias in values):
-                continue
-            if field.annotation is None:
                 continue
 
             normalized = normalize_field_annotation(
