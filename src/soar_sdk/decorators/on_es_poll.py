@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import json
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args
@@ -13,7 +14,7 @@ from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.models.container import Container
-from soar_sdk.models.finding import Finding
+from soar_sdk.models.finding import DrilldownDashboard, DrilldownSearch, Finding
 from soar_sdk.params import OnESPollParams
 from soar_sdk.types import Action, action_protocol
 
@@ -89,9 +90,63 @@ class OnESPollDecorator:
                     ActionResult(status=False, message=f"Invalid parameters: {e!s}"),
                     self.app.actions_manager,
                 )
-            es = ESClient(params.es_base_url, params.es_session_key)
+
+            success, pairing_info, message = soar.get_es_pairing()
+            if not success or pairing_info is None:
+                logger.info(f"Failed to get ES pairing: {message}")
+                return self.app._adapt_action_result(
+                    ActionResult(status=False, message=f"ES pairing error: {message}"),
+                    self.app.actions_manager,
+                )
+
+            es_url = pairing_info.get("es_url", "")
+            rest_port = pairing_info.get("rest_port", 8089)
+            es_base_url = f"{es_url}:{rest_port}"
+            es_token = pairing_info.get("es_token", "")
+
+            if not es_token:
+                logger.info("No ES automation token available")
+                return self.app._adapt_action_result(
+                    ActionResult(
+                        status=False, message="ES automation token not available"
+                    ),
+                    self.app.actions_manager,
+                )
+
+            es = ESClient(es_base_url, es_token)
             kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
             generator = function(action_params, *args, **kwargs)
+
+            config = self.app.actions_manager.get_config()
+            ingest_config = config.get("ingest", {})
+
+            es_security_domain = ingest_config.get("es_security_domain", "threat")
+            es_urgency = ingest_config.get("es_urgency", "medium")
+            es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
+            es_launch_automation = ingest_config.get("es_launch_automation", False)
+
+            drilldown_searches: list[DrilldownSearch] | None = None
+            drilldown_dashboards: list[DrilldownDashboard] | None = None
+            raw_drilldown_searches = ingest_config.get("es_drilldown_searches")
+            raw_drilldown_dashboards = ingest_config.get("es_drilldown_dashboards")
+            if raw_drilldown_searches:
+                try:
+                    if isinstance(raw_drilldown_searches, str):
+                        raw_drilldown_searches = json.loads(raw_drilldown_searches)
+                    drilldown_searches = [
+                        DrilldownSearch(**s) for s in raw_drilldown_searches
+                    ]
+                except (json.JSONDecodeError, TypeError, ValidationError):
+                    logger.info("Failed to parse es_drilldown_searches")
+            if raw_drilldown_dashboards:
+                try:
+                    if isinstance(raw_drilldown_dashboards, str):
+                        raw_drilldown_dashboards = json.loads(raw_drilldown_dashboards)
+                    drilldown_dashboards = [
+                        DrilldownDashboard(**d) for d in raw_drilldown_dashboards
+                    ]
+                except (json.JSONDecodeError, TypeError, ValidationError):
+                    logger.info("Failed to parse es_drilldown_dashboards")
 
             if is_async_generator:
 
@@ -107,13 +162,17 @@ class OnESPollDecorator:
                     return generator.send(last_container_id)
 
             last_container_id = None
-            while True:
+            findings_created = 0
+            max_findings = action_params.container_count or None
+
+            while max_findings is None or findings_created < max_findings:
                 try:
                     item = polling_step(last_container_id)
                 except (StopIteration, StopAsyncIteration):
                     return self.app._adapt_action_result(
                         ActionResult(
-                            status=True, message="Finding processing complete"
+                            status=True,
+                            message=f"Finding processing complete. Created {findings_created} findings.",
                         ),
                         self.app.actions_manager,
                     )
@@ -136,7 +195,22 @@ class OnESPollDecorator:
                         f"Warning: expected {ESPollingYieldType}, got {type(item)}, skipping"
                     )
                     continue
+
+                if item.security_domain is None:
+                    item.security_domain = es_security_domain
+                if item.urgency is None:
+                    item.urgency = es_urgency
+                if not item.run_threat_analysis:
+                    item.run_threat_analysis = es_run_threat_analysis
+                if not item.launch_automation:
+                    item.launch_automation = es_launch_automation
+                if item.drilldown_searches is None and drilldown_searches:
+                    item.drilldown_searches = drilldown_searches
+                if item.drilldown_dashboards is None and drilldown_dashboards:
+                    item.drilldown_dashboards = drilldown_dashboards
+
                 finding = es.findings.create(item)
+                findings_created += 1
                 logger.info(f"Created finding {finding.finding_id}")
 
                 container = Container(
@@ -161,6 +235,14 @@ class OnESPollDecorator:
                 logger.info(f"Creating container for finding: {finding.rule_title}")
                 if not ret_val:
                     raise ActionFailure(f"Failed to create container: {message}")
+
+            return self.app._adapt_action_result(
+                ActionResult(
+                    status=True,
+                    message=f"Finding processing complete. Created {findings_created} findings.",
+                ),
+                self.app.actions_manager,
+            )
 
         inner.params_class = validated_params_class
 
