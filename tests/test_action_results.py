@@ -87,9 +87,9 @@ class BadWeirdListActionOutput(ActionOutput):
     "action_output_class, expected_message",
     [
         (BadActionOutput, "Unsupported field type"),
-        (BadUnionActionOutput, "only valid Union type"),
-        (BadOptionalUnionActionOutput, "only valid Union type"),
-        (BadListOfNonesActionOutput, "must have exactly one"),
+        (BadUnionActionOutput, "only Optional\\[T\\] is supported"),
+        (BadOptionalUnionActionOutput, "only Optional\\[T\\] is supported"),
+        (BadListOfNonesActionOutput, "invalid type annotation"),
         (BadWeirdListActionOutput, "must have exactly one"),
     ],
 )

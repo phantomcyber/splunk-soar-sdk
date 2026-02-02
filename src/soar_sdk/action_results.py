@@ -1,13 +1,12 @@
 import itertools
-import types
 from collections.abc import Iterator
-from typing import Any, NotRequired, Union, get_args, get_origin
+from typing import Any, NotRequired
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from typing_extensions import TypedDict
 
 from soar_sdk.compat import remove_when_soar_newer_than
-from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.field_utils import normalize_field_annotation, parse_json_schema_extra
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
@@ -164,12 +163,36 @@ class ActionOutput(BaseModel):
         ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key
 
     Note:
-        Fields cannot be Union or Optional types. Use specific types only.
+        Fields cannot be Union types other than Optional.
         Nested ActionOutput classes are supported for complex data structures.
     """
 
     # Allow instantiation with both field names and aliases for backward compatibility
     model_config = ConfigDict(populate_by_name=True)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_optional_defaults(cls, values: Any) -> Any:  # noqa: ANN401
+        """Populate missing optional fields with ``None`` before validation."""
+        if not isinstance(values, dict):
+            return values
+
+        for field_name, field in cls.model_fields.items():
+            if field_name in values or (field.alias and field.alias in values):
+                continue
+            if field.annotation is None:
+                continue
+
+            normalized = normalize_field_annotation(
+                field.annotation,
+                field_name=field_name,
+                context="Output",
+                allow_list=True,
+            )
+            if normalized.is_optional:
+                values[field_name] = None
+
+        return values
 
     @classmethod
     def _to_json_schema(
@@ -193,7 +216,7 @@ class ActionOutput(BaseModel):
             OutputFieldSpecification objects describing each field in the schema.
 
         Raises:
-            TypeError: If a field type cannot be serialized, is Union/Optional,
+            TypeError: If a field type cannot be serialized, is an unsupported Union,
                 or if a nested ActionOutput type is encountered incorrectly.
 
         Note:
@@ -211,36 +234,18 @@ class ActionOutput(BaseModel):
             if field_type is None:
                 continue
 
-            datapath = parent_datapath + f".{field_name}"
+            normalized = normalize_field_annotation(
+                field_type,
+                field_name=field_name,
+                context="Output",
+                allow_list=True,
+            )
 
-            # Handle lists and optional types, even nested ones
-            origin = get_origin(field_type)
-            while origin in [list, Union, types.UnionType]:
-                type_args = [
-                    arg
-                    for arg in get_args(field_type)
-                    if arg is not type(None) and arg is not None
-                ]
+            datapath = (
+                parent_datapath + f".{field_name}" + (".*" * normalized.list_depth)
+            )
 
-                if origin is list:
-                    if len(type_args) != 1:
-                        raise TypeError(
-                            f"Output field {field_name} is invalid: List types must have exactly one non-null type argument."
-                        )
-                    datapath += ".*"
-                else:
-                    if len(type_args) != 1:
-                        raise TypeError(
-                            f"Output field {field_name} is invalid: the only valid Union type is Optional, or Union[X, None]."
-                        )
-
-                field_type = type_args[0]
-                origin = get_origin(field_type)
-
-            if not isinstance(field_type, type):
-                raise TypeError(
-                    f"Output field {field_name} has invalid type annotation: {field_type}"
-                )
+            field_type = normalized.base_type
 
             if issubclass(field_type, ActionOutput):
                 # If the field is another ActionOutput, recursively call _to_json_schema

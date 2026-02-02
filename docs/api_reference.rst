@@ -51,6 +51,11 @@ AssetField
 
 .. autofunction:: soar_sdk.asset.AssetField
 
+.. note::
+   The ``required`` keyword argument is deprecated and will be removed in the next
+   major version. Prefer Optional type hints (``str | None``) to indicate optional
+   asset fields.
+
 BaseAsset
 ^^^^^^^^^
 
@@ -100,6 +105,11 @@ For example, let's give the ``uid`` field a Common Event Format (CEF) type and m
       email: str
       is_admin: bool
       uid: int = Param(required=False, cef_types=["user id"])
+
+.. note::
+   The ``required`` keyword argument is deprecated and will be removed in the next
+   major version. Prefer Optional type hints (``str | None``) to indicate optional
+   action parameters.
 
 Defining Parameters
 ^^^^^^^^^^^^^^^^^^^
