@@ -80,6 +80,11 @@ class ActionsManager(BaseConnector):
         action_id = self.get_action_identifier()
         logger.debug(f"action_id {action_id}")
 
+        # Route on_poll to on_es_poll if ES ingest is enabled
+        if action_id == "on_poll" and self._should_use_es_poll():
+            action_id = "on_es_poll"
+            logger.debug("Routing on_poll to on_es_poll (ES ingest enabled)")
+
         if handler := self.get_action(action_id):
             try:
                 params = handler.meta.parameters.model_validate(param)
@@ -92,6 +97,16 @@ class ActionsManager(BaseConnector):
 
         else:
             raise RuntimeError(f"Action {action_id} not found.")
+
+    def _should_use_es_poll(self) -> bool:
+        """Check if we should route on_poll to on_es_poll."""
+        if not self.supports_es_polling:
+            return False
+        config = self.get_config()
+        if not config:
+            return False
+        ingest_config = config.get("ingest", {})
+        return bool(ingest_config.get("use_es_ingest", False))
 
     def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
         """Wrapper for BaseConnector's add_action_result method."""
