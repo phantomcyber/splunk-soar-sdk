@@ -25,6 +25,7 @@ class ExampleActionOutput(ActionOutput):
     stringy_field: str
     list_of_strings: list[str]
     nested_lists: list[list[int]]
+    optional_string: str | None
     cef_data: str = OutputField(
         cef_types=["ip"], example_values=["192.168.0.1", "1.1.1.1"]
     )
@@ -79,6 +80,7 @@ def test_render_outputs(action_meta) -> None:
                 "    stringy_field: str",
                 "    list_of_strings: list[str]",
                 "    nested_lists: list[list[int]]",
+                "    optional_string: str | None",
                 "    cef_data: str = OutputField(cef_types=['ip'], example_values=['192.168.0.1', '1.1.1.1'])",
                 "    nested_type: ExampleInnerData = OutputField(alias='nested!type')",
                 "    list_of_types: list[ExampleInnerData]",
@@ -122,7 +124,7 @@ def test_render_params(action_meta) -> None:
         [
             "class ExampleParams(Params):",
             "    string_param: str = Param(description='A string parameter for testing.', primary=True)",
-            "    int_param: int = Param(description='An integer parameter for testing.', required=False, default=42)",
+            "    int_param: int | None = Param(description='An integer parameter for testing.', default=42)",
             "    bool_param: bool",
             "    color_param: str = Param(description='A color parameter with a value list.', value_list=['red', 'green', 'blue'], cef_types=['color'], allow_list=True)",
         ]

@@ -87,11 +87,11 @@ def test_generate_asset_definition(app_meta, tmp_path):
         [
             "class Asset(BaseAsset):",
             "    username: str = AssetField(required=True, description='The username for the application')",
-            "    color: str = AssetField(required=False, default='blue', value_list=['red', 'green', 'blue'])",
-            "    timezone: ZoneInfo = AssetField(required=False, default=ZoneInfo('UTC'))",
-            "    number: float = AssetField(required=False, default=42)",
-            "    boolean: bool = AssetField(required=False, default=True)",
-            "    underscore: str = AssetField(required=False, alias='_underscore')",
+            "    color: str | None = AssetField(default='blue', value_list=['red', 'green', 'blue'])",
+            "    timezone: ZoneInfo | None = AssetField(default=ZoneInfo('UTC'))",
+            "    number: float | None = AssetField(default=42)",
+            "    boolean: bool | None = AssetField(default=True)",
+            "    underscore: str | None = AssetField(alias='_underscore')",
         ]
     )
 

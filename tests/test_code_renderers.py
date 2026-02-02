@@ -169,7 +169,7 @@ def test_asset_renderer():
         [
             "class Asset(BaseAsset):",
             "    username: str = AssetField(required=True, description='Username for authentication')",
-            "    port: float = AssetField(required=False, description='Port number', default=443)",
+            "    port: float | None = AssetField(description='Port number', default=443)",
         ]
     )
 
