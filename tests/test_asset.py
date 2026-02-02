@@ -141,3 +141,29 @@ def test_file_field_must_be_str():
 
     with pytest.raises(TypeError, match="must be type str"):
         BrokenFileAsset.to_json_schema()
+
+
+def test_asset_field_legacy_optional_behavior():
+    """Test that AssetField with required=False and default=None uses validate_default=False."""
+
+    class LegacyOptionalAsset(BaseAsset):
+        optional_field: str = AssetField(required=False, default=None)
+
+    # Should allow instantiation without the field
+    asset = LegacyOptionalAsset()
+    assert not hasattr(asset, "optional_field") or asset.optional_field is None
+
+
+def test_asset_with_optional_type_hint():
+    """Test that optional fields via type hints get populated with None."""
+
+    class OptionalAsset(BaseAsset):
+        optional_field: str | None = AssetField()
+
+    # Should populate with None when not provided
+    asset = OptionalAsset()
+    assert asset.optional_field is None
+
+    # Should also work when provided
+    asset2 = OptionalAsset(optional_field="value")
+    assert asset2.optional_field == "value"
