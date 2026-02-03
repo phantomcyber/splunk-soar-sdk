@@ -86,7 +86,7 @@ def test_generate_asset_definition(app_meta, tmp_path):
     expected_definition = "\n".join(
         [
             "class Asset(BaseAsset):",
-            "    username: str = AssetField(required=True, description='The username for the application')",
+            "    username: str = AssetField(description='The username for the application')",
             "    color: str | None = AssetField(default='blue', value_list=['red', 'green', 'blue'])",
             "    timezone: ZoneInfo | None = AssetField(default=ZoneInfo('UTC'))",
             "    number: float | None = AssetField(default=42)",

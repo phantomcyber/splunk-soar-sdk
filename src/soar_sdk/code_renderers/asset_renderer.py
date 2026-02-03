@@ -65,10 +65,6 @@ class AssetRenderer(AstRenderer[list[AssetContext]]):
                 )
 
             field_kwargs = []
-            if field.required:
-                field_kwargs.append(
-                    ast.keyword(arg="required", value=ast.Constant(value=True))
-                )
             if field.description is not None:
                 field_kwargs.append(
                     ast.keyword(
