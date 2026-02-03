@@ -168,7 +168,7 @@ def test_asset_renderer():
     expected_output = "\n".join(
         [
             "class Asset(BaseAsset):",
-            "    username: str = AssetField(required=True, description='Username for authentication')",
+            "    username: str = AssetField(description='Username for authentication')",
             "    port: float | None = AssetField(description='Port number', default=443)",
         ]
     )
