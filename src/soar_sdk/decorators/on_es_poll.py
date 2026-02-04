@@ -213,6 +213,17 @@ class OnESPollDecorator:
                 findings_created += 1
                 logger.info(f"Created finding {finding.finding_id}")
 
+                if item.run_threat_analysis and item.attachments:
+                    for attachment in item.attachments:
+                        es.findings.upload_attachment(
+                            finding.finding_id,
+                            attachment.file_name,
+                            attachment.data,
+                        )
+                        logger.info(
+                            f"Uploaded attachment {attachment.file_name} for finding {finding.finding_id}"
+                        )
+
                 container = Container(
                     name=finding.rule_title,
                     description=finding.rule_description,

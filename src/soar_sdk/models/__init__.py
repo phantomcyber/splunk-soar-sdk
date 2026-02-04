@@ -1,7 +1,7 @@
 from .artifact import Artifact
 from .attachment_input import AttachmentInput
 from .container import Container
-from .finding import DrilldownDashboard, DrilldownSearch, Finding
+from .finding import DrilldownDashboard, DrilldownSearch, Finding, FindingAttachment
 from .vault_attachment import VaultAttachment
 
 __all__ = [
@@ -11,5 +11,6 @@ __all__ = [
     "DrilldownDashboard",
     "DrilldownSearch",
     "Finding",
+    "FindingAttachment",
     "VaultAttachment",
 ]
