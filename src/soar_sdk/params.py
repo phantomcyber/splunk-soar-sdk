@@ -207,27 +207,27 @@ class Params(BaseModel):
 class OnPollParams(Params):
     """Canonical parameters for the special 'on poll' action."""
 
-    start_time: int = Param(
+    start_time: int | None = Param(
         description="Start of time range, in epoch time (milliseconds).",
         required=False,
     )
 
-    end_time: int = Param(
+    end_time: int | None = Param(
         description="End of time range, in epoch time (milliseconds).",
         required=False,
     )
 
-    container_count: int = Param(
+    container_count: int | None = Param(
         description="Maximum number of container records to query for.",
         required=False,
     )
 
-    artifact_count: int = Param(
+    artifact_count: int | None = Param(
         description="Maximum number of artifact records to query for.",
         required=False,
     )
 
-    container_id: str = Param(
+    container_id: str | None = Param(
         description="Comma-separated list of container IDs to limit the ingestion to.",
         required=False,
         allow_list=True,
