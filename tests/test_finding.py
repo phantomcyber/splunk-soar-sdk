@@ -1,7 +1,15 @@
+from unittest.mock import MagicMock
+
 import pytest
 from pydantic import ValidationError
 
-from soar_sdk.models.finding import DrilldownDashboard, DrilldownSearch, Finding
+from soar_sdk.apis.es.findings import CreateFindingResponse, Findings
+from soar_sdk.models.finding import (
+    DrilldownDashboard,
+    DrilldownSearch,
+    Finding,
+    FindingAttachment,
+)
 
 
 def test_finding_basic():
@@ -56,7 +64,7 @@ def test_finding_with_complex_fields():
 
 def test_finding_validation():
     """Test Finding validation for invalid inputs."""
-    # Invalid attribute
+    # Invalid attribute (extra="forbid")
     with pytest.raises(ValidationError):
         Finding(
             rule_title="Test",
@@ -68,10 +76,7 @@ def test_finding_validation():
             not_allowed="fail",
         )
 
-    # Missing required fields
-    with pytest.raises(ValidationError):
-        Finding(rule_title="Test")
-
+    # Invalid type for risk_score
     with pytest.raises(ValidationError):
         Finding(
             rule_title="Test",
@@ -81,6 +86,13 @@ def test_finding_validation():
             risk_object_type="user",
             risk_score="invalid",
         )
+
+
+def test_finding_minimal():
+    """Test Finding with only required field (rule_title)."""
+    finding = Finding(rule_title="Minimal Finding")
+    assert finding.rule_title == "Minimal Finding"
+    assert finding.security_domain is None
 
 
 def test_finding_serialization():
@@ -125,3 +137,69 @@ def test_drilldown_dashboard():
 
     with pytest.raises(ValidationError):
         DrilldownDashboard(name="Test")
+
+
+def test_finding_attachment():
+    """Test FindingAttachment model."""
+    attachment = FindingAttachment(file_name="email.eml", data=b"raw email content")
+    assert attachment.file_name == "email.eml"
+    assert attachment.data == b"raw email content"
+
+
+def test_finding_with_attachments():
+    """Test Finding with attachments - attachments excluded from to_dict."""
+    attachment = FindingAttachment(file_name="email.eml", data=b"content")
+    finding = Finding(
+        rule_title="Phishing Email",
+        attachments=[attachment],
+    )
+    assert finding.attachments is not None
+    assert len(finding.attachments) == 1
+    finding_dict = finding.to_dict()
+    assert "attachments" not in finding_dict
+
+
+def test_findings_api_create():
+    """Test Findings.create API."""
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "rule_title": "Test",
+        "_time": "2025-01-01T00:00:00Z",
+        "finding_id": "abc123",
+    }
+    mock_client.post.return_value = mock_response
+
+    findings = Findings(mock_client)
+    finding = Finding(rule_title="Test")
+    response = findings.create(finding)
+
+    assert isinstance(response, CreateFindingResponse)
+    assert response.finding_id == "abc123"
+    mock_client.post.assert_called_once()
+
+
+def test_findings_api_upload_attachment():
+    """Test Findings.upload_attachment API."""
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_client.post.return_value = mock_response
+
+    findings = Findings(mock_client)
+    findings.upload_attachment("finding123", "email.eml", b"raw content")
+
+    mock_client.post.assert_called_once()
+    call_args = mock_client.post.call_args
+    assert "finding123" in call_args[0][0]
+    assert call_args[1]["json"]["file_name"] == "email.eml"
+    assert call_args[1]["json"]["file_size"] == 11
+
+
+def test_findings_api_upload_attachment_size_limit():
+    """Test Findings.upload_attachment rejects files over 50MB."""
+    mock_client = MagicMock()
+    findings = Findings(mock_client)
+
+    large_data = b"x" * (50 * 1024 * 1024 + 1)  # 50MB + 1 byte
+    with pytest.raises(ValueError, match="exceeds 50 MB limit"):
+        findings.upload_attachment("finding123", "large.eml", large_data)
