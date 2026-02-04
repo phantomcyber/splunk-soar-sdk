@@ -20,6 +20,13 @@ class DrilldownDashboard(BaseModel):
     tokens: list[str] | None = None
 
 
+class FindingAttachment(BaseModel):
+    """Represents an attachment to upload with a finding (e.g., raw .eml for SAA)."""
+
+    file_name: str
+    data: bytes
+
+
 class Finding(BaseModel):
     """Represents a finding to be created during on_es_poll.
 
@@ -56,6 +63,9 @@ class Finding(BaseModel):
     run_threat_analysis: bool = False
     launch_automation: bool = False
 
+    # Attachments (e.g., raw .eml for SAA analysis) - not sent to ES, uploaded separately
+    attachments: list[FindingAttachment] | None = None
+
     def to_dict(self) -> dict[str, Any]:
-        """Convert the finding to a dictionary."""
-        return self.model_dump(exclude_none=True)
+        """Convert the finding to a dictionary (excludes attachments)."""
+        return self.model_dump(exclude_none=True, exclude={"attachments"})
