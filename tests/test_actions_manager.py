@@ -403,3 +403,82 @@ def test_reload_state_from_file_empty(
     result = app_actions_manager.reload_state_from_file("nonexistent_asset")
 
     assert result == {}
+
+
+def test_should_use_es_poll_when_disabled(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+):
+    """Test _should_use_es_poll returns False when supports_es_polling is False."""
+    app_actions_manager.supports_es_polling = False
+    assert app_actions_manager._should_use_es_poll() is False
+
+
+def test_should_use_es_poll_when_no_config(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+):
+    """Test _should_use_es_poll returns False when config is empty."""
+    app_actions_manager.supports_es_polling = True
+    mocker.patch.object(app_actions_manager, "get_config", return_value={})
+    assert app_actions_manager._should_use_es_poll() is False
+
+
+def test_should_use_es_poll_when_no_ingest_config(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+):
+    """Test _should_use_es_poll returns False when ingest config is missing."""
+    app_actions_manager.supports_es_polling = True
+    mocker.patch.object(app_actions_manager, "get_config", return_value={"other": {}})
+    assert app_actions_manager._should_use_es_poll() is False
+
+
+def test_should_use_es_poll_when_use_es_ingest_false(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+):
+    """Test _should_use_es_poll returns False when use_es_ingest is False."""
+    app_actions_manager.supports_es_polling = True
+    mocker.patch.object(
+        app_actions_manager,
+        "get_config",
+        return_value={"ingest": {"use_es_ingest": False}},
+    )
+    assert app_actions_manager._should_use_es_poll() is False
+
+
+def test_should_use_es_poll_when_enabled(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+):
+    """Test _should_use_es_poll returns True when properly configured."""
+    app_actions_manager.supports_es_polling = True
+    mocker.patch.object(
+        app_actions_manager,
+        "get_config",
+        return_value={"ingest": {"use_es_ingest": True}},
+    )
+    assert app_actions_manager._should_use_es_poll() is True
+
+
+def test_handle_action_routes_on_poll_to_on_es_poll(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+):
+    """Test that on_poll is routed to on_es_poll when ES ingest is enabled."""
+    on_es_poll_handler = mock.Mock()
+    on_es_poll_handler.meta.parameters = Params
+
+    mocker.patch.object(
+        app_actions_manager, "get_action_identifier", return_value="on_poll"
+    )
+    mocker.patch.object(app_actions_manager, "_should_use_es_poll", return_value=True)
+    mocker.patch.object(
+        app_actions_manager, "get_action", return_value=on_es_poll_handler
+    )
+
+    app_actions_manager.handle_action({})
+
+    app_actions_manager.get_action.assert_called_with("on_es_poll")
+    assert on_es_poll_handler.call_count == 1

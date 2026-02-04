@@ -699,27 +699,9 @@
                 "container_count": {
                     "order": 2,
                     "name": "container_count",
-                    "description": "Maximum number of container records to query for.",
+                    "description": "Maximum number of findings to query for.",
                     "data_type": "numeric",
                     "required": false,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "es_base_url": {
-                    "order": 3,
-                    "name": "es_base_url",
-                    "description": "Base URL for the Splunk Enterprise Security API",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false
-                },
-                "es_session_key": {
-                    "order": 4,
-                    "name": "es_session_key",
-                    "description": "Session token for the Splunk Enterprise Security API",
-                    "data_type": "string",
-                    "required": true,
                     "primary": false,
                     "allow_list": false
                 }
