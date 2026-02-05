@@ -202,13 +202,10 @@ def on_es_poll(
         yield Finding(
             rule_title=f"Risk threshold exceeded for user-{i}",
             rule_description="Risk Threshold Exceeded for an object over a 24 hour period",
-            security_domain="threat",
             risk_object=f"user{i}@example.com",
             risk_object_type="user",
             risk_score=75.0 + (i * 10),
             status="New",
-            urgency="medium",
-            run_threat_analysis=True,
             attachments=[
                 FindingAttachment(
                     file_name=f"suspicious_email_user{i}.eml",

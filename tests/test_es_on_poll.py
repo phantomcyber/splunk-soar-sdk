@@ -709,13 +709,13 @@ def test_es_on_poll_with_ingest_config_defaults(
 def test_es_on_poll_with_invalid_drilldown_searches(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll handles invalid drilldown_searches gracefully."""
+    """Test on_es_poll fails with invalid drilldown_searches."""
     mocker.patch.object(
         app_with_action.actions_manager,
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch(
+    mocker.patch(
         "soar_sdk.apis.es.findings.Findings.create",
         side_effect=lambda f: CreateFindingResponse(
             finding_id="new_finding",
@@ -751,22 +751,19 @@ def test_es_on_poll_with_invalid_drilldown_searches(
 
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
-
-    call_args = create_finding.call_args[0][0]
-    assert call_args.drilldown_searches is None
+    assert result is False
 
 
 def test_es_on_poll_with_invalid_drilldown_dashboards(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll handles invalid drilldown_dashboards gracefully."""
+    """Test on_es_poll fails with invalid drilldown_dashboards."""
     mocker.patch.object(
         app_with_action.actions_manager,
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch(
+    mocker.patch(
         "soar_sdk.apis.es.findings.Findings.create",
         side_effect=lambda f: CreateFindingResponse(
             finding_id="new_finding",
@@ -802,10 +799,7 @@ def test_es_on_poll_with_invalid_drilldown_dashboards(
 
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
-
-    call_args = create_finding.call_args[0][0]
-    assert call_args.drilldown_dashboards is None
+    assert result is False
 
 
 def test_es_on_poll_with_drilldown_list_format(
