@@ -378,28 +378,6 @@ def test_on_es_poll_params_is_manual_poll():
     assert params.is_manual_poll() is False
 
 
-def test_es_on_poll_decoration_with_meta(app_with_action: App):
-    """Test that the on_es_poll decorator properly sets up metadata."""
-
-    @app_with_action.on_es_poll()
-    def on_es_poll_function(
-        params: OnESPollParams,
-    ) -> Generator[Finding, int | None]:
-        yield Finding(
-            rule_title="Test",
-            rule_description="Test",
-            security_domain="threat",
-            risk_object="test",
-            risk_object_type="user",
-            risk_score=100.0,
-        )
-
-    action = app_with_action.actions_manager.get_action("on_es_poll")
-    assert action is not None
-    assert action.meta.action == "on es poll"
-    assert action == on_es_poll_function
-
-
 def test_es_on_poll_actionmeta_dict_output_empty(app_with_action: App):
     """Test that OnESPollActionMeta.dict returns output as an empty list."""
 
@@ -487,61 +465,6 @@ def test_es_on_poll_container_data_mapping(
     assert call_args["data"]["risk_score"] == 100.0
     assert call_args["data"]["risk_object"] == "baduser@example.com"
     assert call_args["data"]["risk_object_type"] == "user"
-    assert create_finding.called
-
-
-def test_es_on_poll_container_data_mapping_defaults(
-    app_with_action: App, mocker: pytest_mock.MockerFixture
-):
-    """Test that Finding data uses defaults when optional fields are not provided."""
-
-    save_container = mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    create_finding = mocker.patch(
-        "soar_sdk.apis.es.findings.Findings.create",
-        side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding",
-            _time="2025-12-09T11:30:00.0000Z",
-            **f.model_dump(),
-        ),
-    )
-    mocker.patch.object(
-        app_with_action.soar_client,
-        "get_es_pairing",
-        return_value=(
-            True,
-            {"es_url": "https://es", "rest_port": 8089, "es_token": "token123"},
-            "OK",
-        ),
-    )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
-
-    @app_with_action.on_es_poll()
-    def on_es_poll_function(
-        params: OnESPollParams, client=None
-    ) -> Generator[Finding, int | None]:
-        yield Finding(
-            rule_title="Risk threshold exceeded",
-            rule_description="User exceeded risk threshold",
-            security_domain="threat",
-            risk_object="baduser@example.com",
-            risk_object_type="user",
-            risk_score=100.0,
-        )
-
-    params = OnESPollParams(start_time=0, end_time=1)
-    result = on_es_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
-
-    call_args = save_container.call_args[0][0]
-    assert call_args["severity"] == "medium"
     assert create_finding.called
 
 

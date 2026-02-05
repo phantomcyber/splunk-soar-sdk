@@ -9,7 +9,7 @@ from soar_sdk.asset import AssetField, BaseAsset, FieldCategory
 from soar_sdk.logging import getLogger
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.models.container import Container
-from soar_sdk.models.finding import Finding
+from soar_sdk.models.finding import Finding, FindingAttachment
 from soar_sdk.params import (
     MakeRequestParams,
     OnESPollParams,
@@ -20,7 +20,6 @@ from soar_sdk.params import (
 
 logger = getLogger()
 
-# Test mail template for ES findings
 SAMPLE_EMAIL_TEMPLATE = """From: suspicious@example.com
 To: {user}
 Subject: Suspicious Activity Detected
@@ -28,12 +27,6 @@ Date: {date}
 
 This is a suspicious email that triggered the risk threshold.
 Event ID: {event_id}
-"""
-
-# Test event data CSV for attachments
-SAMPLE_EVENTS_CSV = """timestamp,user,action,risk_score
-{timestamp},{{user}},login_failed,{{risk_score}}
-{timestamp},{{user}},access_denied,{{secondary_score}}
 """
 
 
@@ -200,7 +193,13 @@ def on_es_poll(
     for i in range(1, 3):
         logger.info(f"Processing ES finding {i}")
 
-        container_id = yield Finding(
+        email_content = SAMPLE_EMAIL_TEMPLATE.format(
+            user=f"user{i}@example.com",
+            date=datetime.now(UTC).strftime("%a, %d %b %Y %H:%M:%S +0000"),
+            event_id=f"EVT-{i:04d}",
+        )
+
+        yield Finding(
             rule_title=f"Risk threshold exceeded for user-{i}",
             rule_description="Risk Threshold Exceeded for an object over a 24 hour period",
             security_domain="threat",
@@ -209,34 +208,13 @@ def on_es_poll(
             risk_score=75.0 + (i * 10),
             status="New",
             urgency="medium",
-        )
-
-        # Attach evidence
-        email_evidence = SAMPLE_EMAIL_TEMPLATE.format(
-            user=f"user{i}@example.com",
-            date=datetime.now(UTC).strftime("%a, %d %b %Y %H:%M:%S +0000"),
-            event_id=f"EVT-{i:04d}",
-        )
-
-        event_data = SAMPLE_EVENTS_CSV.format(
-            timestamp=datetime.now(UTC).isoformat()
-        ).format(
-            user=f"user{i}@example.com",
-            risk_score=75.0 + (i * 10),
-            secondary_score=50.0 + (i * 5),
-        )
-
-        soar.vault.create_attachment(
-            container_id,
-            file_content=email_evidence,
-            file_name=f"suspicious_email_user{i}.eml",
-            metadata={"type": "email_evidence", "source": "investigation_mailbox"},
-        )
-        soar.vault.create_attachment(
-            container_id,
-            file_content=event_data,
-            file_name=f"risk_events_user{i}.csv",
-            metadata={"type": "event_log", "event_count": "2"},
+            run_threat_analysis=True,
+            attachments=[
+                FindingAttachment(
+                    file_name=f"suspicious_email_user{i}.eml",
+                    data=email_content.encode("utf-8"),
+                )
+            ],
         )
 
 

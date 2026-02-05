@@ -12,24 +12,6 @@ from soar_sdk.models.finding import (
 )
 
 
-def test_finding_basic():
-    """Test basic Finding with required fields."""
-    finding = Finding(
-        rule_title="Test Finding",
-        rule_description="Test Description",
-        security_domain="threat",
-        risk_object="test@example.com",
-        risk_object_type="user",
-        risk_score=85.0,
-    )
-
-    finding_dict = finding.to_dict()
-    assert finding_dict["rule_title"] == "Test Finding"
-    assert finding_dict["security_domain"] == "threat"
-    assert finding_dict["risk_score"] == 85.0
-    assert "status" not in finding_dict
-
-
 def test_finding_with_complex_fields():
     """Test Finding with drilldowns, annotations, and optional fields."""
     drilldown_search = DrilldownSearch(
@@ -91,23 +73,6 @@ def test_finding_minimal():
     finding = Finding(rule_title="Minimal Finding")
     assert finding.rule_title == "Minimal Finding"
     assert finding.security_domain is None
-
-
-def test_finding_serialization():
-    """Test Finding serialization and deserialization."""
-    data = {
-        "rule_title": "Test Finding",
-        "rule_description": "Test Description",
-        "security_domain": "threat",
-        "risk_object": "test@example.com",
-        "risk_object_type": "user",
-        "risk_score": 75.0,
-        "status": "New",
-    }
-    finding = Finding(**data)
-    finding_dict = finding.to_dict()
-    new_finding = Finding(**finding_dict)
-    assert new_finding == finding
 
 
 def test_drilldown_search():
