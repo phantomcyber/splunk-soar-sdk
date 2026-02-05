@@ -132,7 +132,7 @@ class OnESPollDecorator:
                     self.app.actions_manager,
                 )
 
-            es_urgency = ingest_config.get("es_urgency", "medium")
+            es_urgency = ingest_config.get("es_urgency")
             es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
             es_launch_automation = ingest_config.get("es_launch_automation", False)
 
@@ -205,7 +205,7 @@ class OnESPollDecorator:
 
                 if item.security_domain is None:
                     item.security_domain = es_security_domain
-                if item.urgency is None:
+                if item.urgency is None and es_urgency:
                     item.urgency = es_urgency
                 if not item.run_threat_analysis:
                     item.run_threat_analysis = es_run_threat_analysis
