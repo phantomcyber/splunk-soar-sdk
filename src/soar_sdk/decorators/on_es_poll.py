@@ -145,15 +145,27 @@ class OnESPollDecorator:
                     drilldown_searches = [
                         DrilldownSearch(**s) for s in raw_drilldown_searches
                     ]
-                except (TypeError, ValidationError):
-                    logger.info("Failed to parse es_drilldown_searches")
+                except (TypeError, ValidationError) as e:
+                    return self.app._adapt_action_result(
+                        ActionResult(
+                            status=False,
+                            message=f"Failed to parse es_drilldown_searches: {e}",
+                        ),
+                        self.app.actions_manager,
+                    )
             if raw_drilldown_dashboards:
                 try:
                     drilldown_dashboards = [
                         DrilldownDashboard(**d) for d in raw_drilldown_dashboards
                     ]
-                except (TypeError, ValidationError):
-                    logger.info("Failed to parse es_drilldown_dashboards")
+                except (TypeError, ValidationError) as e:
+                    return self.app._adapt_action_result(
+                        ActionResult(
+                            status=False,
+                            message=f"Failed to parse es_drilldown_dashboards: {e}",
+                        ),
+                        self.app.actions_manager,
+                    )
 
             if is_async_generator:
 

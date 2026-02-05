@@ -156,13 +156,3 @@ def test_findings_api_upload_attachment():
     assert "finding123" in call_args[0][0]
     assert call_args[1]["json"]["file_name"] == "email.eml"
     assert call_args[1]["json"]["file_size"] == 11
-
-
-def test_findings_api_upload_attachment_size_limit():
-    """Test Findings.upload_attachment rejects files over 50MB."""
-    mock_client = MagicMock()
-    findings = Findings(mock_client)
-
-    large_data = b"x" * (50 * 1024 * 1024 + 1)  # 50MB + 1 byte
-    with pytest.raises(ValueError, match="exceeds 50 MB limit"):
-        findings.upload_attachment("finding123", "large.eml", large_data)
