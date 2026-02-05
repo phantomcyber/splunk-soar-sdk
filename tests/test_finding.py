@@ -64,7 +64,6 @@ def test_finding_with_complex_fields():
 
 def test_finding_validation():
     """Test Finding validation for invalid inputs."""
-    # Invalid attribute (extra="forbid")
     with pytest.raises(ValidationError):
         Finding(
             rule_title="Test",
@@ -76,7 +75,6 @@ def test_finding_validation():
             not_allowed="fail",
         )
 
-    # Invalid type for risk_score
     with pytest.raises(ValidationError):
         Finding(
             rule_title="Test",

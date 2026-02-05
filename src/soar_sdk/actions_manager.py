@@ -80,7 +80,6 @@ class ActionsManager(BaseConnector):
         action_id = self.get_action_identifier()
         logger.debug(f"action_id {action_id}")
 
-        # Route on_poll to on_es_poll if ES ingest is enabled
         if action_id == "on_poll" and self._should_use_es_poll():
             action_id = "on_es_poll"
             logger.debug("Routing on_poll to on_es_poll (ES ingest enabled)")

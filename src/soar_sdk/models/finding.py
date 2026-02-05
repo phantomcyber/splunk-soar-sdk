@@ -39,10 +39,7 @@ class Finding(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    # Required fields
     rule_title: str
-
-    # Optional fields (security_domain can be set via ingest config)
     security_domain: str | None = None
     rule_description: str | None = None
     risk_object: str | None = None
@@ -59,11 +56,8 @@ class Finding(BaseModel):
     all_risk_objects: list[str] | None = None
     source: list[str] | None = None
     exclude_map_fields: list[str] | None = None
-    # ES processing flags
     run_threat_analysis: bool = False
     launch_automation: bool = False
-
-    # Attachments (e.g., raw .eml for SAA analysis) - not sent to ES, uploaded separately
     attachments: list[FindingAttachment] | None = None
 
     def to_dict(self) -> dict[str, Any]:

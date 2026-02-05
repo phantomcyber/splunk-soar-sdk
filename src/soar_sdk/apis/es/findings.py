@@ -5,7 +5,7 @@ from pydantic import Field
 
 from soar_sdk.models.finding import Finding
 
-MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024  # 50 MB
+MAX_ATTACHMENT_SIZE = 50 * 1024 * 1024  # 50 MB (till batching uploads is implemented)
 
 
 class CreateFindingResponse(Finding):
