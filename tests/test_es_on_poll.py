@@ -177,7 +177,7 @@ def test_es_on_poll_yields_finding_success(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -229,7 +229,7 @@ def test_es_on_poll_yields_invalid_type(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -273,7 +273,7 @@ def test_es_on_poll_throws_when_fail_to_create_container(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -325,7 +325,7 @@ def test_es_on_poll_yields_finding_async_generator(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -368,15 +368,12 @@ def test_on_es_poll_params_is_manual_poll():
     """Test OnESPollParams.is_manual_poll detection."""
     from soar_sdk.params import MAX_COUNT_VALUE
 
-    # Manual poll - container_count is small number
     params = OnESPollParams(start_time=0, end_time=1, container_count=10)
     assert params.is_manual_poll() is True
 
-    # Scheduled poll - container_count is MAX_COUNT_VALUE
     params = OnESPollParams(start_time=0, end_time=1, container_count=MAX_COUNT_VALUE)
     assert params.is_manual_poll() is False
 
-    # No container_count - not manual
     params = OnESPollParams(start_time=0, end_time=1)
     assert params.is_manual_poll() is False
 
@@ -453,7 +450,7 @@ def test_es_on_poll_container_data_mapping(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -523,7 +520,7 @@ def test_es_on_poll_container_data_mapping_defaults(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -560,7 +557,7 @@ def test_es_on_poll_pairing_failure(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -588,7 +585,7 @@ def test_es_on_poll_no_token(app_with_action: App, mocker: pytest_mock.MockerFix
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -632,7 +629,7 @@ def test_es_on_poll_with_attachments(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -649,6 +646,36 @@ def test_es_on_poll_with_attachments(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
     upload_mock.assert_called_once_with("new_finding", "email.eml", b"raw content")
+
+
+def test_es_on_poll_missing_security_domain(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll fails when es_security_domain is not configured."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "get_es_pairing",
+        return_value=(
+            True,
+            {"es_url": "https://es", "rest_port": 8089, "es_token": "token123"},
+            "OK",
+        ),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "get_config",
+        return_value={"ingest": {}},
+    )
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="Test Finding")
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is False
 
 
 def test_es_on_poll_with_finding_limit(
@@ -680,7 +707,7 @@ def test_es_on_poll_with_finding_limit(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     findings_yielded = 0
@@ -694,7 +721,6 @@ def test_es_on_poll_with_finding_limit(
             findings_yielded += 1
             yield Finding(rule_title=f"Finding {findings_yielded}")
 
-    # Limit to 2 findings
     params = OnESPollParams(start_time=0, end_time=1, container_count=2)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
@@ -750,7 +776,6 @@ def test_es_on_poll_with_ingest_config_defaults(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
 
-    # Check that finding was created with ingest config defaults applied
     call_args = create_finding.call_args[0][0]
     assert call_args.security_domain == "network"
     assert call_args.urgency == "high"
@@ -758,10 +783,10 @@ def test_es_on_poll_with_ingest_config_defaults(
     assert call_args.launch_automation is True
 
 
-def test_es_on_poll_with_drilldown_searches_json_string(
+def test_es_on_poll_with_invalid_drilldown_searches(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll parses drilldown_searches from JSON string in ingest config."""
+    """Test on_es_poll handles invalid drilldown_searches gracefully."""
     mocker.patch.object(
         app_with_action.actions_manager,
         "save_container",
@@ -789,109 +814,10 @@ def test_es_on_poll_with_drilldown_searches_json_string(
         "get_config",
         return_value={
             "ingest": {
-                "es_drilldown_searches": '[{"name": "test_search", "search": "index=main", "earliest": "-1h", "latest": "now"}]'
+                "es_security_domain": "threat",
+                "es_drilldown_searches": [{"invalid": "data"}],
             }
         },
-    )
-
-    @app_with_action.on_es_poll()
-    def on_es_poll_function(
-        params: OnESPollParams, client=None
-    ) -> Generator[Finding, int | None]:
-        yield Finding(rule_title="Test Finding")
-
-    params = OnESPollParams(start_time=0, end_time=1)
-    result = on_es_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
-
-    call_args = create_finding.call_args[0][0]
-    assert call_args.drilldown_searches is not None
-    assert len(call_args.drilldown_searches) == 1
-    assert call_args.drilldown_searches[0].name == "test_search"
-
-
-def test_es_on_poll_with_drilldown_dashboards_json_string(
-    app_with_action: App, mocker: pytest_mock.MockerFixture
-):
-    """Test on_es_poll parses drilldown_dashboards from JSON string in ingest config."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    create_finding = mocker.patch(
-        "soar_sdk.apis.es.findings.Findings.create",
-        side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding",
-            _time="2025-12-09T11:30:00.0000Z",
-            **f.model_dump(),
-        ),
-    )
-    mocker.patch.object(
-        app_with_action.soar_client,
-        "get_es_pairing",
-        return_value=(
-            True,
-            {"es_url": "https://es", "rest_port": 8089, "es_token": "token123"},
-            "OK",
-        ),
-    )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={
-            "ingest": {
-                "es_drilldown_dashboards": '[{"dashboard": "dash_id", "name": "Test Dashboard"}]'
-            }
-        },
-    )
-
-    @app_with_action.on_es_poll()
-    def on_es_poll_function(
-        params: OnESPollParams, client=None
-    ) -> Generator[Finding, int | None]:
-        yield Finding(rule_title="Test Finding")
-
-    params = OnESPollParams(start_time=0, end_time=1)
-    result = on_es_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
-
-    call_args = create_finding.call_args[0][0]
-    assert call_args.drilldown_dashboards is not None
-    assert len(call_args.drilldown_dashboards) == 1
-    assert call_args.drilldown_dashboards[0].name == "Test Dashboard"
-
-
-def test_es_on_poll_with_invalid_drilldown_searches_json(
-    app_with_action: App, mocker: pytest_mock.MockerFixture
-):
-    """Test on_es_poll handles invalid JSON for drilldown_searches gracefully."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    create_finding = mocker.patch(
-        "soar_sdk.apis.es.findings.Findings.create",
-        side_effect=lambda f: CreateFindingResponse(
-            finding_id="new_finding",
-            _time="2025-12-09T11:30:00.0000Z",
-            **f.model_dump(),
-        ),
-    )
-    mocker.patch.object(
-        app_with_action.soar_client,
-        "get_es_pairing",
-        return_value=(
-            True,
-            {"es_url": "https://es", "rest_port": 8089, "es_token": "token123"},
-            "OK",
-        ),
-    )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_drilldown_searches": "invalid json {"}},
     )
 
     @app_with_action.on_es_poll()
@@ -908,10 +834,10 @@ def test_es_on_poll_with_invalid_drilldown_searches_json(
     assert call_args.drilldown_searches is None
 
 
-def test_es_on_poll_with_invalid_drilldown_dashboards_json(
+def test_es_on_poll_with_invalid_drilldown_dashboards(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll handles invalid JSON for drilldown_dashboards gracefully."""
+    """Test on_es_poll handles invalid drilldown_dashboards gracefully."""
     mocker.patch.object(
         app_with_action.actions_manager,
         "save_container",
@@ -937,7 +863,12 @@ def test_es_on_poll_with_invalid_drilldown_dashboards_json(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {"es_drilldown_dashboards": "invalid json {"}},
+        return_value={
+            "ingest": {
+                "es_security_domain": "threat",
+                "es_drilldown_dashboards": [{"invalid": "data"}],
+            }
+        },
     )
 
     @app_with_action.on_es_poll()
@@ -985,6 +916,7 @@ def test_es_on_poll_with_drilldown_list_format(
         "get_config",
         return_value={
             "ingest": {
+                "es_security_domain": "threat",
                 "es_drilldown_searches": [
                     {
                         "name": "search1",
@@ -1091,7 +1023,7 @@ def test_es_on_poll_generator_exception(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()
@@ -1122,7 +1054,7 @@ def test_es_on_poll_action_failure_during_iteration(
     mocker.patch.object(
         app_with_action.actions_manager,
         "get_config",
-        return_value={"ingest": {}},
+        return_value={"ingest": {"es_security_domain": "threat"}},
     )
 
     @app_with_action.on_es_poll()

@@ -1,6 +1,5 @@
 import asyncio
 import inspect
-import json
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args
@@ -120,7 +119,19 @@ class OnESPollDecorator:
             config = self.app.actions_manager.get_config()
             ingest_config = config.get("ingest", {})
 
-            es_security_domain = ingest_config.get("es_security_domain", "threat")
+            es_security_domain = ingest_config.get("es_security_domain")
+            if not es_security_domain:
+                logger.info(
+                    "es_security_domain not configured in asset ingest settings"
+                )
+                return self.app._adapt_action_result(
+                    ActionResult(
+                        status=False,
+                        message="es_security_domain must be configured in asset ingest settings",
+                    ),
+                    self.app.actions_manager,
+                )
+
             es_urgency = ingest_config.get("es_urgency", "medium")
             es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
             es_launch_automation = ingest_config.get("es_launch_automation", False)
@@ -131,21 +142,17 @@ class OnESPollDecorator:
             raw_drilldown_dashboards = ingest_config.get("es_drilldown_dashboards")
             if raw_drilldown_searches:
                 try:
-                    if isinstance(raw_drilldown_searches, str):
-                        raw_drilldown_searches = json.loads(raw_drilldown_searches)
                     drilldown_searches = [
                         DrilldownSearch(**s) for s in raw_drilldown_searches
                     ]
-                except (json.JSONDecodeError, TypeError, ValidationError):
+                except (TypeError, ValidationError):
                     logger.info("Failed to parse es_drilldown_searches")
             if raw_drilldown_dashboards:
                 try:
-                    if isinstance(raw_drilldown_dashboards, str):
-                        raw_drilldown_dashboards = json.loads(raw_drilldown_dashboards)
                     drilldown_dashboards = [
                         DrilldownDashboard(**d) for d in raw_drilldown_dashboards
                     ]
-                except (json.JSONDecodeError, TypeError, ValidationError):
+                except (TypeError, ValidationError):
                     logger.info("Failed to parse es_drilldown_dashboards")
 
             if is_async_generator:
