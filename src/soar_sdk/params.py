@@ -252,18 +252,15 @@ class OnESPollParams(Params):
         required=False,
     )
     container_count: int = Param(
-        description="Maximum number of container records to query for.",
+        description="Maximum number of findings to query for.",
         required=False,
     )
 
-    es_base_url: str = Param(
-        description="Base URL for the Splunk Enterprise Security API",
-        required=True,
-    )
-    es_session_key: str = Param(
-        description="Session token for the Splunk Enterprise Security API",
-        required=True,
-    )
+    def is_manual_poll(self) -> bool:
+        """Check if this is a manual poll execution (poll now) vs scheduled polling."""
+        if not self.container_count:
+            return False
+        return int(self.container_count) != MAX_COUNT_VALUE
 
 
 class MakeRequestParams(Params):

@@ -20,23 +20,27 @@ class DrilldownDashboard(BaseModel):
     tokens: list[str] | None = None
 
 
+class FindingAttachment(BaseModel):
+    """Represents an attachment to upload with a finding (e.g., raw .eml for SAA)."""
+
+    file_name: str
+    data: bytes
+
+
 class Finding(BaseModel):
     """Represents a finding to be created during on_es_poll.
 
     Findings are stored in ES and can be associated with SOAR containers/artifacts
     for investigation workflow.
 
-    Only rule_title and security_domain are required. All other fields are optional
-    and will use ES defaults if not provided.
+    Only rule_title is required. All other fields are optional and will use
+    ES defaults or asset ingest configuration if not provided.
     """
 
     model_config = ConfigDict(extra="forbid")
 
-    # Required fields
     rule_title: str
-    security_domain: str
-
-    # Optional fields
+    security_domain: str | None = None
     rule_description: str | None = None
     risk_object: str | None = None
     risk_object_type: str | None = None
@@ -52,7 +56,10 @@ class Finding(BaseModel):
     all_risk_objects: list[str] | None = None
     source: list[str] | None = None
     exclude_map_fields: list[str] | None = None
+    run_threat_analysis: bool = False
+    launch_automation: bool = False
+    attachments: list[FindingAttachment] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the finding to a dictionary."""
-        return self.model_dump(exclude_none=True)
+        """Convert the finding to a dictionary (excludes attachments)."""
+        return self.model_dump(exclude_none=True, exclude={"attachments"})

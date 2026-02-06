@@ -10,6 +10,9 @@ from soar_sdk.action_results import ActionOutput
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
+from soar_sdk.logging import getLogger
+
+logger = getLogger()
 
 JSONType = dict[str, Any] | list[Any] | str | int | float | bool | None
 SummaryType = TypeVar("SummaryType", bound=ActionOutput)
@@ -71,6 +74,39 @@ class SOARClient(Generic[SummaryType]):
     def get_asset_id(self) -> str:
         """Return the current Asset ID passed in the Connector Run Action JSON."""
         pass
+
+    def get_es_pairing(self) -> tuple[bool, dict | None, str]:
+        """Get ES pairing info (es_url, rest_port, ui_port, es_token) for on_es_poll."""
+        try:
+            response = self.get("rest/enterprise_security/pairing")
+        except Exception as e:
+            return (False, None, f"Failed to query ES pairing: {e}")
+
+        if response.status_code != 200:
+            return (
+                False,
+                None,
+                f"Failed to get ES pairing, status: {response.status_code}",
+            )
+
+        resp_data = response.json()
+
+        if not resp_data.get("is_paired"):
+            return (False, None, "No active ES pairing found")
+
+        pairing = resp_data.get("pairing", {})
+        if not pairing:
+            return (False, None, "ES pairing data is empty")
+
+        try:
+            token_response = self.get("rest/automation_enterprise_security_token")
+            if token_response.status_code == 200:
+                token_data = token_response.json()
+                pairing["es_token"] = token_data.get("token", "")
+        except Exception as e:
+            logger.debug(f"Failed to fetch ES automation token: {e}")
+
+        return (True, pairing, "ES pairing retrieved successfully")
 
     def get(
         self,

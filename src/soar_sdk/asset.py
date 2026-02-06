@@ -339,29 +339,3 @@ class BaseAsset(BaseModel):
         if self._ingest_state is None:
             raise AppContextRequired()
         return self._ingest_state
-
-
-class ESIngestMixin:
-    """Mixin for apps that support ES polling (on_es_poll).
-
-    Add this mixin to your Asset class to include ES Ingest Settings fields.
-    These fields are configured in the ES UI and control how findings are created.
-
-    Example:
-        >>> class Asset(BaseAsset, ESIngestMixin):
-        ...     server: str = AssetField(description="API server URL")
-        ...     api_key: str = AssetField(description="API key", sensitive=True)
-    """
-
-    es_security_domain: str = AssetField(
-        required=False,
-        description="Security domain for ES findings",
-        default="threat",
-        category=FieldCategory.INGEST,
-    )
-    es_urgency: str = AssetField(
-        required=False,
-        description="Urgency level for ES findings",
-        default="medium",
-        category=FieldCategory.INGEST,
-    )
