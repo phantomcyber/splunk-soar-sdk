@@ -75,38 +75,22 @@ class SOARClient(Generic[SummaryType]):
         """Return the current Asset ID passed in the Connector Run Action JSON."""
         pass
 
-    def get_es_pairing(self) -> tuple[bool, dict | None, str]:
-        """Get ES pairing info (es_url, rest_port, ui_port, es_token) for on_es_poll."""
-        try:
-            response = self.get("rest/enterprise_security/pairing")
-        except Exception as e:
-            return (False, None, f"Failed to query ES pairing: {e}")
+    def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
+        """Create a finding in ES via the SOAR proxy."""
+        response = self.post("rest/enterprise_security/findings", json=finding)
+        return response.json()
 
-        if response.status_code != 200:
-            return (
-                False,
-                None,
-                f"Failed to get ES pairing, status: {response.status_code}",
-            )
+    def upload_finding_attachment(
+        self, finding_id: str, file_name: str, data: bytes
+    ) -> None:
+        """Upload an attachment to a finding via the SOAR proxy."""
+        import base64
 
-        resp_data = response.json()
-
-        if not resp_data.get("is_paired"):
-            return (False, None, "No active ES pairing found")
-
-        pairing = resp_data.get("pairing", {})
-        if not pairing:
-            return (False, None, "ES pairing data is empty")
-
-        try:
-            token_response = self.get("rest/automation_enterprise_security_token")
-            if token_response.status_code == 200:
-                token_data = token_response.json()
-                pairing["es_token"] = token_data.get("token", "")
-        except Exception as e:
-            logger.debug(f"Failed to fetch ES automation token: {e}")
-
-        return (True, pairing, "ES pairing retrieved successfully")
+        encoded_data = base64.b64encode(data).decode("utf-8")
+        self.post(
+            f"rest/enterprise_security/findings/{finding_id}/attachments",
+            json={"file_name": file_name, "data": encoded_data},
+        )
 
     def get(
         self,

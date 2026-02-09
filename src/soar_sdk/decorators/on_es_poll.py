@@ -8,7 +8,6 @@ from pydantic import ValidationError
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
-from soar_sdk.es_client import ESClient
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
@@ -90,29 +89,6 @@ class OnESPollDecorator:
                     self.app.actions_manager,
                 )
 
-            success, pairing_info, message = soar.get_es_pairing()
-            if not success or pairing_info is None:
-                logger.info(f"Failed to get ES pairing: {message}")
-                return self.app._adapt_action_result(
-                    ActionResult(status=False, message=f"ES pairing error: {message}"),
-                    self.app.actions_manager,
-                )
-
-            es_url = pairing_info.get("es_url", "")
-            rest_port = pairing_info.get("rest_port", 8089)
-            es_base_url = f"{es_url}:{rest_port}"
-            es_token = pairing_info.get("es_token", "")
-
-            if not es_token:
-                logger.info("No ES automation token available")
-                return self.app._adapt_action_result(
-                    ActionResult(
-                        status=False, message="ES automation token not available"
-                    ),
-                    self.app.actions_manager,
-                )
-
-            es = ESClient(es_base_url, es_token)
             kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
             generator = function(action_params, *args, **kwargs)
 
@@ -228,41 +204,57 @@ class OnESPollDecorator:
                 if item.drilldown_dashboards is None and drilldown_dashboards:
                     item.drilldown_dashboards = drilldown_dashboards
 
-                finding = es.findings.create(item)
+                try:
+                    finding_response = soar.create_finding(item.to_dict())
+                except Exception as e:
+                    logger.info(f"Failed to create finding: {e}")
+                    return self.app._adapt_action_result(
+                        ActionResult(
+                            status=False, message=f"Failed to create finding: {e}"
+                        ),
+                        self.app.actions_manager,
+                    )
+
+                finding_id = finding_response.get("finding_id", "")
                 findings_created += 1
-                logger.info(f"Created finding {finding.finding_id}")
+                logger.info(f"Created finding {finding_id}")
 
                 if item.run_threat_analysis and item.attachments:
                     for attachment in item.attachments:
-                        es.findings.upload_attachment(
-                            finding.finding_id,
-                            attachment.file_name,
-                            attachment.data,
-                        )
-                        logger.info(
-                            f"Uploaded attachment {attachment.file_name} for finding {finding.finding_id}"
-                        )
+                        try:
+                            soar.upload_finding_attachment(
+                                finding_id,
+                                attachment.file_name,
+                                attachment.data,
+                            )
+                            logger.info(
+                                f"Uploaded attachment {attachment.file_name} for finding {finding_id}"
+                            )
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to upload attachment {attachment.file_name}: {e}"
+                            )
 
                 container = Container(
-                    name=finding.rule_title,
-                    description=finding.rule_description,
-                    severity=finding.urgency or "medium",
-                    status=finding.status,
-                    owner_id=finding.owner,
-                    sensitivity=finding.disposition,
-                    tags=finding.source,
-                    external_id=finding.finding_id,
+                    name=item.rule_title,
+                    description=item.rule_description,
+                    severity=item.urgency or "medium",
+                    status=item.status,
+                    owner_id=item.owner,
+                    sensitivity=item.disposition,
+                    tags=item.source,
+                    external_id=finding_id,
                     data={
-                        "security_domain": finding.security_domain,
-                        "risk_score": finding.risk_score,
-                        "risk_object": finding.risk_object,
-                        "risk_object_type": finding.risk_object_type,
+                        "security_domain": item.security_domain,
+                        "risk_score": item.risk_score,
+                        "risk_object": item.risk_object,
+                        "risk_object_type": item.risk_object_type,
                     },
                 )
                 ret_val, message, last_container_id = (
                     self.app.actions_manager.save_container(container.to_dict())
                 )
-                logger.info(f"Creating container for finding: {finding.rule_title}")
+                logger.info(f"Creating container for finding: {item.rule_title}")
                 if not ret_val:
                     raise ActionFailure(f"Failed to create container: {message}")
 
