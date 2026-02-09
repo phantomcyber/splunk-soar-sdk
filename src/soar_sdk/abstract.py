@@ -10,9 +10,6 @@ from soar_sdk.action_results import ActionOutput
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
-from soar_sdk.logging import getLogger
-
-logger = getLogger()
 
 JSONType = dict[str, Any] | list[Any] | str | int | float | bool | None
 SummaryType = TypeVar("SummaryType", bound=ActionOutput)

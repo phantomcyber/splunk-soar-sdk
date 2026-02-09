@@ -516,11 +516,6 @@ class App:
         The decorated function must be a Generator or AsyncGenerator that yields Finding objects.
         Only one on_es_poll action is allowed per app.
 
-        The generator should accept a "send type" of `int | None`. When a Finding is successfully
-        delivered to ES and linked to a Container, the SDK will send the Container ID back into
-        the generator. Config values (security_domain, urgency, run_threat_analysis, etc.) are
-        applied from the asset's ingest settings.
-
         Example:
             >>> @app.on_es_poll()
             ... def on_es_poll(
