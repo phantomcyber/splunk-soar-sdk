@@ -3,7 +3,6 @@ from unittest.mock import MagicMock
 import pytest
 from pydantic import ValidationError
 
-from soar_sdk.apis.es.findings import CreateFindingResponse, Findings
 from soar_sdk.models.finding import (
     DrilldownDashboard,
     DrilldownSearch,
@@ -122,37 +121,39 @@ def test_finding_with_attachments():
     assert "attachments" not in finding_dict
 
 
-def test_findings_api_create():
-    """Test Findings.create API."""
-    mock_client = MagicMock()
+def test_soar_client_create_finding(app_with_action):
+    """Test SOARClient.create_finding calls post and returns response."""
+    from soar_sdk.app import App
+
+    app: App = app_with_action
     mock_response = MagicMock()
     mock_response.json.return_value = {
-        "rule_title": "Test",
+        "finding_id": "test-id",
         "_time": "2025-01-01T00:00:00Z",
-        "finding_id": "abc123",
     }
-    mock_client.post.return_value = mock_response
+    app.soar_client.post = MagicMock(return_value=mock_response)
 
-    findings = Findings(mock_client)
-    finding = Finding(rule_title="Test")
-    response = findings.create(finding)
+    result = app.soar_client.create_finding({"rule_title": "Test"})
 
-    assert isinstance(response, CreateFindingResponse)
-    assert response.finding_id == "abc123"
-    mock_client.post.assert_called_once()
+    app.soar_client.post.assert_called_once_with(
+        "rest/enterprise_security/findings", json={"rule_title": "Test"}
+    )
+    assert result["finding_id"] == "test-id"
 
 
-def test_findings_api_upload_attachment():
-    """Test Findings.upload_attachment API."""
-    mock_client = MagicMock()
-    mock_response = MagicMock()
-    mock_client.post.return_value = mock_response
+def test_soar_client_upload_finding_attachment(app_with_action):
+    """Test SOARClient.upload_finding_attachment calls post with encoded data."""
+    import base64
 
-    findings = Findings(mock_client)
-    findings.upload_attachment("finding123", "email.eml", b"raw content")
+    from soar_sdk.app import App
 
-    mock_client.post.assert_called_once()
-    call_args = mock_client.post.call_args
-    assert "finding123" in call_args[0][0]
-    assert call_args[1]["json"]["file_name"] == "email.eml"
-    assert call_args[1]["json"]["file_size"] == 11
+    app: App = app_with_action
+    app.soar_client.post = MagicMock()
+
+    app.soar_client.upload_finding_attachment("finding-123", "test.eml", b"raw data")
+
+    app.soar_client.post.assert_called_once()
+    call_args = app.soar_client.post.call_args
+    assert "finding-123" in call_args[0][0]
+    assert call_args[1]["json"]["file_name"] == "test.eml"
+    assert call_args[1]["json"]["data"] == base64.b64encode(b"raw data").decode("utf-8")
