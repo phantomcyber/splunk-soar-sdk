@@ -23,6 +23,9 @@ class SOARClientAuth:
     username: str = ""
     password: str = ""
     user_session_token: str = ""
+    # Broker authentication (only populated when running on automation broker)
+    user_hash_key: str = ""
+    broker_ph_auth_token: str = ""
 
     @field_validator("base_url")
     @classmethod
@@ -74,7 +77,17 @@ class SOARClient(Generic[SummaryType]):
 
     def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
         """Create a finding in ES via the SOAR proxy."""
-        response = self.post("rest/enterprise_security/findings", json=finding)
+        import json
+
+        from soar_sdk.logging import getLogger
+
+        logger = getLogger()
+
+        endpoint = "/rest/enterprise_security/findings"
+        logger.info(f"Creating finding at: {self.client.base_url}{endpoint}")
+        logger.info(f"Finding payload: {json.dumps(finding, indent=2, default=str)}")
+
+        response = self.post(endpoint, json=finding, timeout=30.0)
         return response.json()
 
     def upload_finding_attachment(
@@ -83,10 +96,10 @@ class SOARClient(Generic[SummaryType]):
         """Upload an attachment to a finding via the SOAR proxy."""
         import base64
 
+        endpoint = f"/rest/enterprise_security/findings/{finding_id}/attachments"
         encoded_data = base64.b64encode(data).decode("utf-8")
         self.post(
-            f"rest/enterprise_security/findings/{finding_id}/attachments",
-            json={"file_name": file_name, "data": encoded_data},
+            endpoint, json={"file_name": file_name, "data": encoded_data}, timeout=30.0
         )
 
     def get(

@@ -1,13 +1,14 @@
-from collections.abc import Mapping
+from collections.abc import AsyncIterable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 import httpx
 
-from soar_sdk.abstract import SOARClient, SOARClientAuth, SummaryType
+from soar_sdk.abstract import JSONType, SOARClient, SOARClientAuth, SummaryType
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
+from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
 
 if TYPE_CHECKING:
     pass
@@ -46,6 +47,10 @@ class AppClient(SOARClient[SummaryType]):
         self._message: str = ""
         self.__container_id: int = 0
         self.__asset_id: str = ""
+
+        # Broker authentication credentials
+        self._user_hash_key: str = ""
+        self._broker_ph_auth_token: str = ""
 
     @property
     def client(self) -> httpx.Client:
@@ -86,11 +91,20 @@ class AppClient(SOARClient[SummaryType]):
 
     def authenticate_soar_client(self, soar_auth: SOARClientAuth) -> None:
         """Authenticate the SOAR client with the given authentication credentials."""
+        # Store broker auth credentials for api_proxy routing
+        self._user_hash_key = soar_auth.user_hash_key
+        self._broker_ph_auth_token = soar_auth.broker_ph_auth_token
+
         session_id = soar_auth.user_session_token
         self._client = httpx.Client(
             base_url=soar_auth.base_url,
             verify=False,  # noqa: S501
         )
+
+        # On broker, skip session-based auth - we'll use api_proxy with broker tokens
+        if is_onprem_broker_install() and self._broker_ph_auth_token:
+            return
+
         if session_id:
             self._client.cookies.set("sessionid", session_id)
             self.__login()
@@ -128,6 +142,131 @@ class AppClient(SOARClient[SummaryType]):
         session_id = self._client.cookies.get("sessionid")
         return session_id or ""
 
+    def _prepare_broker_request(
+        self, endpoint: str, headers: dict[str, str] | None
+    ) -> tuple[str, dict[str, str]]:
+        """Prepare endpoint and headers for broker api_proxy routing.
+
+        On automation broker, routes requests through /rest/broker/api_proxy/*
+        and adds the required authentication headers.
+        """
+        headers = headers or {}
+
+        if not is_onprem_broker_install() or not self._broker_ph_auth_token:
+            return endpoint, headers
+
+        # Ensure endpoint starts with /
+        if not endpoint.startswith("/"):
+            endpoint = f"/{endpoint}"
+
+        # Route through broker api_proxy
+        endpoint = f"/rest/broker/api_proxy{endpoint}"
+
+        # Add broker authentication headers
+        headers["ph-auth-token"] = self._broker_ph_auth_token
+        headers["PsaasImpersonationToken"] = self._user_hash_key
+
+        return endpoint, headers
+
+    def get(
+        self,
+        endpoint: str,
+        *,
+        params: dict[str, Any] | httpx.QueryParams | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        timeout: httpx.Timeout | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        follow_redirects: bool = False,
+        extensions: Mapping[str, Any] | None = None,
+    ) -> httpx.Response:
+        """Perform a GET request to the specific endpoint using the SOAR client."""
+        endpoint, headers = self._prepare_broker_request(endpoint, headers)
+        response = self._client.get(
+            endpoint,
+            params=params,
+            headers=headers,
+            cookies=cookies,
+            timeout=timeout,
+            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
+
+    def post(
+        self,
+        endpoint: str,
+        *,
+        content: str | bytes | Iterable[bytes] | AsyncIterable[bytes] | None = None,
+        data: Mapping[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
+        json: JSONType | None = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx.Timeout | None = None,
+        follow_redirects: bool = True,
+        extensions: Mapping[str, Any] | None = None,
+    ) -> httpx.Response:
+        """Perform a POST request to the specific endpoint using the SOAR client."""
+        endpoint, headers = self._prepare_broker_request(endpoint, headers)
+        headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
+        response = self._client.post(
+            endpoint,
+            headers=headers,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            cookies=cookies,
+            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
+
+    def put(
+        self,
+        endpoint: str,
+        *,
+        content: str | bytes | Iterable[bytes] | AsyncIterable[bytes] | None = None,
+        data: Mapping[str, Any] | None = None,
+        files: dict[str, Any] | None = None,
+        json: JSONType | None = None,
+        params: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
+        cookies: dict[str, str] | None = None,
+        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx.Timeout | None = None,
+        follow_redirects: bool = True,
+        extensions: Mapping[str, Any] | None = None,
+    ) -> httpx.Response:
+        """Perform a PUT request to the specific endpoint using the SOAR client."""
+        endpoint, headers = self._prepare_broker_request(endpoint, headers)
+        headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
+        response = self._client.put(
+            endpoint,
+            headers=headers,
+            content=content,
+            data=data,
+            files=files,
+            json=json,
+            params=params,
+            cookies=cookies,
+            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            timeout=timeout,
+            follow_redirects=follow_redirects,
+            extensions=extensions,
+        )
+        response.raise_for_status()
+        return response
+
     def delete(
         self,
         endpoint: str,
@@ -141,7 +280,7 @@ class AppClient(SOARClient[SummaryType]):
         extensions: Mapping[str, Any] | None = None,
     ) -> httpx.Response:
         """Perform a DELETE request to the specific endpoint using the SOAR client."""
-        headers = headers or {}
+        endpoint, headers = self._prepare_broker_request(endpoint, headers)
         headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
         response = self._client.delete(
             endpoint,

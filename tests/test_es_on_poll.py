@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator, Generator
+from unittest.mock import MagicMock
 
 import pytest
 import pytest_mock
@@ -7,6 +8,17 @@ from soar_sdk.app import App
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.models.finding import Finding, FindingAttachment
 from soar_sdk.params import OnESPollParams
+
+
+def mock_asset_ingest_config(mocker, app, ingest_config):
+    """Mock the soar_client.get() call to return asset configuration.
+
+    The ingest config is fetched via REST API from /rest/asset/{asset_id},
+    so we need to mock the HTTP response.
+    """
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"configuration": {"ingest": ingest_config}}
+    mocker.patch.object(app.soar_client, "get", return_value=mock_response)
 
 
 def test_es_on_poll_decoration_fails_when_used_more_than_once(app_with_action: App):
@@ -130,11 +142,7 @@ def test_es_on_poll_raises_exception_propagates(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test that exceptions raised in the on_es_poll function are handled and return False."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -171,11 +179,7 @@ def test_es_on_poll_yields_finding_success(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -214,11 +218,7 @@ def test_es_on_poll_yields_invalid_type(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -249,11 +249,7 @@ def test_es_on_poll_throws_when_fail_to_create_container(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -292,11 +288,7 @@ def test_es_on_poll_yields_finding_async_generator(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     async def on_es_poll_function(
@@ -321,11 +313,7 @@ def test_es_on_poll_yields_finding_async_generator(
 
 def test_es_on_poll_failure(app_with_action: App, mocker: pytest_mock.MockerFixture):
     """Test on_es_poll handles ActionFailure correctly."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_actionfailure(
@@ -391,11 +379,7 @@ def test_es_on_poll_container_data_mapping(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -455,11 +439,7 @@ def test_es_on_poll_with_attachments(
         app_with_action.soar_client,
         "upload_finding_attachment",
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -481,11 +461,7 @@ def test_es_on_poll_missing_security_domain(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test on_es_poll fails when es_security_domain is not configured."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -515,11 +491,7 @@ def test_es_on_poll_with_finding_limit(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     findings_yielded = 0
 
@@ -555,16 +527,14 @@ def test_es_on_poll_with_ingest_config_defaults(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={
-            "ingest": {
-                "es_security_domain": "network",
-                "es_urgency": "high",
-                "es_run_threat_analysis": True,
-                "es_launch_automation": True,
-            }
+    mock_asset_ingest_config(
+        mocker,
+        app_with_action,
+        {
+            "es_security_domain": "network",
+            "es_urgency": "high",
+            "es_run_threat_analysis": True,
+            "es_launch_automation": True,
         },
     )
 
@@ -602,14 +572,12 @@ def test_es_on_poll_with_invalid_drilldown_searches(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={
-            "ingest": {
-                "es_security_domain": "threat",
-                "es_drilldown_searches": [{"invalid": "data"}],
-            }
+    mock_asset_ingest_config(
+        mocker,
+        app_with_action,
+        {
+            "es_security_domain": "threat",
+            "es_drilldown_searches": [{"invalid": "data"}],
         },
     )
 
@@ -641,14 +609,12 @@ def test_es_on_poll_with_invalid_drilldown_dashboards(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={
-            "ingest": {
-                "es_security_domain": "threat",
-                "es_drilldown_dashboards": [{"invalid": "data"}],
-            }
+    mock_asset_ingest_config(
+        mocker,
+        app_with_action,
+        {
+            "es_security_domain": "threat",
+            "es_drilldown_dashboards": [{"invalid": "data"}],
         },
     )
 
@@ -680,24 +646,20 @@ def test_es_on_poll_with_drilldown_list_format(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={
-            "ingest": {
-                "es_security_domain": "threat",
-                "es_drilldown_searches": [
-                    {
-                        "name": "search1",
-                        "search": "index=main",
-                        "earliest": "-1h",
-                        "latest": "now",
-                    }
-                ],
-                "es_drilldown_dashboards": [
-                    {"dashboard": "dash1", "name": "Dashboard 1"}
-                ],
-            }
+    mock_asset_ingest_config(
+        mocker,
+        app_with_action,
+        {
+            "es_security_domain": "threat",
+            "es_drilldown_searches": [
+                {
+                    "name": "search1",
+                    "search": "index=main",
+                    "earliest": "-1h",
+                    "latest": "now",
+                }
+            ],
+            "es_drilldown_dashboards": [{"dashboard": "dash1", "name": "Dashboard 1"}],
         },
     )
 
@@ -733,14 +695,12 @@ def test_es_on_poll_finding_overrides_config_defaults(
             "_time": "2025-12-09T11:30:00.0000Z",
         },
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={
-            "ingest": {
-                "es_security_domain": "network",
-                "es_urgency": "high",
-            }
+    mock_asset_ingest_config(
+        mocker,
+        app_with_action,
+        {
+            "es_security_domain": "network",
+            "es_urgency": "high",
         },
     )
 
@@ -771,11 +731,7 @@ def test_es_on_poll_generator_exception(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test on_es_poll handles general exceptions during iteration."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -793,11 +749,7 @@ def test_es_on_poll_action_failure_during_iteration(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test on_es_poll handles ActionFailure during iteration and sets action name."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -820,11 +772,7 @@ def test_es_on_poll_create_finding_failure(
         "create_finding",
         side_effect=Exception("API error"),
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -859,11 +807,7 @@ def test_es_on_poll_upload_attachment_failure(
         "upload_finding_attachment",
         side_effect=Exception("Upload failed"),
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_config",
-        return_value={"ingest": {"es_security_domain": "threat"}},
-    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(

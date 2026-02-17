@@ -136,7 +136,7 @@ def test_soar_client_create_finding(app_with_action):
     result = app.soar_client.create_finding({"rule_title": "Test"})
 
     app.soar_client.post.assert_called_once_with(
-        "rest/enterprise_security/findings", json={"rule_title": "Test"}
+        "/rest/enterprise_security/findings", json={"rule_title": "Test"}, timeout=30.0
     )
     assert result["finding_id"] == "test-id"
 

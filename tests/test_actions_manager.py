@@ -454,11 +454,13 @@ def test_should_use_es_poll_when_enabled(
 ):
     """Test _should_use_es_poll returns True when properly configured."""
     app_actions_manager.supports_es_polling = True
-    mocker.patch.object(
-        app_actions_manager,
-        "get_config",
-        return_value={"ingest": {"use_es_ingest": True}},
-    )
+
+    mock_client = mock.Mock(spec=SOARClient)
+    mock_response = mock.Mock()
+    mock_response.json.return_value = {"configuration": {"ingest": {"es_ingest": True}}}
+    mock_client.get.return_value = mock_response
+    app_actions_manager.set_soar_client(mock_client)
+
     assert app_actions_manager._should_use_es_poll() is True
 
 

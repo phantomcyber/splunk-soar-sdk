@@ -194,6 +194,7 @@ class App:
         self.soar_client.update_client(
             soar_auth, input_data.asset_id, input_data.container_id
         )
+        self.actions_manager.set_soar_client(self.soar_client)
         return self.actions_manager.handle(input_data, handle=handle)
 
     @staticmethod
@@ -208,15 +209,23 @@ class App:
             return SOARClientAuth(
                 user_session_token=input_data.user_session_token,
                 base_url=ActionsManager.get_soar_base_url(),
+                user_hash_key=input_data.user_hash_key,
+                broker_ph_auth_token=input_data.broker_ph_auth_token,
             )
         elif input_data.soar_auth:
             return SOARClientAuth(
                 username=input_data.soar_auth.username,
                 password=input_data.soar_auth.password,
                 base_url=input_data.soar_auth.phantom_url,
+                user_hash_key=input_data.user_hash_key,
+                broker_ph_auth_token=input_data.broker_ph_auth_token,
             )
         else:
-            return SOARClientAuth(base_url=ActionsManager.get_soar_base_url())
+            return SOARClientAuth(
+                base_url=ActionsManager.get_soar_base_url(),
+                user_hash_key=input_data.user_hash_key,
+                broker_ph_auth_token=input_data.broker_ph_auth_token,
+            )
 
     __call__ = handle  # the app instance can be called for ease of use by spawn3
 
