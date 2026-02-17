@@ -48,7 +48,6 @@ class AppClient(SOARClient[SummaryType]):
         self.__container_id: int = 0
         self.__asset_id: str = ""
 
-        # Broker authentication credentials
         self._user_hash_key: str = ""
         self._broker_ph_auth_token: str = ""
 
@@ -91,7 +90,6 @@ class AppClient(SOARClient[SummaryType]):
 
     def authenticate_soar_client(self, soar_auth: SOARClientAuth) -> None:
         """Authenticate the SOAR client with the given authentication credentials."""
-        # Store broker auth credentials for api_proxy routing
         self._user_hash_key = soar_auth.user_hash_key
         self._broker_ph_auth_token = soar_auth.broker_ph_auth_token
 
@@ -101,7 +99,6 @@ class AppClient(SOARClient[SummaryType]):
             verify=False,  # noqa: S501
         )
 
-        # On broker, skip session-based auth - we'll use api_proxy with broker tokens
         if is_onprem_broker_install() and self._broker_ph_auth_token:
             return
 

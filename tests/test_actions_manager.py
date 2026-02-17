@@ -464,6 +464,20 @@ def test_should_use_es_poll_when_enabled(
     assert app_actions_manager._should_use_es_poll() is True
 
 
+def test_should_use_es_poll_when_api_fails(
+    app_actions_manager: ActionsManager,
+    mocker: pytest_mock.MockerFixture,
+):
+    """Test _should_use_es_poll returns False when the REST API call fails."""
+    app_actions_manager.supports_es_polling = True
+
+    mock_client = mock.Mock(spec=SOARClient)
+    mock_client.get.side_effect = Exception("connection error")
+    app_actions_manager.set_soar_client(mock_client)
+
+    assert app_actions_manager._should_use_es_poll() is False
+
+
 def test_handle_action_routes_on_poll_to_on_es_poll(
     app_actions_manager: ActionsManager,
     mocker: pytest_mock.MockerFixture,

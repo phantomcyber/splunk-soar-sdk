@@ -148,6 +148,5 @@ class InputSpecification(BaseModel):
     parameters: list[ActionParameter] = Field(default_factory=list)
     user_session_token: str = ""
     soar_auth: SoarAuth | None = None
-    # Broker authentication (only populated when running on automation broker)
     user_hash_key: str = ""
     broker_ph_auth_token: str = ""

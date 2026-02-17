@@ -92,12 +92,9 @@ class OnESPollDecorator:
             kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
             generator = function(action_params, *args, **kwargs)
 
-            # Fetch full ingest config via REST API (bypasses C++ filtering)
             asset_id = self.app.actions_manager.get_asset_id()
             asset_data = soar.get(f"/rest/asset/{asset_id}").json()
             ingest_config = asset_data.get("configuration", {}).get("ingest", {})
-
-            logger.info(f"Asset ingest config: {ingest_config}")
 
             es_security_domain = ingest_config.get("es_security_domain")
             es_urgency = ingest_config.get("es_urgency")

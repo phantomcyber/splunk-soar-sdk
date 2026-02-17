@@ -106,11 +106,7 @@ class ActionsManager(BaseConnector):
             raise RuntimeError(f"Action {action_id} not found.")
 
     def _should_use_es_poll(self) -> bool:
-        """Check if we should route on_poll to on_es_poll.
-
-        The es_ingest setting is stored in the asset configuration on the server,
-        not in the input JSON. We need to fetch it via REST API.
-        """
+        """Check if we should route on_poll to on_es_poll."""
         if not self.supports_es_polling:
             return False
 
