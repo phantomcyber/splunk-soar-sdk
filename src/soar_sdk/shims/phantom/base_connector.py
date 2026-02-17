@@ -28,6 +28,7 @@ if TYPE_CHECKING or not _soar_is_available:
             self.__conn_result = ConnectorResult()
             self.__state: dict = {}
             self.__app_json: dict = {}
+            self.config: dict = {}
 
         @staticmethod
         def _get_phantom_base_url() -> str:
@@ -120,6 +121,9 @@ if TYPE_CHECKING or not _soar_is_available:
 
         def get_config(self) -> dict:
             return self.config
+
+        def get_asset_id(self) -> str:
+            return self.config.get("asset_id", "")
 
         def get_app_id(self) -> str:
             return self.__app_json.get("appid", "")

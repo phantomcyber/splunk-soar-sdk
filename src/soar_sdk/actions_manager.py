@@ -3,9 +3,12 @@ import os
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import ValidationError
+
+if TYPE_CHECKING:
+    from soar_sdk.abstract import SOARClient
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.input_spec import InputSpecification
@@ -28,6 +31,11 @@ class ActionsManager(BaseConnector):
         self._actions: dict[str, Action] = {}
         self.__app_dir: Path | None = None
         self.supports_es_polling: bool = False
+        self._soar_client: SOARClient | None = None
+
+    def set_soar_client(self, client: "SOARClient") -> None:
+        """Set the SOAR client reference for making REST API calls."""
+        self._soar_client = client
 
     def get_action(self, identifier: str) -> Action | None:
         """Convenience method for getting an Action callable from its identifier.
@@ -98,14 +106,24 @@ class ActionsManager(BaseConnector):
             raise RuntimeError(f"Action {action_id} not found.")
 
     def _should_use_es_poll(self) -> bool:
-        """Check if we should route on_poll to on_es_poll."""
+        """Check if we should route on_poll to on_es_poll.
+
+        The es_ingest setting is stored in the asset configuration on the server,
+        not in the input JSON. We need to fetch it via REST API.
+        """
         if not self.supports_es_polling:
             return False
-        config = self.get_config()
-        if not config:
+
+        if self._soar_client is None:
             return False
-        ingest_config = config.get("ingest", {})
-        return bool(ingest_config.get("use_es_ingest", False))
+
+        try:
+            asset_id = self.get_asset_id()
+            asset_data = self._soar_client.get(f"/rest/asset/{asset_id}").json()
+            ingest_config = asset_data.get("configuration", {}).get("ingest", {})
+            return ingest_config.get("es_ingest", False)
+        except Exception:
+            return False
 
     def add_result(self, action_result: PhantomActionResult) -> PhantomActionResult:
         """Wrapper for BaseConnector's add_action_result method."""

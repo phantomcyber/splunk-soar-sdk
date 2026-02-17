@@ -92,25 +92,26 @@ class OnESPollDecorator:
             kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
             generator = function(action_params, *args, **kwargs)
 
-            config = self.app.actions_manager.get_config()
-            ingest_config = config.get("ingest", {})
+            # Fetch full ingest config via REST API (bypasses C++ filtering)
+            asset_id = self.app.actions_manager.get_asset_id()
+            asset_data = soar.get(f"/rest/asset/{asset_id}").json()
+            ingest_config = asset_data.get("configuration", {}).get("ingest", {})
+
+            logger.info(f"Asset ingest config: {ingest_config}")
 
             es_security_domain = ingest_config.get("es_security_domain")
-            if not es_security_domain:
-                logger.info(
-                    "es_security_domain not configured in asset ingest settings"
-                )
-                return self.app._adapt_action_result(
-                    ActionResult(
-                        status=False,
-                        message="es_security_domain must be configured in asset ingest settings",
-                    ),
-                    self.app.actions_manager,
-                )
-
             es_urgency = ingest_config.get("es_urgency")
             es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
             es_launch_automation = ingest_config.get("es_launch_automation", False)
+
+            if not es_security_domain:
+                return self.app._adapt_action_result(
+                    ActionResult(
+                        status=False,
+                        message="ES ingest requires 'es_security_domain' to be configured in asset ingest settings",
+                    ),
+                    self.app.actions_manager,
+                )
 
             drilldown_searches: list[DrilldownSearch] | None = None
             drilldown_dashboards: list[DrilldownDashboard] | None = None
