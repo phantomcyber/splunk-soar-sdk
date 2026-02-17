@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 import httpx
 import pytest
 import respx
@@ -160,3 +162,51 @@ def test_get_executing_container_id(simple_connector: AppClient):
 
 def test_get_asset_id(simple_connector: AppClient):
     assert simple_connector.get_asset_id() == ""
+
+
+@patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
+def test_authenticate_skips_login_on_broker(mock_broker, simple_connector: AppClient):
+    """Test that broker auth with a token skips session-based login."""
+    auth = SOARClientAuth(
+        base_url="https://10.34.5.6",
+        broker_ph_auth_token="broker-token",
+        user_hash_key="hash-key",
+    )
+    simple_connector.authenticate_soar_client(auth)
+    assert simple_connector._broker_ph_auth_token == "broker-token"
+
+
+@patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
+@respx.mock
+def test_prepare_broker_request(mock_broker, simple_connector: AppClient):
+    """Test that broker requests are routed through api_proxy with auth headers."""
+    simple_connector._broker_ph_auth_token = "broker-token"
+    simple_connector._user_hash_key = "hash-key"
+
+    route = respx.get("https://localhost:9999/rest/broker/api_proxy/rest/version").mock(
+        return_value=httpx.Response(200, json={"version": "6.4.1"})
+    )
+    response = simple_connector.get("/rest/version")
+
+    assert route.called
+    request = route.calls[0].request
+    assert request.headers["ph-auth-token"] == "broker-token"
+    assert request.headers["PsaasImpersonationToken"] == "hash-key"
+    assert response.json() == {"version": "6.4.1"}
+
+
+@patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
+@respx.mock
+def test_prepare_broker_request_adds_leading_slash(
+    mock_broker, simple_connector: AppClient
+):
+    """Test that broker request preparation adds a leading slash when missing."""
+    simple_connector._broker_ph_auth_token = "broker-token"
+    simple_connector._user_hash_key = "hash-key"
+
+    route = respx.get("https://localhost:9999/rest/broker/api_proxy/rest/version").mock(
+        return_value=httpx.Response(200, json={"ok": True})
+    )
+    simple_connector.get("rest/version")
+
+    assert route.called

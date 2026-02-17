@@ -23,7 +23,7 @@ class SOARClientAuth:
     username: str = ""
     password: str = ""
     user_session_token: str = ""
-    # Broker authentication (only populated when running on automation broker)
+    # Broker authentication (populated when running on AB)
     user_hash_key: str = ""
     broker_ph_auth_token: str = ""
 
@@ -77,17 +77,9 @@ class SOARClient(Generic[SummaryType]):
 
     def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
         """Create a finding in ES via the SOAR proxy."""
-        import json
-
-        from soar_sdk.logging import getLogger
-
-        logger = getLogger()
-
-        endpoint = "/rest/enterprise_security/findings"
-        logger.info(f"Creating finding at: {self.client.base_url}{endpoint}")
-        logger.info(f"Finding payload: {json.dumps(finding, indent=2, default=str)}")
-
-        response = self.post(endpoint, json=finding, timeout=30.0)
+        response = self.post(
+            "/rest/enterprise_security/findings", json=finding, timeout=30.0
+        )
         return response.json()
 
     def upload_finding_attachment(
