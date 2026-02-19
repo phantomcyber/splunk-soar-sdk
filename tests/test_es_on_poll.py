@@ -9,6 +9,14 @@ from soar_sdk.exceptions import ActionFailure
 from soar_sdk.models.finding import Finding, FindingAttachment
 from soar_sdk.params import OnESPollParams
 
+BULK_RESPONSE = {
+    "status": "success",
+    "created": 1,
+    "failed": 0,
+    "findings": ["new_finding"],
+    "errors": [],
+}
+
 
 def mock_asset_ingest_config(mocker, app, ingest_config):
     """Mock the soar_client.get() call to return asset configuration.
@@ -171,13 +179,10 @@ def test_es_on_poll_yields_finding_success(
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch.object(
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -199,7 +204,7 @@ def test_es_on_poll_yields_finding_success(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
     assert save_container.call_count == 1
-    assert create_finding.called
+    assert create_findings_bulk.called
 
 
 def test_es_on_poll_yields_invalid_type(
@@ -210,13 +215,10 @@ def test_es_on_poll_yields_invalid_type(
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch.object(
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -230,7 +232,7 @@ def test_es_on_poll_yields_invalid_type(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
     assert not save_container.called
-    assert not create_finding.called
+    assert not create_findings_bulk.called
 
 
 def test_es_on_poll_throws_when_fail_to_create_container(
@@ -243,11 +245,8 @@ def test_es_on_poll_throws_when_fail_to_create_container(
     )
     mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -280,13 +279,10 @@ def test_es_on_poll_yields_finding_async_generator(
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch.object(
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -308,7 +304,7 @@ def test_es_on_poll_yields_finding_async_generator(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
     assert save_container.call_count == 1
-    assert create_finding.called
+    assert create_findings_bulk.called
 
 
 def test_es_on_poll_failure(app_with_action: App, mocker: pytest_mock.MockerFixture):
@@ -371,13 +367,10 @@ def test_es_on_poll_container_data_mapping(
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch.object(
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -415,7 +408,7 @@ def test_es_on_poll_container_data_mapping(
     assert call_args["data"]["risk_score"] == 100.0
     assert call_args["data"]["risk_object"] == "baduser@example.com"
     assert call_args["data"]["risk_object_type"] == "user"
-    assert create_finding.called
+    assert create_findings_bulk.called
 
 
 def test_es_on_poll_with_attachments(
@@ -429,11 +422,8 @@ def test_es_on_poll_with_attachments(
     )
     mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     upload_mock = mocker.patch.object(
         app_with_action.soar_client,
@@ -454,7 +444,13 @@ def test_es_on_poll_with_attachments(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    upload_mock.assert_called_once_with("new_finding", "email.eml", b"raw content")
+    upload_mock.assert_called_once_with(
+        "new_finding",
+        "email.eml",
+        b"raw content",
+        source_type="Incident",
+        is_raw_email=True,
+    )
 
 
 def test_es_on_poll_missing_security_domain(
@@ -485,10 +481,13 @@ def test_es_on_poll_with_finding_limit(
     )
     mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
+        "create_findings_bulk",
         return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
+            "status": "success",
+            "created": 2,
+            "failed": 0,
+            "findings": ["f1", "f2"],
+            "errors": [],
         },
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
@@ -519,13 +518,10 @@ def test_es_on_poll_with_ingest_config_defaults(
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch.object(
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(
         mocker,
@@ -548,7 +544,7 @@ def test_es_on_poll_with_ingest_config_defaults(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
 
-    call_args = create_finding.call_args[0][0]
+    call_args = create_findings_bulk.call_args[0][0][0]
     assert call_args["security_domain"] == "network"
     assert call_args["urgency"] == "high"
     assert call_args["run_threat_analysis"] is True
@@ -566,11 +562,8 @@ def test_es_on_poll_with_invalid_drilldown_searches(
     )
     mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(
         mocker,
@@ -603,11 +596,8 @@ def test_es_on_poll_with_invalid_drilldown_dashboards(
     )
     mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(
         mocker,
@@ -638,13 +628,10 @@ def test_es_on_poll_with_drilldown_list_format(
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch.object(
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(
         mocker,
@@ -673,7 +660,7 @@ def test_es_on_poll_with_drilldown_list_format(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
 
-    call_args = create_finding.call_args[0][0]
+    call_args = create_findings_bulk.call_args[0][0][0]
     assert call_args.get("drilldown_searches") is not None
     assert call_args.get("drilldown_dashboards") is not None
 
@@ -687,13 +674,10 @@ def test_es_on_poll_finding_overrides_config_defaults(
         "save_container",
         return_value=(True, "Created", 42),
     )
-    create_finding = mocker.patch.object(
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mock_asset_ingest_config(
         mocker,
@@ -720,7 +704,7 @@ def test_es_on_poll_finding_overrides_config_defaults(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
 
-    call_args = create_finding.call_args[0][0]
+    call_args = create_findings_bulk.call_args[0][0][0]
     assert call_args["security_domain"] == "threat"
     assert call_args["urgency"] == "critical"
     assert call_args["run_threat_analysis"] is True
@@ -763,13 +747,13 @@ def test_es_on_poll_action_failure_during_iteration(
     assert result is False
 
 
-def test_es_on_poll_create_finding_failure(
+def test_es_on_poll_create_findings_bulk_failure(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll handles create_finding exception."""
+    """Test on_es_poll handles create_findings_bulk exception."""
     mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
+        "create_findings_bulk",
         side_effect=Exception("API error"),
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
@@ -796,11 +780,8 @@ def test_es_on_poll_upload_attachment_failure(
     )
     mocker.patch.object(
         app_with_action.soar_client,
-        "create_finding",
-        return_value={
-            "finding_id": "new_finding",
-            "_time": "2025-12-09T11:30:00.0000Z",
-        },
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
     )
     mocker.patch.object(
         app_with_action.soar_client,
@@ -818,6 +799,42 @@ def test_es_on_poll_upload_attachment_failure(
             run_threat_analysis=True,
             attachments=[FindingAttachment(file_name="email.eml", data=b"content")],
         )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+
+
+def test_es_on_poll_bulk_partial_failure(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll logs warnings when bulk create returns partial errors."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 42),
+    )
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value={
+            "status": "partial",
+            "created": 1,
+            "failed": 1,
+            "findings": ["f1"],
+            "errors": [
+                {"index": 1, "rule_title": "Bad Finding", "error": "invalid field"}
+            ],
+        },
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="Good Finding")
+        yield Finding(rule_title="Bad Finding")
 
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
