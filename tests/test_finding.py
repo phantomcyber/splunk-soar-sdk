@@ -141,6 +141,57 @@ def test_soar_client_create_finding(app_with_action):
     assert result["finding_id"] == "test-id"
 
 
+def test_soar_client_create_findings_bulk(app_with_action):
+    """Test SOARClient.create_findings_bulk calls bulk endpoint."""
+    from soar_sdk.app import App
+
+    app: App = app_with_action
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "status": "success",
+        "created": 2,
+        "failed": 0,
+        "findings": ["id-1", "id-2"],
+        "errors": [],
+    }
+    app.soar_client.post = MagicMock(return_value=mock_response)
+
+    findings = [{"rule_title": "Finding 1"}, {"rule_title": "Finding 2"}]
+    result = app.soar_client.create_findings_bulk(findings)
+
+    app.soar_client.post.assert_called_once_with(
+        "/rest/enterprise_security/findings/bulk_create",
+        json=findings,
+        timeout=30.0,
+    )
+    assert result["created"] == 2
+    assert result["findings"] == ["id-1", "id-2"]
+
+
+def test_soar_client_create_findings_bulk_empty(app_with_action):
+    """Test SOARClient.create_findings_bulk with empty list returns immediately."""
+    from soar_sdk.app import App
+
+    app: App = app_with_action
+    app.soar_client.post = MagicMock()
+
+    result = app.soar_client.create_findings_bulk([])
+
+    app.soar_client.post.assert_not_called()
+    assert result["created"] == 0
+
+
+def test_soar_client_create_findings_bulk_exceeds_limit(app_with_action):
+    """Test SOARClient.create_findings_bulk rejects more than 500 findings."""
+    from soar_sdk.app import App
+
+    app: App = app_with_action
+    findings = [{"rule_title": f"Finding {i}"} for i in range(501)]
+
+    with pytest.raises(ValueError, match="Maximum 500"):
+        app.soar_client.create_findings_bulk(findings)
+
+
 def test_soar_client_upload_finding_attachment(app_with_action):
     """Test SOARClient.upload_finding_attachment calls post with encoded data."""
     import base64
@@ -148,12 +199,19 @@ def test_soar_client_upload_finding_attachment(app_with_action):
     from soar_sdk.app import App
 
     app: App = app_with_action
-    app.soar_client.post = MagicMock()
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"id": "attachment-1"}
+    app.soar_client.post = MagicMock(return_value=mock_response)
 
-    app.soar_client.upload_finding_attachment("finding-123", "test.eml", b"raw data")
+    result = app.soar_client.upload_finding_attachment(
+        "finding-123", "test.eml", b"raw data"
+    )
 
     app.soar_client.post.assert_called_once()
     call_args = app.soar_client.post.call_args
-    assert "finding-123" in call_args[0][0]
+    assert call_args[0][0] == "/rest/enterprise_security/findings/finding-123/files"
     assert call_args[1]["json"]["file_name"] == "test.eml"
     assert call_args[1]["json"]["data"] == base64.b64encode(b"raw data").decode("utf-8")
+    assert call_args[1]["json"]["source_type"] == "Incident"
+    assert call_args[1]["json"]["is_raw_email"] is True
+    assert result == {"id": "attachment-1"}

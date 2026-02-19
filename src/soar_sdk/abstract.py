@@ -75,24 +75,64 @@ class SOARClient(Generic[SummaryType]):
         """Return the current Asset ID passed in the Connector Run Action JSON."""
         pass
 
+    MAX_BULK_FINDINGS = 500
+
     def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
-        """Create a finding in ES via the SOAR proxy."""
+        """Create a single finding in ES via the SOAR proxy."""
         response = self.post(
             "/rest/enterprise_security/findings", json=finding, timeout=30.0
         )
         return response.json()
 
+    def create_findings_bulk(self, findings: list[dict[str, Any]]) -> dict[str, Any]:
+        """Create findings in ES via the SOAR bulk endpoint.
+
+        Accepts up to 500 findings per call. Returns the bulk response containing
+        ``status``, ``created``, ``failed``, ``findings`` (list of IDs), and ``errors``.
+        """
+        if not findings:
+            return {
+                "status": "success",
+                "created": 0,
+                "failed": 0,
+                "findings": [],
+                "errors": [],
+            }
+
+        if len(findings) > self.MAX_BULK_FINDINGS:
+            raise ValueError(
+                f"Maximum {self.MAX_BULK_FINDINGS} findings per request, got {len(findings)}"
+            )
+
+        endpoint = "/rest/enterprise_security/findings/bulk_create"
+        timeout = max(30.0, len(findings) * 5.0)
+        response = self.post(endpoint, json=findings, timeout=timeout)
+        return response.json()
+
     def upload_finding_attachment(
-        self, finding_id: str, file_name: str, data: bytes
-    ) -> None:
+        self,
+        finding_id: str,
+        file_name: str,
+        data: bytes,
+        source_type: str = "Incident",
+        is_raw_email: bool = True,
+    ) -> dict[str, Any]:
         """Upload an attachment to a finding via the SOAR proxy."""
         import base64
 
-        endpoint = f"/rest/enterprise_security/findings/{finding_id}/attachments"
+        endpoint = f"/rest/enterprise_security/findings/{finding_id}/files"
         encoded_data = base64.b64encode(data).decode("utf-8")
-        self.post(
-            endpoint, json={"file_name": file_name, "data": encoded_data}, timeout=30.0
+        response = self.post(
+            endpoint,
+            json={
+                "file_name": file_name,
+                "data": encoded_data,
+                "source_type": source_type,
+                "is_raw_email": is_raw_email,
+            },
+            timeout=30.0,
         )
+        return response.json()
 
     def get(
         self,

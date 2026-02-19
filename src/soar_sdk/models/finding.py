@@ -25,6 +25,8 @@ class FindingAttachment(BaseModel):
 
     file_name: str
     data: bytes
+    source_type: str = "Incident"
+    is_raw_email: bool = True
 
 
 class Finding(BaseModel):
@@ -56,8 +58,13 @@ class Finding(BaseModel):
     all_risk_objects: list[str] | None = None
     source: list[str] | None = None
     exclude_map_fields: list[str] | None = None
+    queue_id: str | None = None
+    email_headers: dict[str, Any] | None = None
+    email_body: str | None = None
     run_threat_analysis: bool = False
     launch_automation: bool = False
+    automation_rule: str | None = None
+    finding_source: str | None = None
     attachments: list[FindingAttachment] | None = None
 
     def to_dict(self) -> dict[str, Any]:

@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import json
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args
@@ -100,6 +101,13 @@ class OnESPollDecorator:
             es_urgency = ingest_config.get("es_urgency")
             es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
             es_launch_automation = ingest_config.get("es_launch_automation", False)
+            app_name = str(self.app.app_meta_info.get("name", ""))
+            asset_name: str = asset_data.get("name", "")
+            finding_source: str = (
+                f"{app_name} - {asset_name}"
+                if app_name and asset_name
+                else app_name or asset_name
+            )
 
             if not es_security_domain:
                 return self.app._adapt_action_result(
@@ -157,38 +165,10 @@ class OnESPollDecorator:
             last_container_id = None
             findings_created = 0
             max_findings = action_params.container_count or None
+            batch_size = soar.MAX_BULK_FINDINGS
+            generator_exhausted = False
 
-            while max_findings is None or findings_created < max_findings:
-                try:
-                    item = polling_step(last_container_id)
-                except (StopIteration, StopAsyncIteration):
-                    return self.app._adapt_action_result(
-                        ActionResult(
-                            status=True,
-                            message=f"Finding processing complete. Created {findings_created} findings.",
-                        ),
-                        self.app.actions_manager,
-                    )
-                except ActionFailure as e:
-                    e.set_action_name(action_name)
-                    return self.app._adapt_action_result(
-                        ActionResult(status=False, message=str(e)),
-                        self.app.actions_manager,
-                    )
-                except Exception as e:
-                    self.app.actions_manager.add_exception(e)
-                    logger.info(f"Error during finding processing: {e!s}")
-                    return self.app._adapt_action_result(
-                        ActionResult(status=False, message=str(e)),
-                        self.app.actions_manager,
-                    )
-
-                if type(item) is not ESPollingYieldType:
-                    logger.info(
-                        f"Warning: expected {ESPollingYieldType}, got {type(item)}, skipping"
-                    )
-                    continue
-
+            def _apply_defaults(item: Finding) -> None:
                 if item.security_domain is None:
                     item.security_domain = es_security_domain
                 if item.urgency is None and es_urgency:
@@ -201,60 +181,144 @@ class OnESPollDecorator:
                     item.drilldown_searches = drilldown_searches
                 if item.drilldown_dashboards is None and drilldown_dashboards:
                     item.drilldown_dashboards = drilldown_dashboards
+                if item.finding_source is None and finding_source:
+                    item.finding_source = finding_source
 
+            while not generator_exhausted:
+                batch: list[Finding] = []
+                remaining = batch_size
+                if max_findings is not None:
+                    remaining = min(remaining, max_findings - findings_created)
+
+                while len(batch) < remaining:
+                    try:
+                        send_value = last_container_id if not batch else None
+                        item = polling_step(send_value)
+                    except (StopIteration, StopAsyncIteration):
+                        generator_exhausted = True
+                        break
+                    except ActionFailure as e:
+                        e.set_action_name(action_name)
+                        return self.app._adapt_action_result(
+                            ActionResult(status=False, message=str(e)),
+                            self.app.actions_manager,
+                        )
+                    except Exception as e:
+                        self.app.actions_manager.add_exception(e)
+                        logger.info(f"Error during finding processing: {e!s}")
+                        return self.app._adapt_action_result(
+                            ActionResult(status=False, message=str(e)),
+                            self.app.actions_manager,
+                        )
+
+                    if type(item) is not ESPollingYieldType:
+                        logger.info(
+                            f"Warning: expected {ESPollingYieldType}, got {type(item)}, skipping"
+                        )
+                        continue
+
+                    _apply_defaults(item)
+                    batch.append(item)
+
+                if not batch:
+                    break
+
+                save = self.app.actions_manager.save_progress
+                save(f"Processing {len(batch)} email(s):")
+                for item in batch:
+                    attachment_names = (
+                        ", ".join(a.file_name for a in item.attachments)
+                        if item.attachments
+                        else ""
+                    )
+                    suffix = f" ({attachment_names})" if attachment_names else ""
+                    save(f"  {item.rule_title}{suffix}")
+
+                findings_payload = [item.to_dict() for item in batch]
+                payload_size = len(json.dumps(findings_payload))
+                save(
+                    f"Creating findings in bulk (batch size: {len(batch)}, payload: {payload_size:,} bytes)"
+                )
                 try:
-                    finding_response = soar.create_finding(item.to_dict())
+                    bulk_response = soar.create_findings_bulk(findings_payload)
                 except Exception as e:
-                    logger.info(f"Failed to create finding: {e}")
+                    logger.info(f"Failed to bulk create findings: {e}")
                     return self.app._adapt_action_result(
                         ActionResult(
-                            status=False, message=f"Failed to create finding: {e}"
+                            status=False,
+                            message=f"Failed to bulk create findings: {e}",
                         ),
                         self.app.actions_manager,
                     )
 
-                finding_id = finding_response.get("finding_id", "")
-                findings_created += 1
-                logger.info(f"Created finding {finding_id}")
+                finding_ids: list[str] = bulk_response.get("findings", [])
+                bulk_errors = bulk_response.get("errors", [])
 
-                if item.run_threat_analysis and item.attachments:
-                    for attachment in item.attachments:
-                        try:
-                            soar.upload_finding_attachment(
-                                finding_id,
-                                attachment.file_name,
-                                attachment.data,
-                            )
-                            logger.info(
-                                f"Uploaded attachment {attachment.file_name} for finding {finding_id}"
-                            )
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to upload attachment {attachment.file_name}: {e}"
-                            )
+                created = bulk_response.get("created", 0)
+                failed = bulk_response.get("failed", 0)
+                save(f"Created {created} finding(s), {failed} failed")
+                for fid in finding_ids:
+                    save(f"  Finding: {fid}")
 
-                container = Container(
-                    name=item.rule_title,
-                    description=item.rule_description,
-                    severity=item.urgency or "medium",
-                    status=item.status,
-                    owner_id=item.owner,
-                    sensitivity=item.disposition,
-                    tags=item.source,
-                    external_id=finding_id,
-                    data={
-                        "security_domain": item.security_domain,
-                        "risk_score": item.risk_score,
-                        "risk_object": item.risk_object,
-                        "risk_object_type": item.risk_object_type,
-                    },
-                )
-                ret_val, message, last_container_id = (
-                    self.app.actions_manager.save_container(container.to_dict())
-                )
-                logger.info(f"Creating container for finding: {item.rule_title}")
-                if not ret_val:
-                    raise ActionFailure(f"Failed to create container: {message}")
+                if bulk_errors:
+                    for error in bulk_errors:
+                        logger.warning(
+                            f"Bulk finding error at index {error.get('index')}: "
+                            f"{error.get('error')}"
+                        )
+
+                findings_created += created
+
+                for idx, item in enumerate(batch):
+                    finding_id = finding_ids[idx] if idx < len(finding_ids) else ""
+
+                    if item.run_threat_analysis and item.attachments:
+                        for attachment in item.attachments:
+                            try:
+                                upload_response = soar.upload_finding_attachment(
+                                    finding_id,
+                                    attachment.file_name,
+                                    attachment.data,
+                                    source_type=attachment.source_type,
+                                    is_raw_email=attachment.is_raw_email,
+                                )
+                                save(
+                                    f"Added attachment to finding {finding_id}: "
+                                    f"{attachment.file_name} "
+                                    f"(id: {upload_response.get('id')}, "
+                                    f"size: {upload_response.get('size')})"
+                                )
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to upload attachment "
+                                    f"{attachment.file_name}: {e}"
+                                )
+
+                    container = Container(
+                        name=item.rule_title,
+                        description=item.rule_description,
+                        severity=item.urgency or "medium",
+                        status=item.status,
+                        owner_id=item.owner,
+                        sensitivity=item.disposition,
+                        tags=item.source,
+                        external_id=finding_id,
+                        data={
+                            "security_domain": item.security_domain,
+                            "risk_score": item.risk_score,
+                            "risk_object": item.risk_object,
+                            "risk_object_type": item.risk_object_type,
+                        },
+                    )
+                    container_dict = container.to_dict()
+                    ret_val, message, last_container_id = (
+                        self.app.actions_manager.save_container(container_dict)
+                    )
+                    if not ret_val:
+                        raise ActionFailure(f"Failed to create container: {message}")
+
+                if max_findings is not None and findings_created >= max_findings:
+                    break
 
             return self.app._adapt_action_result(
                 ActionResult(

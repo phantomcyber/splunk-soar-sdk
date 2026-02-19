@@ -457,7 +457,9 @@ def test_should_use_es_poll_when_enabled(
 
     mock_client = mock.Mock(spec=SOARClient)
     mock_response = mock.Mock()
-    mock_response.json.return_value = {"configuration": {"ingest": {"es_ingest": True}}}
+    mock_response.json.return_value = {
+        "configuration": {"ingest": {"use_es_ingest": True}}
+    }
     mock_client.get.return_value = mock_response
     app_actions_manager.set_soar_client(mock_client)
 
