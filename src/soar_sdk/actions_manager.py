@@ -90,7 +90,7 @@ class ActionsManager(BaseConnector):
 
         if action_id == "on_poll" and self._should_use_es_poll():
             action_id = "on_es_poll"
-            logger.debug("Routing on_poll to on_es_poll (ES ingest enabled)")
+            logger.info("Using ES poll")
 
         if handler := self.get_action(action_id):
             try:
@@ -108,22 +108,16 @@ class ActionsManager(BaseConnector):
     def _should_use_es_poll(self) -> bool:
         """Check if we should route on_poll to on_es_poll."""
         if not self.supports_es_polling:
-            logger.info("ES poll not supported by this app")
             return False
 
         if self._soar_client is None:
-            logger.info("ES poll check skipped: no SOAR client available")
             return False
 
         try:
             asset_id = self.get_asset_id()
             asset_data = self._soar_client.get(f"/rest/asset/{asset_id}").json()
             ingest_config = asset_data.get("configuration", {}).get("ingest", {})
-            es_ingest = ingest_config.get("use_es_ingest", False)
-            logger.info(
-                f"ES poll decision: es_ingest={es_ingest}, ingest_config={ingest_config}"
-            )
-            return es_ingest
+            return ingest_config.get("use_es_ingest", False)
         except Exception:
             return False
 
