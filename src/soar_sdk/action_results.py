@@ -2,11 +2,18 @@ import itertools
 from collections.abc import Iterator
 from typing import Any, NotRequired
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationError,
+    model_validator,
+)
 from typing_extensions import TypedDict
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.field_utils import normalize_field_annotation, parse_json_schema_extra
+from soar_sdk.logging import warning
 from soar_sdk.meta.datatypes import as_datatype
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 
@@ -275,6 +282,52 @@ class ActionOutput(BaseModel):
                 schema_field["column_order"] = next(column_order_counter)
 
             yield schema_field
+
+
+class PermissiveActionOutput(ActionOutput):
+    """A version of ``ActionOutput`` that doesn't strictly validate the output data structure.
+
+    This means that it will not raise a ``pydantic.ValidationError`` when an action's output at runtime does not match its spec, and instead print a warning.
+    This is useful for dealing with API output that is complex or poorly-defined, but it defeats the purpose of Pydantic and results in runtime warnings.
+    It is strongly recommended to use the stricter ``ActionOutput`` whenever possible.
+    """
+
+    model_config = ConfigDict(populate_by_name=True, extra="allow")
+
+    def __init__(self, **data: dict) -> None:
+        object.__setattr__(self, "_permissive_raw", data)
+        try:
+            super().__init__(**data)
+        except ValidationError as e:
+            warning(f"Ignoring validation error:\n {e.with_traceback(None)}")
+
+    @staticmethod
+    def _wrap_permissive_value(value: Any) -> Any:  # noqa: ANN401
+        if isinstance(value, dict):
+            return PermissiveActionOutput(**value)
+        if isinstance(value, list):
+            return [
+                PermissiveActionOutput(**item) if isinstance(item, dict) else item
+                for item in value
+            ]
+        return value
+
+    def __getattr__(self, name: str) -> Any:  # noqa: ANN401
+        try:
+            extra = object.__getattribute__(self, "__pydantic_extra__") or {}
+        except AttributeError:
+            extra = {}
+        if name in extra:
+            return self._wrap_permissive_value(extra[name])
+
+        raw = getattr(self, "_permissive_raw", {})
+        if name in raw:
+            return self._wrap_permissive_value(raw[name])
+        for field_name, field in type(self).model_fields.items():
+            if field_name == name and field.alias and field.alias in raw:
+                return self._wrap_permissive_value(raw[field.alias])
+
+        raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}")
 
 
 class MakeRequestOutput(ActionOutput):
