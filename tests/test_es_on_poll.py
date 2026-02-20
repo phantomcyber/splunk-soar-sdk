@@ -839,3 +839,39 @@ def test_es_on_poll_bulk_partial_failure(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
+
+
+def test_es_on_poll_no_finding_source_when_names_empty(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that finding_source is not set when app name and asset name are both empty."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 42),
+    )
+    create_findings_bulk = mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    app_with_action.app_meta_info["name"] = ""
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "name": "",
+        "configuration": {"ingest": {"es_security_domain": "threat"}},
+    }
+    mocker.patch.object(app_with_action.soar_client, "get", return_value=mock_response)
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="Test Finding")
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+
+    call_args = create_findings_bulk.call_args[0][0][0]
+    assert call_args.get("finding_source") is None
