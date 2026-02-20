@@ -1,6 +1,5 @@
 import asyncio
 import inspect
-import json
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args
@@ -205,15 +204,15 @@ class OnESPollDecorator:
                         )
                     except Exception as e:
                         self.app.actions_manager.add_exception(e)
-                        logger.info(f"Error during finding processing: {e!s}")
+                        logger.error(f"Error during finding processing: {e!s}")
                         return self.app._adapt_action_result(
                             ActionResult(status=False, message=str(e)),
                             self.app.actions_manager,
                         )
 
                     if type(item) is not ESPollingYieldType:
-                        logger.info(
-                            f"Warning: expected {ESPollingYieldType}, got {type(item)}, skipping"
+                        logger.warning(
+                            f"Expected {ESPollingYieldType}, got {type(item)}, skipping"
                         )
                         continue
 
@@ -224,25 +223,12 @@ class OnESPollDecorator:
                     break
 
                 save = self.app.actions_manager.save_progress
-                save(f"Processing {len(batch)} email(s):")
-                for item in batch:
-                    attachment_names = (
-                        ", ".join(a.file_name for a in item.attachments)
-                        if item.attachments
-                        else ""
-                    )
-                    suffix = f" ({attachment_names})" if attachment_names else ""
-                    save(f"  {item.rule_title}{suffix}")
-
                 findings_payload = [item.to_dict() for item in batch]
-                payload_size = len(json.dumps(findings_payload))
-                save(
-                    f"Creating findings in bulk (batch size: {len(batch)}, payload: {payload_size:,} bytes)"
-                )
+                save(f"Creating {len(batch)} finding(s) in bulk")
                 try:
                     bulk_response = soar.create_findings_bulk(findings_payload)
                 except Exception as e:
-                    logger.info(f"Failed to bulk create findings: {e}")
+                    logger.error(f"Failed to bulk create findings: {e}")
                     return self.app._adapt_action_result(
                         ActionResult(
                             status=False,
@@ -257,8 +243,6 @@ class OnESPollDecorator:
                 created = bulk_response.get("created", 0)
                 failed = bulk_response.get("failed", 0)
                 save(f"Created {created} finding(s), {failed} failed")
-                for fid in finding_ids:
-                    save(f"  Finding: {fid}")
 
                 if bulk_errors:
                     for error in bulk_errors:
@@ -275,18 +259,12 @@ class OnESPollDecorator:
                     if item.run_threat_analysis and item.attachments:
                         for attachment in item.attachments:
                             try:
-                                upload_response = soar.upload_finding_attachment(
+                                soar.upload_finding_attachment(
                                     finding_id,
                                     attachment.file_name,
                                     attachment.data,
                                     source_type=attachment.source_type,
                                     is_raw_email=attachment.is_raw_email,
-                                )
-                                save(
-                                    f"Added attachment to finding {finding_id}: "
-                                    f"{attachment.file_name} "
-                                    f"(id: {upload_response.get('id')}, "
-                                    f"size: {upload_response.get('size')})"
                                 )
                             except Exception as e:
                                 logger.warning(
