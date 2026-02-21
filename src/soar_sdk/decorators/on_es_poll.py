@@ -100,6 +100,7 @@ class OnESPollDecorator:
             es_urgency = ingest_config.get("es_urgency")
             es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
             es_launch_automation = ingest_config.get("es_launch_automation", False)
+            container_label = ingest_config.get("container_label")
             app_name = str(self.app.app_meta_info.get("name", ""))
             asset_name: str = asset_data.get("name", "")
             finding_source: str = (
@@ -253,11 +254,19 @@ class OnESPollDecorator:
 
                 findings_created += created
 
+                total_finding_atts = 0
+                total_vault_atts = 0
+                findings_with_atts = 0
+                containers_with_atts = 0
+
                 for idx, item in enumerate(batch):
                     finding_id = finding_ids[idx] if idx < len(finding_ids) else ""
 
                     if item.run_threat_analysis and item.attachments:
+                        uploaded = False
                         for attachment in item.attachments:
+                            if not attachment.is_raw_email:
+                                continue
                             try:
                                 soar.upload_finding_attachment(
                                     finding_id,
@@ -266,14 +275,19 @@ class OnESPollDecorator:
                                     source_type=attachment.source_type,
                                     is_raw_email=attachment.is_raw_email,
                                 )
+                                total_finding_atts += 1
+                                uploaded = True
                             except Exception as e:
                                 logger.warning(
                                     f"Failed to upload attachment "
                                     f"{attachment.file_name}: {e}"
                                 )
+                        if uploaded:
+                            findings_with_atts += 1
 
                     container = Container(
                         name=item.rule_title,
+                        label=container_label,
                         description=item.rule_description,
                         severity=item.urgency or "medium",
                         status=item.status,
@@ -294,6 +308,36 @@ class OnESPollDecorator:
                     )
                     if not ret_val:
                         raise ActionFailure(f"Failed to create container: {message}")
+
+                    if last_container_id and item.attachments:
+                        added = False
+                        for attachment in item.attachments:
+                            try:
+                                soar.vault.create_attachment(
+                                    last_container_id,
+                                    attachment.data,
+                                    attachment.file_name,
+                                )
+                                total_vault_atts += 1
+                                added = True
+                            except Exception as e:
+                                logger.warning(
+                                    f"Failed to add {attachment.file_name} "
+                                    f"to container vault: {e}"
+                                )
+                        if added:
+                            containers_with_atts += 1
+
+                if total_finding_atts:
+                    save(
+                        f"Uploaded {total_finding_atts} attachment(s) "
+                        f"to {findings_with_atts} finding(s)"
+                    )
+                if total_vault_atts:
+                    save(
+                        f"Added {total_vault_atts} file(s) to "
+                        f"{containers_with_atts} container(s)"
+                    )
 
                 if max_findings is not None and findings_created >= max_findings:
                     break
