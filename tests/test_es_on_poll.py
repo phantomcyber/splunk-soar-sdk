@@ -875,3 +875,131 @@ def test_es_on_poll_no_finding_source_when_names_empty(
 
     call_args = create_findings_bulk.call_args[0][0][0]
     assert call_args.get("finding_source") is None
+
+
+def test_es_on_poll_only_uploads_raw_email_to_es(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that only is_raw_email attachments are uploaded to ES findings."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 42),
+    )
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    upload_mock = mocker.patch.object(
+        app_with_action.soar_client,
+        "upload_finding_attachment",
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Email with PDF",
+            run_threat_analysis=True,
+            attachments=[
+                FindingAttachment(file_name="email.eml", data=b"raw eml"),
+                FindingAttachment(
+                    file_name="report.pdf", data=b"pdf data", is_raw_email=False
+                ),
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+    upload_mock.assert_called_once_with(
+        "new_finding",
+        "email.eml",
+        b"raw eml",
+        source_type="Incident",
+        is_raw_email=True,
+    )
+
+
+def test_es_on_poll_stores_attachments_in_container_vault(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that attachments are stored in the container vault after container creation."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 42),
+    )
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    vault_mock = MagicMock()
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Email with attachments",
+            attachments=[
+                FindingAttachment(file_name="email.eml", data=b"raw eml"),
+                FindingAttachment(
+                    file_name="report.pdf", data=b"pdf data", is_raw_email=False
+                ),
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+    assert vault_mock.create_attachment.call_count == 2
+    vault_mock.create_attachment.assert_any_call(42, b"raw eml", "email.eml")
+    vault_mock.create_attachment.assert_any_call(42, b"pdf data", "report.pdf")
+
+
+def test_es_on_poll_vault_failure_does_not_fail_action(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that vault attachment failure is non-fatal."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 42),
+    )
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.side_effect = Exception("Vault error")
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Email",
+            attachments=[FindingAttachment(file_name="email.eml", data=b"raw")],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
