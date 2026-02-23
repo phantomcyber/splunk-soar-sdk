@@ -121,6 +121,15 @@ app.register_action(
     view_handler=render_reverse_string_view,
 )
 
+
+app.register_action(
+    "actions.permissive_action:permissive_reverse_string",
+    action_type="investigate",
+    verbose="Reverses a string but doesn't care if it gets all its output fields.",
+    view_template="reverse_string.html",
+    view_handler=render_reverse_string_view,
+)
+
 from .actions.generate_category import render_statistics_chart
 
 app.register_action(

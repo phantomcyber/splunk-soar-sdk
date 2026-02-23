@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2025-12-12T23:35:54.322661Z",
+    "utctime_updated": "2026-02-23T13:36:31.747676Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -24,8 +24,8 @@
             "required": true,
             "description": "Base Url",
             "order": 0,
-            "default": "https://example",
-            "category": "connectivity"
+            "category": "connectivity",
+            "default": "https://example"
         },
         "api_key": {
             "data_type": "password",
@@ -39,12 +39,12 @@
             "required": true,
             "description": "Header for API key authentication",
             "order": 2,
+            "category": "connectivity",
             "default": "Authorization",
             "value_list": [
                 "Authorization",
                 "X-API-Key"
-            ],
-            "category": "connectivity"
+            ]
         },
         "timezone": {
             "data_type": "timezone",
@@ -58,8 +58,8 @@
             "required": true,
             "description": "Timezone With Default",
             "order": 4,
-            "default": "America/Denver",
-            "category": "action"
+            "category": "action",
+            "default": "America/Denver"
         }
     },
     "actions": [
@@ -367,6 +367,82 @@
                 {
                     "data_path": "action_result.data.*._underscored_string",
                     "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ],
+            "render": {
+                "type": "custom",
+                "view": "src.actions.reverse_string.render_reverse_string_view"
+            }
+        },
+        {
+            "action": "permissive reverse string",
+            "identifier": "permissive_reverse_string",
+            "description": "permissive reverse string",
+            "type": "investigate",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "verbose": "Reverses a string but doesn't care if it gets all its output fields.",
+            "parameters": {
+                "input_string": {
+                    "order": 0,
+                    "name": "input_string",
+                    "description": "Input String",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.input_string",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.original_string",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.reversed_string",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*._underscored_string",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.nested_output.foo",
+                    "data_type": "numeric"
+                },
+                {
+                    "data_path": "action_result.data.*.nested_output.bar",
+                    "data_type": "numeric"
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -974,6 +1050,11 @@
                 "input_file_aarch64": "wheels/shared/anyio-4.12.0-py3-none-any.whl"
             },
             {
+                "module": "authlib",
+                "input_file": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl"
+            },
+            {
                 "module": "bleach",
                 "input_file": "wheels/shared/bleach-6.3.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
@@ -984,9 +1065,19 @@
                 "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
             },
             {
+                "module": "cffi",
+                "input_file": "wheels/python313/cffi-2.0.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/cffi-2.0.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
+            },
+            {
                 "module": "click",
                 "input_file": "wheels/shared/click-8.1.8-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/click-8.1.8-py3-none-any.whl"
+            },
+            {
+                "module": "cryptography",
+                "input_file": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "distro",
@@ -1084,6 +1175,11 @@
                 "input_file_aarch64": "wheels/python313/propcache-0.4.1-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
+                "module": "pycparser",
+                "input_file": "wheels/shared/pycparser-3.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pycparser-3.0-py3-none-any.whl"
+            },
+            {
                 "module": "pydantic",
                 "input_file": "wheels/shared/pydantic-2.12.5-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pydantic-2.12.5-py3-none-any.whl"
@@ -1097,6 +1193,11 @@
                 "module": "pygments",
                 "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
+            },
+            {
+                "module": "pyjwt",
+                "input_file": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl"
             },
             {
                 "module": "pyproject-hooks",
@@ -1183,6 +1284,11 @@
                 "input_file_aarch64": "wheels/shared/anyio-4.12.0-py3-none-any.whl"
             },
             {
+                "module": "authlib",
+                "input_file": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl"
+            },
+            {
                 "module": "bleach",
                 "input_file": "wheels/shared/bleach-6.3.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
@@ -1193,9 +1299,19 @@
                 "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
             },
             {
+                "module": "cffi",
+                "input_file": "wheels/python314/cffi-2.0.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+                "input_file_aarch64": "wheels/python314/cffi-2.0.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
+            },
+            {
                 "module": "click",
                 "input_file": "wheels/shared/click-8.1.8-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/click-8.1.8-py3-none-any.whl"
+            },
+            {
+                "module": "cryptography",
+                "input_file": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "distro",
@@ -1293,6 +1409,11 @@
                 "input_file_aarch64": "wheels/python314/propcache-0.4.1-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
+                "module": "pycparser",
+                "input_file": "wheels/shared/pycparser-3.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pycparser-3.0-py3-none-any.whl"
+            },
+            {
                 "module": "pydantic",
                 "input_file": "wheels/shared/pydantic-2.12.5-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pydantic-2.12.5-py3-none-any.whl"
@@ -1306,6 +1427,11 @@
                 "module": "pygments",
                 "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
+            },
+            {
+                "module": "pyjwt",
+                "input_file": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl"
             },
             {
                 "module": "pyproject-hooks",
