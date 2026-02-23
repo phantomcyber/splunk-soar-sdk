@@ -1,6 +1,6 @@
 import itertools
-from collections.abc import Iterator
-from typing import Any, NotRequired
+from collections.abc import Callable, Iterator
+from typing import Any, Literal, NotRequired
 
 from pydantic import (
     BaseModel,
@@ -9,6 +9,7 @@ from pydantic import (
     ValidationError,
     model_validator,
 )
+from pydantic.main import IncEx
 from typing_extensions import TypedDict
 
 from soar_sdk.compat import remove_when_soar_newer_than
@@ -295,7 +296,7 @@ class PermissiveActionOutput(ActionOutput):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
     def __init__(self, **data: dict) -> None:
-        object.__setattr__(self, "_permissive_raw", data)
+        self._permissive_raw = data
         try:
             super().__init__(**data)
         except ValidationError as e:
@@ -320,14 +321,37 @@ class PermissiveActionOutput(ActionOutput):
         if name in extra:
             return self._wrap_permissive_value(extra[name])
 
-        raw = getattr(self, "_permissive_raw", {})
-        if name in raw:
-            return self._wrap_permissive_value(raw[name])
+        if name in self._permissive_raw:
+            return self._wrap_permissive_value(self._permissive_raw[name])
         for field_name, field in type(self).model_fields.items():
-            if field_name == name and field.alias and field.alias in raw:
-                return self._wrap_permissive_value(raw[field.alias])
+            if (
+                field_name == name
+                and field.alias
+                and field.alias in self._permissive_raw
+            ):
+                return self._wrap_permissive_value(self._permissive_raw[field.alias])
 
         raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}")
+
+    def model_dump(
+        self,
+        *,
+        mode: str | Literal["json", "python"] = "python",
+        include: IncEx | None = None,
+        exclude: IncEx | None = None,
+        context: Any | None = None,  # noqa: ANN401
+        by_alias: bool | None = None,
+        exclude_unset: bool = False,
+        exclude_defaults: bool = False,
+        exclude_none: bool = False,
+        exclude_computed_fields: bool = False,
+        round_trip: bool = False,
+        warnings: Literal["none", "warn", "error"] | bool = True,
+        fallback: Callable[[Any], Any] | None = None,
+        serialize_as_any: bool = False,
+    ) -> dict:
+        """Basic implementation of ``model_dump`` which just returns the raw dict provided to the constructor. Doesn't implement any kwargs and isn't recommended for use outside of basic serialization by the SDK."""
+        return self._permissive_raw
 
 
 class MakeRequestOutput(ActionOutput):

@@ -84,3 +84,24 @@ def test_access_unknown_field():
         }
     )
     assert test.bob
+
+
+def test_model_dump():
+    test = ExampleActionOutput(
+        **{
+            "_under_field": "test",
+            "bob": True,
+            "list_of_strings": ["a", "b", "c"],
+            "nested_lists": [[0, 1, 2], []],
+            "nested_type": {"inner_string": "test_inner"},
+            "list_of_types": [{"inner_string": "test_inner"}, {}],
+        }
+    )
+    assert test.model_dump() == {
+        "_under_field": "test",
+        "bob": True,
+        "list_of_strings": ["a", "b", "c"],
+        "nested_lists": [[0, 1, 2], []],
+        "nested_type": {"inner_string": "test_inner"},
+        "list_of_types": [{"inner_string": "test_inner"}, {}],
+    }
