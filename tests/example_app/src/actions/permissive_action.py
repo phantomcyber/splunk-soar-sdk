@@ -31,8 +31,8 @@ def permissive_reverse_string(
     soar.set_message(f"Reversed string: {reversed_string}")
     return PermissiveReverseStringOutput(
         **{
-            "original_string": "testing",
-            "reversed_string": "gnitset",
+            "original_string": param.input_string,
+            "reversed_string": reversed_string,
             "nested_output": {"foo": 3},
         }
     )
