@@ -1,49 +1,87 @@
 {
-    "name": "example_app with webhook",
-    "description": "This is the basic example SOAR app",
-    "appid": "1782380b-3df2-4571-bf63-a30e0b51b1ac",
-    "type": "sandbox",
+    "name": "example_app_with_oauth",
+    "description": "Example SOAR app demonstrating OAuth authentication flows",
+    "appid": "9b388c08-67de-4ca4-817f-26f8fb7cbf56",
+    "type": "endpoint",
     "product_vendor": "Splunk Inc.",
-    "app_version": "0.1.1",
+    "app_version": "0.1.0",
     "license": "Copyright (c) Splunk Inc., 2025",
-    "min_phantom_version": "6.2.2.134",
-    "package_name": "phantom_exampleapp_with_webhook",
+    "min_phantom_version": "7.0.0",
+    "package_name": "phantom_exampleapp_with_oauth",
     "main_module": "src.app:app",
     "logo": "logo.svg",
     "logo_dark": "logo_dark.svg",
-    "product_name": "Example App with Webhook",
+    "product_name": "Example OAuth App",
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2026-02-23T13:27:20.718191Z",
+    "utctime_updated": "2026-02-23T13:27:07.217824Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
-        "base_url": {
+        "domain": {
             "data_type": "string",
             "required": true,
-            "description": "Base Url",
+            "description": "URL of service to authenticate against",
             "order": 0,
             "category": "connectivity"
         },
-        "api_key": {
-            "data_type": "password",
-            "required": true,
-            "description": "API key for authentication",
-            "order": 1,
-            "category": "connectivity"
-        },
-        "key_header": {
+        "auth_type": {
             "data_type": "string",
             "required": true,
-            "description": "Header for API key authentication",
-            "order": 2,
+            "description": "Authentication method",
+            "order": 1,
             "category": "connectivity",
-            "default": "Authorization",
+            "default": "credentials",
             "value_list": [
-                "Authorization",
-                "X-API-Key"
+                "credentials",
+                "interactive"
             ]
+        },
+        "client_id": {
+            "data_type": "string",
+            "required": true,
+            "description": "OAuth Client ID",
+            "order": 2,
+            "category": "connectivity"
+        },
+        "client_secret": {
+            "data_type": "password",
+            "required": true,
+            "description": "OAuth Client Secret",
+            "order": 3,
+            "category": "connectivity"
+        },
+        "tenant_id": {
+            "data_type": "string",
+            "required": false,
+            "description": "Service Tenant ID (appended to domain if provided)",
+            "order": 4,
+            "category": "connectivity"
+        },
+        "token_uri": {
+            "data_type": "string",
+            "required": true,
+            "description": "Token Uri",
+            "order": 5,
+            "category": "connectivity",
+            "default": "/oauth2/v2.0/token"
+        },
+        "auth_uri": {
+            "data_type": "string",
+            "required": true,
+            "description": "Auth Uri",
+            "order": 6,
+            "category": "connectivity",
+            "default": "/oauth2/v2.0/authorize"
+        },
+        "scope": {
+            "data_type": "string",
+            "required": true,
+            "description": "OAuth scope (space-separated if multiple)",
+            "order": 7,
+            "category": "connectivity",
+            "default": ""
         }
     },
     "actions": [
@@ -86,24 +124,14 @@
             ]
         },
         {
-            "action": "reverse string",
-            "identifier": "reverse_string",
-            "description": "reverse string",
-            "type": "test",
+            "action": "test endpoint",
+            "identifier": "test_endpoint",
+            "description": "test endpoint",
+            "type": "investigate",
             "read_only": true,
             "versions": "EQ(*)",
-            "verbose": "Reverses a string.",
-            "parameters": {
-                "input_string": {
-                    "order": 0,
-                    "name": "input_string",
-                    "description": "Input String",
-                    "data_type": "string",
-                    "required": true,
-                    "primary": false,
-                    "allow_list": false
-                }
-            },
+            "verbose": "Test API endpoint with OAuth",
+            "parameters": {},
             "output": [
                 {
                     "data_path": "action_result.status",
@@ -118,12 +146,16 @@
                     "data_type": "string"
                 },
                 {
-                    "data_path": "action_result.parameter.input_string",
-                    "data_type": "string"
+                    "data_path": "action_result.data.*.status",
+                    "data_type": "string",
+                    "column_name": "Status",
+                    "column_order": 0
                 },
                 {
-                    "data_path": "action_result.data.*.reversed_string",
-                    "data_type": "string"
+                    "data_path": "action_result.data.*.response",
+                    "data_type": "string",
+                    "column_name": "Response",
+                    "column_order": 1
                 },
                 {
                     "data_path": "summary.total_objects",
@@ -145,14 +177,19 @@
     "pip313_dependencies": {
         "wheel": [
             {
+                "module": "annotated-doc",
+                "input_file": "wheels/shared/annotated_doc-0.0.4-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/annotated_doc-0.0.4-py3-none-any.whl"
+            },
+            {
                 "module": "annotated-types",
                 "input_file": "wheels/shared/annotated_types-0.7.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/annotated_types-0.7.0-py3-none-any.whl"
             },
             {
                 "module": "anyio",
-                "input_file": "wheels/shared/anyio-4.12.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/anyio-4.12.0-py3-none-any.whl"
+                "input_file": "wheels/shared/anyio-4.12.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/anyio-4.12.1-py3-none-any.whl"
             },
             {
                 "module": "authlib",
@@ -165,19 +202,9 @@
                 "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
             },
             {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.42.3-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.42.3-py3-none-any.whl"
-            },
-            {
                 "module": "build",
-                "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
+                "input_file": "wheels/shared/build-1.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/build-1.4.0-py3-none-any.whl"
             },
             {
                 "module": "cffi",
@@ -231,13 +258,13 @@
             },
             {
                 "module": "httpx-retries",
-                "input_file": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl"
+                "input_file": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl"
             },
             {
                 "module": "humanize",
-                "input_file": "wheels/shared/humanize-4.14.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/humanize-4.14.0-py3-none-any.whl"
+                "input_file": "wheels/shared/humanize-4.15.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/humanize-4.15.0-py3-none-any.whl"
             },
             {
                 "module": "hyperframe",
@@ -248,11 +275,6 @@
                 "module": "jinja2",
                 "input_file": "wheels/shared/jinja2-3.1.6-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
-            },
-            {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
             },
             {
                 "module": "markdown-it-py",
@@ -270,29 +292,19 @@
                 "input_file_aarch64": "wheels/shared/mdurl-0.1.2-py3-none-any.whl"
             },
             {
-                "module": "multidict",
-                "input_file": "wheels/python313/multidict-6.7.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/multidict-6.7.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
-            },
-            {
                 "module": "packaging",
-                "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
+                "input_file": "wheels/shared/packaging-26.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/packaging-26.0-py3-none-any.whl"
             },
             {
                 "module": "pathspec",
-                "input_file": "wheels/shared/pathspec-0.12.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pathspec-0.12.1-py3-none-any.whl"
+                "input_file": "wheels/shared/pathspec-1.0.4-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pathspec-1.0.4-py3-none-any.whl"
             },
             {
                 "module": "pluggy",
                 "input_file": "wheels/shared/pluggy-1.6.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pluggy-1.6.0-py3-none-any.whl"
-            },
-            {
-                "module": "propcache",
-                "input_file": "wheels/python313/propcache-0.4.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/propcache-0.4.1-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "pycparser",
@@ -325,24 +337,14 @@
                 "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
             },
             {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
                 "module": "rich",
-                "input_file": "wheels/shared/rich-14.2.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/rich-14.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl"
+                "input_file": "wheels/shared/rich-14.3.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/rich-14.3.3-py3-none-any.whl"
             },
             {
                 "module": "setuptools",
-                "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
+                "input_file": "wheels/shared/setuptools-82.0.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/setuptools-82.0.0-py3-none-any.whl"
             },
             {
                 "module": "shellingham",
@@ -351,8 +353,8 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/<to_be_built>.whl",
-                "input_file_aarch64": "wheels/shared/<to_be_built>.whl"
+                "input_file": "wheels/shared/splunk_soar_sdk-3.11.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.11.0-py3-none-any.whl"
             },
             {
                 "module": "toml",
@@ -361,18 +363,18 @@
             },
             {
                 "module": "tqdm",
-                "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
+                "input_file": "wheels/shared/tqdm-4.67.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/tqdm-4.67.3-py3-none-any.whl"
             },
             {
                 "module": "trove-classifiers",
-                "input_file": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl"
+                "input_file": "wheels/shared/trove_classifiers-2026.1.14.14-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/trove_classifiers-2026.1.14.14-py3-none-any.whl"
             },
             {
                 "module": "typer",
-                "input_file": "wheels/shared/typer-0.20.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typer-0.20.0-py3-none-any.whl"
+                "input_file": "wheels/shared/typer-0.23.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typer-0.23.1-py3-none-any.whl"
             },
             {
                 "module": "typing-extensions",
@@ -388,16 +390,16 @@
                 "module": "webencodings",
                 "input_file": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl"
-            },
-            {
-                "module": "yarl",
-                "input_file": "wheels/python313/yarl-1.22.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/yarl-1.22.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             }
         ]
     },
     "pip314_dependencies": {
         "wheel": [
+            {
+                "module": "annotated-doc",
+                "input_file": "wheels/shared/annotated_doc-0.0.4-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/annotated_doc-0.0.4-py3-none-any.whl"
+            },
             {
                 "module": "annotated-types",
                 "input_file": "wheels/shared/annotated_types-0.7.0-py3-none-any.whl",
@@ -405,8 +407,8 @@
             },
             {
                 "module": "anyio",
-                "input_file": "wheels/shared/anyio-4.12.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/anyio-4.12.0-py3-none-any.whl"
+                "input_file": "wheels/shared/anyio-4.12.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/anyio-4.12.1-py3-none-any.whl"
             },
             {
                 "module": "authlib",
@@ -419,19 +421,9 @@
                 "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
             },
             {
-                "module": "boto3",
-                "input_file": "wheels/shared/boto3-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/boto3-1.42.3-py3-none-any.whl"
-            },
-            {
-                "module": "botocore",
-                "input_file": "wheels/shared/botocore-1.42.3-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/botocore-1.42.3-py3-none-any.whl"
-            },
-            {
                 "module": "build",
-                "input_file": "wheels/shared/build-1.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/build-1.3.0-py3-none-any.whl"
+                "input_file": "wheels/shared/build-1.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/build-1.4.0-py3-none-any.whl"
             },
             {
                 "module": "cffi",
@@ -485,13 +477,13 @@
             },
             {
                 "module": "httpx-retries",
-                "input_file": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.5-py3-none-any.whl"
+                "input_file": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl"
             },
             {
                 "module": "humanize",
-                "input_file": "wheels/shared/humanize-4.14.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/humanize-4.14.0-py3-none-any.whl"
+                "input_file": "wheels/shared/humanize-4.15.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/humanize-4.15.0-py3-none-any.whl"
             },
             {
                 "module": "hyperframe",
@@ -502,11 +494,6 @@
                 "module": "jinja2",
                 "input_file": "wheels/shared/jinja2-3.1.6-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/jinja2-3.1.6-py3-none-any.whl"
-            },
-            {
-                "module": "jmespath",
-                "input_file": "wheels/shared/jmespath-1.0.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/jmespath-1.0.1-py3-none-any.whl"
             },
             {
                 "module": "markdown-it-py",
@@ -524,29 +511,19 @@
                 "input_file_aarch64": "wheels/shared/mdurl-0.1.2-py3-none-any.whl"
             },
             {
-                "module": "multidict",
-                "input_file": "wheels/python314/multidict-6.7.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/multidict-6.7.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
-            },
-            {
                 "module": "packaging",
-                "input_file": "wheels/shared/packaging-25.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/packaging-25.0-py3-none-any.whl"
+                "input_file": "wheels/shared/packaging-26.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/packaging-26.0-py3-none-any.whl"
             },
             {
                 "module": "pathspec",
-                "input_file": "wheels/shared/pathspec-0.12.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pathspec-0.12.1-py3-none-any.whl"
+                "input_file": "wheels/shared/pathspec-1.0.4-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pathspec-1.0.4-py3-none-any.whl"
             },
             {
                 "module": "pluggy",
                 "input_file": "wheels/shared/pluggy-1.6.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pluggy-1.6.0-py3-none-any.whl"
-            },
-            {
-                "module": "propcache",
-                "input_file": "wheels/python314/propcache-0.4.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/propcache-0.4.1-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "pycparser",
@@ -579,24 +556,14 @@
                 "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
             },
             {
-                "module": "python-dateutil",
-                "input_file": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/python_dateutil-2.9.0.post0-py2.py3-none-any.whl"
-            },
-            {
                 "module": "rich",
-                "input_file": "wheels/shared/rich-14.2.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/rich-14.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "s3transfer",
-                "input_file": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/s3transfer-0.16.0-py3-none-any.whl"
+                "input_file": "wheels/shared/rich-14.3.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/rich-14.3.3-py3-none-any.whl"
             },
             {
                 "module": "setuptools",
-                "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
+                "input_file": "wheels/shared/setuptools-82.0.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/setuptools-82.0.0-py3-none-any.whl"
             },
             {
                 "module": "shellingham",
@@ -605,8 +572,8 @@
             },
             {
                 "module": "splunk-soar-sdk",
-                "input_file": "wheels/shared/<to_be_built>.whl",
-                "input_file_aarch64": "wheels/shared/<to_be_built>.whl"
+                "input_file": "wheels/shared/splunk_soar_sdk-3.11.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/splunk_soar_sdk-3.11.0-py3-none-any.whl"
             },
             {
                 "module": "toml",
@@ -615,18 +582,18 @@
             },
             {
                 "module": "tqdm",
-                "input_file": "wheels/shared/tqdm-4.67.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/tqdm-4.67.1-py3-none-any.whl"
+                "input_file": "wheels/shared/tqdm-4.67.3-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/tqdm-4.67.3-py3-none-any.whl"
             },
             {
                 "module": "trove-classifiers",
-                "input_file": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/trove_classifiers-2025.12.1.14-py3-none-any.whl"
+                "input_file": "wheels/shared/trove_classifiers-2026.1.14.14-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/trove_classifiers-2026.1.14.14-py3-none-any.whl"
             },
             {
                 "module": "typer",
-                "input_file": "wheels/shared/typer-0.20.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typer-0.20.0-py3-none-any.whl"
+                "input_file": "wheels/shared/typer-0.23.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typer-0.23.1-py3-none-any.whl"
             },
             {
                 "module": "typing-extensions",
@@ -642,17 +609,12 @@
                 "module": "webencodings",
                 "input_file": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/webencodings-0.5.1-py2.py3-none-any.whl"
-            },
-            {
-                "module": "yarl",
-                "input_file": "wheels/python314/yarl-1.22.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/yarl-1.22.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             }
         ]
     },
     "webhook": {
         "handler": "src.app.app.handle_webhook",
-        "requires_auth": true,
+        "requires_auth": false,
         "allowed_headers": [],
         "ip_allowlist": [
             "0.0.0.0/0",
@@ -660,32 +622,13 @@
         ],
         "routes": [
             {
-                "url_pattern": "test_webhook",
+                "url_pattern": "oauth_callback",
                 "allowed_methods": [
                     "GET",
                     "POST"
                 ],
                 "declaration_path": "src/app.py",
-                "declaration_lineno": 59
-            },
-            {
-                "url_pattern": "test_webhook/<asset_id>",
-                "allowed_methods": [
-                    "GET",
-                    "POST",
-                    "DELETE"
-                ],
-                "declaration_path": "src/app.py",
-                "declaration_lineno": 73
-            },
-            {
-                "url_pattern": "test_webhook_file",
-                "allowed_methods": [
-                    "GET",
-                    "POST"
-                ],
-                "declaration_path": "src/app.py",
-                "declaration_lineno": 86
+                "declaration_lineno": 140
             }
         ]
     },

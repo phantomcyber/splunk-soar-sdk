@@ -23,6 +23,20 @@ def test_reverse_string(example_app_client: AppOnStackClient):
     assert data.get("_underscored_string") == f"{input_string}_{expected_output}"
 
 
+def test_permissive_reverse_string(example_app_client: AppOnStackClient):
+    input_string = "Hello, world!"
+    expected_output = input_string[::-1]
+
+    result = example_app_client.run_action(
+        "permissive reverse string", {"input_string": input_string}
+    )
+    assert result.success, f"Action failed: {result.message}"
+
+    data = result.data["data"][0]
+    assert data.get("reversed_string") == expected_output
+    assert data.get("original_string") == input_string
+
+
 @pytest.mark.asyncio
 async def test_on_poll(example_app_client: AppOnStackClient):
     # Clean up any previous failed runs so they don't pollute the asset
