@@ -323,13 +323,12 @@ class PermissiveActionOutput(ActionOutput):
 
         if name in self._permissive_raw:
             return self._wrap_permissive_value(self._permissive_raw[name])
-        for field_name, field in type(self).model_fields.items():
-            if (
-                field_name == name
-                and field.alias
-                and field.alias in self._permissive_raw
-            ):
-                return self._wrap_permissive_value(self._permissive_raw[field.alias])
+        if (
+            (field := type(self).model_fields.get(name))
+            and field.alias
+            and field.alias in self._permissive_raw
+        ):
+            return self._wrap_permissive_value(self._permissive_raw[field.alias])
 
         raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}")
 
