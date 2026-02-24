@@ -29,10 +29,17 @@ def permissive_reverse_string(
     reversed_string = param.input_string[::-1]
     logger.debug("reversed_string %s", reversed_string)
     soar.set_message(f"Reversed string: {reversed_string}")
+
+    if param.input_string == "Broken!":
+        nested_output = {"foo": 5}
+    else:
+        nested_output = {"foo": 3, "bar": 4}
+
     return PermissiveReverseStringOutput(
         **{
             "original_string": param.input_string,
             "reversed_string": reversed_string,
-            "nested_output": {"foo": 3},
+            "_underscored_string": f"{param.input_string}_{reversed_string}",
+            "nested_output": nested_output,
         }
     )
