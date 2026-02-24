@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from soar_sdk.models.finding import (
     DrilldownDashboard,
+    DrilldownDashboardToken,
     DrilldownSearch,
     Finding,
     FindingAttachment,
@@ -17,7 +18,10 @@ def test_finding_with_complex_fields():
         name="search_name", search="index=_internal", earliest="-1d", latest="now"
     )
     drilldown_dashboard = DrilldownDashboard(
-        dashboard="dash_id", name="Dashboard", tokens=["token1"]
+        app="DA-ESS-NetworkProtection",
+        dashboard_id="email_activity",
+        name="Dashboard",
+        tokens=[DrilldownDashboardToken(name="form.token_name", value="token_value")],
     )
 
     finding = Finding(
@@ -88,14 +92,27 @@ def test_drilldown_search():
 
 def test_drilldown_dashboard():
     """Test DrilldownDashboard model."""
-    dashboard = DrilldownDashboard(dashboard="dash_id", name="Dashboard Name")
-    assert dashboard.dashboard == "dash_id"
+    dashboard = DrilldownDashboard(
+        app="DA-ESS-NetworkProtection",
+        dashboard_id="email_activity",
+        name="Dashboard Name",
+    )
+    assert dashboard.app == "DA-ESS-NetworkProtection"
+    assert dashboard.dashboard_id == "email_activity"
     assert dashboard.tokens is None
 
     dashboard_with_tokens = DrilldownDashboard(
-        dashboard="dash_id", name="Dashboard", tokens=["token1", "token2"]
+        app="DA-ESS-NetworkProtection",
+        dashboard_id="email_activity",
+        name="Dashboard",
+        tokens=[
+            DrilldownDashboardToken(name="form.token_name", value="token_value"),
+            DrilldownDashboardToken(name="form.name", value="another_value"),
+        ],
     )
     assert len(dashboard_with_tokens.tokens) == 2
+    assert dashboard_with_tokens.tokens[0].name == "form.token_name"
+    assert dashboard_with_tokens.tokens[0].value == "token_value"
 
     with pytest.raises(ValidationError):
         DrilldownDashboard(name="Test")

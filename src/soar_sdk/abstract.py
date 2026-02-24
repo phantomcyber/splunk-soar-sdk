@@ -88,7 +88,8 @@ class SOARClient(Generic[SummaryType]):
         """Create findings in ES via the SOAR bulk endpoint.
 
         Accepts up to 500 findings per call. Returns the bulk response containing
-        ``status``, ``created``, ``failed``, ``findings`` (list of IDs), and ``errors``.
+        ``status``, ``created``, ``failed``, ``findings`` (list of IDs),
+        ``container_ids`` (list of SOAR container IDs), and ``errors``.
         """
         if not findings:
             return {
@@ -96,6 +97,7 @@ class SOARClient(Generic[SummaryType]):
                 "created": 0,
                 "failed": 0,
                 "findings": [],
+                "container_ids": [],
                 "errors": [],
             }
 

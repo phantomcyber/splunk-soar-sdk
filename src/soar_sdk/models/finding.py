@@ -12,12 +12,20 @@ class DrilldownSearch(BaseModel):
     latest: str
 
 
+class DrilldownDashboardToken(BaseModel):
+    """Represents a token for a drilldown dashboard."""
+
+    name: str
+    value: str
+
+
 class DrilldownDashboard(BaseModel):
     """Represents a drilldown dashboard in a finding."""
 
-    dashboard: str
+    app: str
+    dashboard_id: str
     name: str
-    tokens: list[str] | None = None
+    tokens: list[DrilldownDashboardToken] | None = None
 
 
 class FindingAttachment(BaseModel):
