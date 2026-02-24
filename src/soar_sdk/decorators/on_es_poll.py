@@ -11,7 +11,6 @@ from soar_sdk.action_results import ActionResult
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.models.container import Container
 from soar_sdk.models.finding import DrilldownDashboard, DrilldownSearch, Finding
 from soar_sdk.params import OnESPollParams
 from soar_sdk.types import Action, action_protocol
@@ -100,7 +99,6 @@ class OnESPollDecorator:
             es_urgency = ingest_config.get("es_urgency")
             es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
             es_launch_automation = ingest_config.get("es_launch_automation", False)
-            container_label = ingest_config.get("container_label")
             app_name = str(self.app.app_meta_info.get("name", ""))
             asset_name: str = asset_data.get("name", "")
             finding_source: str = (
@@ -259,6 +257,8 @@ class OnESPollDecorator:
                 findings_with_atts = 0
                 containers_with_atts = 0
 
+                container_ids: list[int | None] = bulk_response.get("container_ids", [])
+
                 for idx, item in enumerate(batch):
                     finding_id = finding_ids[idx] if idx < len(finding_ids) else ""
 
@@ -285,29 +285,13 @@ class OnESPollDecorator:
                         if uploaded:
                             findings_with_atts += 1
 
-                    container = Container(
-                        name=item.rule_title,
-                        label=container_label,
-                        description=item.rule_description,
-                        severity=item.urgency or "medium",
-                        status=item.status,
-                        owner_id=item.owner,
-                        sensitivity=item.disposition,
-                        tags=item.source,
-                        external_id=finding_id,
-                        data={
-                            "security_domain": item.security_domain,
-                            "risk_score": item.risk_score,
-                            "risk_object": item.risk_object,
-                            "risk_object_type": item.risk_object_type,
-                        },
+                    last_container_id = (
+                        container_ids[idx] if idx < len(container_ids) else None
                     )
-                    container_dict = container.to_dict()
-                    ret_val, message, last_container_id = (
-                        self.app.actions_manager.save_container(container_dict)
-                    )
-                    if not ret_val:
-                        raise ActionFailure(f"Failed to create container: {message}")
+                    if not last_container_id:
+                        logger.warning(
+                            f"No container_id returned for finding {finding_id}"
+                        )
 
                     if last_container_id and item.attachments:
                         added = False

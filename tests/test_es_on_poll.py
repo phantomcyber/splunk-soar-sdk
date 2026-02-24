@@ -14,6 +14,7 @@ BULK_RESPONSE = {
     "created": 1,
     "failed": 0,
     "findings": ["new_finding"],
+    "container_ids": [42],
     "errors": [],
 }
 
@@ -174,11 +175,6 @@ def test_es_on_poll_yields_finding_success(
 ):
     """Test on_es_poll yields a Finding and succeeds."""
 
-    save_container = mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -203,18 +199,12 @@ def test_es_on_poll_yields_finding_success(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    assert save_container.call_count == 1
     assert create_findings_bulk.called
 
 
 def test_es_on_poll_yields_invalid_type(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    save_container = mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -231,22 +221,25 @@ def test_es_on_poll_yields_invalid_type(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    assert not save_container.called
     assert not create_findings_bulk.called
 
 
-def test_es_on_poll_throws_when_fail_to_create_container(
+def test_es_on_poll_missing_container_id_logs_warning(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(False, "Error", None),
-    )
+    """Test on_es_poll logs warning when container_ids are missing from response."""
+    bulk_response_no_containers = {
+        "status": "success",
+        "created": 1,
+        "failed": 0,
+        "findings": ["new_finding"],
+        "container_ids": [],
+        "errors": [],
+    }
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
-        return_value=BULK_RESPONSE,
+        return_value=bulk_response_no_containers,
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -256,17 +249,12 @@ def test_es_on_poll_throws_when_fail_to_create_container(
     ) -> Generator[Finding, int | None]:
         yield Finding(
             rule_title="Risk threshold exceeded",
-            rule_description="User exceeded risk threshold",
             security_domain="threat",
-            risk_object="baduser@example.com",
-            risk_object_type="user",
-            risk_score=100.0,
-            status="New",
         )
 
     params = OnESPollParams(start_time=0, end_time=1)
-    with pytest.raises(ActionFailure, match="Failed to create container"):
-        on_es_poll_function(params, client=app_with_action.soar_client)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
 
 
 def test_es_on_poll_yields_finding_async_generator(
@@ -274,11 +262,6 @@ def test_es_on_poll_yields_finding_async_generator(
 ):
     """Test on_es_poll yields a Finding and succeeds with an AsyncGenerator."""
 
-    save_container = mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -303,7 +286,6 @@ def test_es_on_poll_yields_finding_async_generator(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    assert save_container.call_count == 1
     assert create_findings_bulk.called
 
 
@@ -357,16 +339,11 @@ def test_es_on_poll_actionmeta_dict_output_empty(app_with_action: App):
     assert meta_dict["output"] == []
 
 
-def test_es_on_poll_container_data_mapping(
+def test_es_on_poll_finding_data_mapping(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test that Finding data is correctly mapped to Container fields."""
+    """Test that Finding data is correctly passed to create_findings_bulk."""
 
-    save_container = mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -396,30 +373,24 @@ def test_es_on_poll_container_data_mapping(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
 
-    call_args = save_container.call_args[0][0]
-    assert call_args["name"] == "Risk threshold exceeded"
-    assert call_args["description"] == "User exceeded risk threshold"
-    assert call_args["severity"] == "high"
+    call_args = create_findings_bulk.call_args[0][0][0]
+    assert call_args["rule_title"] == "Risk threshold exceeded"
+    assert call_args["rule_description"] == "User exceeded risk threshold"
+    assert call_args["security_domain"] == "threat"
+    assert call_args["risk_object"] == "baduser@example.com"
+    assert call_args["risk_object_type"] == "user"
+    assert call_args["risk_score"] == 100.0
     assert call_args["status"] == "New"
-    assert call_args["owner_id"] == "admin"
-    assert call_args["sensitivity"] == "sensitive"
-    assert call_args["tags"] == ["splunk", "siem"]
-    assert call_args["data"]["security_domain"] == "threat"
-    assert call_args["data"]["risk_score"] == 100.0
-    assert call_args["data"]["risk_object"] == "baduser@example.com"
-    assert call_args["data"]["risk_object_type"] == "user"
-    assert create_findings_bulk.called
+    assert call_args["urgency"] == "high"
+    assert call_args["owner"] == "admin"
+    assert call_args["disposition"] == "sensitive"
+    assert call_args["source"] == ["splunk", "siem"]
 
 
 def test_es_on_poll_with_attachments(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test on_es_poll uploads attachments when run_threat_analysis is True."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -474,11 +445,6 @@ def test_es_on_poll_with_finding_limit(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test on_es_poll stops after reaching container_count limit."""
-    save_container = mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -487,6 +453,7 @@ def test_es_on_poll_with_finding_limit(
             "created": 2,
             "failed": 0,
             "findings": ["f1", "f2"],
+            "container_ids": [42, 43],
             "errors": [],
         },
     )
@@ -506,18 +473,12 @@ def test_es_on_poll_with_finding_limit(
     params = OnESPollParams(start_time=0, end_time=1, container_count=2)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    assert save_container.call_count == 2
 
 
 def test_es_on_poll_with_ingest_config_defaults(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test on_es_poll applies ingest config defaults to findings."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -556,11 +517,6 @@ def test_es_on_poll_with_invalid_drilldown_searches(
 ):
     """Test on_es_poll fails with invalid drilldown_searches."""
     mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
@@ -590,11 +546,6 @@ def test_es_on_poll_with_invalid_drilldown_dashboards(
 ):
     """Test on_es_poll fails with invalid drilldown_dashboards."""
     mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
@@ -623,11 +574,6 @@ def test_es_on_poll_with_drilldown_list_format(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test on_es_poll accepts drilldowns as list (not JSON string)."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -646,7 +592,13 @@ def test_es_on_poll_with_drilldown_list_format(
                     "latest": "now",
                 }
             ],
-            "es_drilldown_dashboards": [{"dashboard": "dash1", "name": "Dashboard 1"}],
+            "es_drilldown_dashboards": [
+                {
+                    "app": "DA-ESS-NetworkProtection",
+                    "dashboard_id": "dash1",
+                    "name": "Dashboard 1",
+                }
+            ],
         },
     )
 
@@ -669,11 +621,6 @@ def test_es_on_poll_finding_overrides_config_defaults(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test that Finding values override ingest config defaults."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -774,11 +721,6 @@ def test_es_on_poll_upload_attachment_failure(
 ):
     """Test on_es_poll continues when upload_finding_attachment fails."""
     mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
@@ -810,11 +752,6 @@ def test_es_on_poll_bulk_partial_failure(
 ):
     """Test on_es_poll logs warnings when bulk create returns partial errors."""
     mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value={
@@ -822,6 +759,7 @@ def test_es_on_poll_bulk_partial_failure(
             "created": 1,
             "failed": 1,
             "findings": ["f1"],
+            "container_ids": [42],
             "errors": [
                 {"index": 1, "rule_title": "Bad Finding", "error": "invalid field"}
             ],
@@ -845,11 +783,6 @@ def test_es_on_poll_no_finding_source_when_names_empty(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test that finding_source is not set when app name and asset name are both empty."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -881,11 +814,6 @@ def test_es_on_poll_only_uploads_raw_email_to_es(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test that only is_raw_email attachments are uploaded to ES findings."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -929,11 +857,6 @@ def test_es_on_poll_stores_attachments_in_container_vault(
 ):
     """Test that attachments are stored in the container vault after container creation."""
     mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
-    mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
@@ -972,11 +895,6 @@ def test_es_on_poll_vault_failure_does_not_fail_action(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
     """Test that vault attachment failure is non-fatal."""
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "save_container",
-        return_value=(True, "Created", 42),
-    )
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
