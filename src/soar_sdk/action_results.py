@@ -296,11 +296,11 @@ class PermissiveActionOutput(ActionOutput):
     model_config = ConfigDict(populate_by_name=True, extra="allow")
 
     def __init__(self, **data: dict) -> None:
-        self._permissive_raw = data
         try:
             super().__init__(**data)
         except ValidationError as e:
             warning(f"Ignoring validation error:\n {e.with_traceback(None)}")
+        self._permissive_raw = data
 
     @staticmethod
     def _wrap_permissive_value(value: Any) -> Any:  # noqa: ANN401
