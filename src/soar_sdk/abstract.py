@@ -84,12 +84,20 @@ class SOARClient(Generic[SummaryType]):
         )
         return response.json()
 
-    def create_findings_bulk(self, findings: list[dict[str, Any]]) -> dict[str, Any]:
+    def create_findings_bulk(
+        self,
+        findings: list[dict[str, Any]],
+        container_ids: list[int | None] | None = None,
+    ) -> dict[str, Any]:
         """Create findings in ES via the SOAR bulk endpoint.
 
-        Accepts up to 500 findings per call. Returns the bulk response containing
-        ``status``, ``created``, ``failed``, ``findings`` (list of IDs),
-        ``container_ids`` (list of SOAR container IDs), and ``errors``.
+        Accepts up to 500 findings per call. When ``container_ids`` is provided,
+        the backend links pre-existing containers to the created findings
+        instead of creating new ones.
+
+        Returns the bulk response containing ``status``, ``created``,
+        ``failed``, ``findings`` (list of IDs), ``container_ids``
+        (list of SOAR container IDs), and ``errors``.
         """
         if not findings:
             return {
@@ -108,7 +116,12 @@ class SOARClient(Generic[SummaryType]):
 
         endpoint = "/rest/enterprise_security/findings/bulk_create"
         timeout = max(30.0, len(findings) * 5.0)
-        response = self.post(endpoint, json=findings, timeout=timeout)
+
+        payload: dict[str, Any] | list = findings
+        if container_ids:
+            payload = {"findings": findings, "container_ids": container_ids}
+
+        response = self.post(endpoint, json=payload, timeout=timeout)
         return response.json()
 
     def upload_finding_attachment(

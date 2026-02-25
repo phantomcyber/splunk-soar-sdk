@@ -11,7 +11,12 @@ from soar_sdk.action_results import ActionResult
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
-from soar_sdk.models.finding import DrilldownDashboard, DrilldownSearch, Finding
+from soar_sdk.models.finding import (
+    DrilldownDashboard,
+    DrilldownSearch,
+    Finding,
+    FindingEmail,
+)
 from soar_sdk.params import OnESPollParams
 from soar_sdk.types import Action, action_protocol
 
@@ -222,10 +227,75 @@ class OnESPollDecorator:
                     break
 
                 save = self.app.actions_manager.save_progress
+                base_url = soar.get_soar_base_url().rstrip("/")
+
+                pre_created_containers: dict[int, int] = {}
+                total_vault_atts = 0
+                containers_with_atts = 0
+
+                for idx, item in enumerate(batch):
+                    if not item.attachments:
+                        continue
+
+                    try:
+                        container_id = soar.container.create({"name": item.rule_title})
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to pre-create container for "
+                            f"finding '{item.rule_title}': {e}"
+                        )
+                        continue
+
+                    pre_created_containers[idx] = container_id
+                    vault_links: list[str] = []
+                    raw_email_link: str | None = None
+
+                    for attachment in item.attachments:
+                        try:
+                            vault_id = soar.vault.create_attachment(
+                                container_id,
+                                attachment.data,
+                                attachment.file_name,
+                            )
+                            vault_link = f"{base_url}/vault/item/{vault_id}"
+                            vault_links.append(vault_link)
+                            if attachment.is_raw_email:
+                                raw_email_link = vault_link
+                            total_vault_atts += 1
+                        except Exception as e:
+                            logger.warning(
+                                f"Failed to add {attachment.file_name} "
+                                f"to container vault: {e}"
+                            )
+
+                    if vault_links:
+                        containers_with_atts += 1
+
+                    if item.email is None:
+                        item.email = FindingEmail()
+                    item.email.attachments = vault_links or None
+                    if raw_email_link:
+                        item.email.raw_email_link = raw_email_link
+
+                if total_vault_atts:
+                    save(
+                        f"Added {total_vault_atts} file(s) to "
+                        f"{containers_with_atts} container(s)"
+                    )
+
                 findings_payload = [item.to_dict() for item in batch]
+
+                batch_container_ids: list[int | None] | None = None
+                if pre_created_containers:
+                    batch_container_ids = [
+                        pre_created_containers.get(idx) for idx in range(len(batch))
+                    ]
+
                 save(f"Creating {len(batch)} finding(s) in bulk")
                 try:
-                    bulk_response = soar.create_findings_bulk(findings_payload)
+                    bulk_response = soar.create_findings_bulk(
+                        findings_payload, container_ids=batch_container_ids
+                    )
                 except Exception as e:
                     logger.error(f"Failed to bulk create findings: {e}")
                     return self.app._adapt_action_result(
@@ -236,7 +306,6 @@ class OnESPollDecorator:
                         self.app.actions_manager,
                     )
 
-                finding_ids: list[str] = bulk_response.get("findings", [])
                 bulk_errors = bulk_response.get("errors", [])
 
                 created = bulk_response.get("created", 0)
@@ -252,76 +321,11 @@ class OnESPollDecorator:
 
                 findings_created += created
 
-                total_finding_atts = 0
-                total_vault_atts = 0
-                findings_with_atts = 0
-                containers_with_atts = 0
-
-                container_ids: list[int | None] = bulk_response.get("container_ids", [])
-
-                for idx, item in enumerate(batch):
-                    finding_id = finding_ids[idx] if idx < len(finding_ids) else ""
-
-                    if item.run_threat_analysis and item.attachments:
-                        uploaded = False
-                        for attachment in item.attachments:
-                            if not attachment.is_raw_email:
-                                continue
-                            try:
-                                soar.upload_finding_attachment(
-                                    finding_id,
-                                    attachment.file_name,
-                                    attachment.data,
-                                    source_type=attachment.source_type,
-                                    is_raw_email=attachment.is_raw_email,
-                                )
-                                total_finding_atts += 1
-                                uploaded = True
-                            except Exception as e:
-                                logger.warning(
-                                    f"Failed to upload attachment "
-                                    f"{attachment.file_name}: {e}"
-                                )
-                        if uploaded:
-                            findings_with_atts += 1
-
-                    last_container_id = (
-                        container_ids[idx] if idx < len(container_ids) else None
-                    )
-                    if not last_container_id:
-                        logger.warning(
-                            f"No container_id returned for finding {finding_id}"
-                        )
-
-                    if last_container_id and item.attachments:
-                        added = False
-                        for attachment in item.attachments:
-                            try:
-                                soar.vault.create_attachment(
-                                    last_container_id,
-                                    attachment.data,
-                                    attachment.file_name,
-                                )
-                                total_vault_atts += 1
-                                added = True
-                            except Exception as e:
-                                logger.warning(
-                                    f"Failed to add {attachment.file_name} "
-                                    f"to container vault: {e}"
-                                )
-                        if added:
-                            containers_with_atts += 1
-
-                if total_finding_atts:
-                    save(
-                        f"Uploaded {total_finding_atts} attachment(s) "
-                        f"to {findings_with_atts} finding(s)"
-                    )
-                if total_vault_atts:
-                    save(
-                        f"Added {total_vault_atts} file(s) to "
-                        f"{containers_with_atts} container(s)"
-                    )
+                response_container_ids: list[int | None] = bulk_response.get(
+                    "container_ids", []
+                )
+                if response_container_ids:
+                    last_container_id = response_container_ids[-1]
 
                 if max_findings is not None and findings_created >= max_findings:
                     break

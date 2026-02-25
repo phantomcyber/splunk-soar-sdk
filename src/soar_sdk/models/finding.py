@@ -29,12 +29,29 @@ class DrilldownDashboard(BaseModel):
 
 
 class FindingAttachment(BaseModel):
-    """Represents an attachment to upload with a finding (e.g., raw .eml for SAA)."""
+    """Represents a file attachment to upload to the SOAR vault during on_es_poll.
+
+    The SDK uploads these to the container vault before creating the finding,
+    then populates the finding's email.attachments and email.raw_email_link
+    with the resulting vault links.
+    """
 
     file_name: str
     data: bytes
     source_type: str = "Incident"
     is_raw_email: bool = True
+
+
+class FindingEmail(BaseModel):
+    """Email object containing all email-related fields for phishing findings."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    headers: dict[str, Any] | None = None
+    body: str | None = None
+    urls: list[str] | None = None
+    attachments: list[str] | None = None
+    raw_email_link: str | None = None
 
 
 class Finding(BaseModel):
@@ -67,8 +84,7 @@ class Finding(BaseModel):
     source: list[str] | None = None
     exclude_map_fields: list[str] | None = None
     queue_id: str | None = None
-    email_headers: dict[str, Any] | None = None
-    email_body: str | None = None
+    email: FindingEmail | None = None
     run_threat_analysis: bool = False
     launch_automation: bool = False
     automation_rule: str | None = None
@@ -76,5 +92,10 @@ class Finding(BaseModel):
     attachments: list[FindingAttachment] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the finding to a dictionary (excludes attachments)."""
+        """Convert the finding to a dictionary for the ES API.
+
+        Excludes the binary attachments field which is only used by the SDK
+        for vault upload. The email.attachments and email.raw_email_link
+        vault links are included in the serialized output.
+        """
         return self.model_dump(exclude_none=True, exclude={"attachments"})
