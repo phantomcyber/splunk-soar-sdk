@@ -14,7 +14,6 @@ BULK_RESPONSE = {
     "created": 1,
     "failed": 0,
     "findings": ["new_finding"],
-    "container_ids": [42],
     "errors": [],
 }
 
@@ -224,39 +223,6 @@ def test_es_on_poll_yields_invalid_type(
     assert not create_findings_bulk.called
 
 
-def test_es_on_poll_missing_container_id_logs_warning(
-    app_with_action: App, mocker: pytest_mock.MockerFixture
-):
-    """Test on_es_poll logs warning when container_ids are missing from response."""
-    bulk_response_no_containers = {
-        "status": "success",
-        "created": 1,
-        "failed": 0,
-        "findings": ["new_finding"],
-        "container_ids": [],
-        "errors": [],
-    }
-    mocker.patch.object(
-        app_with_action.soar_client,
-        "create_findings_bulk",
-        return_value=bulk_response_no_containers,
-    )
-    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
-
-    @app_with_action.on_es_poll()
-    def on_es_poll_function(
-        params: OnESPollParams, client=None
-    ) -> Generator[Finding, int | None]:
-        yield Finding(
-            rule_title="Risk threshold exceeded",
-            security_domain="threat",
-        )
-
-    params = OnESPollParams(start_time=0, end_time=1)
-    result = on_es_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
-
-
 def test_es_on_poll_yields_finding_async_generator(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
@@ -390,15 +356,30 @@ def test_es_on_poll_finding_data_mapping(
 def test_es_on_poll_with_attachments(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll uploads attachments when run_threat_analysis is True."""
-    mocker.patch.object(
+    """Test on_es_poll pre-creates container, uploads to vault, populates vault links, then creates finding."""
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
-    upload_mock = mocker.patch.object(
+    container_mock = MagicMock()
+    container_mock.create.return_value = 99
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "container",
+        new_callable=lambda: property(lambda self: container_mock),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.return_value = "vault-abc123"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mocker.patch.object(
         app_with_action.soar_client,
-        "upload_finding_attachment",
+        "get_soar_base_url",
+        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -415,13 +396,22 @@ def test_es_on_poll_with_attachments(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    upload_mock.assert_called_once_with(
-        "new_finding",
-        "email.eml",
-        b"raw content",
-        source_type="Incident",
-        is_raw_email=True,
+
+    container_mock.create.assert_called_once_with({"name": "Phishing Email"})
+    vault_mock.create_attachment.assert_called_once_with(
+        99, b"raw content", "email.eml"
     )
+
+    finding_payload = create_findings_bulk.call_args[0][0][0]
+    assert finding_payload["email"]["attachments"] == [
+        "https://soar.local/vault/item/vault-abc123"
+    ]
+    assert finding_payload["email"]["raw_email_link"] == (
+        "https://soar.local/vault/item/vault-abc123"
+    )
+
+    passed_container_ids = create_findings_bulk.call_args[1].get("container_ids")
+    assert passed_container_ids == [99]
 
 
 def test_es_on_poll_missing_security_domain(
@@ -453,7 +443,6 @@ def test_es_on_poll_with_finding_limit(
             "created": 2,
             "failed": 0,
             "findings": ["f1", "f2"],
-            "container_ids": [42, 43],
             "errors": [],
         },
     )
@@ -716,19 +705,33 @@ def test_es_on_poll_create_findings_bulk_failure(
     assert result is False
 
 
-def test_es_on_poll_upload_attachment_failure(
+def test_es_on_poll_vault_upload_failure_continues(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll continues when upload_finding_attachment fails."""
+    """Test on_es_poll continues when vault upload fails during pre-creation."""
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
+    container_mock = MagicMock()
+    container_mock.create.return_value = 99
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "container",
+        new_callable=lambda: property(lambda self: container_mock),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.side_effect = Exception("Vault upload failed")
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
     mocker.patch.object(
         app_with_action.soar_client,
-        "upload_finding_attachment",
-        side_effect=Exception("Upload failed"),
+        "get_soar_base_url",
+        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -759,7 +762,6 @@ def test_es_on_poll_bulk_partial_failure(
             "created": 1,
             "failed": 1,
             "findings": ["f1"],
-            "container_ids": [42],
             "errors": [
                 {"index": 1, "rule_title": "Bad Finding", "error": "invalid field"}
             ],
@@ -810,18 +812,33 @@ def test_es_on_poll_no_finding_source_when_names_empty(
     assert call_args.get("finding_source") is None
 
 
-def test_es_on_poll_only_uploads_raw_email_to_es(
+def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test that only is_raw_email attachments are uploaded to ES findings."""
-    mocker.patch.object(
+    """Test that raw_email_link is set only for is_raw_email attachments, all go to vault."""
+    create_findings_bulk = mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
-    upload_mock = mocker.patch.object(
+    container_mock = MagicMock()
+    container_mock.create.return_value = 99
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "container",
+        new_callable=lambda: property(lambda self: container_mock),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.side_effect = ["vault-eml", "vault-pdf"]
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mocker.patch.object(
         app_with_action.soar_client,
-        "upload_finding_attachment",
+        "get_soar_base_url",
+        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -843,29 +860,59 @@ def test_es_on_poll_only_uploads_raw_email_to_es(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
-    upload_mock.assert_called_once_with(
-        "new_finding",
-        "email.eml",
-        b"raw eml",
-        source_type="Incident",
-        is_raw_email=True,
+
+    assert vault_mock.create_attachment.call_count == 2
+
+    finding_payload = create_findings_bulk.call_args[0][0][0]
+    assert finding_payload["email"]["attachments"] == [
+        "https://soar.local/vault/item/vault-eml",
+        "https://soar.local/vault/item/vault-pdf",
+    ]
+    assert finding_payload["email"]["raw_email_link"] == (
+        "https://soar.local/vault/item/vault-eml"
     )
 
+    passed_container_ids = create_findings_bulk.call_args[1].get("container_ids")
+    assert passed_container_ids == [99]
 
-def test_es_on_poll_stores_attachments_in_container_vault(
+
+def test_es_on_poll_stores_attachments_in_vault_before_finding(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test that attachments are stored in the container vault after container creation."""
+    """Test that attachments are stored in the vault before the finding is created."""
+    call_order = []
+
+    def track_vault_create(*args, **kwargs):
+        call_order.append("vault_create")
+        return "vault-id"
+
+    def track_bulk_create(*args, **kwargs):
+        call_order.append("bulk_create")
+        return BULK_RESPONSE
+
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
-        return_value=BULK_RESPONSE,
+        side_effect=track_bulk_create,
+    )
+    container_mock = MagicMock()
+    container_mock.create.return_value = 99
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "container",
+        new_callable=lambda: property(lambda self: container_mock),
     )
     vault_mock = MagicMock()
+    vault_mock.create_attachment.side_effect = track_vault_create
     mocker.patch.object(
         type(app_with_action.soar_client),
         "vault",
         new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "get_soar_base_url",
+        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -887,25 +934,31 @@ def test_es_on_poll_stores_attachments_in_container_vault(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
     assert vault_mock.create_attachment.call_count == 2
-    vault_mock.create_attachment.assert_any_call(42, b"raw eml", "email.eml")
-    vault_mock.create_attachment.assert_any_call(42, b"pdf data", "report.pdf")
+    vault_mock.create_attachment.assert_any_call(99, b"raw eml", "email.eml")
+    vault_mock.create_attachment.assert_any_call(99, b"pdf data", "report.pdf")
+    assert call_order == ["vault_create", "vault_create", "bulk_create"]
 
 
-def test_es_on_poll_vault_failure_does_not_fail_action(
+def test_es_on_poll_container_create_failure_does_not_fail_action(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test that vault attachment failure is non-fatal."""
+    """Test that container pre-creation failure is non-fatal."""
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
-    vault_mock = MagicMock()
-    vault_mock.create_attachment.side_effect = Exception("Vault error")
+    container_mock = MagicMock()
+    container_mock.create.side_effect = Exception("Container error")
     mocker.patch.object(
         type(app_with_action.soar_client),
-        "vault",
-        new_callable=lambda: property(lambda self: vault_mock),
+        "container",
+        new_callable=lambda: property(lambda self: container_mock),
+    )
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "get_soar_base_url",
+        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
