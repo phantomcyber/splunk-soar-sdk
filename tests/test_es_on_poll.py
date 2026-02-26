@@ -14,6 +14,7 @@ BULK_RESPONSE = {
     "created": 1,
     "failed": 0,
     "findings": ["new_finding"],
+    "container_ids": [42],
     "errors": [],
 }
 
@@ -388,7 +389,11 @@ def test_es_on_poll_with_attachments(
         yield Finding(
             rule_title="Phishing Email",
             run_threat_analysis=True,
-            attachments=[FindingAttachment(file_name="email.eml", data=b"raw content")],
+            attachments=[
+                FindingAttachment(
+                    file_name="email.eml", data=b"raw content", is_raw_email=True
+                )
+            ],
         )
 
     params = OnESPollParams(start_time=0, end_time=1)
@@ -444,6 +449,7 @@ def test_es_on_poll_with_finding_limit(
             "created": 2,
             "failed": 0,
             "findings": ["f1", "f2"],
+            "container_ids": [42, 43],
             "errors": [],
         },
     )
@@ -741,7 +747,11 @@ def test_es_on_poll_vault_upload_failure_continues(
         yield Finding(
             rule_title="Phishing Email",
             run_threat_analysis=True,
-            attachments=[FindingAttachment(file_name="email.eml", data=b"content")],
+            attachments=[
+                FindingAttachment(
+                    file_name="email.eml", data=b"content", is_raw_email=True
+                )
+            ],
         )
 
     params = OnESPollParams(start_time=0, end_time=1)
@@ -761,6 +771,7 @@ def test_es_on_poll_bulk_partial_failure(
             "created": 1,
             "failed": 1,
             "findings": ["f1"],
+            "container_ids": [42],
             "errors": [
                 {"index": 1, "rule_title": "Bad Finding", "error": "invalid field"}
             ],
@@ -847,7 +858,9 @@ def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
             rule_title="Email with PDF",
             run_threat_analysis=True,
             attachments=[
-                FindingAttachment(file_name="email.eml", data=b"raw eml"),
+                FindingAttachment(
+                    file_name="email.eml", data=b"raw eml", is_raw_email=True
+                ),
                 FindingAttachment(
                     file_name="report.pdf", data=b"pdf data", is_raw_email=False
                 ),
@@ -918,7 +931,9 @@ def test_es_on_poll_stores_attachments_in_vault_before_finding(
         yield Finding(
             rule_title="Email with attachments",
             attachments=[
-                FindingAttachment(file_name="email.eml", data=b"raw eml"),
+                FindingAttachment(
+                    file_name="email.eml", data=b"raw eml", is_raw_email=True
+                ),
                 FindingAttachment(
                     file_name="report.pdf", data=b"pdf data", is_raw_email=False
                 ),
@@ -961,7 +976,9 @@ def test_es_on_poll_container_create_failure_does_not_fail_action(
     ) -> Generator[Finding, int | None]:
         yield Finding(
             rule_title="Email",
-            attachments=[FindingAttachment(file_name="email.eml", data=b"raw")],
+            attachments=[
+                FindingAttachment(file_name="email.eml", data=b"raw", is_raw_email=True)
+            ],
         )
 
     params = OnESPollParams(start_time=0, end_time=1)
