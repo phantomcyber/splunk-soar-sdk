@@ -1,5 +1,6 @@
 import asyncio
 import inspect
+import uuid
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args
@@ -170,6 +171,7 @@ class OnESPollDecorator:
             max_findings = action_params.container_count or None
             batch_size = soar.MAX_BULK_FINDINGS
             generator_exhausted = False
+            save = self.app.actions_manager.save_progress
 
             def _apply_defaults(item: Finding) -> None:
                 if item.security_domain is None:
@@ -226,8 +228,7 @@ class OnESPollDecorator:
                 if not batch:
                     break
 
-                save = self.app.actions_manager.save_progress
-                base_url = soar.get_soar_base_url().rstrip("/")
+                base_url = self.app.actions_manager.get_soar_base_url().rstrip("/")
 
                 pre_created_containers: dict[int, int] = {}
                 total_vault_atts = 0
@@ -238,7 +239,20 @@ class OnESPollDecorator:
                         continue
 
                     try:
-                        container_id = soar.container.create({"name": item.rule_title})
+                        container_data = {
+                            "name": item.rule_title,
+                            "source_data_identifier": str(uuid.uuid4()),
+                        }
+                        ret_val, message, container_id = (
+                            self.app.actions_manager.save_container(container_data)
+                        )
+                        if not ret_val or not container_id:
+                            logger.warning(
+                                "save_container failed for '%s': %s",
+                                item.rule_title,
+                                message,
+                            )
+                            continue
                     except Exception as e:
                         logger.warning(
                             f"Failed to pre-create container for "
@@ -257,7 +271,7 @@ class OnESPollDecorator:
                                 attachment.data,
                                 attachment.file_name,
                             )
-                            vault_link = f"{base_url}/vault/item/{vault_id}"
+                            vault_link = f"{base_url}/rest/download_attachment?vault_id={vault_id}"
                             vault_links.append(vault_link)
                             if attachment.is_raw_email:
                                 raw_email_link = vault_link
@@ -329,6 +343,8 @@ class OnESPollDecorator:
 
                 if max_findings is not None and findings_created >= max_findings:
                     break
+
+            save(f"Successfully added findings: {findings_created},")
 
             return self.app._adapt_action_result(
                 ActionResult(
