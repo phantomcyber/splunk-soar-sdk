@@ -38,8 +38,7 @@ class FindingAttachment(BaseModel):
 
     file_name: str
     data: bytes
-    source_type: str = "Incident"
-    is_raw_email: bool = True
+    is_raw_email: bool = False
 
 
 class FindingEmail(BaseModel):

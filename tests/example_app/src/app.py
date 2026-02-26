@@ -219,6 +219,7 @@ def on_es_poll(
                 FindingAttachment(
                     file_name=f"suspicious_email_user{i}.eml",
                     data=email_content.encode("utf-8"),
+                    is_raw_email=True,
                 )
             ],
         )

@@ -118,7 +118,7 @@ class SOARClient(Generic[SummaryType]):
         timeout = max(30.0, len(findings) * 5.0)
 
         payload: dict[str, Any] | list = findings
-        if container_ids:
+        if container_ids is not None:
             payload = {"findings": findings, "container_ids": container_ids}
 
         response = self.post(endpoint, json=payload, timeout=timeout)

@@ -171,7 +171,7 @@ class OnESPollDecorator:
             max_findings = action_params.container_count or None
             batch_size = soar.MAX_BULK_FINDINGS
             generator_exhausted = False
-            save = self.app.actions_manager.save_progress
+            base_url = self.app.actions_manager.get_soar_base_url().rstrip("/")
 
             def _apply_defaults(item: Finding) -> None:
                 if item.security_domain is None:
@@ -227,8 +227,6 @@ class OnESPollDecorator:
 
                 if not batch:
                     break
-
-                base_url = self.app.actions_manager.get_soar_base_url().rstrip("/")
 
                 pre_created_containers: dict[int, int] = {}
                 total_vault_atts = 0
@@ -292,7 +290,7 @@ class OnESPollDecorator:
                         item.email.raw_email_link = raw_email_link
 
                 if total_vault_atts:
-                    save(
+                    self.app.actions_manager.save_progress(
                         f"Added {total_vault_atts} file(s) to "
                         f"{containers_with_atts} container(s)"
                     )
@@ -305,7 +303,9 @@ class OnESPollDecorator:
                         pre_created_containers.get(idx) for idx in range(len(batch))
                     ]
 
-                save(f"Creating {len(batch)} finding(s) in bulk")
+                self.app.actions_manager.save_progress(
+                    f"Creating {len(batch)} finding(s) in bulk"
+                )
                 try:
                     bulk_response = soar.create_findings_bulk(
                         findings_payload, container_ids=batch_container_ids
@@ -324,7 +324,9 @@ class OnESPollDecorator:
 
                 created = bulk_response.get("created", 0)
                 failed = bulk_response.get("failed", 0)
-                save(f"Created {created} finding(s), {failed} failed")
+                self.app.actions_manager.save_progress(
+                    f"Created {created} finding(s), {failed} failed"
+                )
 
                 if bulk_errors:
                     for error in bulk_errors:
@@ -344,7 +346,9 @@ class OnESPollDecorator:
                 if max_findings is not None and findings_created >= max_findings:
                     break
 
-            save(f"Successfully added findings: {findings_created},")
+            self.app.actions_manager.save_progress(
+                f"Successfully added findings: {findings_created},"
+            )
 
             return self.app._adapt_action_result(
                 ActionResult(
