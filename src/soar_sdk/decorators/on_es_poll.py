@@ -17,6 +17,7 @@ from soar_sdk.models.finding import (
     DrilldownSearch,
     Finding,
     FindingEmail,
+    FindingEmailAttachment,
 )
 from soar_sdk.params import OnESPollParams
 from soar_sdk.types import Action, action_protocol
@@ -259,7 +260,7 @@ class OnESPollDecorator:
                         continue
 
                     pre_created_containers[idx] = container_id
-                    vault_links: list[str] = []
+                    email_attachments: list[FindingEmailAttachment] = []
                     raw_email_link: str | None = None
 
                     for attachment in item.attachments:
@@ -270,7 +271,13 @@ class OnESPollDecorator:
                                 attachment.file_name,
                             )
                             vault_link = f"{base_url}/rest/download_attachment?vault_id={vault_id}"
-                            vault_links.append(vault_link)
+                            email_attachments.append(
+                                FindingEmailAttachment(
+                                    filename=attachment.file_name,
+                                    filesize=len(attachment.data),
+                                    url=vault_link,
+                                )
+                            )
                             if attachment.is_raw_email:
                                 raw_email_link = vault_link
                             total_vault_atts += 1
@@ -280,12 +287,12 @@ class OnESPollDecorator:
                                 f"to container vault: {e}"
                             )
 
-                    if vault_links:
+                    if email_attachments:
                         containers_with_atts += 1
 
                     if item.email is None:
                         item.email = FindingEmail()
-                    item.email.attachments = vault_links or None
+                    item.email.attachments = email_attachments or None
                     if raw_email_link:
                         item.email.raw_email_link = raw_email_link
 

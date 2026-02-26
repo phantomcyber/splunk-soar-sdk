@@ -410,7 +410,11 @@ def test_es_on_poll_with_attachments(
 
     finding_payload = create_findings_bulk.call_args[0][0][0]
     assert finding_payload["email"]["attachments"] == [
-        "https://soar.local/rest/download_attachment?vault_id=vault-abc123"
+        {
+            "filename": "email.eml",
+            "filesize": len(b"raw content"),
+            "url": "https://soar.local/rest/download_attachment?vault_id=vault-abc123",
+        }
     ]
     assert finding_payload["email"]["raw_email_link"] == (
         "https://soar.local/rest/download_attachment?vault_id=vault-abc123"
@@ -876,8 +880,16 @@ def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
 
     finding_payload = create_findings_bulk.call_args[0][0][0]
     assert finding_payload["email"]["attachments"] == [
-        "https://soar.local/rest/download_attachment?vault_id=vault-eml",
-        "https://soar.local/rest/download_attachment?vault_id=vault-pdf",
+        {
+            "filename": "email.eml",
+            "filesize": len(b"raw eml"),
+            "url": "https://soar.local/rest/download_attachment?vault_id=vault-eml",
+        },
+        {
+            "filename": "report.pdf",
+            "filesize": len(b"pdf data"),
+            "url": "https://soar.local/rest/download_attachment?vault_id=vault-pdf",
+        },
     ]
     assert finding_payload["email"]["raw_email_link"] == (
         "https://soar.local/rest/download_attachment?vault_id=vault-eml"

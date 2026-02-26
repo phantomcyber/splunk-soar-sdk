@@ -41,6 +41,14 @@ class FindingAttachment(BaseModel):
     is_raw_email: bool = False
 
 
+class FindingEmailAttachment(BaseModel):
+    """Represents an email attachment metadata object in a finding."""
+
+    filename: str
+    filesize: int | None = None
+    url: str | None = None
+
+
 class FindingEmail(BaseModel):
     """Email object containing all email-related fields for phishing findings."""
 
@@ -49,7 +57,7 @@ class FindingEmail(BaseModel):
     headers: dict[str, Any] | None = None
     body: str | None = None
     urls: list[str] | None = None
-    attachments: list[str] | None = None
+    attachments: list[FindingEmailAttachment] | None = None
     raw_email_link: str | None = None
 
 
