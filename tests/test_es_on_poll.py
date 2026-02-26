@@ -6,7 +6,7 @@ import pytest_mock
 
 from soar_sdk.app import App
 from soar_sdk.exceptions import ActionFailure
-from soar_sdk.models.finding import Finding, FindingAttachment
+from soar_sdk.models.finding import Finding, FindingAttachment, FindingEmail
 from soar_sdk.params import OnESPollParams
 
 BULK_RESPONSE = {
@@ -857,6 +857,7 @@ def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
         yield Finding(
             rule_title="Email with PDF",
             run_threat_analysis=True,
+            email=FindingEmail(body="test body"),
             attachments=[
                 FindingAttachment(
                     file_name="email.eml", data=b"raw eml", is_raw_email=True
@@ -980,6 +981,122 @@ def test_es_on_poll_container_create_failure_does_not_fail_action(
                 FindingAttachment(file_name="email.eml", data=b"raw", is_raw_email=True)
             ],
         )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+
+
+def test_es_on_poll_save_container_returns_failure(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll skips attachment flow when save_container returns failure."""
+    create_findings_bulk = mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(False, "Duplicate container", None),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "get_soar_base_url",
+        return_value="https://soar.local",
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Email",
+            attachments=[
+                FindingAttachment(file_name="email.eml", data=b"raw", is_raw_email=True)
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+    assert create_findings_bulk.call_args[1].get("container_ids") is None
+
+
+def test_es_on_poll_attachment_creates_email_when_none(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that email field is created when Finding has attachments but no email set."""
+    create_findings_bulk = mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.return_value = "vault-abc"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "get_soar_base_url",
+        return_value="https://soar.local",
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="No email field",
+            attachments=[
+                FindingAttachment(file_name="file.eml", data=b"data", is_raw_email=True)
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+
+    finding_payload = create_findings_bulk.call_args[0][0][0]
+    assert "email" in finding_payload
+    assert finding_payload["email"]["raw_email_link"] == (
+        "https://soar.local/rest/download_attachment?vault_id=vault-abc"
+    )
+
+
+def test_es_on_poll_no_container_ids_in_response(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll handles bulk response with no container_ids."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value={
+            "status": "success",
+            "created": 1,
+            "failed": 0,
+            "findings": ["f1"],
+            "errors": [],
+        },
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="Test Finding")
 
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)

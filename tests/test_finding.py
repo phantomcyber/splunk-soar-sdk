@@ -185,6 +185,30 @@ def test_soar_client_create_findings_bulk(app_with_action):
     assert result["findings"] == ["id-1", "id-2"]
 
 
+def test_soar_client_create_findings_bulk_with_container_ids(app_with_action):
+    """Test SOARClient.create_findings_bulk wraps payload when container_ids provided."""
+    from soar_sdk.app import App
+
+    app: App = app_with_action
+    mock_response = MagicMock()
+    mock_response.json.return_value = {
+        "status": "success",
+        "created": 1,
+        "failed": 0,
+        "findings": ["id-1"],
+        "container_ids": [42],
+        "errors": [],
+    }
+    app.soar_client.post = MagicMock(return_value=mock_response)
+
+    findings = [{"rule_title": "Finding 1"}]
+    result = app.soar_client.create_findings_bulk(findings, container_ids=[42])
+
+    call_args = app.soar_client.post.call_args
+    assert call_args[1]["json"] == {"findings": findings, "container_ids": [42]}
+    assert result["container_ids"] == [42]
+
+
 def test_soar_client_create_findings_bulk_empty(app_with_action):
     """Test SOARClient.create_findings_bulk with empty list returns immediately."""
     from soar_sdk.app import App

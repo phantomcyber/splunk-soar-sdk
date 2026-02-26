@@ -91,10 +91,5 @@ class Finding(BaseModel):
     attachments: list[FindingAttachment] | None = None
 
     def to_dict(self) -> dict[str, Any]:
-        """Convert the finding to a dictionary for the ES API.
-
-        Excludes the binary attachments field which is only used by the SDK
-        for vault upload. The email.attachments and email.raw_email_link
-        vault links are included in the serialized output.
-        """
+        """Convert the finding to a dictionary (excludes attachments)."""
         return self.model_dump(exclude_none=True, exclude={"attachments"})
