@@ -362,12 +362,10 @@ def test_es_on_poll_with_attachments(
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
-    container_mock = MagicMock()
-    container_mock.create.return_value = 99
-    mocker.patch.object(
-        type(app_with_action.soar_client),
-        "container",
-        new_callable=lambda: property(lambda self: container_mock),
+    save_container = mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
     )
     vault_mock = MagicMock()
     vault_mock.create_attachment.return_value = "vault-abc123"
@@ -377,7 +375,7 @@ def test_es_on_poll_with_attachments(
         new_callable=lambda: property(lambda self: vault_mock),
     )
     mocker.patch.object(
-        app_with_action.soar_client,
+        app_with_action.actions_manager,
         "get_soar_base_url",
         return_value="https://soar.local",
     )
@@ -397,17 +395,20 @@ def test_es_on_poll_with_attachments(
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
 
-    container_mock.create.assert_called_once_with({"name": "Phishing Email"})
+    save_container.assert_called_once()
+    create_args = save_container.call_args[0][0]
+    assert create_args["name"] == "Phishing Email"
+    assert "source_data_identifier" in create_args
     vault_mock.create_attachment.assert_called_once_with(
         99, b"raw content", "email.eml"
     )
 
     finding_payload = create_findings_bulk.call_args[0][0][0]
     assert finding_payload["email"]["attachments"] == [
-        "https://soar.local/vault/item/vault-abc123"
+        "https://soar.local/rest/download_attachment?vault_id=vault-abc123"
     ]
     assert finding_payload["email"]["raw_email_link"] == (
-        "https://soar.local/vault/item/vault-abc123"
+        "https://soar.local/rest/download_attachment?vault_id=vault-abc123"
     )
 
     passed_container_ids = create_findings_bulk.call_args[1].get("container_ids")
@@ -714,12 +715,10 @@ def test_es_on_poll_vault_upload_failure_continues(
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
-    container_mock = MagicMock()
-    container_mock.create.return_value = 99
     mocker.patch.object(
-        type(app_with_action.soar_client),
-        "container",
-        new_callable=lambda: property(lambda self: container_mock),
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
     )
     vault_mock = MagicMock()
     vault_mock.create_attachment.side_effect = Exception("Vault upload failed")
@@ -729,7 +728,7 @@ def test_es_on_poll_vault_upload_failure_continues(
         new_callable=lambda: property(lambda self: vault_mock),
     )
     mocker.patch.object(
-        app_with_action.soar_client,
+        app_with_action.actions_manager,
         "get_soar_base_url",
         return_value="https://soar.local",
     )
@@ -821,12 +820,10 @@ def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
-    container_mock = MagicMock()
-    container_mock.create.return_value = 99
     mocker.patch.object(
-        type(app_with_action.soar_client),
-        "container",
-        new_callable=lambda: property(lambda self: container_mock),
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
     )
     vault_mock = MagicMock()
     vault_mock.create_attachment.side_effect = ["vault-eml", "vault-pdf"]
@@ -836,7 +833,7 @@ def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
         new_callable=lambda: property(lambda self: vault_mock),
     )
     mocker.patch.object(
-        app_with_action.soar_client,
+        app_with_action.actions_manager,
         "get_soar_base_url",
         return_value="https://soar.local",
     )
@@ -865,11 +862,11 @@ def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
 
     finding_payload = create_findings_bulk.call_args[0][0][0]
     assert finding_payload["email"]["attachments"] == [
-        "https://soar.local/vault/item/vault-eml",
-        "https://soar.local/vault/item/vault-pdf",
+        "https://soar.local/rest/download_attachment?vault_id=vault-eml",
+        "https://soar.local/rest/download_attachment?vault_id=vault-pdf",
     ]
     assert finding_payload["email"]["raw_email_link"] == (
-        "https://soar.local/vault/item/vault-eml"
+        "https://soar.local/rest/download_attachment?vault_id=vault-eml"
     )
 
     passed_container_ids = create_findings_bulk.call_args[1].get("container_ids")
@@ -895,12 +892,10 @@ def test_es_on_poll_stores_attachments_in_vault_before_finding(
         "create_findings_bulk",
         side_effect=track_bulk_create,
     )
-    container_mock = MagicMock()
-    container_mock.create.return_value = 99
     mocker.patch.object(
-        type(app_with_action.soar_client),
-        "container",
-        new_callable=lambda: property(lambda self: container_mock),
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
     )
     vault_mock = MagicMock()
     vault_mock.create_attachment.side_effect = track_vault_create
@@ -910,7 +905,7 @@ def test_es_on_poll_stores_attachments_in_vault_before_finding(
         new_callable=lambda: property(lambda self: vault_mock),
     )
     mocker.patch.object(
-        app_with_action.soar_client,
+        app_with_action.actions_manager,
         "get_soar_base_url",
         return_value="https://soar.local",
     )
@@ -948,15 +943,13 @@ def test_es_on_poll_container_create_failure_does_not_fail_action(
         "create_findings_bulk",
         return_value=BULK_RESPONSE,
     )
-    container_mock = MagicMock()
-    container_mock.create.side_effect = Exception("Container error")
     mocker.patch.object(
-        type(app_with_action.soar_client),
-        "container",
-        new_callable=lambda: property(lambda self: container_mock),
+        app_with_action.actions_manager,
+        "save_container",
+        side_effect=Exception("Container error"),
     )
     mocker.patch.object(
-        app_with_action.soar_client,
+        app_with_action.actions_manager,
         "get_soar_base_url",
         return_value="https://soar.local",
     )
