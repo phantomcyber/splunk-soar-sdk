@@ -12,6 +12,7 @@ class TomlContext:
     version: str
     description: str
     copyright: str
+    uv_index: str
     python_versions: list[PythonVersion]
     authors: list[str] = dataclasses.field(default_factory=list)
     dependencies: list[str] = dataclasses.field(default_factory=list)

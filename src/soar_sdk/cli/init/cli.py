@@ -65,6 +65,14 @@ def init_callback(
     type: str = "generic",  # noqa: A002
     vendor: str = "Splunk Inc.",
     publisher: str = "Splunk Inc.",
+    uv_index: Annotated[
+        str,
+        typer.Option(
+            help=(
+                "URL of a custom Python Package Index your app should use when downloading dependencies. Apps distributed on Splunkbase should not change this setting."
+            ),
+        ),
+    ] = "https://pypi.python.org/simple",
     product: str | None = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
@@ -85,6 +93,7 @@ def init_callback(
         publisher,
         APP_INIT_TEMPLATES / "basic_app/logo.svg",
         APP_INIT_TEMPLATES / "basic_app/logo_dark.svg",
+        uv_index,
         product,
         fips_compliant,
         overwrite,
@@ -107,6 +116,7 @@ def init_sdk_app(
     publisher: str,
     logo: Path,
     logo_dark: Path,
+    uv_index: str,
     product: str | None = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
@@ -150,6 +160,7 @@ def init_sdk_app(
         version=version,
         description=description,
         copyright=copyright.format(year=datetime.datetime.now(datetime.UTC).year),
+        uv_index=uv_index,
         python_versions=python_versions,
         authors=authors,
         dependencies=dependencies,
@@ -251,6 +262,7 @@ def convert_connector_to_sdk(
         ),
     ] = None,
     overwrite: bool = False,
+    uv_index: str = "https://pypi.python.org/simple",
 ) -> None:
     """Convert a SOAR connector to a SOAR SDK app.
 
@@ -293,6 +305,7 @@ def convert_connector_to_sdk(
         appid=uuid.UUID(app_meta.appid),
         type=app_meta.type,
         vendor=app_meta.product_vendor,
+        uv_index=uv_index,
         product=app_meta.product_name,
         publisher=app_meta.publisher,
         logo=app_dir / app_meta.logo,
