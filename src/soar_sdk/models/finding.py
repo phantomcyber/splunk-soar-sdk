@@ -94,6 +94,7 @@ class Finding(BaseModel):
     email: FindingEmail | None = None
     run_threat_analysis: bool = False
     launch_automation: bool = False
+    investigation_type: str | None = None
     automation_rule: str | None = None
     finding_source: str | None = None
     attachments: list[FindingAttachment] | None = None
