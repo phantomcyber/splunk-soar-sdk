@@ -106,6 +106,7 @@ class OnESPollDecorator:
             es_urgency = ingest_config.get("es_urgency")
             es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
             es_launch_automation = ingest_config.get("es_launch_automation", False)
+            es_investigation_type = ingest_config.get("es_investigation_type")
             app_name = str(self.app.app_meta_info.get("name", ""))
             asset_name: str = asset_data.get("name", "")
             finding_source: str = (
@@ -183,6 +184,8 @@ class OnESPollDecorator:
                     item.run_threat_analysis = es_run_threat_analysis
                 if not item.launch_automation:
                     item.launch_automation = es_launch_automation
+                if item.investigation_type is None and es_investigation_type:
+                    item.investigation_type = es_investigation_type
                 if item.drilldown_searches is None and drilldown_searches:
                     item.drilldown_searches = drilldown_searches
                 if item.drilldown_dashboards is None and drilldown_dashboards:

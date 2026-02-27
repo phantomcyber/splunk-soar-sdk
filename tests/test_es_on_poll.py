@@ -492,6 +492,7 @@ def test_es_on_poll_with_ingest_config_defaults(
             "es_urgency": "high",
             "es_run_threat_analysis": True,
             "es_launch_automation": True,
+            "es_investigation_type": "insider threat",
         },
     )
 
@@ -510,6 +511,7 @@ def test_es_on_poll_with_ingest_config_defaults(
     assert call_args["urgency"] == "high"
     assert call_args["run_threat_analysis"] is True
     assert call_args["launch_automation"] is True
+    assert call_args["investigation_type"] == "insider threat"
 
 
 def test_es_on_poll_with_invalid_drilldown_searches(
@@ -632,6 +634,7 @@ def test_es_on_poll_finding_overrides_config_defaults(
         {
             "es_security_domain": "network",
             "es_urgency": "high",
+            "es_investigation_type": "insider threat",
         },
     )
 
@@ -645,6 +648,7 @@ def test_es_on_poll_finding_overrides_config_defaults(
             urgency="critical",
             run_threat_analysis=True,
             launch_automation=True,
+            investigation_type="insider threat",
         )
 
     params = OnESPollParams(start_time=0, end_time=1)
@@ -656,6 +660,7 @@ def test_es_on_poll_finding_overrides_config_defaults(
     assert call_args["urgency"] == "critical"
     assert call_args["run_threat_analysis"] is True
     assert call_args["launch_automation"] is True
+    assert call_args["investigation_type"] == "insider threat"
 
 
 def test_es_on_poll_generator_exception(
