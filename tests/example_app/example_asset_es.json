@@ -1,0 +1,11 @@
+{
+    "base_url": "https://soar-api.talos.cisco.com",
+    "api_key": "test",
+    "key_header": "Authorization",
+    "timezone": "America/New_York",
+    "ingest": {
+        "container_label": "events",
+        "use_es_ingest": true,
+        "es_security_domain": "threat"
+    }
+}
