@@ -173,7 +173,13 @@ class OnESPollDecorator:
             max_findings = action_params.container_count or None
             batch_size = soar.MAX_BULK_FINDINGS
             generator_exhausted = False
-            base_url = self.app.actions_manager.get_soar_base_url().rstrip("/")
+            try:
+                system_info = soar.get("/rest/system_info").json()
+                base_url = system_info.get("base_url", "").rstrip("/")
+            except Exception:
+                base_url = ""
+            if not base_url:
+                base_url = self.app.actions_manager.get_soar_base_url().rstrip("/")
 
             def _apply_defaults(item: Finding) -> None:
                 if item.security_domain is None:
