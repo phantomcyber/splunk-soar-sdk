@@ -155,9 +155,91 @@ jobs:
             test-results/
           retention-days: 1
 
+  es-poll-test:
+    runs-on:
+      - codebuild-github-splunk-soar-sdk-integration-tests-${{ github.run_id }}-${{ github.run_attempt }}
+      - image:custom-linux-875003031410.dkr.ecr.us-west-1.amazonaws.com/soar-connectors/pytest:3ea28df603962918dc8e72ead393c40b3ce6e20e
+    needs: build-example-apps
+    if: ${{ vars.PHANTOM_INSTANCE_ES_IP != '' }}
+    env:
+      PHANTOM_URL: "https://${{ vars.PHANTOM_INSTANCE_ES_IP }}"
+      PHANTOM_USERNAME: ${{ vars.PHANTOM_USERNAME }}
+      PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
+      AUTOMATION_BROKER_NAME: ${{ vars.AUTOMATION_BROKER_NAME_ES }}
+      NUM_TEST_RETRIES: ${{ vars.NUM_TEST_RETRIES || '2' }}
+      UV_LOCKED: 1
+    steps:
+      - name: Checkout SDK repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: 3.13
+
+      - name: Download example_app tar file
+        uses: actions/download-artifact@v4
+        with:
+          name: example_app-tar
+          path: /tmp/
+
+      - name: Clear uv cache and sync SDK
+        run: |
+          uv cache clean
+          uv sync
+
+      - name: Check connectivity to ES SOAR host
+        run: |
+          apt update -y
+          apt install -y netcat-openbsd
+          phantom_ip=${{ vars.PHANTOM_INSTANCE_ES_IP }}
+          nc -zv "$phantom_ip" 443
+
+      - name: Install example_app on ES instance
+        env:
+          PHANTOM_PASSWORD: ${{ secrets.PHANTOM_PASSWORD }}
+        run: |
+          phantom_ip=${{ vars.PHANTOM_INSTANCE_ES_IP }}
+          echo "Installing example_app on https://$phantom_ip"
+
+          uv run soarapps package install \
+            /tmp/example_app.tgz \
+            "$phantom_ip" \
+            --username "${{ vars.PHANTOM_USERNAME }}"
+
+      - name: Run ES poll integration tests
+        run: |
+          echo "Running ES poll tests against $PHANTOM_URL"
+
+          uv sync --group dev
+
+          uv run pytest tests/integration/test_es_poll.py \
+            -v \
+            --reruns=$NUM_TEST_RETRIES \
+            --tb=short \
+            --color=yes \
+            --no-cov \
+            -m "integration" \
+            --junitxml=test-results/junit-es-poll.xml \
+            || exit_code=$?
+
+          echo "ES poll tests completed"
+          exit ${exit_code:-0}
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results-es-poll
+          path: |
+            pytest-logs/
+            test-results/
+          retention-days: 1
+
   test-summary:
     runs-on: ubuntu-latest
-    needs: integration-test
+    needs: [integration-test, es-poll-test]
     if: always()
     steps:
       - name: Checkout repository
