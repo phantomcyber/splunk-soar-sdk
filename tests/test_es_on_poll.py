@@ -19,15 +19,25 @@ BULK_RESPONSE = {
 }
 
 
-def mock_asset_ingest_config(mocker, app, ingest_config):
-    """Mock the soar_client.get() call to return asset configuration.
+def mock_asset_ingest_config(
+    mocker, app, ingest_config, system_base_url="https://soar.local"
+):
+    """Mock the soar_client.get() call to return asset configuration and system info.
 
     The ingest config is fetched via REST API from /rest/asset/{asset_id},
-    so we need to mock the HTTP response.
+    and the external base URL is fetched from /rest/system_info.
     """
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"configuration": {"ingest": ingest_config}}
-    mocker.patch.object(app.soar_client, "get", return_value=mock_response)
+    asset_response = MagicMock()
+    asset_response.json.return_value = {"configuration": {"ingest": ingest_config}}
+    system_info_response = MagicMock()
+    system_info_response.json.return_value = {"base_url": system_base_url}
+
+    def route_get(endpoint, **kwargs):
+        if "/rest/system_info" in endpoint:
+            return system_info_response
+        return asset_response
+
+    mocker.patch.object(app.soar_client, "get", side_effect=route_get)
 
 
 def test_es_on_poll_decoration_fails_when_used_more_than_once(app_with_action: App):
@@ -374,11 +384,6 @@ def test_es_on_poll_with_attachments(
         type(app_with_action.soar_client),
         "vault",
         new_callable=lambda: property(lambda self: vault_mock),
-    )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_soar_base_url",
-        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -742,11 +747,6 @@ def test_es_on_poll_vault_upload_failure_continues(
         "vault",
         new_callable=lambda: property(lambda self: vault_mock),
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_soar_base_url",
-        return_value="https://soar.local",
-    )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
@@ -810,12 +810,20 @@ def test_es_on_poll_no_finding_source_when_names_empty(
         return_value=BULK_RESPONSE,
     )
     app_with_action.app_meta_info["name"] = ""
-    mock_response = MagicMock()
-    mock_response.json.return_value = {
+    asset_response = MagicMock()
+    asset_response.json.return_value = {
         "name": "",
         "configuration": {"ingest": {"es_security_domain": "threat"}},
     }
-    mocker.patch.object(app_with_action.soar_client, "get", return_value=mock_response)
+    system_info_response = MagicMock()
+    system_info_response.json.return_value = {"base_url": "https://soar.local"}
+
+    def route_get(endpoint, **kwargs):
+        if "/rest/system_info" in endpoint:
+            return system_info_response
+        return asset_response
+
+    mocker.patch.object(app_with_action.soar_client, "get", side_effect=route_get)
 
     @app_with_action.on_es_poll()
     def on_es_poll_function(
@@ -851,11 +859,6 @@ def test_es_on_poll_raw_email_link_set_only_for_raw_attachment(
         type(app_with_action.soar_client),
         "vault",
         new_callable=lambda: property(lambda self: vault_mock),
-    )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_soar_base_url",
-        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -935,11 +938,6 @@ def test_es_on_poll_stores_attachments_in_vault_before_finding(
         "vault",
         new_callable=lambda: property(lambda self: vault_mock),
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_soar_base_url",
-        return_value="https://soar.local",
-    )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
@@ -981,11 +979,6 @@ def test_es_on_poll_container_create_failure_does_not_fail_action(
         "save_container",
         side_effect=Exception("Container error"),
     )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_soar_base_url",
-        return_value="https://soar.local",
-    )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
     @app_with_action.on_es_poll()
@@ -1017,11 +1010,6 @@ def test_es_on_poll_save_container_returns_failure(
         app_with_action.actions_manager,
         "save_container",
         return_value=(False, "Duplicate container", None),
-    )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_soar_base_url",
-        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -1062,11 +1050,6 @@ def test_es_on_poll_attachment_creates_email_when_none(
         type(app_with_action.soar_client),
         "vault",
         new_callable=lambda: property(lambda self: vault_mock),
-    )
-    mocker.patch.object(
-        app_with_action.actions_manager,
-        "get_soar_base_url",
-        return_value="https://soar.local",
     )
     mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
 
@@ -1118,3 +1101,116 @@ def test_es_on_poll_no_container_ids_in_response(
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is True
+
+
+def test_es_on_poll_vault_link_uses_system_info_base_url(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test vault links use the external base_url from /rest/system_info."""
+    create_findings_bulk = mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.return_value = "vault-abc123"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mock_asset_ingest_config(
+        mocker,
+        app_with_action,
+        {"es_security_domain": "threat"},
+        system_base_url="https://psaas-cloud-stack.soar.splunkcloud.com",
+    )
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Cloud Finding",
+            attachments=[
+                FindingAttachment(
+                    file_name="email.eml", data=b"raw content", is_raw_email=True
+                )
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+
+    finding_payload = create_findings_bulk.call_args[0][0][0]
+    assert finding_payload["email"]["attachments"][0]["url"] == (
+        "https://psaas-cloud-stack.soar.splunkcloud.com/rest/download_attachment?vault_id=vault-abc123"
+    )
+
+
+def test_es_on_poll_vault_link_fallback_when_system_info_fails(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test vault links fall back to get_soar_base_url when /rest/system_info is unavailable."""
+    create_findings_bulk = mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.return_value = "vault-abc123"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "get_soar_base_url",
+        return_value="https://fallback.soar.local",
+    )
+
+    asset_response = MagicMock()
+    asset_response.json.return_value = {
+        "configuration": {"ingest": {"es_security_domain": "threat"}}
+    }
+
+    def route_get(endpoint, **kwargs):
+        if "/rest/system_info" in endpoint:
+            raise Exception("system_info unavailable")
+        return asset_response
+
+    mocker.patch.object(app_with_action.soar_client, "get", side_effect=route_get)
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Fallback Finding",
+            attachments=[
+                FindingAttachment(
+                    file_name="email.eml", data=b"raw content", is_raw_email=True
+                )
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+
+    finding_payload = create_findings_bulk.call_args[0][0][0]
+    assert finding_payload["email"]["attachments"][0]["url"] == (
+        "https://fallback.soar.local/rest/download_attachment?vault_id=vault-abc123"
+    )
