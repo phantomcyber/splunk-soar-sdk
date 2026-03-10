@@ -9,7 +9,7 @@ from soar_sdk.asset import AssetField, BaseAsset, FieldCategory
 from soar_sdk.logging import getLogger
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.models.container import Container
-from soar_sdk.models.finding import Finding, FindingAttachment
+from soar_sdk.models.finding import Finding, FindingAttachment, FindingEmail
 from soar_sdk.params import (
     MakeRequestParams,
     OnESPollParams,
@@ -215,12 +215,26 @@ def on_es_poll(
             risk_object_type="user",
             risk_score=75.0 + (i * 10),
             status="New",
+            email=FindingEmail(
+                headers={
+                    "From": "suspicious@example.com",
+                    "To": f"user{i}@example.com",
+                    "Subject": f"Risk threshold exceeded for user-{i}",
+                },
+                body=f"Suspicious activity detected for user{i}@example.com",
+                urls=["https://suspicious-link.example.com"],
+            ),
             attachments=[
                 FindingAttachment(
                     file_name=f"suspicious_email_user{i}.eml",
                     data=email_content.encode("utf-8"),
                     is_raw_email=True,
-                )
+                ),
+                FindingAttachment(
+                    file_name=f"report_user{i}.pdf",
+                    data=b"fake pdf content",
+                    is_raw_email=False,
+                ),
             ],
         )
 
