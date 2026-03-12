@@ -298,12 +298,6 @@ def test_finding_email_reporter_from_required():
         FindingEmailReporter(subject="test")
 
 
-def test_finding_email_reporter_invalid_email():
-    """Test FindingEmailReporter validates email format."""
-    with pytest.raises(ValidationError):
-        FindingEmailReporter(**{"from": "not-an-email"})
-
-
 def test_finding_email_reporter_body_truncation():
     """Test FindingEmailReporter truncates body to 500 characters."""
     long_body = "x" * 600

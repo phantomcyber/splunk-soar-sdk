@@ -1,7 +1,7 @@
 from typing import Any
 
 import pydantic
-from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class DrilldownSearch(BaseModel):
@@ -55,10 +55,10 @@ class FindingEmailReporter(BaseModel):
 
     model_config = ConfigDict(extra="forbid", populate_by_name=True)
 
-    from_: EmailStr = pydantic.Field(alias="from", serialization_alias="from")
-    to: EmailStr | list[EmailStr] | None = None
-    cc: EmailStr | list[EmailStr] | None = None
-    bcc: EmailStr | list[EmailStr] | None = None
+    from_: str = pydantic.Field(alias="from", serialization_alias="from")
+    to: str | list[str] | None = None
+    cc: str | list[str] | None = None
+    bcc: str | list[str] | None = None
     subject: str | None = None
     message_id: str | None = None
     id: str | None = None
