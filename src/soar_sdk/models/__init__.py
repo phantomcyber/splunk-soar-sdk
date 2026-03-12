@@ -8,6 +8,7 @@ from .finding import (
     Finding,
     FindingAttachment,
     FindingEmailAttachment,
+    FindingEmailReporter,
 )
 from .vault_attachment import VaultAttachment
 
@@ -21,5 +22,6 @@ __all__ = [
     "Finding",
     "FindingAttachment",
     "FindingEmailAttachment",
+    "FindingEmailReporter",
     "VaultAttachment",
 ]
