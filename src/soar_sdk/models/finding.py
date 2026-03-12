@@ -1,6 +1,7 @@
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict
+import pydantic
+from pydantic import BaseModel, ConfigDict, EmailStr, field_validator
 
 
 class DrilldownSearch(BaseModel):
@@ -49,6 +50,29 @@ class FindingEmailAttachment(BaseModel):
     url: str | None = None
 
 
+class FindingEmailReporter(BaseModel):
+    """Information about the person who reported the phishing email."""
+
+    model_config = ConfigDict(extra="forbid", populate_by_name=True)
+
+    from_: EmailStr = pydantic.Field(alias="from", serialization_alias="from")
+    to: EmailStr | list[EmailStr] | None = None
+    cc: EmailStr | list[EmailStr] | None = None
+    bcc: EmailStr | list[EmailStr] | None = None
+    subject: str | None = None
+    message_id: str | None = None
+    id: str | None = None
+    body: str | None = None
+    date: str | None = None
+
+    @field_validator("body", mode="before")
+    @classmethod
+    def _truncate_body(cls, v: str | None) -> str | None:
+        if isinstance(v, str) and len(v) > 500:
+            return v[:500]
+        return v
+
+
 class FindingEmail(BaseModel):
     """Email object containing all email-related fields for phishing findings."""
 
@@ -59,6 +83,7 @@ class FindingEmail(BaseModel):
     urls: list[str] | None = None
     attachments: list[FindingEmailAttachment] | None = None
     raw_email_link: str | None = None
+    reporter: FindingEmailReporter | None = None
 
 
 class Finding(BaseModel):
@@ -101,4 +126,6 @@ class Finding(BaseModel):
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the finding to a dictionary (excludes attachments)."""
-        return self.model_dump(exclude_none=True, exclude={"attachments"})
+        return self.model_dump(
+            exclude_none=True, exclude={"attachments"}, by_alias=True
+        )

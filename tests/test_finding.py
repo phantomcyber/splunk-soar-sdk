@@ -9,6 +9,8 @@ from soar_sdk.models.finding import (
     DrilldownSearch,
     Finding,
     FindingAttachment,
+    FindingEmail,
+    FindingEmailReporter,
 )
 
 
@@ -256,3 +258,89 @@ def test_soar_client_upload_finding_attachment(app_with_action):
     assert call_args[1]["json"]["source_type"] == "Incident"
     assert call_args[1]["json"]["is_raw_email"] is True
     assert result == {"id": "attachment-1"}
+
+
+def test_finding_email_reporter_minimal():
+    """Test FindingEmailReporter with only required from field."""
+    reporter = FindingEmailReporter(**{"from": "reporter@company.com"})
+    assert reporter.from_ == "reporter@company.com"
+    assert reporter.to is None
+    assert reporter.subject is None
+
+
+def test_finding_email_reporter_full():
+    """Test FindingEmailReporter with all fields populated."""
+    reporter = FindingEmailReporter(
+        **{
+            "from": "reporter@company.com",
+            "to": ["security@company.com"],
+            "cc": "manager@company.com",
+            "bcc": [],
+            "subject": "Suspicious email report",
+            "message_id": "<abc123@mail.example.com>",
+            "id": "AAMkAGFmNTRhODA4LWIxMjQ",
+            "body": "I received this suspicious email.",
+            "date": "Mon, 10 Mar 2025 10:00:00 +0000",
+        }
+    )
+    assert reporter.from_ == "reporter@company.com"
+    assert reporter.to == ["security@company.com"]
+    assert reporter.cc == "manager@company.com"
+    assert reporter.subject == "Suspicious email report"
+    assert reporter.message_id == "<abc123@mail.example.com>"
+    assert reporter.id == "AAMkAGFmNTRhODA4LWIxMjQ"
+    assert reporter.date == "Mon, 10 Mar 2025 10:00:00 +0000"
+
+
+def test_finding_email_reporter_from_required():
+    """Test FindingEmailReporter requires from field."""
+    with pytest.raises(ValidationError):
+        FindingEmailReporter(subject="test")
+
+
+def test_finding_email_reporter_invalid_email():
+    """Test FindingEmailReporter validates email format."""
+    with pytest.raises(ValidationError):
+        FindingEmailReporter(**{"from": "not-an-email"})
+
+
+def test_finding_email_reporter_body_truncation():
+    """Test FindingEmailReporter truncates body to 500 characters."""
+    long_body = "x" * 600
+    reporter = FindingEmailReporter(
+        **{"from": "reporter@company.com", "body": long_body}
+    )
+    assert len(reporter.body) == 500
+
+
+def test_finding_email_reporter_to_single_and_list():
+    """Test FindingEmailReporter to field accepts both single email and list."""
+    single = FindingEmailReporter(**{"from": "r@co.com", "to": "a@co.com"})
+    assert single.to == "a@co.com"
+
+    multi = FindingEmailReporter(**{"from": "r@co.com", "to": ["a@co.com", "b@co.com"]})
+    assert multi.to == ["a@co.com", "b@co.com"]
+
+
+def test_finding_email_reporter_serialization():
+    """Test FindingEmailReporter serializes from_ as 'from' in dict output."""
+    reporter = FindingEmailReporter(
+        **{"from": "reporter@company.com", "subject": "Suspicious email"}
+    )
+    finding = Finding(
+        rule_title="Phishing Email",
+        email=FindingEmail(
+            body="Click here to verify.",
+            reporter=reporter,
+        ),
+    )
+    result = finding.to_dict()
+    assert "from" in result["email"]["reporter"]
+    assert "from_" not in result["email"]["reporter"]
+    assert result["email"]["reporter"]["from"] == "reporter@company.com"
+
+
+def test_finding_email_reporter_rejects_extra_fields():
+    """Test FindingEmailReporter rejects unknown fields."""
+    with pytest.raises(ValidationError):
+        FindingEmailReporter(**{"from": "r@co.com", "unknown_field": "value"})
