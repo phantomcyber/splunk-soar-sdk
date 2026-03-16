@@ -7,10 +7,13 @@ from html import unescape
 from typing import Any
 from urllib.parse import urlparse
 
+import extract_msg
 from bs4 import BeautifulSoup, UnicodeDammit  # type: ignore[attr-defined]
 
 from soar_sdk.extras.email.utils import clean_url, decode_uni_string, is_ip
 from soar_sdk.logging import getLogger
+
+_OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 logger = getLogger()
 
@@ -283,12 +286,82 @@ def extract_email_attachments(
     return attachments
 
 
-def extract_rfc5322_email_data(
-    rfc822_email: str,
+def _extract_msg_email_data(
+    msg_bytes: bytes,
     email_id: str | None = None,
     include_attachment_content: bool = False,
 ) -> RFC5322EmailData:
-    """Extract all components from an RFC 5322 email string."""
+    """Extract all components from MSG (Outlook) format bytes."""
+    msg = extract_msg.Message(msg_bytes)
+    try:
+        headers = EmailHeaders(
+            email_id=email_id,
+            message_id=msg.messageId,
+            to=msg.to,
+            from_address=msg.sender,
+            subject=msg.subject,
+            date=msg.date.strftime("%a, %d %b %Y %H:%M:%S %z") if msg.date else None,
+            cc=msg.cc,
+            bcc=msg.bcc,
+            raw_headers=msg.headerDict,
+        )
+
+        html_body = msg.htmlBody
+        body = EmailBody(
+            plain_text=msg.body,
+            html=html_body.decode("utf-8", errors="replace") if html_body else None,
+        )
+
+        urls: set[str] = set()
+        if body.html:
+            _extract_urls_from_content(body.html, urls, is_html=True)
+        if body.plain_text:
+            _extract_urls_from_content(body.plain_text, urls, is_html=False)
+
+        attachments: list[EmailAttachment] = []
+        for att in msg.attachments:
+            att_data = att.data if isinstance(att.data, bytes) else b""
+            attachment = EmailAttachment(
+                filename=str(
+                    att.longFilename or att.shortFilename or "unnamed_attachment"
+                ),
+                content_type=att.mimetype,
+                size=len(att_data),
+                content_id=str(att.cid),
+            )
+            if include_attachment_content and att_data:
+                attachment.content = att_data
+            attachments.append(attachment)
+
+        return RFC5322EmailData(
+            raw_email=msg_bytes.decode("utf-8", errors="replace"),
+            headers=headers,
+            body=body,
+            urls=sorted(urls),
+            attachments=attachments,
+        )
+    finally:
+        msg.close()
+
+
+def extract_rfc5322_email_data(
+    rfc822_email: str | bytes,
+    email_id: str | None = None,
+    include_attachment_content: bool = False,
+) -> RFC5322EmailData:
+    """Extract all components from an RFC 5322 email string or MSG bytes.
+
+    Automatically detects whether the input is an Outlook MSG file (OLE2 compound
+    document) or a standard RFC 5322 email string, and parses accordingly.
+    """
+    if isinstance(rfc822_email, bytes) and rfc822_email[:8] == _OLE2_MAGIC:
+        return _extract_msg_email_data(
+            rfc822_email, email_id, include_attachment_content
+        )
+
+    if isinstance(rfc822_email, bytes):
+        rfc822_email = rfc822_email.decode("utf-8", errors="replace")
+
     mail = email.message_from_string(rfc822_email)
 
     return RFC5322EmailData(

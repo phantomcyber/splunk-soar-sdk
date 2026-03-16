@@ -58,6 +58,7 @@ Repository = "https://github.com/phantomcyber/splunk-soar-sdk"
 
 [project.optional-dependencies]
 email = [
+    "extract-msg>=0.55.0",
     "python-magic>=0.4.27",
 ]
 
