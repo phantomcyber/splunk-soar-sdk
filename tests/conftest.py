@@ -1,8 +1,11 @@
+import io
 import re
+import struct
 from pathlib import Path
 from unittest import mock
 
 import pytest
+from extract_msg.ole_writer import OleWriter
 from httpx import Response
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
@@ -28,6 +31,143 @@ from soar_sdk.meta.dependencies import (
 )
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from tests.stubs import SampleActionParams
+
+PT_UNICODE = 0x001F
+PT_BINARY = 0x0102
+PT_LONG = 0x0003
+
+
+def _make_prop_entry(prop_id, prop_type):
+    tag = struct.pack("<HH", prop_type, prop_id)
+    flags = struct.pack("<I", 0x00000006)
+    value = struct.pack("<Q", 0)
+    return tag + flags + value
+
+
+def _add_string_prop(writer, prop_id, value, prefix=""):
+    stream = f"{prefix}__substg1.0_{prop_id:04X}{PT_UNICODE:04X}"
+    writer.addEntry(stream, value.encode("utf-16-le"))
+
+
+def _add_binary_prop(writer, prop_id, value, prefix=""):
+    stream = f"{prefix}__substg1.0_{prop_id:04X}{PT_BINARY:04X}"
+    writer.addEntry(
+        stream, value if isinstance(value, bytes) else value.encode("utf-8")
+    )
+
+
+@pytest.fixture
+def msg_plaintext_only() -> bytes:
+    """Build a minimal .msg file with only a plain text body (no HTML)."""
+    writer = OleWriter()
+
+    _add_string_prop(writer, 0x001A, "IPM.Note")
+    _add_string_prop(writer, 0x0037, "Plaintext Only Subject")
+    _add_string_prop(
+        writer,
+        0x1000,
+        "This is the plain text body with a URL: https://example.com/plain-only",
+    )
+    _add_string_prop(writer, 0x0C1A, "Plain Sender")
+    _add_string_prop(writer, 0x0C1F, "plain@example.com")
+
+    props_header = b"\x00" * 32
+    entries = b""
+    for pid, pt in [
+        (0x001A, PT_UNICODE),
+        (0x0037, PT_UNICODE),
+        (0x1000, PT_UNICODE),
+        (0x0C1A, PT_UNICODE),
+        (0x0C1F, PT_UNICODE),
+    ]:
+        entries += _make_prop_entry(pid, pt)
+    writer.addEntry("__properties_version1.0", props_header + entries)
+
+    buf = io.BytesIO()
+    writer.write(buf)
+    return buf.getvalue()
+
+
+@pytest.fixture
+def msg_html_only() -> bytes:
+    """Build a minimal .msg file with only an HTML body (no plain text)."""
+    writer = OleWriter()
+
+    _add_string_prop(writer, 0x001A, "IPM.Note")
+    _add_string_prop(writer, 0x0037, "HTML Only Subject")
+    _add_binary_prop(
+        writer,
+        0x1013,
+        "<html><body><p>HTML body with "
+        '<a href="https://html.example.com/html-only">a link</a>'
+        "</p></body></html>",
+    )
+    _add_string_prop(writer, 0x0C1A, "HTML Sender")
+    _add_string_prop(writer, 0x0C1F, "html@example.com")
+
+    props_header = b"\x00" * 32
+    entries = b""
+    for pid, pt in [
+        (0x001A, PT_UNICODE),
+        (0x0037, PT_UNICODE),
+        (0x1013, PT_BINARY),
+        (0x0C1A, PT_UNICODE),
+        (0x0C1F, PT_UNICODE),
+    ]:
+        entries += _make_prop_entry(pid, pt)
+    writer.addEntry("__properties_version1.0", props_header + entries)
+
+    buf = io.BytesIO()
+    writer.write(buf)
+    return buf.getvalue()
+
+
+@pytest.fixture
+def msg_with_attachment() -> bytes:
+    """Build a .msg file that includes a plain text body and one PDF attachment."""
+    writer = OleWriter()
+
+    _add_string_prop(writer, 0x001A, "IPM.Note")
+    _add_string_prop(writer, 0x0037, "MSG With Attachment")
+    _add_string_prop(writer, 0x1000, "Body text")
+    _add_string_prop(writer, 0x0C1A, "Sender")
+    _add_string_prop(writer, 0x0C1F, "sender@test.com")
+
+    # Named properties streams (required by extract-msg for messages with attachments)
+    writer.addEntry("__nameid_version1.0/__substg1.0_00020102", b"")
+    writer.addEntry("__nameid_version1.0/__substg1.0_00030102", b"")
+    writer.addEntry("__nameid_version1.0/__substg1.0_00040102", b"")
+
+    # Attachment sub-storage
+    att_prefix = "__attach_version1.0_#00000000/"
+    _add_string_prop(writer, 0x3707, "document.pdf", prefix=att_prefix)
+    _add_string_prop(writer, 0x370E, "application/pdf", prefix=att_prefix)
+    _add_binary_prop(writer, 0x3701, b"%PDF-1.4 test content", prefix=att_prefix)
+
+    # Attachment properties stream
+    att_header = b"\x00" * 8
+    att_entries = b""
+    att_entries += _make_prop_entry(0x3707, PT_UNICODE)
+    att_entries += _make_prop_entry(0x370E, PT_UNICODE)
+    att_entries += _make_prop_entry(0x3701, PT_BINARY)
+    # Attach Method (PT_LONG = fixed size, value goes inline)
+    tag = struct.pack("<HH", PT_LONG, 0x3705)
+    flags = struct.pack("<I", 0x00000006)
+    value = struct.pack("<I", 1) + b"\x00" * 4  # ATTACH_BY_VALUE, padded to 8 bytes
+    att_entries += tag + flags + value
+    writer.addEntry(f"{att_prefix}__properties_version1.0", att_header + att_entries)
+
+    # Root properties stream
+    root_header = b"\x00" * 32
+    root_entries = b""
+    for pid in [0x001A, 0x0037, 0x1000, 0x0C1A, 0x0C1F]:
+        root_entries += _make_prop_entry(pid, PT_UNICODE)
+    writer.addEntry("__properties_version1.0", root_header + root_entries)
+
+    buf = io.BytesIO()
+    writer.write(buf)
+    return buf.getvalue()
+
 
 APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
 
