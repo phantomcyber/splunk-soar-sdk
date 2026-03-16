@@ -1,6 +1,7 @@
 import email
 from unittest.mock import MagicMock, patch
 
+from soar_sdk.extras.email.base import EmailData
 from soar_sdk.extras.email.rfc5322 import (
     EmailAttachment,
     EmailBody,
@@ -82,7 +83,7 @@ Body content
 """
 
 
-def test_extract_email_headers_simple():
+def test_extract_email_headers_simple() -> None:
     """Test extracting headers from a simple email."""
     mail = email.message_from_string(SIMPLE_EMAIL)
     headers = extract_email_headers(mail, email_id="test-id-123")
@@ -97,7 +98,7 @@ def test_extract_email_headers_simple():
     assert headers.x_priority == "High"
 
 
-def test_extract_email_headers_with_received():
+def test_extract_email_headers_with_received() -> None:
     """Test extracting multiple Received headers."""
     mail = email.message_from_string(EMAIL_WITH_ENCODED_HEADERS)
     headers = extract_email_headers(mail)
@@ -109,7 +110,7 @@ def test_extract_email_headers_with_received():
     assert headers.reply_to == "reply@example.com"
 
 
-def test_extract_email_headers_raw_headers():
+def test_extract_email_headers_raw_headers() -> None:
     """Test that raw_headers dict is populated."""
     mail = email.message_from_string(SIMPLE_EMAIL)
     headers = extract_email_headers(mail)
@@ -119,7 +120,7 @@ def test_extract_email_headers_raw_headers():
     assert "Subject" in headers.raw_headers
 
 
-def test_extract_email_body_plain():
+def test_extract_email_body_plain() -> None:
     """Test extracting plain text body."""
     mail = email.message_from_string(SIMPLE_EMAIL)
     body = extract_email_body(mail)
@@ -129,7 +130,7 @@ def test_extract_email_body_plain():
     assert body.html is None
 
 
-def test_extract_email_body_multipart():
+def test_extract_email_body_multipart() -> None:
     """Test extracting body from multipart email."""
     mail = email.message_from_string(MULTIPART_EMAIL)
     body = extract_email_body(mail)
@@ -140,7 +141,7 @@ def test_extract_email_body_multipart():
     assert "HTML body" in body.html
 
 
-def test_extract_email_urls_from_plain():
+def test_extract_email_urls_from_plain() -> None:
     """Test extracting URLs from plain text email."""
     mail = email.message_from_string(SIMPLE_EMAIL)
     urls = extract_email_urls(mail)
@@ -148,7 +149,7 @@ def test_extract_email_urls_from_plain():
     assert "https://example.com/page" in urls
 
 
-def test_extract_email_urls_from_html():
+def test_extract_email_urls_from_html() -> None:
     """Test extracting URLs from HTML email."""
     mail = email.message_from_string(MULTIPART_EMAIL)
     urls = extract_email_urls(mail)
@@ -158,7 +159,7 @@ def test_extract_email_urls_from_html():
     assert "https://plain.example.com" in urls
 
 
-def test_extract_email_urls_html_and_plaintext():
+def test_extract_email_urls_html_and_plaintext() -> None:
     """Test extracting both HTML href and plaintext URLs."""
     mail = email.message_from_string(HTML_EMAIL_WITH_PLAINTEXT_URLS)
     urls = extract_email_urls(mail)
@@ -167,7 +168,7 @@ def test_extract_email_urls_html_and_plaintext():
     assert "https://plaintext.example.com" in urls
 
 
-def test_extract_email_attachments():
+def test_extract_email_attachments() -> None:
     """Test extracting attachment metadata."""
     mail = email.message_from_string(MULTIPART_EMAIL)
     attachments = extract_email_attachments(mail)
@@ -179,7 +180,7 @@ def test_extract_email_attachments():
     assert attachments[0].content is None
 
 
-def test_extract_email_attachments_with_content():
+def test_extract_email_attachments_with_content() -> None:
     """Test extracting attachments with content."""
     mail = email.message_from_string(MULTIPART_EMAIL)
     attachments = extract_email_attachments(mail, include_content=True)
@@ -189,7 +190,7 @@ def test_extract_email_attachments_with_content():
     assert isinstance(attachments[0].content, bytes)
 
 
-def test_extract_email_attachments_empty():
+def test_extract_email_attachments_empty() -> None:
     """Test extracting attachments from email without attachments."""
     mail = email.message_from_string(SIMPLE_EMAIL)
     attachments = extract_email_attachments(mail)
@@ -197,7 +198,7 @@ def test_extract_email_attachments_empty():
     assert len(attachments) == 0
 
 
-def test_extract_rfc5322_email_data():
+def test_extract_rfc5322_email_data() -> None:
     """Test the main extraction function."""
     result = extract_rfc5322_email_data(MULTIPART_EMAIL, email_id="main-test")
 
@@ -210,7 +211,7 @@ def test_extract_rfc5322_email_data():
     assert len(result.attachments) == 1
 
 
-def test_rfc5322_email_data_to_dict():
+def test_rfc5322_email_data_to_dict() -> None:
     """Test converting RFC5322EmailData to dict."""
     result = extract_rfc5322_email_data(SIMPLE_EMAIL, email_id="dict-test")
     data = result.to_dict()
@@ -223,7 +224,7 @@ def test_rfc5322_email_data_to_dict():
     assert isinstance(data["attachments"], list)
 
 
-def test_extract_domains_from_urls():
+def test_extract_domains_from_urls() -> None:
     """Test extracting domains from URL list."""
     urls = [
         "https://example.com/page",
@@ -239,13 +240,13 @@ def test_extract_domains_from_urls():
     assert "192.168.1.1" not in domains
 
 
-def test_extract_domains_from_urls_empty():
+def test_extract_domains_from_urls_empty() -> None:
     """Test extracting domains from empty list."""
     domains = extract_domains_from_urls([])
     assert domains == []
 
 
-def test_extract_email_addresses_from_body():
+def test_extract_email_addresses_from_body() -> None:
     """Test extracting email addresses from body."""
     email_with_addresses = """From: sender@example.com
 To: recipient@example.com
@@ -261,7 +262,7 @@ Contact us at support@company.com or sales@company.com for help.
     assert "sales@company.com" in addresses
 
 
-def test_extract_email_addresses_from_body_empty():
+def test_extract_email_addresses_from_body_empty() -> None:
     """Test extracting from body with no email addresses."""
     mail = email.message_from_string(SIMPLE_EMAIL)
     addresses = extract_email_addresses_from_body(mail)
@@ -269,7 +270,7 @@ def test_extract_email_addresses_from_body_empty():
     assert isinstance(addresses, list)
 
 
-def test_email_headers_dataclass():
+def test_email_headers_dataclass() -> None:
     """Test EmailHeaders dataclass defaults."""
     headers = EmailHeaders()
 
@@ -278,7 +279,7 @@ def test_email_headers_dataclass():
     assert headers.raw_headers == {}
 
 
-def test_email_body_dataclass():
+def test_email_body_dataclass() -> None:
     """Test EmailBody dataclass defaults."""
     body = EmailBody()
 
@@ -287,7 +288,7 @@ def test_email_body_dataclass():
     assert body.charset is None
 
 
-def test_email_attachment_dataclass():
+def test_email_attachment_dataclass() -> None:
     """Test EmailAttachment dataclass."""
     attachment = EmailAttachment(
         filename="test.txt",
@@ -302,7 +303,7 @@ def test_email_attachment_dataclass():
     assert attachment.is_inline is False
 
 
-def test_extract_urls_mailto_filtered():
+def test_extract_urls_mailto_filtered() -> None:
     """Test that mailto links are filtered out."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -321,7 +322,7 @@ Content-Type: text/html
     assert not any("mailto" in u for u in urls)
 
 
-def test_extract_urls_non_http_filtered():
+def test_extract_urls_non_http_filtered() -> None:
     """Test that non-http URLs are filtered."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -340,7 +341,7 @@ Content-Type: text/html
     assert not any("ftp://" in u for u in urls)
 
 
-def test_extract_attachment_inline():
+def test_extract_attachment_inline() -> None:
     """Test extracting inline attachment."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -369,7 +370,7 @@ iVBORw0KGgo=
     assert attachments[0].content_id == "image001"
 
 
-def test_extract_attachment_unnamed():
+def test_extract_attachment_unnamed() -> None:
     """Test extracting attachment without filename."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -396,7 +397,7 @@ dGVzdA==
     assert attachments[0].filename == "unnamed_attachment"
 
 
-def test_extract_body_html_only():
+def test_extract_body_html_only() -> None:
     """Test extracting HTML-only body."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -413,7 +414,7 @@ Content-Type: text/html
     assert body.plain_text is None
 
 
-def test_extract_addresses_from_html_body():
+def test_extract_addresses_from_html_body() -> None:
     """Test extracting email addresses from HTML body."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -430,7 +431,7 @@ Content-Type: text/html
     assert "html@example.com" in addresses
 
 
-def test_extract_domains_invalid_url():
+def test_extract_domains_invalid_url() -> None:
     """Test domain extraction handles invalid URLs."""
     urls = [
         "https://valid.example.com",
@@ -443,7 +444,7 @@ def test_extract_domains_invalid_url():
     assert "another.example.com" in domains
 
 
-def test_decode_header_value_exception():
+def test_decode_header_value_exception() -> None:
     """Test _decode_header_value falls back on exception."""
     with patch(
         "soar_sdk.extras.email.rfc5322.make_header", side_effect=Exception("fail")
@@ -452,41 +453,43 @@ def test_decode_header_value_exception():
         assert result == "test value"
 
 
-def test_decode_header_value_none():
+def test_decode_header_value_none() -> None:
     """Test _decode_header_value returns None for empty input."""
     assert _decode_header_value(None) is None
     assert _decode_header_value("") is None
 
 
-def test_decode_payload_unicode_dammit_exception():
+def test_decode_payload_unicode_dammit_exception() -> None:
     """Test _decode_payload falls back when UnicodeDammit fails."""
     with patch(
-        "soar_sdk.extras.email.rfc5322.UnicodeDammit", side_effect=Exception("fail")
+        "soar_sdk.extras.email.rfc5322.UnicodeDammit",
+        side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "fail"),
     ):
         result = _decode_payload(b"test content", "utf-8")
         assert result == "test content"
 
 
-def test_decode_payload_all_exceptions():
+def test_decode_payload_all_exceptions() -> None:
     """Test _decode_payload uses replace on all failures."""
     with patch(
-        "soar_sdk.extras.email.rfc5322.UnicodeDammit", side_effect=Exception("fail")
+        "soar_sdk.extras.email.rfc5322.UnicodeDammit",
+        side_effect=UnicodeDecodeError("utf-8", b"", 0, 1, "fail"),
     ):
-        result = _decode_payload(b"\xff\xfe invalid", "invalid-charset")
+        result = _decode_payload(b"\xff\xfe invalid", "ascii")
         assert isinstance(result, str)
 
 
-def test_extract_urls_from_content_exception():
+def test_extract_urls_from_content_exception() -> None:
     """Test _extract_urls_from_content handles BeautifulSoup exception."""
     urls: set[str] = set()
     with patch(
-        "soar_sdk.extras.email.rfc5322.BeautifulSoup", side_effect=Exception("fail")
+        "soar_sdk.extras.email.base.BeautifulSoup", side_effect=Exception("fail")
     ):
         _extract_urls_from_content("<html></html>", urls, is_html=True)
     assert len(urls) == 0
 
 
-def test_extract_urls_src_empty():
+def test_extract_urls_src_empty() -> None:
     """Test URL extraction with empty src attribute."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -504,7 +507,7 @@ Content-Type: text/html
     assert "https://valid.example.com/img.png" in urls
 
 
-def test_extract_urls_href_empty():
+def test_extract_urls_href_empty() -> None:
     """Test URL extraction with empty href."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -522,14 +525,14 @@ Content-Type: text/html
     assert "https://valid.example.com" in urls
 
 
-def test_extract_domains_exception():
+def test_extract_domains_exception() -> None:
     """Test domain extraction handles urlparse exception."""
-    with patch("soar_sdk.extras.email.rfc5322.urlparse", side_effect=Exception("fail")):
+    with patch("soar_sdk.extras.email.base.urlparse", side_effect=Exception("fail")):
         domains = extract_domains_from_urls(["https://example.com"])
         assert domains == []
 
 
-def test_extract_body_multipart_skip_attachment():
+def test_extract_body_multipart_skip_attachment() -> None:
     """Test body extraction skips attachment parts."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -556,7 +559,7 @@ This is the actual body
     assert "skipped" not in body.plain_text
 
 
-def test_extract_body_multipart_empty_payload():
+def test_extract_body_multipart_empty_payload() -> None:
     """Test body extraction handles empty payload."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -579,7 +582,7 @@ Valid body content
     assert body.plain_text is not None
 
 
-def test_extract_body_non_bytes_payload():
+def test_extract_body_non_bytes_payload() -> None:
     """Test body extraction handles non-bytes payload."""
     mail = MagicMock()
     mail.is_multipart.return_value = False
@@ -591,7 +594,7 @@ def test_extract_body_non_bytes_payload():
     assert body.plain_text is None
 
 
-def test_extract_attachments_non_bytes_payload():
+def test_extract_attachments_non_bytes_payload() -> None:
     """Test attachment extraction handles non-bytes payload."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -616,7 +619,7 @@ Not base64 encoded
     assert len(attachments) >= 0
 
 
-def test_extract_email_addresses_empty_body():
+def test_extract_email_addresses_empty_body() -> None:
     """Test extracting addresses when body is empty."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -638,7 +641,7 @@ JVBERi0xLjQK
     assert addresses == []
 
 
-def test_extract_urls_from_content_non_html():
+def test_extract_urls_from_content_non_html() -> None:
     """Test URL extraction from non-HTML content."""
     urls: set[str] = set()
     _extract_urls_from_content(
@@ -648,7 +651,7 @@ def test_extract_urls_from_content_non_html():
     assert "https://example.com/path" in urls
 
 
-def test_extract_urls_cleaned_non_http():
+def test_extract_urls_cleaned_non_http() -> None:
     """Test that non-http URLs after cleaning are filtered."""
     urls: set[str] = set()
     _extract_urls_from_content("ftp://ftp.example.com/file", urls, is_html=False)
@@ -656,7 +659,7 @@ def test_extract_urls_cleaned_non_http():
     assert len(urls) == 0
 
 
-def test_extract_body_html_only_multipart():
+def test_extract_body_html_only_multipart() -> None:
     """Test HTML-only body extraction in multipart message (no text/plain)."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -678,7 +681,7 @@ Content-Type: text/html; charset="utf-8"
     assert body.plain_text is None
 
 
-def test_extract_urls_src_non_http():
+def test_extract_urls_src_non_http() -> None:
     """Test URL extraction filters non-http src attributes."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -697,7 +700,7 @@ Content-Type: text/html
     assert not any("data:" in u for u in urls)
 
 
-def test_extract_body_plain_then_html_multipart():
+def test_extract_body_plain_then_html_multipart() -> None:
     """Test multipart with plain text followed by HTML."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -724,7 +727,7 @@ Content-Type: text/html; charset="utf-8"
     assert "HTML version" in body.html
 
 
-def test_extract_body_duplicate_html_parts():
+def test_extract_body_duplicate_html_parts() -> None:
     """Test multipart with multiple HTML parts - only first is used."""
     email_content = """From: sender@example.com
 To: recipient@example.com
@@ -748,3 +751,8 @@ Content-Type: text/html; charset="utf-8"
     assert body.html is not None
     assert "First HTML" in body.html
     assert "Second HTML" not in body.html
+
+
+def test_rfc5322_email_data_is_email_data() -> None:
+    """Verify RFC5322EmailData is an alias for EmailData."""
+    assert RFC5322EmailData is EmailData
