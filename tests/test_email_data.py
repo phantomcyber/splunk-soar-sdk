@@ -1,11 +1,12 @@
 import email
+import warnings
 from unittest.mock import MagicMock, patch
 
-from soar_sdk.extras.email.rfc5322 import (
+from soar_sdk.extras.email.email_data import (
     EmailAttachment,
     EmailBody,
+    EmailData,
     EmailHeaders,
-    RFC5322EmailData,
     _decode_header_value,
     _decode_payload,
     _extract_msg_email_data,
@@ -14,6 +15,7 @@ from soar_sdk.extras.email.rfc5322 import (
     extract_email_addresses_from_body,
     extract_email_attachments,
     extract_email_body,
+    extract_email_data,
     extract_email_headers,
     extract_email_urls,
     extract_rfc5322_email_data,
@@ -198,11 +200,11 @@ def test_extract_email_attachments_empty():
     assert len(attachments) == 0
 
 
-def test_extract_rfc5322_email_data():
+def test_extract_email_data():
     """Test the main extraction function."""
-    result = extract_rfc5322_email_data(MULTIPART_EMAIL, email_id="main-test")
+    result = extract_email_data(MULTIPART_EMAIL, email_id="main-test")
 
-    assert isinstance(result, RFC5322EmailData)
+    assert isinstance(result, EmailData)
     assert result.raw_email == MULTIPART_EMAIL
     assert isinstance(result.headers, EmailHeaders)
     assert isinstance(result.body, EmailBody)
@@ -211,9 +213,9 @@ def test_extract_rfc5322_email_data():
     assert len(result.attachments) == 1
 
 
-def test_rfc5322_email_data_to_dict():
-    """Test converting RFC5322EmailData to dict."""
-    result = extract_rfc5322_email_data(SIMPLE_EMAIL, email_id="dict-test")
+def test_email_data_to_dict():
+    """Test converting EmailData to dict."""
+    result = extract_email_data(SIMPLE_EMAIL, email_id="dict-test")
     data = result.to_dict()
 
     assert data["raw_email"] == SIMPLE_EMAIL
@@ -447,7 +449,7 @@ def test_extract_domains_invalid_url():
 def test_decode_header_value_exception():
     """Test _decode_header_value falls back on exception."""
     with patch(
-        "soar_sdk.extras.email.rfc5322.make_header", side_effect=Exception("fail")
+        "soar_sdk.extras.email.email_data.make_header", side_effect=Exception("fail")
     ):
         result = _decode_header_value("test value")
         assert result == "test value"
@@ -462,7 +464,7 @@ def test_decode_header_value_none():
 def test_decode_payload_unicode_dammit_exception():
     """Test _decode_payload falls back when UnicodeDammit fails."""
     with patch(
-        "soar_sdk.extras.email.rfc5322.UnicodeDammit", side_effect=Exception("fail")
+        "soar_sdk.extras.email.email_data.UnicodeDammit", side_effect=Exception("fail")
     ):
         result = _decode_payload(b"test content", "utf-8")
         assert result == "test content"
@@ -471,7 +473,7 @@ def test_decode_payload_unicode_dammit_exception():
 def test_decode_payload_all_exceptions():
     """Test _decode_payload uses replace on all failures."""
     with patch(
-        "soar_sdk.extras.email.rfc5322.UnicodeDammit", side_effect=Exception("fail")
+        "soar_sdk.extras.email.email_data.UnicodeDammit", side_effect=Exception("fail")
     ):
         result = _decode_payload(b"\xff\xfe invalid", "invalid-charset")
         assert isinstance(result, str)
@@ -481,7 +483,7 @@ def test_extract_urls_from_content_exception():
     """Test _extract_urls_from_content handles BeautifulSoup exception."""
     urls: set[str] = set()
     with patch(
-        "soar_sdk.extras.email.rfc5322.BeautifulSoup", side_effect=Exception("fail")
+        "soar_sdk.extras.email.email_data.BeautifulSoup", side_effect=Exception("fail")
     ):
         _extract_urls_from_content("<html></html>", urls, is_html=True)
     assert len(urls) == 0
@@ -525,7 +527,9 @@ Content-Type: text/html
 
 def test_extract_domains_exception():
     """Test domain extraction handles urlparse exception."""
-    with patch("soar_sdk.extras.email.rfc5322.urlparse", side_effect=Exception("fail")):
+    with patch(
+        "soar_sdk.extras.email.email_data.urlparse", side_effect=Exception("fail")
+    ):
         domains = extract_domains_from_urls(["https://example.com"])
         assert domains == []
 
@@ -757,9 +761,9 @@ def test_extract_msg_plaintext_only(msg_plaintext_only):
     Note: extract_msg auto-generates HTML from plain text, so both
     body.plain_text and body.html will be populated.
     """
-    result = extract_rfc5322_email_data(msg_plaintext_only, email_id="plain-msg")
+    result = extract_email_data(msg_plaintext_only, email_id="plain-msg")
 
-    assert isinstance(result, RFC5322EmailData)
+    assert isinstance(result, EmailData)
     assert isinstance(result.headers, EmailHeaders)
     assert isinstance(result.body, EmailBody)
 
@@ -786,7 +790,7 @@ def test_extract_msg_plaintext_only(msg_plaintext_only):
 
 def test_extract_msg_no_html_body(msg_plaintext_only):
     """Test _extract_msg_email_data when htmlBody is None (covers line 316->318)."""
-    with patch("soar_sdk.extras.email.rfc5322.extract_msg.Message") as mock_msg_cls:
+    with patch("soar_sdk.extras.email.email_data.extract_msg.Message") as mock_msg_cls:
         mock_msg = MagicMock()
         mock_msg.messageId = None
         mock_msg.to = None
@@ -811,9 +815,9 @@ def test_extract_msg_no_html_body(msg_plaintext_only):
 
 def test_extract_msg_html_only(msg_html_only):
     """Test MSG parsing with only an HTML body (no plain text)."""
-    result = extract_rfc5322_email_data(msg_html_only, email_id="html-msg")
+    result = extract_email_data(msg_html_only, email_id="html-msg")
 
-    assert isinstance(result, RFC5322EmailData)
+    assert isinstance(result, EmailData)
     assert isinstance(result.headers, EmailHeaders)
     assert isinstance(result.body, EmailBody)
 
@@ -836,7 +840,7 @@ def test_extract_msg_html_only(msg_html_only):
 
 def test_extract_msg_with_attachment(msg_with_attachment):
     """Test MSG parsing extracts attachments correctly."""
-    result = extract_rfc5322_email_data(
+    result = extract_email_data(
         msg_with_attachment, email_id="att-test", include_attachment_content=True
     )
 
@@ -849,11 +853,26 @@ def test_extract_msg_with_attachment(msg_with_attachment):
     assert att.content == b"%PDF-1.4 test content"
 
 
-def test_extract_rfc5322_email_data_bytes_eml():
+def test_extract_email_data_bytes_eml():
     """Test that passing EML content as bytes still works."""
     eml_bytes = SIMPLE_EMAIL.encode("utf-8")
-    result = extract_rfc5322_email_data(eml_bytes, email_id="bytes-test")
+    result = extract_email_data(eml_bytes, email_id="bytes-test")
 
     assert result.headers.subject == "Test Subject"
     assert result.headers.email_id == "bytes-test"
     assert result.body.plain_text is not None
+
+
+def test_extract_rfc5322_email_data_deprecation_warning():
+    """Test that the deprecated extract_rfc5322_email_data emits a warning."""
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        result = extract_rfc5322_email_data(SIMPLE_EMAIL, email_id="deprecation-test")
+
+        assert len(w) == 1
+        assert issubclass(w[0].category, DeprecationWarning)
+        assert "extract_rfc5322_email_data is deprecated" in str(w[0].message)
+
+    assert isinstance(result, EmailData)
+    assert result.headers.subject == "Test Subject"
+    assert result.headers.email_id == "deprecation-test"
