@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
+
+from extract_msg import Message
 
 from soar_sdk.extras.email.base import (
     EmailAttachment,
@@ -13,9 +15,6 @@ from soar_sdk.extras.email.base import (
 )
 from soar_sdk.logging import getLogger
 
-if TYPE_CHECKING:
-    from extract_msg import Message as MsgMessage
-
 logger = getLogger()
 
 # Backward-compatible alias
@@ -23,7 +22,7 @@ OutlookEmailData = EmailData
 
 
 def _extract_outlook_headers(
-    msg: MsgMessage,
+    msg: Message,
     email_id: str | None = None,
 ) -> EmailHeaders:
     """Extract headers from a parsed Outlook Message."""
@@ -67,7 +66,7 @@ def _extract_outlook_headers(
     return headers
 
 
-def _extract_outlook_body(msg: MsgMessage) -> EmailBody:
+def _extract_outlook_body(msg: Message) -> EmailBody:
     """Extract plain text and HTML body from an Outlook Message."""
     body = EmailBody()
 
@@ -85,7 +84,7 @@ def _extract_outlook_body(msg: MsgMessage) -> EmailBody:
     return body
 
 
-def _extract_outlook_urls(msg: MsgMessage) -> list[str]:
+def _extract_outlook_urls(msg: Message) -> list[str]:
     """Extract all URLs from Outlook email body content."""
     urls: set[str] = set()
     body = _extract_outlook_body(msg)
@@ -99,7 +98,7 @@ def _extract_outlook_urls(msg: MsgMessage) -> list[str]:
 
 
 def _extract_outlook_attachments(
-    msg: MsgMessage,
+    msg: Message,
     include_content: bool = False,
 ) -> list[EmailAttachment]:
     """Extract attachment metadata from an Outlook Message."""
@@ -145,7 +144,7 @@ def extract_outlook_email_data(
     """
     import extract_msg
 
-    msg = cast("MsgMessage", extract_msg.openMsg(msg_bytes))
+    msg = cast(Message, extract_msg.openMsg(msg_bytes))
 
     try:
         return EmailData(
