@@ -34,7 +34,7 @@ MAGIC_FORMATS = [
 def get_file_contains(file_path: str) -> list[str]:
     """Get file type contains based on extension and magic bytes."""
     try:
-        import magic
+        import magic  # type: ignore[import-not-found]
     except ImportError:
         logger.warning(
             "python-magic not installed, file type detection will be limited"

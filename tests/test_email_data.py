@@ -853,6 +853,17 @@ def test_extract_msg_with_attachment(msg_with_attachment):
     assert att.content == b"%PDF-1.4 test content"
 
 
+def test_extract_msg_with_attachment_no_content(msg_with_attachment):
+    """Test MSG attachment parsing without including content."""
+    result = extract_email_data(msg_with_attachment, email_id="att-no-content")
+
+    assert len(result.attachments) == 1
+    att = result.attachments[0]
+    assert att.filename == "document.pdf"
+    assert att.size > 0
+    assert att.content is None
+
+
 def test_extract_email_data_bytes_eml():
     """Test that passing EML content as bytes still works."""
     eml_bytes = SIMPLE_EMAIL.encode("utf-8")
