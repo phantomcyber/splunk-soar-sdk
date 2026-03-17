@@ -2,7 +2,7 @@ import inspect
 import traceback
 from collections.abc import AsyncGenerator, Iterator
 from functools import wraps
-from typing import TYPE_CHECKING, Any, get_args, get_origin
+from typing import TYPE_CHECKING, Any, cast, get_args, get_origin
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, ActionResult
@@ -92,6 +92,7 @@ class ActionDecorator:
         if origin in (list, Iterator, AsyncGenerator):
             validated_output_class = get_args(validated_output_class)[0]
 
+        validated_output_class = cast(type[ActionOutput], validated_output_class)
         if not issubclass(validated_output_class, ActionOutput):
             raise TypeError(
                 "Return type for action function must be derived from ActionOutput class."

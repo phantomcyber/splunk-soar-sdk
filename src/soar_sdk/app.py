@@ -5,7 +5,7 @@ import sys
 import uuid
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
@@ -382,7 +382,7 @@ class App:
             params_class=params_class,
             output_class=output_class,
             render_as=render_as,
-            view_handler=view_handler,
+            view_handler=view_handler,  # ty: ignore[invalid-argument-type]
             versions=versions,
             summary_type=summary_type,
             enable_concurrency_lock=enable_concurrency_lock,
@@ -652,7 +652,9 @@ class App:
             if name in sig.parameters:
                 # Give the original kwargs precedence over the magic args
                 value = (
-                    value_or_getter() if callable(value_or_getter) else value_or_getter
+                    value_or_getter()  # ty: ignore[call-top-callable]
+                    if callable(value_or_getter)
+                    else value_or_getter
                 )
                 kwargs[name] = given_value or value
 
@@ -697,7 +699,7 @@ class App:
             for item in result:
                 statuses.append(
                     App._adapt_action_result(
-                        item,
+                        cast(ActionOutput, item),
                         actions_manager,
                         action_params,
                         message,

@@ -1,12 +1,13 @@
 import typing
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
 
 if TYPE_CHECKING:
     from soar_sdk.meta.actions import ActionMeta
     from soar_sdk.params import Params
 
 
+@runtime_checkable
 class NamedCallable(Protocol):
     """Protocol for callables that have __name__, __module__, and __globals__ attributes (i.e. real functions)."""
 
