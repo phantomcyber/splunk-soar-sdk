@@ -131,7 +131,9 @@ class ActionsManager(BaseConnector):
 
     def add_exception(self, exception: Exception) -> None:
         """Public method for adding an exception to an app run result set."""
-        self._BaseConnector__conn_result.add_exception(exception)
+        self._BaseConnector__conn_result.add_exception(  # ty: ignore[unresolved-attribute]
+            exception
+        )
 
     def set_csrf_info(self, token: str, referer: str) -> None:
         """Public method for setting the CSRF token in connector."""

@@ -208,5 +208,5 @@ JINJA2_FILTERS = {
 def setup_jinja_env(env: Environment) -> Environment:
     """Setup Jinja2 environment with custom filters and globals."""
     env.filters.update(JINJA2_FILTERS)
-    env.globals.update(JINJA2_GLOBALS)
+    env.globals.update(JINJA2_GLOBALS)  # ty: ignore[no-matching-overload]
     return env

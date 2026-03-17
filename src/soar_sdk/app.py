@@ -38,7 +38,7 @@ from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestCl
 from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
     platform_encryption_backend,
 )
-from soar_sdk.types import Action
+from soar_sdk.types import Action, NamedCallable
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.webhooks.routing import Router
 
@@ -252,7 +252,7 @@ class App:
     def register_action(
         self,
         /,
-        action: str | Callable,
+        action: str | NamedCallable,
         *,
         name: str | None = None,
         identifier: str | None = None,
@@ -263,7 +263,7 @@ class App:
         params_class: type[Params] | None = None,
         output_class: type[ActionOutput] | None = None,
         render_as: str | None = None,
-        view_handler: str | Callable | None = None,
+        view_handler: str | NamedCallable | None = None,
         view_template: str | None = None,
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
@@ -370,7 +370,7 @@ class App:
                         f"View handler {view_handler.__name__} not found in its module {view_handler.__module__}"
                     )
 
-            view_handler = decorated_view_handler
+            view_handler = decorated_view_handler  # ty: ignore[invalid-assignment]
 
         return self.action(
             name=name,
@@ -382,13 +382,13 @@ class App:
             params_class=params_class,
             output_class=output_class,
             render_as=render_as,
-            view_handler=view_handler,
+            view_handler=view_handler,  # ty: ignore[invalid-argument-type]
             versions=versions,
             summary_type=summary_type,
             enable_concurrency_lock=enable_concurrency_lock,
         )(action)
 
-    def _resolve_function_import(self, action_path: str) -> Callable:
+    def _resolve_function_import(self, action_path: str) -> NamedCallable:
         """Resolves a callable action function from a dot-separated import string.
 
         This method takes a string representing the full import path of a function,
@@ -449,7 +449,7 @@ class App:
         params_class: type[Params] | None = None,
         output_class: type[ActionOutput] | None = None,
         render_as: str | None = None,
-        view_handler: Callable | None = None,
+        view_handler: NamedCallable | None = None,
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
         enable_concurrency_lock: bool = False,
@@ -651,7 +651,7 @@ class App:
             given_value = kwargs.pop(name, None)
             if name in sig.parameters:
                 # Give the original kwargs precedence over the magic args
-                value = (
+                value = (  # ty: ignore[call-top-callable]
                     value_or_getter() if callable(value_or_getter) else value_or_getter
                 )
                 kwargs[name] = given_value or value
@@ -696,8 +696,12 @@ class App:
             statuses = []
             for item in result:
                 statuses.append(
-                    App._adapt_action_result(
-                        item, actions_manager, action_params, message, summary
+                    App._adapt_action_result(  # ty: ignore[invalid-argument-type]
+                        item,
+                        actions_manager,
+                        action_params,
+                        message,
+                        summary,
                     )
                 )
             # Handle empty list/iterator case
@@ -742,7 +746,12 @@ class App:
 
         This method will mark them as to be skipped.
         """
-        if "pytest" in sys.modules and function.__name__.startswith("test_"):
+        if (
+            "pytest" in sys.modules
+            and function.__name__.startswith(  # ty: ignore[unresolved-attribute]
+                "test_"
+            )
+        ):
             # importing locally to not require this package in the runtime requirements
             import pytest
 
@@ -857,7 +866,7 @@ class App:
 
         self._raw_asset_config = asset
 
-        _, soar_auth_token = soar_rest_client.session.headers["Cookie"].split("=")
+        _, soar_auth_token = str(soar_rest_client.session.headers["Cookie"]).split("=")
         asset_id = soar_rest_client.asset_id
         soar_base_url = soar_rest_client.base_url
         soar_base_url = soar_base_url.removesuffix("/rest")

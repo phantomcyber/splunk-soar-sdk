@@ -19,6 +19,7 @@ if TYPE_CHECKING or not _soar_is_available:
             traceback.print_exception(
                 type(exception), exception, exception.__traceback__
             )
+            return True
 
 
 __all__ = ["ConnectorResult"]

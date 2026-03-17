@@ -22,12 +22,10 @@ class TOMLDataAdapter:
         )
 
         return AppMeta(
-            **dict(
-                description=uv_app_data.get("description"),
-                app_version=uv_app_data.get("version"),
-                license=uv_app_data.get("license"),
-                package_name=package_name,
-                project_name=project_name,
-                main_module=sdk_tool_data.get("main_module"),
-            )
+            description=uv_app_data.get("description", ""),
+            app_version=uv_app_data.get("version", ""),
+            license=uv_app_data.get("license", ""),
+            package_name=package_name or "",
+            project_name=project_name or "",
+            main_module=sdk_tool_data.get("main_module", "src/app.py:app"),
         )

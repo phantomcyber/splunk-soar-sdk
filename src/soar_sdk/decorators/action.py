@@ -1,6 +1,6 @@
 import inspect
 import traceback
-from collections.abc import AsyncGenerator, Callable, Iterator
+from collections.abc import AsyncGenerator, Iterator
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args, get_origin
 
@@ -10,7 +10,7 @@ from soar_sdk.async_utils import run_async_if_needed
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.params import Params
-from soar_sdk.types import Action, action_protocol
+from soar_sdk.types import Action, NamedCallable, action_protocol
 
 if TYPE_CHECKING:
     from soar_sdk.app import App
@@ -35,7 +35,7 @@ class ActionDecorator:
         | AsyncGenerator[type[ActionOutput]]
         | list[type[ActionOutput]] = None,
         render_as: str | None = None,
-        view_handler: Callable | None = None,
+        view_handler: NamedCallable | None = None,
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
         enable_concurrency_lock: bool = False,
@@ -55,7 +55,7 @@ class ActionDecorator:
         self.summary_type = summary_type
         self.enable_concurrency_lock = enable_concurrency_lock
 
-    def __call__(self, function: Callable) -> Action:
+    def __call__(self, function: NamedCallable) -> Action:
         """Decorator for the action handling function.
 
         Adds the specific meta information to the action passed to the generator.
@@ -92,7 +92,9 @@ class ActionDecorator:
         if origin in (list, Iterator, AsyncGenerator):
             validated_output_class = get_args(validated_output_class)[0]
 
-        if not issubclass(validated_output_class, ActionOutput):
+        if not issubclass(
+            validated_output_class, ActionOutput
+        ):  # ty: ignore[invalid-argument-type]
             raise TypeError(
                 "Return type for action function must be derived from ActionOutput class."
             )

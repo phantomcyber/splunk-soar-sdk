@@ -26,11 +26,11 @@ jobs:
           path: ~/.cache/pre-commit
           key: ${{ runner.os }}-pre-commit-cache
 
-  MyPy:
+  ty:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.13, 3.14]
+        python-version: [ 3.13, 3.14 ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -39,14 +39,14 @@ jobs:
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
-      - name: MyPy - ${{ matrix.python-version }}
-        run: uv run --locked mypy .
+      - name: ty - ${{ matrix.python-version }}
+        run: uv run --locked ty check --python-version ${{ matrix.python-version }}
 
   Pytest:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.13, 3.14]
+        python-version: [ 3.13, 3.14 ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

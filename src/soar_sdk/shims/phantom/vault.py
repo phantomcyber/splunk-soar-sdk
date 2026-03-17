@@ -327,7 +327,7 @@ else:
                 if any((container_id, file_name)):
                     for _, res in self.__storage.items():
                         if (
-                            file_name and file_name in res.file_path
+                            file_name and file_name in res.path
                         ) or container_id == res.container_id:
                             results.append(res.model_dump())
 

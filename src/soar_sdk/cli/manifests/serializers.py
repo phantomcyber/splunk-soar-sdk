@@ -79,7 +79,7 @@ class OutputsSerializer:
         status = OutputFieldSpecification(
             data_path="action_result.status",
             data_type="string",
-            example_values=["success", "failure"],
+            example_values=["success", "failure"],  # ty: ignore[invalid-argument-type]
         )
         message = OutputFieldSpecification(
             data_path="action_result.message",
@@ -99,12 +99,12 @@ class OutputsSerializer:
             OutputFieldSpecification(
                 data_path="summary.total_objects",
                 data_type="numeric",
-                example_values=[1],
+                example_values=[1],  # ty: ignore[invalid-argument-type]
             ),
             OutputFieldSpecification(
                 data_path="summary.total_objects_successful",
                 data_type="numeric",
-                example_values=[1],
+                example_values=[1],  # ty: ignore[invalid-argument-type]
             ),
         ]
         return [status, message, *params, *outputs, *summary, *object_counts]
