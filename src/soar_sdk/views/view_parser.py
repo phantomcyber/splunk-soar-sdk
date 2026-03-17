@@ -1,5 +1,4 @@
 import inspect
-from collections.abc import Callable
 from typing import (
     Any,
     Generic,
@@ -14,6 +13,7 @@ from pydantic import BaseModel
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.async_utils import run_async_if_needed
 from soar_sdk.models.view import AllAppRuns, ViewContext
+from soar_sdk.types import NamedCallable
 
 T = TypeVar("T", bound=ActionOutput)
 
@@ -23,7 +23,7 @@ class ViewFunctionParser(Generic[T]):
 
     def __init__(
         self,
-        function: Callable,
+        function: NamedCallable,
     ) -> None:
         self.function = function
 
@@ -32,7 +32,7 @@ class ViewFunctionParser(Generic[T]):
         self.output_class: type[T] = cast(type[T], detected_class)
 
     @staticmethod
-    def auto_detect_output_class(function: Callable) -> type[ActionOutput]:
+    def auto_detect_output_class(function: NamedCallable) -> type[ActionOutput]:
         """Auto-detect ActionOutput class from function type annotations."""
         signature = inspect.signature(function)
 

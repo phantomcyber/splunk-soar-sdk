@@ -1161,7 +1161,11 @@ class EmailProcessor:
         input_dict["source_data_identifier"] = create_dict_hash(input_dict_hash)
 
         if curr_email_guid:
-            self._guid_to_hash[curr_email_guid] = input_dict["source_data_identifier"]
+            self._guid_to_hash[curr_email_guid] = (
+                input_dict[  # ty: ignore[invalid-assignment]
+                    "source_data_identifier"
+                ]
+            )
 
         return APP_SUCCESS
 

@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from soar_sdk.action_results import ActionResult
 from soar_sdk.models.view import AllAppRuns, ResultSummary, ViewContext
+from soar_sdk.types import NamedCallable
 from soar_sdk.views.component_registry import COMPONENT_REGISTRY
 from soar_sdk.views.template_renderer import (
     get_template_renderer,
@@ -27,7 +28,7 @@ class ViewHandlerDecorator:
 
     @staticmethod
     def _validate_view_function_signature(
-        function: Callable,
+        function: NamedCallable,
         template: str | None = None,
         component_type: str | None = None,
     ) -> None:
@@ -64,7 +65,7 @@ class ViewHandlerDecorator:
             f"View handler {function.__name__} has invalid return type: {signature.return_annotation}. Handlers must define a template and return a dict, return a predefined view component, or return a fully-rendered HTML string."
         )
 
-    def __call__(self, function: Callable) -> Callable:
+    def __call__(self, function: NamedCallable) -> Callable:
         """Decorator for custom view functions with output parsing and template rendering.
 
         The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering, HTML string, or component data model.

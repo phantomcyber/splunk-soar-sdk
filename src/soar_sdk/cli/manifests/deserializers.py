@@ -263,7 +263,9 @@ class ActionDeserializer:
                     # mypy is bad at inferring types in this case
                     return base  # type: ignore[return-value]
                 # Typing isn't smart enough to infer this known truth, so we cast
-                return cast(MergeT, [merge(base[0], new_structure[0])])
+                return cast(  # ty: ignore[invalid-argument-type]
+                    MergeT, [merge(base[0], new_structure[0])]
+                )
 
             if isinstance(new_structure, dict) and isinstance(base, dict):
                 # Both are objects - merge recursively
@@ -388,7 +390,9 @@ class ActionDeserializer:
             # Only process data.* fields
             if data_path.startswith("data.*."):
                 data_path = data_path.removeprefix("data.*.")
-                output_fields.append({**output_spec, "data_path": data_path})
+                output_fields.append(  # ty: ignore[invalid-argument-type, missing-typed-dict-key]
+                    {**output_spec, "data_path": data_path}
+                )
 
             # Implicitly skips the automatic output fields;
             # like parameter, status, message, and summary
