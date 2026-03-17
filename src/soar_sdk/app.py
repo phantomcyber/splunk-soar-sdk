@@ -370,7 +370,7 @@ class App:
                         f"View handler {view_handler.__name__} not found in its module {view_handler.__module__}"
                     )
 
-            view_handler = decorated_view_handler  # ty: ignore[invalid-assignment]
+            view_handler = cast(NamedCallable, decorated_view_handler)
 
         return self.action(
             name=name,
@@ -382,7 +382,7 @@ class App:
             params_class=params_class,
             output_class=output_class,
             render_as=render_as,
-            view_handler=view_handler,  # ty: ignore[invalid-argument-type]
+            view_handler=view_handler,
             versions=versions,
             summary_type=summary_type,
             enable_concurrency_lock=enable_concurrency_lock,
@@ -639,24 +639,19 @@ class App:
 
         This is used to pass the soar client and asset to the action function, when requested.
         """
-        # The reason we wrap values in callables is to avoid evaluating any lazy attributes
-        # (like asset) unless they're actually going to be used in the action function.
-        magic_args: dict[str, object | Callable[[], object]] = {
-            "soar": self.soar_client,
+        # Values are wrapped in callables to avoid evaluating lazy attributes
+        # (like asset) unless they're actually used in the action function.
+        magic_args: dict[str, Callable[[], object]] = {
+            "soar": lambda: self.soar_client,
             "asset": lambda: self.asset,
         }
 
         sig = inspect.signature(function)
-        for name, value_or_getter in magic_args.items():
+        for name, getter in magic_args.items():
             given_value = kwargs.pop(name, None)
             if name in sig.parameters:
                 # Give the original kwargs precedence over the magic args
-                value = (
-                    value_or_getter()  # ty: ignore[call-top-callable]
-                    if callable(value_or_getter)
-                    else value_or_getter
-                )
-                kwargs[name] = given_value or value
+                kwargs[name] = given_value or getter()
 
         return kwargs
 
@@ -750,6 +745,7 @@ class App:
         """
         if (
             "pytest" in sys.modules
+            # Callable lacks __name__ in the type system; using NamedCallable would cascade to 4+ callers
             and function.__name__.startswith(  # ty: ignore[unresolved-attribute]
                 "test_"
             )
