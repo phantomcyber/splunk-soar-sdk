@@ -15,7 +15,7 @@ if TYPE_CHECKING or not _soar_is_available:
     class WebhookClient(SOARClient):
         pass
 
-    class SoarRestClient:  # type: ignore[no-redef]
+    class SoarRestClient:
         def __init__(self, token: str, asset_id: int) -> None:
             self.asset_id = asset_id
             self.base_url = "https://localhost:9999"

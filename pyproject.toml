@@ -252,10 +252,6 @@ match-dir = "(?!tests|__pycache__|build|dist).*"
 [tool.ty.src]
 exclude = ["tests/", "dist/", "mcp_server/"]
 
-[tool.ty.rules]
-unused-type-ignore-comment = "ignore"
-unused-ignore-comment = "ignore"
-
 [tool.ty.analysis]
 replace-imports-with-any = [
     "phantom",

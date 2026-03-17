@@ -6,7 +6,7 @@ import uuid
 from typing import TYPE_CHECKING, Any
 
 import httpx
-from authlib.oauth2.rfc7636 import (  # type: ignore[import-untyped]
+from authlib.oauth2.rfc7636 import (
     create_s256_code_challenge,
 )
 

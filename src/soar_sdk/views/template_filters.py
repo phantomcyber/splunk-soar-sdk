@@ -11,7 +11,7 @@ from collections.abc import Iterable, Iterator
 from datetime import datetime, timedelta
 from typing import TypeVar
 
-import bleach  # type: ignore[import-untyped]
+import bleach
 import humanize
 from jinja2 import Environment
 

@@ -727,7 +727,7 @@ class EmailProcessor:
         self._parsed_mail[PROC_EMAIL_JSON_TO] = mail.get("To", "")
         self._parsed_mail[PROC_EMAIL_JSON_DATE] = mail.get("Date", "")
         self._parsed_mail[PROC_EMAIL_JSON_MSG_ID] = mail.get("Message-ID", "")
-        self._parsed_mail[PROC_EMAIL_JSON_FILES] = files = []  # type: ignore[var-annotated]
+        self._parsed_mail[PROC_EMAIL_JSON_FILES] = files = []
         bodies: list[EmailBodyDict] = []
         self._parsed_mail[PROC_EMAIL_JSON_BODIES] = bodies
         self._parsed_mail[PROC_EMAIL_JSON_START_TIME] = start_time_epoch
@@ -1161,11 +1161,7 @@ class EmailProcessor:
         input_dict["source_data_identifier"] = create_dict_hash(input_dict_hash)
 
         if curr_email_guid:
-            self._guid_to_hash[curr_email_guid] = (
-                input_dict[  # ty: ignore[invalid-assignment]
-                    "source_data_identifier"
-                ]
-            )
+            self._guid_to_hash[curr_email_guid] = input_dict["source_data_identifier"]
 
         return APP_SUCCESS
 

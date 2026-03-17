@@ -1,5 +1,5 @@
 try:
-    import ph_ipc  # type: ignore[import-not-found]
+    import ph_ipc
 
     _soar_is_available = True
 except ImportError:
@@ -30,7 +30,7 @@ if TYPE_CHECKING or not _soar_is_available:
                 print(message)
     else:
 
-        class _PhIPCShim:  # type: ignore[no-redef]
+        class _PhIPCShim:
             PH_STATUS_PROGRESS = 1
 
             @staticmethod

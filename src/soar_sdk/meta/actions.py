@@ -47,9 +47,7 @@ class ActionMeta(BaseModel):
                 relative_module = ".".join(module_parts[1:])
             else:
                 relative_module = module
-            data["render"]["view"] = (  # ty: ignore[unresolved-attribute]
-                f"{relative_module}.{self.view_handler.__name__}"
-            )
+            data["render"]["view"] = f"{relative_module}.{self.view_handler.__name__}"
 
         # Remove view_handler from the output since in render
         data.pop("view_handler", None)

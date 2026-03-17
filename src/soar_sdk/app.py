@@ -382,7 +382,7 @@ class App:
             params_class=params_class,
             output_class=output_class,
             render_as=render_as,
-            view_handler=view_handler,  # ty: ignore[invalid-argument-type]
+            view_handler=view_handler,
             versions=versions,
             summary_type=summary_type,
             enable_concurrency_lock=enable_concurrency_lock,
@@ -651,7 +651,7 @@ class App:
             given_value = kwargs.pop(name, None)
             if name in sig.parameters:
                 # Give the original kwargs precedence over the magic args
-                value = (  # ty: ignore[call-top-callable]
+                value = (
                     value_or_getter() if callable(value_or_getter) else value_or_getter
                 )
                 kwargs[name] = given_value or value
@@ -696,7 +696,7 @@ class App:
             statuses = []
             for item in result:
                 statuses.append(
-                    App._adapt_action_result(  # ty: ignore[invalid-argument-type]
+                    App._adapt_action_result(
                         item,
                         actions_manager,
                         action_params,
