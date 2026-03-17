@@ -28,6 +28,7 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
     def get_all(self, *, force_reload: bool = False) -> AssetStateType:
         """Get the entirety of this part of the asset state."""
         if force_reload:
+            # backend is from phantom_common shim, whose imports are replaced with Any
             self.backend.reload_state_from_file(  # ty: ignore[unresolved-attribute]
                 self.asset_id
             )
