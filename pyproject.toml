@@ -265,36 +265,5 @@ replace-imports-with-any = [
     "ph_ipc",
 ]
 
-[[tool.ty.overrides]]
-# ph_ipc shim has two class definitions with different signatures depending on SOAR version
-include = ["src/soar_sdk/logging.py"]
-
-[tool.ty.overrides.rules]
-invalid-argument-type = "ignore"
-too-many-positional-arguments = "ignore"
-missing-argument = "ignore"
-
-[[tool.ty.overrides]]
-# Callable.__name__ not guaranteed by type system, but always present on real functions
-include = ["src/soar_sdk/meta/actions.py"]
-
-[tool.ty.overrides.rules]
-unresolved-attribute = "ignore"
-
-[[tool.ty.overrides]]
-# callable() guard not narrowed, Iterator item type not narrowed, issubclass on complex types
-include = ["src/soar_sdk/app.py", "src/soar_sdk/decorators/action.py"]
-
-[tool.ty.overrides.rules]
-call-top-callable = "ignore"
-invalid-argument-type = "ignore"
-
-[[tool.ty.overrides]]
-# Control flow narrowing limitation with dict key types
-include = ["src/soar_sdk/extras/email/processor.py"]
-
-[tool.ty.overrides.rules]
-invalid-assignment = "ignore"
-
 [tool.codespell]
 ignore-words-list = "MergeT,asend"

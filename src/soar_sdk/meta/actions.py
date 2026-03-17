@@ -1,15 +1,17 @@
-from collections.abc import Callable
 from typing import Any, Type  # noqa: UP035
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.cli.manifests.serializers import OutputsSerializer, ParamsSerializer
 from soar_sdk.params import Params
+from soar_sdk.types import NamedCallable
 
 
 class ActionMeta(BaseModel):
     """Metadata for an action, to be serialized in the manifest."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
     action: str
     identifier: str
@@ -21,7 +23,7 @@ class ActionMeta(BaseModel):
     parameters: Type[Params] = Field(default=Params)  # noqa: UP006
     output: Type[ActionOutput] = Field(default=ActionOutput)  # noqa: UP006
     render_as: str | None = None
-    view_handler: Callable | None = None
+    view_handler: NamedCallable | None = None
     summary_type: Type[ActionOutput] | None = Field(default=None, exclude=True)  # noqa: UP006
     enable_concurrency_lock: bool = False
 

@@ -104,7 +104,7 @@ class PhantomLogger(logging.Logger):
         self.handler.setFormatter(console_formatter)
         self.addHandler(self.handler)
 
-    def progress(self, message: str, *args: object, **kwargs: object) -> None:
+    def progress(self, message: str, *args: object, **kwargs: Any) -> None:  # noqa: ANN401
         """Log a message with the PROGRESS level."""
         if self.isEnabledFor(PROGRESS_LEVEL):
             self._log(

@@ -5,47 +5,53 @@ try:
 except ImportError:
     _soar_is_available = False
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
 if TYPE_CHECKING or not _soar_is_available:
-    from packaging.version import Version
 
-    from soar_sdk.shims.phantom.install_info import get_product_version
+    class _PhIPCShim:
+        PH_STATUS_PROGRESS = 1
 
-    if Version(get_product_version()) >= Version("7.0.0"):
+        @overload
+        @staticmethod
+        def sendstatus(status: int, message: str, flag: bool) -> None: ...
+        @overload
+        @staticmethod
+        def sendstatus(
+            handle: int | None, status: int, message: str, flag: bool
+        ) -> None: ...
+        @staticmethod
+        def sendstatus(*args: object) -> None:
+            # New SOAR (3 args): status, message, flag
+            # Old SOAR (4 args): handle, status, message, flag
+            message = args[1] if len(args) == 3 else args[2]
+            print(message)
 
-        class _PhIPCShim:
-            PH_STATUS_PROGRESS = 1
+        @overload
+        @staticmethod
+        def debugprint(message: str) -> None: ...
+        @overload
+        @staticmethod
+        def debugprint(handle: int | None, message: str, level: int) -> None: ...
+        @staticmethod
+        def debugprint(*args: object) -> None:
+            # New SOAR (1 arg): message
+            # Old SOAR (3 args): handle, message, level
+            message = args[0] if len(args) == 1 else args[1]
+            print(message)
 
-            @staticmethod
-            def sendstatus(status: int, message: str, flag: bool) -> None:
-                print(message)
-
-            @staticmethod
-            def debugprint(message: str) -> None:
-                print(message)
-
-            @staticmethod
-            def errorprint(message: str) -> None:
-                print(message)
-    else:
-
-        class _PhIPCShim:
-            PH_STATUS_PROGRESS = 1
-
-            @staticmethod
-            def sendstatus(
-                handle: int | None, status: int, message: str, flag: bool
-            ) -> None:
-                print(message)
-
-            @staticmethod
-            def debugprint(handle: int | None, message: str, level: int) -> None:
-                print(message)
-
-            @staticmethod
-            def errorprint(message: str) -> None:
-                print(message)
+        @overload
+        @staticmethod
+        def errorprint(message: str) -> None: ...
+        @overload
+        @staticmethod
+        def errorprint(handle: int | None, message: str, level: int) -> None: ...
+        @staticmethod
+        def errorprint(*args: object) -> None:
+            # New SOAR (1 arg): message
+            # Old SOAR (3 args): handle, message, level
+            message = args[0] if len(args) == 1 else args[1]
+            print(message)
 
     ph_ipc = _PhIPCShim()
 
