@@ -1,5 +1,5 @@
 try:
-    import encryption_helper  # type: ignore[import-not-found]
+    import encryption_helper
 
     _soar_is_available = True
 except ImportError:
@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING or not _soar_is_available:
     import base64
 
-    class encryption_helper:  # type: ignore[no-redef]
+    class encryption_helper:
         """Simulated encryption helper for environments without BaseConnector.
 
         Salt values are optional, as newer versions of SOAR no longer accept them."""

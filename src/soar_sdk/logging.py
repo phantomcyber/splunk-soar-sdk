@@ -52,36 +52,26 @@ class SOARHandler(logging.Handler):
             message = self.format(record)
             if record.levelno == PROGRESS_LEVEL:
                 if is_new_soar:
-                    ph_ipc.sendstatus(  # ty: ignore[invalid-argument-type, missing-argument]
-                        ph_ipc.PH_STATUS_PROGRESS, message, False
-                    )
+                    ph_ipc.sendstatus(ph_ipc.PH_STATUS_PROGRESS, message, False)
                 else:
-                    ph_ipc.sendstatus(  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
+                    ph_ipc.sendstatus(
                         self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, False
                     )
             elif record.levelno in (logging.DEBUG, logging.WARNING):
                 if is_new_soar:
-                    ph_ipc.debugprint(  # ty: ignore[missing-argument, invalid-argument-type]
-                        message
-                    )
+                    ph_ipc.debugprint(message)
                 else:
-                    ph_ipc.debugprint(  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
-                        self.__handle, message, 2
-                    )
+                    ph_ipc.debugprint(self.__handle, message, 2)
             elif record.levelno in (logging.ERROR, logging.CRITICAL):
                 if is_new_soar:
                     ph_ipc.errorprint(message)
                 else:
-                    ph_ipc.errorprint(  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
-                        self.__handle, message, 2
-                    )
+                    ph_ipc.errorprint(self.__handle, message, 2)
             elif record.levelno == logging.INFO:
                 if is_new_soar:
-                    ph_ipc.sendstatus(  # ty: ignore[invalid-argument-type, missing-argument]
-                        ph_ipc.PH_STATUS_PROGRESS, message, True
-                    )
+                    ph_ipc.sendstatus(ph_ipc.PH_STATUS_PROGRESS, message, True)
                 else:
-                    ph_ipc.sendstatus(  # ty: ignore[too-many-positional-arguments, invalid-argument-type]
+                    ph_ipc.sendstatus(
                         self.__handle, ph_ipc.PH_STATUS_PROGRESS, message, True
                     )
 
@@ -121,7 +111,7 @@ class PhantomLogger(logging.Logger):
                 PROGRESS_LEVEL,
                 message,
                 args,
-                **kwargs,  # type: ignore
+                **kwargs,
             )
 
     def removeHandler(self, hdlr: logging.Handler) -> None:

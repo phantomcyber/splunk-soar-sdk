@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING or not _soar_is_available:
 
-    class ActionResult:  # type: ignore[no-redef]
+    class ActionResult:
         def __init__(self, param: dict | None = None) -> None:
             self.status = False
             self.message = ""

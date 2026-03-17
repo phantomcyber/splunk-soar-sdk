@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING or not _soar_is_available:
     import traceback
 
-    class ConnectorResult:  # type: ignore[no-redef]
+    class ConnectorResult:
         def __init__(self) -> None:
             self.__exception_occured = False
 

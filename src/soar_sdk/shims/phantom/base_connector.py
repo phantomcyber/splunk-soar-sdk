@@ -21,7 +21,7 @@ if TYPE_CHECKING or not _soar_is_available:
     from soar_sdk.shims.phantom.action_result import ActionResult
     from soar_sdk.shims.phantom.connector_result import ConnectorResult
 
-    class BaseConnector:  # type: ignore[no-redef]
+    class BaseConnector:
         def __init__(self) -> None:
             self.action_results: list[ActionResult] = []
             self.__conn_result: ConnectorResult

@@ -92,9 +92,7 @@ class ActionDecorator:
         if origin in (list, Iterator, AsyncGenerator):
             validated_output_class = get_args(validated_output_class)[0]
 
-        if not issubclass(
-            validated_output_class, ActionOutput
-        ):  # ty: ignore[invalid-argument-type]
+        if not issubclass(validated_output_class, ActionOutput):
             raise TypeError(
                 "Return type for action function must be derived from ActionOutput class."
             )
