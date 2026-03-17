@@ -1,7 +1,8 @@
 import dataclasses
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, NamedTuple, TypeVar, cast
+from typing import Any, NamedTuple, cast
 
 import pydantic
 
@@ -96,9 +97,14 @@ class OutputFieldModel:
     data_path: str
     data_type: str
     contains: list[str] | None = None
-    example_values: list[str | float | bool] | None = None
+    example_values: Sequence[str | int | float | bool] | None = None
     column_name: str | None = None
     column_order: int | None = None
+
+
+# Recursive type representing nested output field structures:
+# leaf nodes are OutputFieldModel, interior nodes are dicts or lists of nested fields.
+type NestedField = list[NestedField] | dict[str, NestedField] | OutputFieldModel
 
 
 class DeserializedActionMeta(NamedTuple):
@@ -213,7 +219,7 @@ class ActionDeserializer:
     @staticmethod
     def _build_output_structure(
         datapath_specs: dict[str, OutputFieldModel],
-    ) -> dict[str, list | dict | OutputFieldModel]:
+    ) -> dict[str, NestedField]:
         """Parse a datapath string into a dictionary.
 
         Args:
@@ -224,10 +230,10 @@ class ActionDeserializer:
         """
 
         def set_nested_value(
-            field_struct: dict[str, list | dict | OutputFieldModel],
+            field_struct: dict[str, NestedField],
             path_parts: list[str],
             field_spec: OutputFieldModel,
-        ) -> list | dict | OutputFieldModel:
+        ) -> NestedField:
             """Recursively set a field spec in the nested output field structure."""
             # Base case: we're at a leaf node and can return the field spec directly
             if not path_parts:
@@ -241,7 +247,7 @@ class ActionDeserializer:
 
             # Recursive case: this portion of the datapath is an object key
             next_field_struct = cast(
-                dict[str, list | dict | OutputFieldModel],
+                dict[str, NestedField],
                 field_struct.get(current_key, {}),
             )
             field_struct[current_key] = set_nested_value(
@@ -249,51 +255,47 @@ class ActionDeserializer:
             )
             return field_struct
 
-        MergeT = TypeVar("MergeT", bound=list | dict | OutputFieldModel)
-
-        def merge(base: MergeT, new_structure: MergeT) -> MergeT:
+        def merge(base: NestedField, new_structure: NestedField) -> NestedField:
             """Merge two nested structures, handling arrays and objects."""
             if isinstance(new_structure, list) and isinstance(base, list):
                 # Both are arrays - merge their first elements
                 # These shouldn't be empty, hence the pragmas, but we handle them gracefully
                 if not base:  # pragma: no cover
-                    # mypy is bad at inferring types in this case
-                    return new_structure  # type: ignore[return-value]
+                    return new_structure
                 if not new_structure:  # pragma: no cover
-                    # mypy is bad at inferring types in this case
-                    return base  # type: ignore[return-value]
-                # Typing isn't smart enough to infer this known truth, so we cast
-                return cast(  # ty: ignore[invalid-argument-type]
-                    MergeT, [merge(base[0], new_structure[0])]
-                )
+                    return base
+                # isinstance(x, list) narrows to list[Unknown], so cast items
+                base_item = cast(NestedField, base[0])
+                new_item = cast(NestedField, new_structure[0])
+                return [merge(base_item, new_item)]
 
             if isinstance(new_structure, dict) and isinstance(base, dict):
-                # Both are objects - merge recursively
-                result = base.copy()
-                for key, value in new_structure.items():
+                # Both are dicts - merge recursively
+                # isinstance(x, dict) narrows to dict[Unknown, Unknown], so cast
+                base_dict = cast(dict[str, NestedField], base)
+                new_dict = cast(dict[str, NestedField], new_structure)
+                result = base_dict.copy()
+                for key, value in new_dict.items():
                     if key in result:
                         result[key] = merge(result[key], value)
                     else:
                         result[key] = value
-
-                # Typing isn't smart enough to infer this known truth, so we cast
-                return cast(MergeT, result)
+                return result
 
             # One is OutputFieldModel or they're different types - new takes precedence
             # Should never happen in reality, hence the pragma, but we handle it gracefully
             return new_structure  # pragma: no cover
 
-        result: dict[str, list | dict | OutputFieldModel] = {}
+        result: dict[str, NestedField] = {}
 
         for datapath, field_spec in datapath_specs.items():
             path_parts = datapath.split(".")
             nested_structure = cast(
-                dict[str, list | dict | OutputFieldModel],
+                dict[str, NestedField],
                 set_nested_value({}, path_parts, field_spec),
             )
-            merged = merge(result, nested_structure)
-            # Since we start with an empty dict and merge should preserve that at top level
-            result = merged if isinstance(merged, dict) else {}
+            # Both inputs are dicts, so the result will always be a dict
+            result = cast(dict[str, NestedField], merge(result, nested_structure))
 
         return result
 
@@ -301,7 +303,7 @@ class ActionDeserializer:
     def _build_output_class(
         cls,
         action_name: str,
-        output_structure: dict[str, dict | list | OutputFieldModel],
+        output_structure: dict[str, NestedField],
     ) -> type[ActionOutput]:
         """Build dynamic pydantic models for an action output, from the output data paths.
 
@@ -326,7 +328,7 @@ class ActionDeserializer:
 
     @classmethod
     def _build_output_field(
-        cls, field_name: str, output_structure: list | dict | OutputFieldModel
+        cls, field_name: str, output_structure: NestedField
     ) -> tuple[str, FieldSpec]:
         """Build dynamic specs for an action output field, from an output data path.
 
@@ -389,10 +391,9 @@ class ActionDeserializer:
 
             # Only process data.* fields
             if data_path.startswith("data.*."):
-                data_path = data_path.removeprefix("data.*.")
-                output_fields.append(  # ty: ignore[invalid-argument-type, missing-typed-dict-key]
-                    {**output_spec, "data_path": data_path}
-                )
+                field = output_spec.copy()
+                field["data_path"] = data_path.removeprefix("data.*.")
+                output_fields.append(field)
 
             # Implicitly skips the automatic output fields;
             # like parameter, status, message, and summary

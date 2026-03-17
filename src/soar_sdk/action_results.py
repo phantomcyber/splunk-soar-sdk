@@ -1,5 +1,5 @@
 import itertools
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Iterator, Sequence
 from typing import Any, Literal, NotRequired
 
 from pydantic import (
@@ -92,14 +92,14 @@ class OutputFieldSpecification(TypedDict):
     data_path: str
     data_type: str
     contains: NotRequired[list[str]]
-    example_values: NotRequired[list[str | int | float | bool]]
+    example_values: NotRequired[Sequence[str | int | float | bool]]
     column_name: NotRequired[str]
     column_order: NotRequired[int]
 
 
 def OutputField(
     cef_types: list[str] | None = None,
-    example_values: list[str | int | float | bool] | None = None,
+    example_values: Sequence[str | int | float | bool] | None = None,
     alias: str | None = None,
     column_name: str | None = None,
 ) -> Any:  # noqa: ANN401

@@ -286,14 +286,6 @@ include = ["src/soar_sdk/meta/actions.py"]
 unresolved-attribute = "ignore"
 
 [[tool.ty.overrides]]
-# Recursive generic merge(), spread dict construction, and list invariance edge cases
-include = ["src/soar_sdk/cli/manifests/deserializers.py"]
-
-[tool.ty.overrides.rules]
-invalid-argument-type = "ignore"
-missing-typed-dict-key = "ignore"
-
-[[tool.ty.overrides]]
 # callable() guard not narrowed, Iterator item type not narrowed, issubclass on complex types
 include = ["src/soar_sdk/app.py", "src/soar_sdk/decorators/action.py"]
 
