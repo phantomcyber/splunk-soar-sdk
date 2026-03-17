@@ -54,6 +54,7 @@ remove_when_soar_newer_than(
 DEPENDENCIES_TO_BUILD = {
     "splunk_sdk",  # https://github.com/splunk/splunk-sdk-python/pull/656,
     "splunk_soar_sdk",  # Useful to build from source when developing the SDK
+    "red_black_tree_mod",  # Required for email parsing
 }
 
 
