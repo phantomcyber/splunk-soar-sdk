@@ -1,3 +1,5 @@
+from soar_sdk.compat import remove_when_soar_newer_than
+
 try:
     import ph_ipc
 
@@ -11,6 +13,11 @@ if TYPE_CHECKING or not _soar_is_available:
 
     class _PhIPCShim:
         PH_STATUS_PROGRESS = 1
+
+        remove_when_soar_newer_than(
+            "7.0.0",
+            'The "Old SOAR" variants of the ph_ipc methods are no longer used.',
+        )
 
         @overload
         @staticmethod
