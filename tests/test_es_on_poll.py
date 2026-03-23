@@ -5,6 +5,7 @@ import pytest
 import pytest_mock
 
 from soar_sdk.app import App
+from soar_sdk.asset_state import AssetState
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.models.finding import Finding, FindingAttachment, FindingEmail
 from soar_sdk.params import OnESPollParams
@@ -726,6 +727,234 @@ def test_es_on_poll_create_findings_bulk_failure(
     assert result is False
 
 
+def test_es_on_poll_bulk_failure_cleans_up_containers(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll deletes pre-created containers when create_findings_bulk fails."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        side_effect=Exception("API error"),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.return_value = "vault-abc123"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    container_mock = MagicMock()
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "container",
+        new_callable=lambda: property(lambda self: container_mock),
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Phishing Email",
+            attachments=[
+                FindingAttachment(
+                    file_name="email.eml", data=b"raw content", is_raw_email=True
+                )
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is False
+    container_mock.delete.assert_called_once_with(99)
+
+
+def test_es_on_poll_bulk_failure_cleanup_tolerates_delete_errors(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll still returns failure even if container cleanup fails."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        side_effect=Exception("API error"),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.return_value = "vault-abc123"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    container_mock = MagicMock()
+    container_mock.delete.side_effect = Exception("Delete failed")
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "container",
+        new_callable=lambda: property(lambda self: container_mock),
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Phishing Email",
+            attachments=[
+                FindingAttachment(
+                    file_name="email.eml", data=b"raw content", is_raw_email=True
+                )
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is False
+    container_mock.delete.assert_called_once_with(99)
+
+
+def test_es_on_poll_bulk_failure_rolls_back_ingest_state(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that ingest_state changes are rolled back when create_findings_bulk fails."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        side_effect=Exception("API error"),
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    ingest_state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    ingest_state.put_all({"es_next_muid": 1})
+    app_with_action.asset._ingest_state = ingest_state
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        state = app_with_action.asset.ingest_state
+        state["es_next_muid"] = 100
+        yield Finding(rule_title="Test Finding")
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is False
+    assert ingest_state.get_all() == {"es_next_muid": 1}
+
+
+def test_es_on_poll_success_commits_ingest_state(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that ingest_state changes are committed when create_findings_bulk succeeds."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    ingest_state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    ingest_state.put_all({"es_next_muid": 1})
+    app_with_action.asset._ingest_state = ingest_state
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        state = app_with_action.asset.ingest_state
+        state["es_next_muid"] = 100
+        yield Finding(rule_title="Test Finding")
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+    assert ingest_state.get_all() == {"es_next_muid": 100}
+
+
+def test_es_on_poll_action_failure_rolls_back_ingest_state(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that ingest_state is rolled back when ActionFailure is raised during iteration."""
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    ingest_state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    ingest_state.put_all({"es_next_muid": 1})
+    app_with_action.asset._ingest_state = ingest_state
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        state = app_with_action.asset.ingest_state
+        state["es_next_muid"] = 999
+        raise ActionFailure("Something went wrong")
+        yield
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is False
+    assert ingest_state.get_all() == {"es_next_muid": 1}
+
+
+def test_es_on_poll_generator_exception_rolls_back_ingest_state(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that ingest_state is rolled back when a generic exception is raised during iteration."""
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    ingest_state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    ingest_state.put_all({"es_next_muid": 1})
+    app_with_action.asset._ingest_state = ingest_state
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        state = app_with_action.asset.ingest_state
+        state["es_next_muid"] = 999
+        raise ValueError("Unexpected error")
+        yield
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is False
+    assert ingest_state.get_all() == {"es_next_muid": 1}
+
+
+def test_es_on_poll_empty_generator_commits_ingest_state(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that ingest_state transaction is properly handled when generator yields nothing."""
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    ingest_state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    ingest_state.put_all({"es_next_muid": 1})
+    app_with_action.asset._ingest_state = ingest_state
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        return
+        yield
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+    assert ingest_state.get_all() == {"es_next_muid": 1}
+
+
 def test_es_on_poll_vault_upload_failure_continues(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
@@ -1214,3 +1443,105 @@ def test_es_on_poll_vault_link_fallback_when_system_info_fails(
     assert finding_payload["email"]["attachments"][0]["url"] == (
         "https://fallback.soar.local/rest/download_attachment?vault_id=vault-abc123"
     )
+
+
+def _clear_ingest_state(app: App) -> None:
+    app.asset._ingest_state = None
+
+
+def test_es_on_poll_no_ingest_state_success(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll succeeds without ingest state."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    _clear_ingest_state(app_with_action)
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="Test Finding")
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    assert on_es_poll_function(params, client=app_with_action.soar_client) is True
+
+
+def test_es_on_poll_no_ingest_state_bulk_failure(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll handles bulk failure without ingest state."""
+    mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        side_effect=Exception("API error"),
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    _clear_ingest_state(app_with_action)
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="Test Finding")
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    assert on_es_poll_function(params, client=app_with_action.soar_client) is False
+
+
+def test_es_on_poll_no_ingest_state_action_failure(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll handles ActionFailure without ingest state."""
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    _clear_ingest_state(app_with_action)
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        raise ActionFailure("fail")
+        yield
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    assert on_es_poll_function(params, client=app_with_action.soar_client) is False
+
+
+def test_es_on_poll_no_ingest_state_generator_exception(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll handles generator exception without ingest state."""
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    _clear_ingest_state(app_with_action)
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        raise ValueError("unexpected")
+        yield
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    assert on_es_poll_function(params, client=app_with_action.soar_client) is False
+
+
+def test_es_on_poll_no_ingest_state_empty_generator(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test on_es_poll handles empty generator without ingest state."""
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    _clear_ingest_state(app_with_action)
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        return
+        yield
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    assert on_es_poll_function(params, client=app_with_action.soar_client) is True

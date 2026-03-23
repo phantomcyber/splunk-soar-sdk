@@ -173,6 +173,7 @@ class OnESPollDecorator:
             max_findings = action_params.container_count or None
             batch_size = soar.MAX_BULK_FINDINGS
             generator_exhausted = False
+            ingest_state = self.app.asset._ingest_state
             try:
                 system_info = soar.get("/rest/system_info").json()
                 base_url = system_info.get("base_url", "").rstrip("/")
@@ -205,6 +206,9 @@ class OnESPollDecorator:
                 if max_findings is not None:
                     remaining = min(remaining, max_findings - findings_created)
 
+                if ingest_state is not None:
+                    ingest_state.begin_transaction()
+
                 while len(batch) < remaining:
                     try:
                         send_value = last_container_id if not batch else None
@@ -214,6 +218,8 @@ class OnESPollDecorator:
                         break
                     except ActionFailure as e:
                         e.set_action_name(action_name)
+                        if ingest_state is not None and ingest_state.in_transaction:
+                            ingest_state.rollback()
                         return self.app._adapt_action_result(
                             ActionResult(status=False, message=str(e)),
                             self.app.actions_manager,
@@ -221,6 +227,8 @@ class OnESPollDecorator:
                     except Exception as e:
                         self.app.actions_manager.add_exception(e)
                         logger.error(f"Error during finding processing: {e!s}")
+                        if ingest_state is not None and ingest_state.in_transaction:
+                            ingest_state.rollback()
                         return self.app._adapt_action_result(
                             ActionResult(status=False, message=str(e)),
                             self.app.actions_manager,
@@ -236,6 +244,8 @@ class OnESPollDecorator:
                     batch.append(item)
 
                 if not batch:
+                    if ingest_state is not None and ingest_state.in_transaction:
+                        ingest_state.commit()
                     break
 
                 pre_created_containers: dict[int, int] = {}
@@ -328,13 +338,27 @@ class OnESPollDecorator:
                     )
                 except Exception as e:
                     logger.error(f"Failed to bulk create findings: {e}")
+                    if ingest_state is not None and ingest_state.in_transaction:
+                        ingest_state.rollback()
+                    for cid in pre_created_containers.values():
+                        try:
+                            soar.container.delete(cid)
+                        except Exception as del_err:
+                            logger.warning(
+                                f"Failed to clean up container {cid}: {del_err}"
+                            )
+                    msg = (
+                        f"Failed to bulk create findings: {e}. "
+                        f"{findings_created} finding(s) created before failure. "
+                        f"The failed batch ({len(batch)} finding(s)) will be retried on the next poll."
+                    )
                     return self.app._adapt_action_result(
-                        ActionResult(
-                            status=False,
-                            message=f"Failed to bulk create findings: {e}",
-                        ),
+                        ActionResult(status=False, message=msg),
                         self.app.actions_manager,
                     )
+
+                if ingest_state is not None and ingest_state.in_transaction:
+                    ingest_state.commit()
 
                 bulk_errors = bulk_response.get("errors", [])
 

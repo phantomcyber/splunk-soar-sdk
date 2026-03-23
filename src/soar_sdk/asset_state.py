@@ -24,9 +24,37 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         self.state_key = state_key
         self.asset_id = asset_id
         self.app_id = app_id
+        self._transaction_buffer: AssetStateType | None = None
+
+    @property
+    def in_transaction(self) -> bool:
+        """Whether a transaction is currently active."""
+        return self._transaction_buffer is not None
+
+    def begin_transaction(self) -> None:
+        """Begin a transaction. Writes are buffered until commit() is called."""
+        if self.in_transaction:
+            raise RuntimeError("Transaction already active")
+        self._transaction_buffer = self.get_all()
+
+    def commit(self) -> None:
+        """Flush buffered writes to the backend."""
+        if self._transaction_buffer is None:
+            raise RuntimeError("No active transaction")
+        buffered = self._transaction_buffer
+        self._transaction_buffer = None
+        self.put_all(buffered)
+
+    def rollback(self) -> None:
+        """Discard buffered writes."""
+        if not self.in_transaction:
+            raise RuntimeError("No active transaction")
+        self._transaction_buffer = None
 
     def get_all(self, *, force_reload: bool = False) -> AssetStateType:
         """Get the entirety of this part of the asset state."""
+        if self._transaction_buffer is not None:
+            return dict(self._transaction_buffer)
         if force_reload:
             # backend is from phantom_common shim, whose imports are replaced with Any
             self.backend.reload_state_from_file(  # ty: ignore[unresolved-attribute]
@@ -40,6 +68,9 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
 
     def put_all(self, new_value: AssetStateType) -> None:
         """Entirely replace this part of the asset state."""
+        if self.in_transaction:
+            self._transaction_buffer = dict(new_value)
+            return
         part_json = json.dumps(new_value)
         part_encrypted = encryption_helper.encrypt(part_json, salt=self.asset_id)
         state = self.backend.load_state() or {}
