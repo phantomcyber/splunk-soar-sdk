@@ -69,6 +69,73 @@ def test_state_is_encrypted(example_state: AssetState):
         json.loads(raw_state)
 
 
+def test_transaction_commit_persists(example_state: AssetState):
+    example_state.put_all({"key": "original"})
+
+    example_state.begin_transaction()
+    example_state["key"] = "updated"
+    example_state["new_key"] = "new_value"
+
+    # Backend still has the original value during transaction
+    raw_state = example_state.backend.load_state() or {}
+    from soar_sdk.shims.phantom.encryption_helper import encryption_helper
+
+    decrypted = json.loads(
+        encryption_helper.decrypt(
+            raw_state[example_state.state_key], example_state.asset_id
+        )
+    )
+    assert decrypted == {"key": "original"}
+
+    example_state.commit()
+
+    assert example_state.get_all() == {"key": "updated", "new_key": "new_value"}
+
+
+def test_transaction_rollback_discards(example_state: AssetState):
+    example_state.put_all({"key": "original"})
+
+    example_state.begin_transaction()
+    example_state["key"] = "should_be_discarded"
+    example_state["extra"] = "also_discarded"
+    example_state.rollback()
+
+    assert example_state.get_all() == {"key": "original"}
+
+
+def test_transaction_reads_see_buffered_writes(example_state: AssetState):
+    example_state.put_all({"a": 1})
+
+    example_state.begin_transaction()
+    example_state["b"] = 2
+    assert example_state["b"] == 2
+    assert example_state.get_all() == {"a": 1, "b": 2}
+    example_state.rollback()
+
+
+def test_transaction_double_begin_raises(example_state: AssetState):
+    example_state.begin_transaction()
+    with pytest.raises(RuntimeError, match="already active"):
+        example_state.begin_transaction()
+    example_state.rollback()
+
+
+def test_commit_without_transaction_raises(example_state: AssetState):
+    with pytest.raises(RuntimeError, match="No active transaction"):
+        example_state.commit()
+
+
+def test_rollback_without_transaction_raises(example_state: AssetState):
+    with pytest.raises(RuntimeError, match="No active transaction"):
+        example_state.rollback()
+
+
+def test_writes_outside_transaction_persist_immediately(example_state: AssetState):
+    example_state["key"] = "persisted"
+    assert example_state.get_all() == {"key": "persisted"}
+    assert not example_state.in_transaction
+
+
 def test_get_all_with_force_reload(example_state: AssetState):
     example_state.put_all({"key": "original_value"})
 

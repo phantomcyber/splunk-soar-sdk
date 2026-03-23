@@ -151,6 +151,28 @@ class Container:
             self.__containers[next_container_id] = container
             return next_container_id
 
+    def delete(self, container_id: int) -> None:
+        """Delete a container from the SOAR platform.
+
+        Args:
+            container_id: The ID of the container to delete.
+
+        Raises:
+            SoarAPIError: If the API request fails or the container cannot be deleted.
+        """
+        if is_client_authenticated(self.soar_client.client):
+            endpoint = f"rest/container/{container_id}"
+            try:
+                self.soar_client.delete(endpoint)
+            except Exception as e:
+                raise SoarAPIError(
+                    f"Failed to delete container {container_id}: {e}"
+                ) from e
+        else:
+            if container_id not in self.__containers:
+                raise SoarAPIError(f"Container {container_id} not found")
+            del self.__containers[container_id]
+
     def _prepare_container(self, container: dict) -> None:
         """Prepare container data by applying default values and validating required fields.
 

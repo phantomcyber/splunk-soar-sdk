@@ -141,6 +141,45 @@ def test_create_container_locally(app_with_action: App, app_connector):
     assert result
 
 
+def test_delete_container(app_connector, mock_delete_container):
+    app_connector.container.delete(1)
+    assert mock_delete_container.called
+
+
+def test_delete_container_failed(app_connector, mock_delete_container):
+    mock_delete_container.side_effect = RequestError("Failed to delete container")
+
+    with pytest.raises(SoarAPIError):
+        app_connector.container.delete(1)
+
+
+def test_delete_container_locally(app_with_action: App, app_connector):
+    app_connector.client.headers.pop("X-CSRFToken")
+
+    @app_with_action.action()
+    def action_function(params: Params, soar: SOARClient) -> ActionOutput:
+        container = {
+            "name": "test container",
+            "description": "test description",
+            "label": "events",
+            "asset_id": "1",
+            "artifacts": [],
+        }
+        container_id = soar.container.create(container)
+        soar.container.delete(container_id)
+        return ActionOutput()
+
+    result = action_function(Params(), soar=app_connector)
+    assert result
+
+
+def test_delete_container_locally_not_found(app_with_action: App, app_connector):
+    app_connector.client.headers.pop("X-CSRFToken")
+
+    with pytest.raises(SoarAPIError):
+        app_connector.container.delete(999)
+
+
 def test_container_rest_call_failed(app_connector, mock_post_container):
     mock_post_container.side_effect = RequestError("Failed to create container")
 

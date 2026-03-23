@@ -618,6 +618,16 @@ def mock_post_container(respx_mock):
 
 @pytest.fixture
 @pytest.mark.respx
+def mock_delete_container(respx_mock):
+    """Fixture to mock DELETE requests to delete containers."""
+    mock_route = respx_mock.delete(re.compile(r".*/rest/container/\d+/?$")).mock(
+        return_value=Response(200, json={"message": "Container deleted"})
+    )
+    return mock_route
+
+
+@pytest.fixture
+@pytest.mark.respx
 def mock_post_vault(respx_mock):
     """Fixture to mock POST requests to add attachments to vault."""
     mock_route = respx_mock.post(re.compile(r".*/rest/container_attachment/?$")).mock(
