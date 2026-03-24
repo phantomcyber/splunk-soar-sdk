@@ -49,6 +49,12 @@ repos:
         entry: uv lock
         files: ^pyproject\.toml$
         pass_filenames: false
+      - id: uv-bump
+        name: uv-bump
+        language: system
+        entry: uv run uv-bump
+        files: ^uv.lock$
+        pass_filenames: false
       - id: ty
         name: ty
         language: system
