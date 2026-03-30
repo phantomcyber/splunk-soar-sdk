@@ -225,13 +225,13 @@ def test_soar_client_create_findings_bulk_empty(app_with_action):
 
 
 def test_soar_client_create_findings_bulk_exceeds_limit(app_with_action):
-    """Test SOARClient.create_findings_bulk rejects more than 500 findings."""
+    """Test SOARClient.create_findings_bulk rejects more than 25 findings."""
     from soar_sdk.app import App
 
     app: App = app_with_action
-    findings = [{"rule_title": f"Finding {i}"} for i in range(501)]
+    findings = [{"rule_title": f"Finding {i}"} for i in range(26)]
 
-    with pytest.raises(ValueError, match="Maximum 500"):
+    with pytest.raises(ValueError, match="Maximum 25"):
         app.soar_client.create_findings_bulk(findings)
 
 
