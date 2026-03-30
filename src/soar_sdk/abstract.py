@@ -75,7 +75,7 @@ class SOARClient(Generic[SummaryType]):
         """Return the current Asset ID passed in the Connector Run Action JSON."""
         pass
 
-    MAX_BULK_FINDINGS = 500
+    MAX_BULK_FINDINGS = 25
 
     def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
         """Create a single finding in ES via the SOAR proxy."""
@@ -91,7 +91,7 @@ class SOARClient(Generic[SummaryType]):
     ) -> dict[str, Any]:
         """Create findings in ES via the SOAR bulk endpoint.
 
-        Accepts up to 500 findings per call. When ``container_ids`` is provided,
+        Accepts up to 25 findings per call. When ``container_ids`` is provided,
         the backend links pre-existing containers to the created findings
         instead of creating new ones.
 
