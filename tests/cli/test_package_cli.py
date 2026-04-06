@@ -277,6 +277,98 @@ def test_package_build_writes_manifest_wheel_paths(
             raise AssertionError(f"Expected wheel not found in {section}")
 
 
+def test_package_build_includes_readme(wheel_resp_mock, tmp_path: Path):
+    example_app = Path.cwd() / "tests/example_app"
+    destination = tmp_path / "example_app.tgz"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "Adding README to package" in result.stdout
+
+    with tarfile.open(destination, "r:gz") as tar:
+        members = tar.getnames()
+        assert any("README.md" in name for name in members)
+
+
+def test_package_build_includes_release_notes(wheel_resp_mock, tmp_path: Path):
+    example_app = Path.cwd() / "tests/example_app"
+    destination = tmp_path / "example_app.tgz"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+    ):
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "Adding release notes to package" in result.stdout
+
+    with tarfile.open(destination, "r:gz") as tar:
+        members = tar.getnames()
+        assert any("release_notes/v1.md" in name for name in members)
+
+
+def test_package_build_without_readme(wheel_resp_mock, tmp_path: Path):
+    example_app = Path.cwd() / "tests/example_app"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+        patch("soar_sdk.cli.package.cli.APP_README") as mock_app_readme,
+    ):
+        mock_app_readme.exists.return_value = False
+
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "Adding README to package" not in result.stdout
+
+
+def test_package_build_without_release_notes(wheel_resp_mock, tmp_path: Path):
+    example_app = Path.cwd() / "tests/example_app"
+
+    with (
+        context_directory(tmp_path),
+        patch.object(UvWheel, "validate_hash", return_value=None),
+        patch("soar_sdk.cli.package.cli.APP_RELEASE_NOTES") as mock_release_notes,
+    ):
+        mock_release_notes.exists.return_value = False
+
+        result = runner.invoke(
+            package,
+            [
+                "build",
+                example_app.as_posix(),
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert "Adding release notes to package" not in result.stdout
+
+
 def test_package_build_without_app_templates(wheel_resp_mock, tmp_path: Path):
     example_app = Path.cwd() / "tests/example_app"
 

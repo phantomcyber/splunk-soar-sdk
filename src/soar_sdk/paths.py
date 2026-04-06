@@ -8,4 +8,8 @@ SDK_TEMPLATES = SDK_ROOT / "templates"
 # App's templates
 APP_TEMPLATES = Path("templates")
 
+# App's README and release notes
+APP_README = Path("README.md")
+APP_RELEASE_NOTES = Path("release_notes")
+
 APP_INIT_TEMPLATES = SDK_ROOT / "app_templates"
