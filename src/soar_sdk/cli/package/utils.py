@@ -28,6 +28,29 @@ async def phantom_get_login_session(
         yield client
 
 
+@asynccontextmanager
+async def phantom_get_token_session(
+    base_url: str, token: str
+) -> AsyncGenerator[httpx.AsyncClient]:
+    """Contextmanager that creates an authenticated client using a ph-auth-token."""
+    timeout = httpx.Timeout(30.0, read=60.0)
+    async with httpx.AsyncClient(
+        base_url=base_url,
+        verify=False,  # noqa: S501
+        timeout=timeout,
+        headers={"ph-auth-token": token},
+    ) as client:
+        # Get CSRF token by hitting home page (follow redirects)
+        response = await client.get("/", follow_redirects=True)
+        response.raise_for_status()
+        csrf_token = response.cookies.get("csrftoken")
+        if not csrf_token:
+            raise RuntimeError("Could not obtain CSRF token from SOAR instance")
+        client.cookies.update(response.cookies)
+
+        yield client
+
+
 async def phantom_install_app(
     client: httpx.AsyncClient,
     endpoint: str,

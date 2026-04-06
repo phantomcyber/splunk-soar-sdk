@@ -11,7 +11,11 @@ import toml
 from typer.testing import CliRunner
 
 from soar_sdk.cli.package.cli import package
-from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
+from soar_sdk.cli.package.utils import (
+    phantom_get_login_session,
+    phantom_get_token_session,
+    phantom_install_app,
+)
 from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.meta.dependencies import UvSourceDirectory, UvWheel
 
@@ -127,6 +131,53 @@ def test_install_username_prompt_password_env_var(
         input="admin",
     )
     assert result.exit_code == 0
+
+
+def test_install_with_ph_auth_token(
+    mock_install_client, app_tarball: Path, monkeypatch
+):
+    monkeypatch.setenv("PH_AUTH_TOKEN", "my_secret_token")
+    result = runner.invoke(
+        package,
+        [
+            "install",
+            app_tarball.as_posix(),
+            "10.1.23.4",
+        ],
+    )
+    assert result.exit_code == 0
+
+    # Verify the token was sent as a header
+    app_install_call = mock_install_client.post("app_install")
+    assert app_install_call.call_count == 1
+    assert (
+        app_install_call.calls[0].request.headers.get("ph-auth-token", "")
+        == "my_secret_token"
+    )
+
+
+def test_install_with_soar_instance_env_var(
+    mock_install_client, app_tarball: Path, monkeypatch
+):
+    monkeypatch.setenv("SOAR_INSTANCE", "10.1.23.4")
+    monkeypatch.setenv("PH_AUTH_TOKEN", "my_secret_token")
+    result = runner.invoke(
+        package,
+        [
+            "install",
+            app_tarball.as_posix(),
+        ],
+    )
+    assert result.exit_code == 0
+
+
+@pytest.mark.asyncio
+@respx.mock
+async def test_token_session_csrf_token_missing():
+    respx.get("https://10.1.23.4/").respond(status_code=200)
+    with pytest.raises(RuntimeError, match="Could not obtain CSRF token"):
+        async with phantom_get_token_session("https://10.1.23.4", "some_token"):
+            pass
 
 
 def test_install_command_with_post_error(mock_install_client, app_tarball: Path):

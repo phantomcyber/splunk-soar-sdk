@@ -18,7 +18,11 @@ from rich.panel import Panel
 from tqdm import tqdm
 
 from soar_sdk.cli.manifests.processors import ManifestProcessor
-from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
+from soar_sdk.cli.package.utils import (
+    phantom_get_login_session,
+    phantom_get_token_session,
+    phantom_install_app,
+)
 from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.meta.dependencies import DependencyWheel
 from soar_sdk.paths import APP_README, APP_RELEASE_NOTES, APP_TEMPLATES, SDK_TEMPLATES
@@ -239,10 +243,11 @@ def build(
 
 async def upload_app(
     soar_instance: str,
-    username: str,
-    password: str,
     app_tarball: Path,
     force: bool = False,
+    username: str = "",
+    password: str = "",
+    token: str = "",
 ) -> httpx.Response:
     """Asynchronously upload an app tgz to a Splunk SOAR system, via REST API."""
     base_url = (
@@ -252,20 +257,36 @@ async def upload_app(
     )
 
     payload = {"app": app_tarball.read_bytes()}
-    async with phantom_get_login_session(base_url, username, password) as client:
+    if token:
+        session_ctx = phantom_get_token_session(base_url, token)
+    else:
+        session_ctx = phantom_get_login_session(base_url, username, password)
+    async with session_ctx as client:
         response = await phantom_install_app(client, "app_install", payload, force)
     return response
 
 
 @package.command()
 def install(
-    app_tarball: Path, soar_instance: str, username: str = "", force: bool = False
+    app_tarball: Path,
+    soar_instance: Annotated[
+        str,
+        typer.Argument(envvar="SOAR_INSTANCE"),
+    ],
+    username: str = "",
+    force: bool = False,
 ) -> None:
     """Install the app tgz to the specified Splunk SOAR system.
 
     ..note:
-        To authenticate with Splunk SOAR, you can either set the PHANTOM_PASSWORD
-        environment variable, or enter the password when prompted.
+        Authentication can be provided in several ways:
+
+        - Set the PH_AUTH_TOKEN environment variable to use token-based auth
+          (recommended for CI/CD and SAML-only instances).
+        - Set the PHANTOM_PASSWORD environment variable for password-based auth.
+        - Otherwise, you will be prompted for username and password interactively.
+
+        The SOAR instance can also be set via the SOAR_INSTANCE environment variable.
     """
     app_tarball = app_tarball.resolve()
     if not app_tarball.exists():
@@ -274,15 +295,24 @@ def install(
     if not app_tarball.is_file():
         raise typer.BadParameter(f"{app_tarball} is not a file")
 
-    if not username:
-        username = typer.prompt("Please enter your SOAR username")
+    token = os.getenv("PH_AUTH_TOKEN", "")
 
-    if not (password := os.getenv("PHANTOM_PASSWORD", "")):
-        password = typer.prompt("Please enter your SOAR password", hide_input=True)
+    if token:
+        app_install_request = asyncio.run(
+            upload_app(soar_instance, app_tarball, force, token=token)
+        )
+    else:
+        if not username:
+            username = typer.prompt("Please enter your SOAR username")
 
-    app_install_request = asyncio.run(
-        upload_app(soar_instance, username, password, app_tarball, force)
-    )
+        if not (password := os.getenv("PHANTOM_PASSWORD", "")):
+            password = typer.prompt("Please enter your SOAR password", hide_input=True)
+
+        app_install_request = asyncio.run(
+            upload_app(
+                soar_instance, app_tarball, force, username=username, password=password
+            )
+        )
 
     try:
         app_install_request.raise_for_status()
