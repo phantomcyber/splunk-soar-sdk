@@ -159,6 +159,62 @@ def test_async_action_called_returning_list(
     assert len(results[0].get_data()) == 5
 
 
+def test_action_returning_list_unflattened(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class IteratorOutput(ActionOutput):
+        iteration: int
+
+    @example_app.action(flatten_results=False)
+    def test_action(params: Params, soar: SOARClient) -> list[IteratorOutput]:
+        return [IteratorOutput(iteration=i) for i in range(3)]
+
+    example_app.handle(simple_action_input.model_dump_json())
+
+    results = example_app.actions_manager.get_results()
+    assert len(results) == 3
+    assert all(r.status for r in results)
+    assert results[0].get_data() == [{"iteration": 0}]
+    assert results[1].get_data() == [{"iteration": 1}]
+    assert results[2].get_data() == [{"iteration": 2}]
+
+
+def test_action_returning_iterator_unflattened(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class IteratorOutput(ActionOutput):
+        iteration: int
+
+    @example_app.action(flatten_results=False)
+    def test_action(params: Params, soar: SOARClient) -> Iterator[IteratorOutput]:
+        for i in range(3):
+            yield IteratorOutput(iteration=i)
+
+    example_app.handle(simple_action_input.model_dump_json())
+
+    results = example_app.actions_manager.get_results()
+    assert len(results) == 3
+    assert all(r.status for r in results)
+    assert results[0].get_data() == [{"iteration": 0}]
+    assert results[2].get_data() == [{"iteration": 2}]
+
+
+def test_action_returning_empty_list_unflattened(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class IteratorOutput(ActionOutput):
+        iteration: int
+
+    @example_app.action(flatten_results=False)
+    def test_action(params: Params, soar: SOARClient) -> list[IteratorOutput]:
+        return []
+
+    example_app.handle(simple_action_input.model_dump_json())
+
+    results = example_app.actions_manager.get_results()
+    assert len(results) == 0
+
+
 def test_action_called_with_default_message_set(
     example_app: App, simple_action_input: InputSpecification
 ):

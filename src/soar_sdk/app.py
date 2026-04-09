@@ -453,6 +453,7 @@ class App:
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
         enable_concurrency_lock: bool = False,
+        flatten_results: bool = True,
     ) -> ActionDecorator:
         """Decorator for registering an action function.
 
@@ -473,6 +474,7 @@ class App:
             versions=versions,
             summary_type=summary_type,
             enable_concurrency_lock=enable_concurrency_lock,
+            flatten_results=flatten_results,
         )
 
     def test_connectivity(self) -> ConnectivityTestDecorator:
@@ -680,6 +682,7 @@ class App:
         action_params: Params | None = None,
         message: str = "",
         summary: ActionOutput | None = None,
+        flatten_results: bool = True,
     ) -> bool:
         """Handles multiple ways of returning response from action.
 
@@ -688,23 +691,42 @@ class App:
 
         For backward compatibility, it also supports returning ActionResult object as
         in the legacy Connectors.
+
+        When flatten_results is True (default), list and iterator results are
+        consolidated into a single ActionResult with multiple data items, matching
+        the typical BaseConnector pattern. When False, each item produces its own
+        ActionResult.
         """
         if type(result) is list or isinstance(result, Iterator):
-            param_dict = action_params.model_dump() if action_params else None
-            action_result = ActionResult(
-                status=True,
-                message=message,
-                param=param_dict,
-            )
-            for item in result:
-                if isinstance(item, ActionResult):
-                    actions_manager.add_result(item)
-                elif isinstance(item, ActionOutput):
-                    action_result.add_data(item.model_dump(by_alias=True))
-            if summary:
-                action_result.set_summary(summary.model_dump(by_alias=True))
-            actions_manager.add_result(action_result)
-            return action_result.get_status()
+            if flatten_results:
+                param_dict = action_params.model_dump() if action_params else None
+                action_result = ActionResult(
+                    status=True,
+                    message=message,
+                    param=param_dict,
+                )
+                for item in result:
+                    if isinstance(item, ActionResult):
+                        actions_manager.add_result(item)
+                    elif isinstance(item, ActionOutput):
+                        action_result.add_data(item.model_dump(by_alias=True))
+                if summary:
+                    action_result.set_summary(summary.model_dump(by_alias=True))
+                actions_manager.add_result(action_result)
+                return action_result.get_status()
+            else:
+                statuses = []
+                for item in result:
+                    statuses.append(
+                        App._adapt_action_result(
+                            cast(ActionOutput, item),
+                            actions_manager,
+                            action_params,
+                            message,
+                            summary,
+                        )
+                    )
+                return all(statuses) if statuses else True
 
         if isinstance(result, ActionOutput):
             output_dict = result.model_dump(by_alias=True)
