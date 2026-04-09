@@ -39,6 +39,7 @@ class ActionDecorator:
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
         enable_concurrency_lock: bool = False,
+        flatten_results: bool = True,
     ) -> None:
         self.app = app
         self.name = name
@@ -54,6 +55,7 @@ class ActionDecorator:
         self.versions = versions
         self.summary_type = summary_type
         self.enable_concurrency_lock = enable_concurrency_lock
+        self.flatten_results = flatten_results
 
     def __call__(self, function: NamedCallable) -> Action:
         """Decorator for the action handling function.
@@ -144,6 +146,7 @@ class ActionDecorator:
                 action_params,
                 message=soar.get_message(),
                 summary=soar.get_summary(),
+                flatten_results=self.flatten_results,
             )
 
         # setting up meta information for the decorated function
