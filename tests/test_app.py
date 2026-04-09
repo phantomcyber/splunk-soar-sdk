@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
-from soar_sdk.action_results import ActionOutput
+from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
@@ -148,15 +148,107 @@ def test_adapt_action_result_with_empty_list_and_summary():
         count: int
 
     summary = SummaryOutput(count=5)
+    actions_manager = ActionsManager()
     result = App._adapt_action_result(
         [],
-        ActionsManager(),
+        actions_manager,
         action_params=Params(),
         message="test",
         summary=summary,
     )
 
     assert result is True
+    results = actions_manager.get_results()
+    assert len(results) == 1
+    assert results[0].get_data() == []
+    assert results[0].get_summary() == {"count": 5}
+
+
+def test_adapt_action_result_with_list_creates_single_result():
+    class ItemOutput(ActionOutput):
+        name: str
+
+    actions_manager = ActionsManager()
+    items = [ItemOutput(name="a"), ItemOutput(name="b"), ItemOutput(name="c")]
+    result = App._adapt_action_result(
+        items,
+        actions_manager,
+        action_params=Params(),
+        message="found items",
+    )
+
+    assert result is True
+    results = actions_manager.get_results()
+    assert len(results) == 1
+    assert results[0].message == "found items"
+    assert len(results[0].get_data()) == 3
+    assert results[0].get_data()[0] == {"name": "a"}
+    assert results[0].get_data()[1] == {"name": "b"}
+    assert results[0].get_data()[2] == {"name": "c"}
+
+
+def test_adapt_action_result_with_list_and_summary():
+    class ItemOutput(ActionOutput):
+        value: int
+
+    class SummaryOutput(ActionOutput):
+        total: int
+
+    actions_manager = ActionsManager()
+    items = [ItemOutput(value=1), ItemOutput(value=2)]
+    summary = SummaryOutput(total=2)
+    result = App._adapt_action_result(
+        items,
+        actions_manager,
+        action_params=Params(),
+        message="ok",
+        summary=summary,
+    )
+
+    assert result is True
+    results = actions_manager.get_results()
+    assert len(results) == 1
+    assert len(results[0].get_data()) == 2
+    assert results[0].get_summary() == {"total": 2}
+
+
+def test_adapt_action_result_list_with_action_result_items():
+    actions_manager = ActionsManager()
+    ar = ActionResult(status=True, message="standalone")
+    ar.add_data({"key": "value"})
+    result = App._adapt_action_result(
+        [ar],
+        actions_manager,
+        action_params=Params(),
+        message="wrapper",
+    )
+
+    assert result is True
+    results = actions_manager.get_results()
+    assert len(results) == 2
+    assert results[0].message == "standalone"
+    assert results[0].get_data() == [{"key": "value"}]
+    assert results[1].message == "wrapper"
+    assert results[1].get_data() == []
+
+
+def test_adapt_action_result_list_skips_unrecognized_items():
+    actions_manager = ActionsManager()
+    items = [
+        "not an ActionOutput",
+        ActionOutput(),
+    ]
+    result = App._adapt_action_result(
+        items,
+        actions_manager,
+        action_params=Params(),
+        message="mixed",
+    )
+
+    assert result is True
+    results = actions_manager.get_results()
+    assert len(results) == 1
+    assert len(results[0].get_data()) == 1
 
 
 def test_app_asset(app_with_simple_asset: App):
