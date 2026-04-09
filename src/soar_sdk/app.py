@@ -690,30 +690,21 @@ class App:
         in the legacy Connectors.
         """
         if type(result) is list or isinstance(result, Iterator):
-            statuses = []
+            param_dict = action_params.model_dump() if action_params else None
+            action_result = ActionResult(
+                status=True,
+                message=message,
+                param=param_dict,
+            )
             for item in result:
-                statuses.append(
-                    App._adapt_action_result(
-                        cast(ActionOutput, item),
-                        actions_manager,
-                        action_params,
-                        message,
-                        summary,
-                    )
-                )
-            # Handle empty list/iterator case
-            if not statuses:
-                # Create ActionResult directly for empty list
-                param_dict = action_params.model_dump() if action_params else None
-                result = ActionResult(
-                    status=True,
-                    message=message,
-                    param=param_dict,
-                )
-                if summary:
-                    result.set_summary(summary.model_dump(by_alias=True))
-            else:
-                return all(statuses)
+                if isinstance(item, ActionResult):
+                    actions_manager.add_result(item)
+                elif isinstance(item, ActionOutput):
+                    action_result.add_data(item.model_dump(by_alias=True))
+            if summary:
+                action_result.set_summary(summary.model_dump(by_alias=True))
+            actions_manager.add_result(action_result)
+            return action_result.get_status()
 
         if isinstance(result, ActionOutput):
             output_dict = result.model_dump(by_alias=True)

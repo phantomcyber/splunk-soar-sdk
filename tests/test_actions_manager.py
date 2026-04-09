@@ -92,8 +92,12 @@ def test_action_called_returning_iterator(
 
     example_app.handle(simple_action_input.model_dump_json())
 
-    assert len(example_app.actions_manager.get_results()) == 5
-    assert all(result.status for result in example_app.actions_manager.get_results())
+    results = example_app.actions_manager.get_results()
+    assert len(results) == 1
+    assert results[0].status
+    assert len(results[0].get_data()) == 5
+    assert results[0].get_data()[0] == {"iteration": 0}
+    assert results[0].get_data()[4] == {"iteration": 4}
 
 
 def test_async_action_called_returning_iterator(
@@ -111,8 +115,10 @@ def test_async_action_called_returning_iterator(
 
     example_app.handle(simple_action_input.model_dump_json())
 
-    assert len(example_app.actions_manager.get_results()) == 5
-    assert all(result.status for result in example_app.actions_manager.get_results())
+    results = example_app.actions_manager.get_results()
+    assert len(results) == 1
+    assert results[0].status
+    assert len(results[0].get_data()) == 5
 
 
 def test_action_called_returning_list(
@@ -127,8 +133,12 @@ def test_action_called_returning_list(
 
     example_app.handle(simple_action_input.model_dump_json())
 
-    assert len(example_app.actions_manager.get_results()) == 5
-    assert all(result.status for result in example_app.actions_manager.get_results())
+    results = example_app.actions_manager.get_results()
+    assert len(results) == 1
+    assert results[0].status
+    assert len(results[0].get_data()) == 5
+    assert results[0].get_data()[0] == {"iteration": 0}
+    assert results[0].get_data()[4] == {"iteration": 4}
 
 
 def test_async_action_called_returning_list(
@@ -143,8 +153,10 @@ def test_async_action_called_returning_list(
 
     example_app.handle(simple_action_input.model_dump_json())
 
-    assert len(example_app.actions_manager.get_results()) == 5
-    assert all(result.status for result in example_app.actions_manager.get_results())
+    results = example_app.actions_manager.get_results()
+    assert len(results) == 1
+    assert results[0].status
+    assert len(results[0].get_data()) == 5
 
 
 def test_action_called_with_default_message_set(
