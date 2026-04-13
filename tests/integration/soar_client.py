@@ -174,7 +174,7 @@ class AppOnStackClient:
         if not self.app_info or not self.asset_id:
             raise RuntimeError("App not set up. Call setup_app() first.")
 
-        async with self.phantom.attach_websocket() as websocket, timeout(3):
+        async with self.phantom.attach_websocket() as websocket, timeout(30):
             await websocket.send(
                 json.dumps(
                     {
