@@ -20,14 +20,44 @@ from soar_sdk.params import (
 
 logger = getLogger()
 
-SAMPLE_EMAIL_TEMPLATE = """From: suspicious@example.com
-To: {user}
-Subject: Suspicious Activity Detected
-Date: {date}
-
-This is a suspicious email that triggered the risk threshold.
-Event ID: {event_id}
-"""
+SAMPLE_EMAILS = [
+    {
+        "from": "phishing@malicious-domain.example.com",
+        "to": "employee1@company.example.com",
+        "subject": "Urgent: Verify your account",
+        "date": None,
+        "body": (
+            "Dear user,\n\n"
+            "Your account has been compromised. Please click the link below "
+            "to verify your identity immediately.\n\n"
+            "https://malicious-login.example.com/verify?token=abc123\n\n"
+            "Regards,\nIT Support"
+        ),
+        "urls": [
+            "https://malicious-login.example.com/verify?token=abc123",
+        ],
+        "attachment_name": "invoice.pdf",
+        "attachment_data": b"fake pdf attachment content",
+    },
+    {
+        "from": "spam@spoofed-bank.example.com",
+        "to": "employee2@company.example.com",
+        "subject": "Your payment is overdue",
+        "date": None,
+        "body": (
+            "Hello,\n\n"
+            "We noticed an outstanding balance on your account. "
+            "Please review the attached statement and submit payment.\n\n"
+            "https://fake-payment.example.com/pay\n\n"
+            "Thank you,\nBilling Department"
+        ),
+        "urls": [
+            "https://fake-payment.example.com/pay",
+        ],
+        "attachment_name": "statement.xlsx",
+        "attachment_data": b"fake spreadsheet content",
+    },
+]
 
 
 class Asset(BaseAsset):
@@ -199,40 +229,43 @@ def on_poll(
 def on_es_poll(
     params: OnESPollParams, soar: SOARClient, asset: Asset
 ) -> Generator[Finding, int | None]:
-    for i in range(1, 3):
-        logger.info(f"Processing ES finding {i}")
+    for i, email_data in enumerate(SAMPLE_EMAILS, start=1):
+        logger.info(f"Processing test finding {i}")
 
-        email_content = SAMPLE_EMAIL_TEMPLATE.format(
-            user=f"user{i}@example.com",
-            date=datetime.now(UTC).strftime("%a, %d %b %Y %H:%M:%S +0000"),
-            event_id=f"EVT-{i:04d}",
+        date_str = datetime.now(UTC).strftime("%a, %d %b %Y %H:%M:%S +0000")
+        raw_eml = (
+            f"From: {email_data['from']}\r\n"
+            f"To: {email_data['to']}\r\n"
+            f"Subject: {email_data['subject']}\r\n"
+            f"Date: {date_str}\r\n"
+            f"MIME-Version: 1.0\r\n"
+            f"Content-Type: text/plain; charset=utf-8\r\n"
+            f"\r\n"
+            f"{email_data['body']}"
         )
 
         yield Finding(
-            rule_title=f"Risk threshold exceeded for user-{i}",
-            rule_description="Risk Threshold Exceeded for an object over a 24 hour period",
-            risk_object=f"user{i}@example.com",
-            risk_object_type="user",
-            risk_score=75.0 + (i * 10),
-            status="New",
+            rule_title=f"Test Finding {i}: {email_data['subject']}",
             email=FindingEmail(
                 headers={
-                    "From": "suspicious@example.com",
-                    "To": f"user{i}@example.com",
-                    "Subject": f"Risk threshold exceeded for user-{i}",
+                    "From": email_data["from"],
+                    "To": email_data["to"],
+                    "Subject": email_data["subject"],
+                    "Date": date_str,
+                    "Content-Type": "text/plain; charset=utf-8",
                 },
-                body=f"Suspicious activity detected for user{i}@example.com",
-                urls=["https://suspicious-link.example.com"],
+                body=email_data["body"],
+                urls=email_data["urls"],
             ),
             attachments=[
                 FindingAttachment(
-                    file_name=f"suspicious_email_user{i}.eml",
-                    data=email_content.encode("utf-8"),
+                    file_name=f"email_{i}.eml",
+                    data=raw_eml.encode("utf-8"),
                     is_raw_email=True,
                 ),
                 FindingAttachment(
-                    file_name=f"report_user{i}.pdf",
-                    data=b"fake pdf content",
+                    file_name=email_data["attachment_name"],
+                    data=email_data["attachment_data"],
                     is_raw_email=False,
                 ),
             ],
