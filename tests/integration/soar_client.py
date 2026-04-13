@@ -74,9 +74,8 @@ class AppOnStackClient:
                 name=self.automation_broker_name
             )
             if ab_results["count"] == 0:
-                logger.warning(
-                    f"Automation broker '{self.automation_broker_name}' not found. "
-                    "Asset will be created without an automation broker."
+                raise RuntimeError(
+                    f"Automation broker '{self.automation_broker_name}' not found on the instance."
                 )
             else:
                 ab_id = ab_results["data"][0]["id"]
