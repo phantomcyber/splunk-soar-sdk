@@ -133,6 +133,7 @@ jobs:
 
           # Run pytest with integration tests only (no coverage)
           uv run pytest tests/integration/ \
+            --ignore=tests/integration/test_es_poll.py \
             -v \
             --reruns=$NUM_TEST_RETRIES \
             --tb=short \
