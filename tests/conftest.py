@@ -493,6 +493,25 @@ def sdist_resp_mock(respx_mock):
 
 
 @pytest.fixture
+def sdist_build_mock():
+    """Fixture that mocks UvSourceDistribution.fetch_and_build to avoid real HTTP requests and wheel builds in package build tests."""
+    from unittest.mock import AsyncMock, patch
+
+    from soar_sdk.meta.dependencies.sources import UvSourceDistribution
+
+    with patch.object(
+        UvSourceDistribution,
+        "fetch_and_build",
+        new_callable=AsyncMock,
+        return_value=(
+            "fake_sdist_built-1.0.0-py3-none-any.whl",
+            b"dummy sdist-built wheel content",
+        ),
+    ) as mock:
+        yield mock
+
+
+@pytest.fixture
 @pytest.mark.respx(base_url="https://10.1.23.4/")
 def mock_install_client(respx_mock):
     """Fixture to mock requests.Session."""
