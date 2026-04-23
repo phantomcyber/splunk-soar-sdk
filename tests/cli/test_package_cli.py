@@ -18,7 +18,7 @@ from soar_sdk.meta.dependencies import UvSourceDirectory, UvWheel
 runner = CliRunner()
 
 
-def test_package_build_command(wheel_resp_mock, tmp_path: Path):
+def test_package_build_command(wheel_resp_mock, sdist_build_mock, tmp_path: Path):
     example_app = Path.cwd() / "tests/example_app"
     destination = tmp_path / "example_app.tgz"
 
@@ -41,7 +41,9 @@ def test_package_build_command(wheel_resp_mock, tmp_path: Path):
     assert wheel_resp_mock.called
 
 
-def test_package_build_command_specifying_outdir(wheel_resp_mock, tmp_path: Path):
+def test_package_build_command_specifying_outdir(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
     destination = tmp_path / "example_app.tgz"
 
@@ -176,7 +178,9 @@ async def test_csrf_token_not_in_cookies():
             await phantom_install_app(client, "/app_install", {"file": b"test"})
 
 
-def test_package_build_with_app_templates(wheel_resp_mock, tmp_path: Path):
+def test_package_build_with_app_templates(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
     destination = tmp_path / "example_app.tgz"
 
@@ -201,7 +205,9 @@ def test_package_build_with_app_templates(wheel_resp_mock, tmp_path: Path):
         assert any("templates/reverse_string.html" in name for name in members)
 
 
-def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
+def test_package_build_with_sdk_templates(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
     destination = tmp_path / "example_app.tgz"
 
@@ -227,7 +233,7 @@ def test_package_build_with_sdk_templates(wheel_resp_mock, tmp_path: Path):
 
 
 def test_package_build_writes_manifest_wheel_paths(
-    wheel_resp_mock, tmp_path: Path
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
 ) -> None:
     """Ensure built package includes a manifest with real wheel filenames."""
     example_app = Path.cwd() / "tests/example_app"
@@ -277,7 +283,9 @@ def test_package_build_writes_manifest_wheel_paths(
             raise AssertionError(f"Expected wheel not found in {section}")
 
 
-def test_package_build_includes_readme(wheel_resp_mock, tmp_path: Path):
+def test_package_build_includes_readme(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
     destination = tmp_path / "example_app.tgz"
 
@@ -301,7 +309,9 @@ def test_package_build_includes_readme(wheel_resp_mock, tmp_path: Path):
         assert any("README.md" in name for name in members)
 
 
-def test_package_build_includes_release_notes(wheel_resp_mock, tmp_path: Path):
+def test_package_build_includes_release_notes(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
     destination = tmp_path / "example_app.tgz"
 
@@ -325,7 +335,9 @@ def test_package_build_includes_release_notes(wheel_resp_mock, tmp_path: Path):
         assert any("release_notes/v1.md" in name for name in members)
 
 
-def test_package_build_without_readme(wheel_resp_mock, tmp_path: Path):
+def test_package_build_without_readme(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
 
     with (
@@ -347,7 +359,9 @@ def test_package_build_without_readme(wheel_resp_mock, tmp_path: Path):
     assert "Adding README to package" not in result.stdout
 
 
-def test_package_build_without_release_notes(wheel_resp_mock, tmp_path: Path):
+def test_package_build_without_release_notes(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
 
     with (
@@ -369,7 +383,9 @@ def test_package_build_without_release_notes(wheel_resp_mock, tmp_path: Path):
     assert "Adding release notes to package" not in result.stdout
 
 
-def test_package_build_without_app_templates(wheel_resp_mock, tmp_path: Path):
+def test_package_build_without_app_templates(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     example_app = Path.cwd() / "tests/example_app"
 
     with (
@@ -453,7 +469,9 @@ def test_uv_lock_matches_declared_index():
                     break
 
 
-def test_package_build_fetches_from_custom_index(wheel_resp_mock, tmp_path: Path):
+def test_package_build_fetches_from_custom_index(
+    wheel_resp_mock, sdist_build_mock, tmp_path: Path
+):
     """Test that package building fetches wheels from the declared custom index.
 
     This test verifies that when building a package, wheels are fetched from the
