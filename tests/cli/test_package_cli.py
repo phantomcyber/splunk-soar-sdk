@@ -302,11 +302,15 @@ def test_package_build_includes_readme(
         )
 
     assert result.exit_code == 0
-    assert "Adding README to package" in result.stdout
+    assert "Adding README.md to package" in result.stdout
+    assert "Adding LICENSE to package" in result.stdout
+    assert "Adding NOTICE to package" in result.stdout
 
     with tarfile.open(destination, "r:gz") as tar:
         members = tar.getnames()
         assert any("README.md" in name for name in members)
+        assert any("LICENSE" in name for name in members)
+        assert any("NOTICE" in name for name in members)
 
 
 def test_package_build_includes_release_notes(

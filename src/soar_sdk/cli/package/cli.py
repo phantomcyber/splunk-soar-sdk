@@ -21,7 +21,14 @@ from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.cli.package.utils import phantom_get_login_session, phantom_install_app
 from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.meta.dependencies import DependencyWheel
-from soar_sdk.paths import APP_README, APP_RELEASE_NOTES, APP_TEMPLATES, SDK_TEMPLATES
+from soar_sdk.paths import (
+    APP_LICENSE,
+    APP_NOTICE,
+    APP_README,
+    APP_RELEASE_NOTES,
+    APP_TEMPLATES,
+    SDK_TEMPLATES,
+)
 
 package = typer.Typer()
 console = Console()  # For printing lots of pretty colors and stuff
@@ -194,10 +201,11 @@ def build(
                 f"{app_name}/templates/base/base_template.html",
             )
 
-            # Add README.md if it exists
-            if APP_README.exists():
-                console.print("Adding README to package")
-                app_tarball.add(str(APP_README), f"{app_name}/{APP_README}")
+            # Add documentation and license files if they exist
+            for doc in [APP_LICENSE, APP_NOTICE, APP_README]:
+                if doc.exists():
+                    console.print(f"Adding {doc.name} to package")
+                    app_tarball.add(str(doc), f"{app_name}/{doc}")
 
             # Add release_notes directory if it exists
             if APP_RELEASE_NOTES.exists() and APP_RELEASE_NOTES.is_dir():
