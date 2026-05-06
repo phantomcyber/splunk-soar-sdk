@@ -142,7 +142,7 @@ class InputSpecification(BaseModel):
     connector_run_id: int = Field(default_factory=id_factory)
     container_id: int = Field(default_factory=id_factory)
     debug_level: int = 3
-    dec_key: str = Field(default_factory=lambda: str(id_factory()))
+    dec_key: str | None = None
     environment_variables: dict[str, EnvironmentVariable] = Field(default_factory=dict)
     identifier: str
     parameters: list[ActionParameter] = Field(default_factory=list)
