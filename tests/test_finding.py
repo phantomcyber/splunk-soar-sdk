@@ -338,3 +338,25 @@ def test_finding_email_reporter_rejects_extra_fields():
     """Test FindingEmailReporter rejects unknown fields."""
     with pytest.raises(ValidationError):
         FindingEmailReporter(**{"from": "r@co.com", "unknown_field": "value"})
+
+
+def test_finding_additional_fields_in_to_dict():
+    """additional_fields is serialized into to_dict when set."""
+    finding = Finding(
+        rule_title="Test",
+        additional_fields={"owner": "analyst_bob", "my_custom": "value"},
+    )
+    result = finding.to_dict()
+    assert result["additional_fields"] == {"owner": "analyst_bob", "my_custom": "value"}
+
+
+def test_finding_additional_fields_excluded_when_none():
+    """additional_fields is omitted from to_dict when not set."""
+    finding = Finding(rule_title="Test")
+    assert "additional_fields" not in finding.to_dict()
+
+
+def test_finding_extra_fields_still_rejected():
+    """extra='forbid' still rejects unknown top-level fields when additional_fields is used."""
+    with pytest.raises(ValidationError):
+        Finding(rule_title="Test", unknown_key="value")

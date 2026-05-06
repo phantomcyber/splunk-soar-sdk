@@ -122,6 +122,7 @@ class Finding(BaseModel):
     investigation_type: str | None = None
     automation_rule: str | None = None
     finding_source: str | None = None
+    additional_fields: dict[str, Any] | None = None
     attachments: list[FindingAttachment] | None = None
 
     def to_dict(self) -> dict[str, Any]:
