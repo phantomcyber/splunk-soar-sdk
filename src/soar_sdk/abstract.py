@@ -78,7 +78,19 @@ class SOARClient(Generic[SummaryType]):
     MAX_BULK_FINDINGS = 25
 
     def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
-        """Create a single finding in ES via the SOAR proxy."""
+        """Create a single finding in ES via the SOAR proxy.
+
+        The ``finding`` argument should be the serialized form of a
+        :class:`~soar_sdk.models.finding.Finding` model — use
+        :meth:`~soar_sdk.models.finding.Finding.to_dict` to produce it.
+
+        Example::
+
+            from soar_sdk.models.finding import Finding
+
+            finding = Finding(rule_title="Suspicious Login", security_domain="identity")
+            response = soar.create_finding(finding.to_dict())
+        """
         response = self.post(
             "/rest/enterprise_security/findings", json=finding, timeout=30.0
         )
