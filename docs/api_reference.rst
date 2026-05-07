@@ -255,6 +255,38 @@ Data Models
 .. autoclass:: soar_sdk.models.view.ResultSummary
    :exclude-members: Config
 
+Finding Models
+~~~~~~~~~~~~~~
+
+Use these models when creating findings via :meth:`~soar_sdk.abstract.SOARClient.create_finding`
+or :meth:`~soar_sdk.abstract.SOARClient.create_findings_bulk`. Build a :class:`~soar_sdk.models.finding.Finding`,
+then pass its :meth:`~soar_sdk.models.finding.Finding.to_dict` output to the method.
+
+.. autoclass:: soar_sdk.models.finding.Finding
+   :members: to_dict
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.finding.FindingEmail
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.finding.FindingEmailReporter
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.finding.FindingEmailAttachment
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.finding.FindingAttachment
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.finding.DrilldownSearch
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.finding.DrilldownDashboard
+   :exclude-members: Config
+
+.. autoclass:: soar_sdk.models.finding.DrilldownDashboardToken
+   :exclude-members: Config
+
 .. _api_ref_logging_label:
 
 Logging
