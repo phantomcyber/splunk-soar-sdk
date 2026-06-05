@@ -4,10 +4,37 @@ import pytest
 import pytest_mock
 
 from soar_sdk.app import App
+from soar_sdk.decorators.on_poll import _flush_artifact_buffer
 from soar_sdk.exceptions import ActionFailure
+from soar_sdk.logging import getLogger
 from soar_sdk.models.artifact import Artifact
 from soar_sdk.models.container import Container
 from soar_sdk.params import OnPollParams
+
+
+def test_flush_artifact_buffer_empty():
+    """Test that flushing an empty buffer is a no-op."""
+    save = []
+    _flush_artifact_buffer([], save.append, getLogger())
+    assert save == []
+
+
+def test_flush_artifact_buffer_sets_run_automation_on_last():
+    """Test that flush sets run_automation=True on the last artifact."""
+    buf = [{"name": "a1"}, {"name": "a2"}]
+    saved = []
+    _flush_artifact_buffer(buf, saved.append, getLogger())
+    assert saved[0][-1]["run_automation"] is True
+    assert saved[0][0].get("run_automation") is None
+    assert buf == []
+
+
+def test_flush_artifact_buffer_respects_existing_run_automation():
+    """Test that flush does not override run_automation=True already set on the last artifact."""
+    buf = [{"name": "a1"}, {"name": "a2", "run_automation": True}]
+    saved = []
+    _flush_artifact_buffer(buf, saved.append, getLogger())
+    assert saved[0][1]["run_automation"] is True
 
 
 def test_on_poll_decoration_fails_when_used_more_than_once(app_with_action: App):
@@ -182,7 +209,8 @@ def test_on_poll_yields_container_success(
     result = on_poll_function(params, client=app_with_action.soar_client)
     assert result is True
     assert save_container.call_count == 1
-    save_artifacts.assert_called()
+    saved = save_artifacts.call_args[0][0]
+    assert saved[-1]["run_automation"] is True
 
 
 def test_on_poll_yields_container_duplicate(
@@ -237,6 +265,62 @@ def test_on_poll_yields_container_creation_failure(
     assert result is True
     assert save_container.call_count == 1
     save_artifacts.assert_not_called()
+
+
+def test_on_poll_sets_run_automation_on_last_artifact_per_container(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that run_automation=True is set on the last artifact of each container."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 1),
+    )
+    save_artifacts = mocker.patch.object(
+        app_with_action.actions_manager, "save_artifacts", return_value=None
+    )
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams, client=None):
+        yield Container(name="c1")
+        yield Artifact(name="a1")
+        yield Artifact(name="a2")
+        yield Artifact(name="a3")
+
+    params = OnPollParams(start_time=0, end_time=1)
+    on_poll_function(params, client=app_with_action.soar_client)
+
+    saved = save_artifacts.call_args[0][0]
+    assert saved[0]["run_automation"] is False
+    assert saved[1]["run_automation"] is False
+    assert saved[2]["run_automation"] is True
+
+
+def test_on_poll_respects_explicit_run_automation(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that an app-set run_automation=True is not overridden by the decorator."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 1),
+    )
+    save_artifacts = mocker.patch.object(
+        app_with_action.actions_manager, "save_artifacts", return_value=None
+    )
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams, client=None):
+        yield Container(name="c1")
+        yield Artifact(name="a1", run_automation=True)
+        yield Artifact(name="a2")
+
+    params = OnPollParams(start_time=0, end_time=1)
+    on_poll_function(params, client=app_with_action.soar_client)
+
+    saved = save_artifacts.call_args[0][0]
+    assert saved[0]["run_automation"] is True
+    assert saved[1]["run_automation"] is True
 
 
 def test_on_poll_yields_non_container_artifact(app_with_action: App):
