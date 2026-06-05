@@ -1,4 +1,5 @@
-from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
@@ -6,6 +7,9 @@ from abc import abstractmethod
 from datetime import UTC
 
 from soar_sdk.exceptions import SoarAPIError
+
+VaultAddResult = tuple[bool, str, str | None]
+VaultAddCallable = Callable[[int, str, str, dict[str, str] | None], VaultAddResult]
 
 
 class VaultBase:
@@ -100,11 +104,15 @@ if _soar_is_available:
             file_name: str,
             metadata: dict[str, str] | None = None,
         ) -> str:
-            resp_json = vault_add(container_id, file_location, file_name, metadata)
-            if not resp_json.get("succeeded"):
-                error_msg = resp_json.get("message", "Could not add attachment")
-                raise SoarAPIError(error_msg)
-            return resp_json["vault_id"]
+            typed_vault_add = cast(VaultAddCallable, vault_add)
+            success, message, vault_id = typed_vault_add(
+                container_id, file_location, file_name, metadata
+            )
+            if not success:
+                raise SoarAPIError(message or "Could not add attachment")
+            if vault_id is None:
+                raise SoarAPIError(message or "Could not add attachment")
+            return vault_id
 
         def get_attachment(
             self,
