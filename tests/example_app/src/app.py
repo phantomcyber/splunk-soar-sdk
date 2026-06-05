@@ -104,6 +104,7 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.debug("hello")
     logger.warning("this is a warning")
     logger.progress("this is a progress message")
+    logger.info(f"secret_alias value is {asset.secret_alias}")
     assert asset.secret_alias == "example bearer"
 
 
