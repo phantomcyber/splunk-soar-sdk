@@ -64,6 +64,11 @@ SAMPLE_EMAILS = [
 class Asset(BaseAsset):
     base_url: str = AssetField(default="https://example")
     api_key: str = AssetField(sensitive=True, description="API key for authentication")
+    secret_alias: str = AssetField(
+        sensitive=True,
+        alias="bearer_token",
+        description="Secret asset param with an alias",
+    )
     key_header: str = AssetField(
         default="Authorization",
         value_list=["Authorization", "X-API-Key"],
@@ -100,6 +105,8 @@ def test_connectivity(soar: SOARClient, asset: Asset) -> None:
     logger.debug("hello")
     logger.warning("this is a warning")
     logger.progress("this is a progress message")
+    logger.info(f"secret_alias value is {asset.secret_alias}")
+    assert asset.secret_alias == "example bearer"
 
 
 class ActionOutputSummary(ActionOutput):

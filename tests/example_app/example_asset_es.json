@@ -1,6 +1,7 @@
 {
     "base_url": "https://soar-api.talos.cisco.com",
     "api_key": "test",
+    "bearer_token": "example bearer",
     "key_header": "Authorization",
     "timezone": "America/New_York",
     "ingest": {
