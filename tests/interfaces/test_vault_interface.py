@@ -1,3 +1,8 @@
+import importlib
+import sys
+import types
+from unittest.mock import MagicMock, Mock
+
 import pytest
 from httpx import RequestError, Response
 
@@ -6,8 +11,84 @@ from soar_sdk.app_client import BasicAuth
 from soar_sdk.exceptions import SoarAPIError
 
 
+@pytest.fixture
+def platform_vault(monkeypatch):
+    import soar_sdk.shims.phantom.vault as vault_shim
+
+    phantom_module = types.ModuleType("phantom")
+    phantom_vault_module = types.ModuleType("phantom.vault")
+
+    class FakeVault:
+        @staticmethod
+        def get_vault_tmp_dir():
+            return "/opt/phantom/vault/tmp"
+
+    vault_add = Mock(return_value=(True, "Attachment added", "vault-id"))
+    phantom_vault_module.Vault = FakeVault
+    phantom_vault_module.vault_add = vault_add
+    phantom_vault_module.vault_delete = Mock(return_value=(True, "", []))
+    phantom_vault_module.vault_info = Mock(return_value=(True, "", []))
+    phantom_module.vault = phantom_vault_module
+
+    with monkeypatch.context() as mp:
+        mp.setitem(sys.modules, "phantom", phantom_module)
+        mp.setitem(sys.modules, "phantom.vault", phantom_vault_module)
+        reloaded_vault_shim = importlib.reload(vault_shim)
+        yield reloaded_vault_shim, vault_add
+
+    importlib.reload(vault_shim)
+
+
 def test_vault_get_temp_dir(app_connector):
     assert app_connector.vault.get_vault_tmp_dir() == "/opt/phantom/vault/tmp"
+
+
+def test_platform_vault_add_attachment_returns_vault_id(platform_vault):
+    vault_shim, vault_add = platform_vault
+    vault = vault_shim.PhantomVault(MagicMock())
+
+    vault_id = vault.add_attachment(
+        container_id=1,
+        file_location="/opt/phantom/vault/tmp/test.txt",
+        file_name="test.txt",
+        metadata={"source": "test"},
+    )
+
+    assert vault_id == "vault-id"
+    vault_add.assert_called_once_with(
+        1,
+        "/opt/phantom/vault/tmp/test.txt",
+        "test.txt",
+        {"source": "test"},
+    )
+
+
+def test_platform_vault_add_attachment_failed_tuple(platform_vault):
+    vault_shim, vault_add = platform_vault
+    vault_add.return_value = (False, "Vault upload failed", None)
+    vault = vault_shim.PhantomVault(MagicMock())
+
+    with pytest.raises(SoarAPIError, match="Vault upload failed"):
+        vault.add_attachment(
+            container_id=1,
+            file_location="/opt/phantom/vault/tmp/test.txt",
+            file_name="test.txt",
+            metadata={},
+        )
+
+
+def test_platform_vault_add_attachment_missing_vault_id(platform_vault):
+    vault_shim, vault_add = platform_vault
+    vault_add.return_value = (True, "Vault ID missing", None)
+    vault = vault_shim.PhantomVault(MagicMock())
+
+    with pytest.raises(SoarAPIError, match="Vault ID missing"):
+        vault.add_attachment(
+            container_id=1,
+            file_location="/opt/phantom/vault/tmp/test.txt",
+            file_name="test.txt",
+            metadata={},
+        )
 
 
 def test_vault_create_attachment(app_connector, mock_post_vault):
