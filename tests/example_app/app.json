@@ -1035,6 +1035,75 @@
                     ]
                 }
             ]
+        },
+        {
+            "action": "stage vault tmp file",
+            "identifier": "stage_vault_tmp_file",
+            "description": "stage vault tmp file",
+            "type": "generic",
+            "read_only": false,
+            "versions": "EQ(*)",
+            "verbose": "",
+            "parameters": {
+                "file_name": {
+                    "order": 0,
+                    "name": "file_name",
+                    "description": "File Name",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
+                },
+                "file_content": {
+                    "order": 1,
+                    "name": "file_content",
+                    "description": "File Content",
+                    "data_type": "string",
+                    "required": true,
+                    "primary": false,
+                    "allow_list": false
+                }
+            },
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.file_name",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.parameter.file_content",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.file_path",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ]
         }
     ],
     "pip313_dependencies": {
