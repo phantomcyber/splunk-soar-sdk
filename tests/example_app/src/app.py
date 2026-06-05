@@ -1,5 +1,6 @@
 from collections.abc import Generator, Iterator
 from datetime import UTC, datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from soar_sdk.abstract import SOARClient
@@ -300,6 +301,15 @@ class GeneratorActionSummary(ActionOutput):
     total_iterations: int
 
 
+class StageVaultTmpFileParams(Params):
+    file_name: str
+    file_content: str
+
+
+class StageVaultTmpFileOutput(ActionOutput):
+    file_path: str
+
+
 @app.action(summary_type=GeneratorActionSummary)
 def generator_action(
     params: Params, soar: SOARClient[GeneratorActionSummary], asset: Asset
@@ -323,6 +333,16 @@ def write_state(params: Params, soar: SOARClient, asset: Asset) -> ActionOutput:
 def read_state(params: Params, soar: SOARClient, asset: Asset) -> ActionOutput:
     assert asset.cache_state == {"value": "banana"}
     return ActionOutput()
+
+
+@app.action(read_only=False)
+def stage_vault_tmp_file(
+    params: StageVaultTmpFileParams, soar: SOARClient, asset: Asset
+) -> StageVaultTmpFileOutput:
+    vault_tmp_dir = Path(soar.vault.get_vault_tmp_dir())
+    file_path = vault_tmp_dir / Path(params.file_name).name
+    file_path.write_text(params.file_content, encoding="utf-8")
+    return StageVaultTmpFileOutput(file_path=str(file_path))
 
 
 if __name__ == "__main__":
