@@ -298,9 +298,9 @@ class BaseAsset(BaseModel):
 
     @classmethod
     def fields_requiring_decryption(cls) -> set[str]:
-        """Return attribute names marked as sensitive (aliases are ignored)."""
+        """Return config keys for fields marked as sensitive."""
         return {
-            field_name
+            field.alias or field_name
             for field_name, field in cls.model_fields.items()
             if isinstance(field.json_schema_extra, dict)
             and field.json_schema_extra.get("sensitive", False)
