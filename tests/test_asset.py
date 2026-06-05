@@ -95,9 +95,19 @@ def test_fields_requiring_decryption():
 
     class AssetWithSensitiveFields(BaseAsset):
         sensitive_field: str = AssetField(sensitive=True)
+        secret_alias: str = AssetField(sensitive=True, alias="bearer_token")
         normal_field: str = AssetField()
+        normal_alias: str = AssetField(alias="normal_json_name")
 
-    assert AssetWithSensitiveFields.fields_requiring_decryption() == {"sensitive_field"}
+    assert AssetWithSensitiveFields.fields_requiring_decryption() == {
+        "sensitive_field",
+        "bearer_token",
+    }
+
+    schema = AssetWithSensitiveFields.to_json_schema()
+    assert schema["sensitive_field"]["data_type"] == "password"
+    assert schema["bearer_token"]["data_type"] == "password"
+    assert "secret_alias" not in schema
 
 
 def test_asset_field_none_annotation():

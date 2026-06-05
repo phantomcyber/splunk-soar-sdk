@@ -504,6 +504,58 @@ def test_run_action_cli_with_encrypted_asset(
     )
 
 
+def test_run_action_cli_with_encrypted_aliased_asset(
+    simple_app: App, tmp_asset_and_param_files: tuple[Path, Path]
+):
+    """Test running an action with an encrypted aliased asset field via CLI."""
+
+    class EncryptedAsset(BaseAsset):
+        client_id: str
+        secret_alias: str = AssetField(sensitive=True, alias="bearer_token")
+
+    simple_app.asset_cls = EncryptedAsset
+
+    credentials_sink = mock.Mock()
+
+    @simple_app.action()
+    def test_encrypted_aliased_asset(
+        params: Params, asset: EncryptedAsset
+    ) -> ActionOutput:
+        credentials_sink(
+            client_id=asset.client_id,
+            secret_alias=asset.secret_alias,
+        )
+        return ActionOutput()
+
+    asset_file, param_file = tmp_asset_and_param_files
+
+    asset_file.write_text(
+        json.dumps(
+            {"client_id": "test_client_id", "bearer_token": "test_secret"},
+        )
+    )
+
+    param_file.write_text(json.dumps({}))
+
+    runner = AppCliRunner(simple_app)
+
+    runner.run(
+        [
+            "action",
+            "test_encrypted_aliased_asset",
+            "--asset-file",
+            asset_file.as_posix(),
+            "--param-file",
+            param_file.as_posix(),
+        ]
+    )
+
+    credentials_sink.assert_called_once_with(
+        client_id="test_client_id",
+        secret_alias="test_secret",
+    )
+
+
 def test_run_webhook_cli(
     app_with_asset_webhook: App, tmp_asset_and_param_files: tuple[Path, Path]
 ):

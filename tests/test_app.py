@@ -47,6 +47,42 @@ def test_handle(example_app: App, simple_action_input: InputSpecification):
     assert example_app._raw_asset_config.get("client_secret") == "test_client_secret"
 
 
+def test_handle_decrypts_sensitive_aliased_asset_field(
+    example_app: App, simple_action_input: InputSpecification
+):
+    class TestAsset(BaseAsset):
+        client_id: str
+        secret_alias: str = AssetField(sensitive=True, alias="bearer_token")
+
+    example_app.asset_cls = TestAsset
+    asset_sink = mock.Mock()
+
+    @example_app.action()
+    def test_action(params: Params, asset: TestAsset) -> ActionOutput:
+        asset_sink(
+            client_id=asset.client_id,
+            secret_alias=asset.secret_alias,
+        )
+        return ActionOutput()
+
+    simple_action_input.config = AppConfig(
+        app_version="1.0.0",
+        directory=".",
+        main_module="example_connector.py",
+        client_id="test_client_id",
+        bearer_token=encrypt("test_secret", simple_action_input.asset_id),
+    )
+
+    example_app.handle(simple_action_input.model_dump_json())
+
+    asset_sink.assert_called_once_with(
+        client_id="test_client_id",
+        secret_alias="test_secret",
+    )
+    assert example_app._raw_asset_config["bearer_token"] == "test_secret"
+    assert "secret_alias" not in example_app._raw_asset_config
+
+
 def test_handle_asset_state(example_app: App, simple_action_input: InputSpecification):
     @example_app.action()
     def set_state(params: Params, asset: BaseAsset) -> ActionOutput:
