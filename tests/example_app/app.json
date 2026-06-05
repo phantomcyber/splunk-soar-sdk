@@ -34,11 +34,18 @@
             "order": 1,
             "category": "connectivity"
         },
+        "bearer_token": {
+            "data_type": "password",
+            "required": true,
+            "description": "Secret asset param with an alias",
+            "order": 2,
+            "category": "connectivity"
+        },
         "key_header": {
             "data_type": "string",
             "required": true,
             "description": "Header for API key authentication",
-            "order": 2,
+            "order": 3,
             "category": "connectivity",
             "default": "Authorization",
             "value_list": [
@@ -50,14 +57,14 @@
             "data_type": "timezone",
             "required": true,
             "description": "Timezone",
-            "order": 3,
+            "order": 4,
             "category": "connectivity"
         },
         "timezone_with_default": {
             "data_type": "timezone",
             "required": true,
             "description": "Timezone With Default",
-            "order": 4,
+            "order": 5,
             "category": "action",
             "default": "America/Denver"
         }
