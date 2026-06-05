@@ -1,5 +1,4 @@
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
 
 if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
@@ -8,8 +7,70 @@ from datetime import UTC
 
 from soar_sdk.exceptions import SoarAPIError
 
+VaultAttachmentRecord = dict[str, Any]
+
+
+class VaultResponse(TypedDict, total=False):
+    failed: bool
+    succeeded: bool
+    message: str
+    vault_id: str
+
+
 VaultAddResult = tuple[bool, str, str | None]
-VaultAddCallable = Callable[[int, str, str, dict[str, str] | None], VaultAddResult]
+VaultInfoResult = tuple[bool, str, list[VaultAttachmentRecord]]
+VaultDeleteResult = tuple[bool, str, list[str]]
+
+
+class VaultPlatformAPI(Protocol):
+    def get_vault_tmp_dir(self) -> str: ...
+
+    def create_attachment(
+        self,
+        file_content: str | bytes,
+        container_id: int,
+        file_name: str,
+        metadata: dict[str, str] | None = None,
+    ) -> VaultResponse: ...
+
+
+class VaultAddCallable(Protocol):
+    def __call__(
+        self,
+        container_id: int,
+        file_location: str,
+        file_name: str,
+        metadata: dict[str, str] | None = None,
+    ) -> VaultAddResult: ...
+
+
+class VaultInfoCallable(Protocol):
+    def __call__(
+        self,
+        vault_id: str | None = None,
+        file_name: str | None = None,
+        container_id: int | None = None,
+        *,
+        download_file: bool = True,
+    ) -> VaultInfoResult: ...
+
+
+class VaultDeleteCallable(Protocol):
+    def __call__(
+        self,
+        *,
+        vault_id: str | None = None,
+        file_name: str | None = None,
+        container_id: int | None = None,
+        remove_all: bool = False,
+    ) -> VaultDeleteResult: ...
+
+
+def _get_vault_id(resp_json: VaultResponse, default_message: str) -> str:
+    vault_id = resp_json.get("vault_id")
+    if vault_id is None:
+        raise SoarAPIError(resp_json.get("message") or default_message)
+    return vault_id
 
 
 class VaultBase:
@@ -50,7 +111,7 @@ class VaultBase:
         file_name: str | None = None,
         container_id: int | None = None,
         download_file: bool = True,
-    ) -> list[dict[str, Any]]:
+    ) -> list[VaultAttachmentRecord]:
         """Returns vault attachments based on the provided query parameters."""
         pass
 
@@ -69,7 +130,12 @@ class VaultBase:
 PhantomVault: type[VaultBase]
 
 try:
-    from phantom.vault import Vault, vault_add, vault_delete, vault_info
+    import phantom.vault as _phantom_vault
+
+    Vault = cast(VaultPlatformAPI, _phantom_vault.Vault)
+    vault_add = cast(VaultAddCallable, _phantom_vault.vault_add)
+    vault_delete = cast(VaultDeleteCallable, _phantom_vault.vault_delete)
+    vault_info = cast(VaultInfoCallable, _phantom_vault.vault_info)
 
     _soar_is_available = True
 except ImportError:
@@ -95,7 +161,7 @@ if _soar_is_available:
             if not resp_json.get("succeeded"):
                 error_msg = resp_json.get("message", "Could not create attachment")
                 raise SoarAPIError(error_msg)
-            return resp_json["vault_id"]
+            return _get_vault_id(resp_json, "Could not create attachment")
 
         def add_attachment(
             self,
@@ -104,8 +170,7 @@ if _soar_is_available:
             file_name: str,
             metadata: dict[str, str] | None = None,
         ) -> str:
-            typed_vault_add = cast(VaultAddCallable, vault_add)
-            success, message, vault_id = typed_vault_add(
+            success, message, vault_id = vault_add(
                 container_id, file_location, file_name, metadata
             )
             if not success:
@@ -120,7 +185,7 @@ if _soar_is_available:
             file_name: str | None = None,
             container_id: int | None = None,
             download_file: bool = True,
-        ) -> list[dict[str, Any]]:
+        ) -> list[VaultAttachmentRecord]:
             success, _, attachment = vault_info(
                 vault_id, file_name, container_id, download_file=download_file
             )
@@ -187,7 +252,7 @@ else:
 
                 try:
                     response = self.soar_client.post(VAULT_ENDPOINT, json=data)
-                    resp_json = response.json()
+                    resp_json = cast(VaultResponse, response.json())
                 except Exception as e:
                     error_msg = f"Failed to add attachment to the Vault: {e}"
                     raise SoarAPIError(error_msg) from e
@@ -197,7 +262,10 @@ else:
                     error_msg = f"Failed to add attachment to the Vault: {reason}"
                     raise SoarAPIError(error_msg)
 
-                vault_id = resp_json.get("vault_id")
+                vault_id = _get_vault_id(
+                    resp_json,
+                    "Failed to add attachment to the Vault: NONE_GIVEN",
+                )
             else:
                 with tempfile.TemporaryDirectory() as temp_dir:
                     file_path = Path(temp_dir) / file_name
@@ -255,7 +323,7 @@ else:
 
                 try:
                     response = self.soar_client.post(VAULT_ENDPOINT, json=data)
-                    resp_json = response.json()
+                    resp_json = cast(VaultResponse, response.json())
                 except Exception as e:
                     error_msg = f"Failed to add attachment to the Vault: {e}"
                     raise SoarAPIError(error_msg) from e
@@ -264,7 +332,10 @@ else:
                     reason = resp_json.get("message", "NONE_GIVEN")
                     error_msg = f"Failed to add attachment to the Vault: {reason}"
                     raise SoarAPIError(error_msg)
-                vault_id = resp_json.get("vault_id")
+                vault_id = _get_vault_id(
+                    resp_json,
+                    "Failed to add attachment to the Vault: NONE_GIVEN",
+                )
             else:
                 db_id = random.randint(1, 1000000)  # noqa: S311, this number is not used in cryptographic operations
                 doc_id = random.randint(1, 1000000)  # noqa: S311, this number is not used in cryptographic operations
@@ -298,13 +369,13 @@ else:
             file_name: str | None = None,
             container_id: int | None = None,
             download_file: bool = True,
-        ) -> list[dict[str, Any]]:
+        ) -> list[VaultAttachmentRecord]:
             if not any([vault_id, file_name, container_id]):
                 raise ValueError(
                     "Must provide either vault_id, file_name or container_id when getting a file from the Vault."
                 )
 
-            results = []
+            results: list[VaultAttachmentRecord] = []
             if is_client_authenticated(self.soar_client.client):
                 query_params: dict[str, str | int] = {"pretty": ""}
                 if vault_id:
@@ -348,14 +419,14 @@ else:
             container_id: int | None = None,
             remove_all: bool = False,
         ) -> list[str]:
-            vault_enteries = self.get_attachment(vault_id, file_name, container_id)
-            if len(vault_enteries) > 1 and not remove_all:
+            vault_entries = self.get_attachment(vault_id, file_name, container_id)
+            if len(vault_entries) > 1 and not remove_all:
                 raise SoarAPIError(
                     "More than one document found with the information provided and remove_all is set to False, no vault items were deleted."
                 )
             deleted_file_names = []
             is_authenticated = is_client_authenticated(self.soar_client.client)
-            for attachment in vault_enteries:
+            for attachment in vault_entries:
                 attachment_id = attachment["vault_id"]
                 attachment_name = attachment["name"]
                 if is_authenticated:

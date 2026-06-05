@@ -650,7 +650,14 @@ def mock_delete_container(respx_mock):
 def mock_post_vault(respx_mock):
     """Fixture to mock POST requests to add attachments to vault."""
     mock_route = respx_mock.post(re.compile(r".*/rest/container_attachment/?$")).mock(
-        return_value=Response(201, json={"message": "Attachment added", "id": 1})
+        return_value=Response(
+            201,
+            json={
+                "message": "Attachment added",
+                "id": 1,
+                "vault_id": "mock-vault-id",
+            },
+        )
     )
     return mock_route
 
