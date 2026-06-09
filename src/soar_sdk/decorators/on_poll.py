@@ -23,7 +23,7 @@ def _flush_artifact_buffer(
 ) -> None:
     if not artifact_buffer:
         return
-    if not artifact_buffer[-1].get("run_automation"):
+    if "run_automation" not in artifact_buffer[-1]:
         artifact_buffer[-1]["run_automation"] = True
     save_artifacts(artifact_buffer.copy())
     for a in artifact_buffer:
