@@ -138,8 +138,8 @@ def test_artifact_type_validation():
 def test_artifact_default_values():
     """Test that default values are set correctly for Artifact."""
     artifact = Artifact()
-    assert artifact.run_automation is False
-    assert artifact.to_dict()["run_automation"] is False
+    assert artifact.run_automation is None
+    assert "run_automation" not in artifact.to_dict()
 
 
 def test_artifact_serialization_deserialization():
