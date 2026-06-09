@@ -19,7 +19,7 @@ class Artifact(BaseModel):
     source_data_identifier: str | None = None
     container_id: int | None = None
     data: dict[str, Any] | None = None
-    run_automation: bool = False
+    run_automation: bool | None = None
     owner_id: int | str | None = None
     cef: dict[str, Any] | None = None
     cef_types: dict[str, list[str]] | None = None
