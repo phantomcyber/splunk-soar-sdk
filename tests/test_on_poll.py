@@ -291,8 +291,8 @@ def test_on_poll_sets_run_automation_on_last_artifact_per_container(
     on_poll_function(params, client=app_with_action.soar_client)
 
     saved = save_artifacts.call_args[0][0]
-    assert saved[0]["run_automation"] is False
-    assert saved[1]["run_automation"] is False
+    assert "run_automation" not in saved[0]
+    assert "run_automation" not in saved[1]
     assert saved[2]["run_automation"] is True
 
 
