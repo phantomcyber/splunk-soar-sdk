@@ -120,6 +120,136 @@ def test_init_app_private_flag_omits_static_tests(runner, tmp_path):
     assert "- id: static-tests" not in pre_commit_config
 
 
+def test_init_with_partial_args_fails_without_prompting(runner):
+    """Test that partial one-shot init usage fails instead of prompting."""
+    result = runner.invoke(init, ["--name", "test_app"])
+
+    assert result.exit_code != 0
+    assert "Invalid value for --description" in result.output
+    assert "the guided wizard with no options" in result.output
+    assert "App description" not in result.output
+
+
+def test_init_wizard_creates_public_app(runner, tmp_path):
+    """Test that no-arg init runs the guided wizard and creates a public app."""
+    app_dir = tmp_path / "test_app"
+    wizard_input = "\n".join(
+        [
+            "test_app",
+            "A test app",
+            str(app_dir),
+            "y",
+            "n",
+            "y",
+        ]
+    )
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(init, [], input=f"{wizard_input}\n")
+
+    assert result.exit_code == 0
+    assert app_dir.exists()
+    assert (app_dir / "src" / "app.py").exists()
+    pre_commit_config = (app_dir / ".pre-commit-config.yaml").read_text()
+    assert "- id: static-tests" in pre_commit_config
+
+
+def test_init_wizard_creates_private_app(runner, tmp_path):
+    """Test that the guided wizard can create a private app."""
+    app_dir = tmp_path / "test_app"
+    wizard_input = "\n".join(
+        [
+            "test_app",
+            "A test app",
+            str(app_dir),
+            "n",
+            "n",
+            "y",
+        ]
+    )
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(init, [], input=f"{wizard_input}\n")
+
+    assert result.exit_code == 0
+    pre_commit_config = (app_dir / ".pre-commit-config.yaml").read_text()
+    assert "- id: release-notes" in pre_commit_config
+    assert "- id: static-tests" not in pre_commit_config
+
+
+def test_init_wizard_cancel_does_not_create_app(runner, tmp_path):
+    """Test that cancelling the guided wizard exits before creating files."""
+    app_dir = tmp_path / "test_app"
+    wizard_input = "\n".join(
+        [
+            "test_app",
+            "A test app",
+            str(app_dir),
+            "y",
+            "n",
+            "n",
+        ]
+    )
+
+    result = runner.invoke(init, [], input=f"{wizard_input}\n")
+
+    assert result.exit_code == 0
+    assert "App creation cancelled" in result.output
+    assert not app_dir.exists()
+
+
+def test_init_wizard_advanced_settings(runner, tmp_path):
+    """Test that the guided wizard applies advanced settings."""
+    app_dir = tmp_path / "advanced_app"
+    wizard_input = "\n".join(
+        [
+            "advanced_app",
+            "An advanced app",
+            str(app_dir),
+            "y",
+            "y",
+            "Alice Example,Bob Example",
+            "3.13",
+            "requests>=2.0,httpx",
+            "2.3.4",
+            "endpoint",
+            "Acme",
+            "Acme Apps",
+            "Acme Product",
+            "y",
+            "https://packages.example/simple",
+            "n",
+            "y",
+        ]
+    )
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(init, [], input=f"{wizard_input}\n")
+
+    assert result.exit_code == 0
+    pyproject = (app_dir / "pyproject.toml").read_text()
+    assert 'version = "2.3.4"' in pyproject
+    assert 'requires-python = ">=3.13, <3.14"' in pyproject
+    assert '{ name = "Alice Example" }' in pyproject
+    assert '{ name = "Bob Example" }' in pyproject
+    assert '"requests>=2.0"' in pyproject
+    assert '"httpx"' in pyproject
+    assert 'url = "https://packages.example/simple"' in pyproject
+
+    app_py = (app_dir / "src" / "app.py").read_text()
+    assert "app_type='endpoint'" in app_py
+    assert "product_vendor='Acme'" in app_py
+    assert "product_name='Acme Product'" in app_py
+    assert "publisher='Acme Apps'" in app_py
+    assert "fips_compliant=True" in app_py
+
+
 def test_init_app_fails_on_non_empty_directory_without_overwrite(runner, tmp_path):
     """Test that init command fails when target directory is not empty and overwrite is not specified."""
     app_dir = tmp_path / "existing_app"

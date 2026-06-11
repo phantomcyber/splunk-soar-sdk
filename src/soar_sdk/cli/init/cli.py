@@ -9,12 +9,23 @@ import uuid
 from pathlib import Path
 from typing import Annotated, cast
 
+import click
 import typer
 from rich import print as rprint
 from rich.console import Console
 from rich.markup import escape as rescape
 from rich.panel import Panel
 
+from soar_sdk.cli.init.wizard import (
+    DEFAULT_COPYRIGHT,
+    DEFAULT_PUBLISHER,
+    DEFAULT_TYPE,
+    DEFAULT_UV_INDEX,
+    DEFAULT_VENDOR,
+    DEFAULT_VERSION,
+    InitWizardConfig,
+    run_init_wizard,
+)
 from soar_sdk.cli.manifests.deserializers import AppMetaDeserializer
 from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.code_renderers.action_renderer import ActionRenderer
@@ -31,6 +42,35 @@ from soar_sdk.paths import APP_INIT_TEMPLATES
 
 console = Console()  # For printing lots of pretty colors and stuff
 WORK_DIR = Path.cwd()
+_AUTHORS_OPTION = typer.Option(default_factory=list)
+_PYTHON_VERSIONS_OPTION = typer.Option(
+    ...,
+    "--python-version",
+    "-p",
+    help="Supported Python versions for the app.",
+    default_factory=PythonVersion.all,
+)
+_DEPENDENCIES_OPTION = typer.Option(default_factory=list)
+_APPID_OPTION = typer.Option(default_factory=uuid.uuid4)
+_INIT_OPTION_NAMES = (
+    "name",
+    "description",
+    "authors",
+    "python_versions",
+    "dependencies",
+    "appid",
+    "app_dir",
+    "copyright",
+    "version",
+    "type",
+    "vendor",
+    "publisher",
+    "uv_index",
+    "product",
+    "fips_compliant",
+    "overwrite",
+    "private",
+)
 
 
 init = typer.Typer(invoke_without_command=True)
@@ -38,20 +78,19 @@ init = typer.Typer(invoke_without_command=True)
 
 @init.callback()
 def init_callback(
-    name: Annotated[str, typer.Option(prompt="App name")],
-    description: Annotated[str, typer.Option(prompt="App description")],
-    authors: Annotated[list[str], typer.Option(default_factory=list)],
-    python_versions: Annotated[
-        list[PythonVersion],
-        typer.Option(
-            "--python-version",
-            "-p",
-            help="Supported Python versions for the app.",
-            default_factory=PythonVersion.all,
-        ),
-    ],
-    dependencies: Annotated[list[str], typer.Option(default_factory=list)],
-    appid: Annotated[uuid.UUID, typer.Option(default_factory=uuid.uuid4)],
+    ctx: typer.Context,
+    name: Annotated[
+        str | None,
+        typer.Option(help="Name of the app to initialize."),
+    ] = None,
+    description: Annotated[
+        str | None,
+        typer.Option(help="Description of the app to initialize."),
+    ] = None,
+    authors: list[str] = _AUTHORS_OPTION,
+    python_versions: list[PythonVersion] = _PYTHON_VERSIONS_OPTION,
+    dependencies: list[str] = _DEPENDENCIES_OPTION,
+    appid: uuid.UUID = _APPID_OPTION,
     app_dir: Annotated[
         Path,
         typer.Option(
@@ -60,15 +99,15 @@ def init_callback(
             writable=True,
             readable=True,
             resolve_path=True,
-            prompt="Directory in which to initialize the SDK app",
+            help="Directory in which to initialize the SDK app.",
         ),
     ] = WORK_DIR,
-    copyright: str = "Copyright (c) {year} Splunk Inc.",  # noqa: A002
-    version: str = "1.0.0",
+    copyright: str = DEFAULT_COPYRIGHT,  # noqa: A002
+    version: str = DEFAULT_VERSION,
     # TODO: Enum for app types
-    type: str = "generic",  # noqa: A002
-    vendor: str = "Splunk Inc.",
-    publisher: str = "Splunk Inc.",
+    type: str = DEFAULT_TYPE,  # noqa: A002
+    vendor: str = DEFAULT_VENDOR,
+    publisher: str = DEFAULT_PUBLISHER,
     uv_index: Annotated[
         str,
         typer.Option(
@@ -76,7 +115,7 @@ def init_callback(
                 "URL of a custom Python Package Index your app should use when downloading dependencies. Apps distributed on Splunkbase should not change this setting."
             ),
         ),
-    ] = "https://pypi.python.org/simple",
+    ] = DEFAULT_UV_INDEX,
     product: str | None = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
@@ -91,6 +130,16 @@ def init_callback(
     ] = False,
 ) -> None:
     """Initialize a new SOAR app."""
+    if _should_run_init_wizard(ctx):
+        wizard_config = run_init_wizard(console=console, default_app_dir=app_dir)
+        if wizard_config is None:
+            raise typer.Exit()
+        _init_sdk_app_from_wizard_config(wizard_config)
+        return
+
+    name = _require_init_option(name, "--name")
+    description = _require_init_option(description, "--description")
+
     init_sdk_app(
         name,
         description,
@@ -111,6 +160,46 @@ def init_callback(
         fips_compliant,
         overwrite,
         private,
+    )
+
+
+def _should_run_init_wizard(ctx: typer.Context) -> bool:
+    return all(
+        ctx.get_parameter_source(option_name) is click.core.ParameterSource.DEFAULT
+        for option_name in _INIT_OPTION_NAMES
+    )
+
+
+def _require_init_option(value: str | None, option_name: str) -> str:
+    if value:
+        return value
+    raise typer.BadParameter(
+        f"{option_name} is required unless running the guided wizard with no options.",
+        param_hint=option_name,
+    )
+
+
+def _init_sdk_app_from_wizard_config(config: InitWizardConfig) -> None:
+    init_sdk_app(
+        config.name,
+        config.description,
+        config.authors,
+        config.python_versions,
+        config.dependencies,
+        config.appid,
+        config.app_dir,
+        config.copyright,
+        config.version,
+        config.type,
+        config.vendor,
+        config.publisher,
+        APP_INIT_TEMPLATES / "basic_app/logo.svg",
+        APP_INIT_TEMPLATES / "basic_app/logo_dark.svg",
+        config.uv_index,
+        config.product,
+        config.fips_compliant,
+        config.overwrite,
+        config.private,
     )
 
 
