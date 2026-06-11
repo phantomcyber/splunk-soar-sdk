@@ -7,6 +7,7 @@ import pytest
 from soar_sdk.code_renderers import (
     app_renderer,
     asset_renderer,
+    pre_commit_renderer,
     toml_renderer,
 )
 from soar_sdk.code_renderers.renderer import Renderer
@@ -115,6 +116,34 @@ def test_toml_renderer(mock_jinja_env):
     rendered = renderer.render()
     mock_jinja_env.get_template.assert_called_once_with("pyproject.toml.jinja")
     assert rendered == "Rendered content"
+
+
+def test_pre_commit_config_renderer(mock_jinja_env):
+    context = pre_commit_renderer.PreCommitConfigContext(private=True)
+
+    context_dict = context.to_dict()
+    assert context_dict == {"private": True}
+
+    renderer = pre_commit_renderer.PreCommitConfigRenderer(context, mock_jinja_env)
+    rendered = renderer.render()
+    mock_jinja_env.get_template.assert_called_once_with("pre-commit-config.yaml.jinja")
+    assert rendered == "Rendered content"
+
+
+def test_pre_commit_config_private_omits_static_tests():
+    context = pre_commit_renderer.PreCommitConfigContext(private=True)
+    rendered = pre_commit_renderer.PreCommitConfigRenderer(context).render()
+
+    assert "- id: release-notes" in rendered
+    assert "- id: static-tests" not in rendered
+
+
+def test_pre_commit_config_public_includes_static_tests():
+    context = pre_commit_renderer.PreCommitConfigContext(private=False)
+    rendered = pre_commit_renderer.PreCommitConfigRenderer(context).render()
+
+    assert "- id: release-notes" in rendered
+    assert "- id: static-tests" in rendered
 
 
 @pytest.mark.parametrize(

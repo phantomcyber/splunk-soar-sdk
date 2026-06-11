@@ -20,6 +20,10 @@ from soar_sdk.cli.utils import normalize_field_name
 from soar_sdk.code_renderers.action_renderer import ActionRenderer
 from soar_sdk.code_renderers.app_renderer import AppContext, AppRenderer
 from soar_sdk.code_renderers.asset_renderer import AssetContext, AssetRenderer
+from soar_sdk.code_renderers.pre_commit_renderer import (
+    PreCommitConfigContext,
+    PreCommitConfigRenderer,
+)
 from soar_sdk.code_renderers.toml_renderer import TomlContext, TomlRenderer
 from soar_sdk.compat import PythonVersion
 from soar_sdk.meta.app import AppMeta
@@ -76,6 +80,15 @@ def init_callback(
     product: str | None = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
+    private: Annotated[
+        bool,
+        typer.Option(
+            "--private/--public",
+            help=(
+                "Generate pre-commit config for a private app by omitting Splunkbase-only static tests."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Initialize a new SOAR app."""
     init_sdk_app(
@@ -97,6 +110,7 @@ def init_callback(
         product,
         fips_compliant,
         overwrite,
+        private,
     )
 
 
@@ -120,6 +134,7 @@ def init_sdk_app(
     product: str | None = None,
     fips_compliant: bool = False,
     overwrite: bool = False,
+    private: bool = False,
     app_content: list[ast.stmt] | None = None,
     asset_class: ast.ClassDef | None = None,
 ) -> None:
@@ -144,10 +159,10 @@ def init_sdk_app(
     src_dir.mkdir()
     (src_dir / "__init__.py").write_text('from . import app\n\n__all__ = ["app"]\n')
 
-    shutil.copy(
-        APP_INIT_TEMPLATES / "basic_app/.pre-commit-config.yaml",
-        app_dir / ".pre-commit-config.yaml",
-    )
+    pre_commit_config = PreCommitConfigRenderer(
+        PreCommitConfigContext(private=private)
+    ).render()
+    (app_dir / ".pre-commit-config.yaml").write_text(pre_commit_config)
     shutil.copy(
         APP_INIT_TEMPLATES / "basic_app/.gitignore",
         app_dir / ".gitignore",

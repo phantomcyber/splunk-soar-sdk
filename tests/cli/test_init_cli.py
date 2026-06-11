@@ -39,8 +39,85 @@ def test_init_app_creates_directory_structure(runner, tmp_path):
     assert (app_dir / "src" / "__init__.py").exists()
     assert (app_dir / "src" / "app.py").exists()
     assert (app_dir / "pyproject.toml").exists()
+    assert (app_dir / ".pre-commit-config.yaml").exists()
     assert (app_dir / "logo.svg").exists()
     assert (app_dir / "logo_dark.svg").exists()
+
+
+def test_init_app_includes_static_tests_by_default(runner, tmp_path):
+    """Test that init command generates public pre-commit config by default."""
+    app_dir = tmp_path / "test_app"
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+            ],
+        )
+
+    assert result.exit_code == 0
+    pre_commit_config = (app_dir / ".pre-commit-config.yaml").read_text()
+    assert "- id: static-tests" in pre_commit_config
+
+
+def test_init_app_public_flag_includes_static_tests(runner, tmp_path):
+    """Test that --public explicitly generates Splunkbase static tests."""
+    app_dir = tmp_path / "test_app"
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+                "--public",
+            ],
+        )
+
+    assert result.exit_code == 0
+    pre_commit_config = (app_dir / ".pre-commit-config.yaml").read_text()
+    assert "- id: static-tests" in pre_commit_config
+
+
+def test_init_app_private_flag_omits_static_tests(runner, tmp_path):
+    """Test that --private omits Splunkbase-only static tests."""
+    app_dir = tmp_path / "test_app"
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+                "--private",
+            ],
+        )
+
+    assert result.exit_code == 0
+    pre_commit_config = (app_dir / ".pre-commit-config.yaml").read_text()
+    assert "repo: https://github.com/phantomcyber/dev-cicd-tools" in pre_commit_config
+    assert "- id: release-notes" in pre_commit_config
+    assert "- id: static-tests" not in pre_commit_config
 
 
 def test_init_app_fails_on_non_empty_directory_without_overwrite(runner, tmp_path):

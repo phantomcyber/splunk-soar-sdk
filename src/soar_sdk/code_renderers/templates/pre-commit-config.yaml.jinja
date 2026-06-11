@@ -78,7 +78,12 @@ repos:
         language: python
         additional_dependencies: ["local-hooks"]
         args: ['.']
+{% if not private %}
+      # These tests are required for apps being published to Splunkbase.
+      # They will not pass until you've updated the app mappings in https://github.com/phantomcyber/dev-cicd-tools/tree/main/local_hooks/data to include your app.
+      # If you are not planning to publish your app to Splunkbase, you can safely remove this check.
       - id: static-tests
         language: python
         additional_dependencies: ["local-hooks"]
         args: ['.']
+{% endif %}
