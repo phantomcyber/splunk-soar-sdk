@@ -100,6 +100,7 @@ def init_callback(
             readable=True,
             resolve_path=True,
             help="Directory in which to initialize the SDK app.",
+            show_default="current directory/<app name>",
         ),
     ] = WORK_DIR,
     copyright: str = DEFAULT_COPYRIGHT,  # noqa: A002
@@ -139,6 +140,8 @@ def init_callback(
 
     name = _require_init_option(name, "--name")
     description = _require_init_option(description, "--description")
+    if ctx.get_parameter_source("app_dir") is click.core.ParameterSource.DEFAULT:
+        app_dir = app_dir / name
 
     init_sdk_app(
         name,

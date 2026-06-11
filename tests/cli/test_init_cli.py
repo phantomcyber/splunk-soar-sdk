@@ -8,6 +8,7 @@ import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
+from soar_sdk.cli.init import cli as init_cli
 from soar_sdk.cli.init import wizard
 from soar_sdk.cli.init.cli import get_app_json, init, resolve_dependencies
 from soar_sdk.compat import PythonVersion
@@ -46,6 +47,24 @@ def test_init_app_creates_directory_structure(runner, tmp_path):
     assert (app_dir / ".pre-commit-config.yaml").exists()
     assert (app_dir / "logo.svg").exists()
     assert (app_dir / "logo_dark.svg").exists()
+
+
+def test_init_app_defaults_app_dir_to_app_name(runner):
+    """Test that one-shot init defaults app dir to pwd/app_name."""
+    with patch("soar_sdk.cli.init.cli.init_sdk_app") as mock_init_sdk_app:
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+            ],
+        )
+
+    assert result.exit_code == 0
+    mock_init_sdk_app.assert_called_once()
+    assert mock_init_sdk_app.call_args.args[6] == init_cli.WORK_DIR / "test_app"
 
 
 def test_init_app_includes_static_tests_by_default(runner, tmp_path):
@@ -184,6 +203,31 @@ def test_init_wizard_creates_private_app(runner, tmp_path):
     pre_commit_config = (app_dir / ".pre-commit-config.yaml").read_text()
     assert "- id: release-notes" in pre_commit_config
     assert "- id: static-tests" not in pre_commit_config
+
+
+def test_init_wizard_defaults_app_dir_to_app_name_under_working_dir(tmp_path):
+    """Test that the guided wizard defaults app dir to pwd/app_name."""
+    console = Console(record=True)
+
+    with (
+        patch(
+            "soar_sdk.cli.init.wizard.Prompt.ask",
+            side_effect=[
+                "test_app",
+                "A test app",
+                str(tmp_path / "test_app"),
+            ],
+        ) as ask_mock,
+        patch(
+            "soar_sdk.cli.init.wizard.Confirm.ask",
+            side_effect=[True, False, True],
+        ),
+    ):
+        config = wizard.run_init_wizard(console=console, default_app_dir=tmp_path)
+
+    assert config is not None
+    assert config.app_dir == tmp_path / "test_app"
+    ask_mock.assert_any_call("App directory", default=str(tmp_path / "test_app"))
 
 
 def test_init_wizard_cancel_does_not_create_app(runner, tmp_path):

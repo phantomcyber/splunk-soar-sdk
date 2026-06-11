@@ -54,7 +54,9 @@ def run_init_wizard(
 
     name = _ask_required("App name", console=console)
     description = _ask_required("App description", console=console)
-    app_dir = _ask_path("App directory", default=default_app_dir)
+    app_dir = _ask_path(
+        "App directory", default=_get_default_app_dir(default_app_dir, name)
+    )
     publish_to_splunkbase = Confirm.ask(
         "Will you publish this app to Splunkbase?", default=True
     )
@@ -111,6 +113,10 @@ def _ask_required(label: str, *, console: Console, default: str | None = None) -
 def _ask_path(label: str, *, default: Path) -> Path:
     value = Prompt.ask(label, default=str(default)).strip()
     return Path(value).expanduser().resolve()
+
+
+def _get_default_app_dir(base_dir: Path, app_name: str) -> Path:
+    return base_dir / app_name
 
 
 def _ask_csv(label: str) -> list[str]:
