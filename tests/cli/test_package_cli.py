@@ -135,6 +135,28 @@ def test_install_username_prompt_password_env_var(
     assert result.exit_code == 0
 
 
+def test_install_username_password_env_vars(
+    mock_install_client, app_tarball: Path, monkeypatch
+):
+    monkeypatch.setenv("PHANTOM_USERNAME", "env_admin")
+    monkeypatch.setenv("PHANTOM_PASSWORD", "env_password")
+    result = runner.invoke(
+        package,
+        [
+            "install",
+            app_tarball.as_posix(),
+            "10.1.23.4",
+        ],
+    )
+    assert result.exit_code == 0
+
+    csrf_request = mock_install_client.get("/").calls[0].request
+    assert (
+        csrf_request.headers["Authorization"]
+        == "Basic ZW52X2FkbWluOmVudl9wYXNzd29yZA=="
+    )
+
+
 def test_install_with_ph_auth_token(
     mock_install_client, app_tarball: Path, monkeypatch
 ):
