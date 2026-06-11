@@ -3,10 +3,14 @@ import textwrap
 from unittest.mock import patch
 from uuid import uuid4
 
+import click
 import pytest
+from rich.console import Console
 from typer.testing import CliRunner
 
+from soar_sdk.cli.init import wizard
 from soar_sdk.cli.init.cli import get_app_json, init, resolve_dependencies
+from soar_sdk.compat import PythonVersion
 
 
 @pytest.fixture
@@ -123,11 +127,12 @@ def test_init_app_private_flag_omits_static_tests(runner, tmp_path):
 def test_init_with_partial_args_fails_without_prompting(runner):
     """Test that partial one-shot init usage fails instead of prompting."""
     result = runner.invoke(init, ["--name", "test_app"])
+    output = click.unstyle(result.output)
 
     assert result.exit_code != 0
-    assert "Invalid value for --description" in result.output
-    assert "the guided wizard with no options" in result.output
-    assert "App description" not in result.output
+    assert "Invalid value for --description" in output
+    assert "the guided wizard with no options" in output
+    assert "App description" not in output
 
 
 def test_init_wizard_creates_public_app(runner, tmp_path):
@@ -248,6 +253,36 @@ def test_init_wizard_advanced_settings(runner, tmp_path):
     assert "product_name='Acme Product'" in app_py
     assert "publisher='Acme Apps'" in app_py
     assert "fips_compliant=True" in app_py
+
+
+def test_init_wizard_required_prompt_retries_on_empty_value():
+    """Test that required wizard prompts reject empty input."""
+    console = Console(record=True)
+
+    with patch("soar_sdk.cli.init.wizard.Prompt.ask", side_effect=["", "test_app"]):
+        value = wizard._ask_required("App name", console=console)
+
+    assert value == "test_app"
+    assert "App name is required" in console.export_text()
+
+
+def test_init_wizard_csv_prompt_returns_empty_list_for_empty_value():
+    """Test that optional CSV wizard prompts accept empty input."""
+    with patch("soar_sdk.cli.init.wizard.Prompt.ask", return_value=""):
+        value = wizard._ask_csv("Authors")
+
+    assert value == []
+
+
+def test_init_wizard_python_versions_prompt_retries_on_invalid_value():
+    """Test that Python version wizard prompts retry invalid input."""
+    console = Console(record=True)
+
+    with patch("soar_sdk.cli.init.wizard.Prompt.ask", side_effect=["3.12", "3.13"]):
+        value = wizard._ask_python_versions(console)
+
+    assert value == [PythonVersion.PY_3_13]
+    assert "Unsupported Python version: 3.12" in console.export_text()
 
 
 def test_init_app_fails_on_non_empty_directory_without_overwrite(runner, tmp_path):
