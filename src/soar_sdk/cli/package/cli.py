@@ -281,7 +281,10 @@ def install(
         str,
         typer.Argument(envvar="SOAR_INSTANCE"),
     ],
-    username: str = "",
+    username: Annotated[
+        str,
+        typer.Option(envvar="PHANTOM_USERNAME"),
+    ] = "",
     force: bool = False,
 ) -> None:
     """Install the app tgz to the specified Splunk SOAR system.
@@ -291,7 +294,8 @@ def install(
 
         - Set the PH_AUTH_TOKEN environment variable to use token-based auth
           (recommended for CI/CD and SAML-only instances).
-        - Set the PHANTOM_PASSWORD environment variable for password-based auth.
+        - Set the PHANTOM_USERNAME and PHANTOM_PASSWORD environment variables for
+          password-based auth.
         - Otherwise, you will be prompted for username and password interactively.
 
         The SOAR instance can also be set via the SOAR_INSTANCE environment variable.
