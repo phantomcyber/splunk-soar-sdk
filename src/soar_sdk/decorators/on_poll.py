@@ -16,6 +16,21 @@ if TYPE_CHECKING:
     from soar_sdk.app import App
 
 
+def _flush_artifact_buffer(
+    artifact_buffer: list[dict],
+    save_artifacts: Any,  # noqa: ANN401
+    logger: Any,  # noqa: ANN401
+) -> None:
+    if not artifact_buffer:
+        return
+    if "run_automation" not in artifact_buffer[-1]:
+        artifact_buffer[-1]["run_automation"] = True
+    save_artifacts(artifact_buffer.copy())
+    for a in artifact_buffer:
+        logger.info(f"Added artifact: {a.get('name', 'Unnamed artifact')}")
+    artifact_buffer.clear()
+
+
 class OnPollDecorator:
     """Class-based decorator for tagging a function as the special 'on poll' action."""
 
@@ -96,9 +111,19 @@ class OnPollDecorator:
                 container_id = getattr(params, "container_id", None)
                 container_created = False
 
+                # Buffer artifacts per container so we can set run_automation=True
+                # on the last one before flushing to SOAR.
+                artifact_buffer: list[dict] = []
+
                 for item in result:
                     # Check if the item is a Container
                     if isinstance(item, Container):
+                        _flush_artifact_buffer(
+                            artifact_buffer,
+                            self.app.actions_manager.save_artifacts,
+                            logger,
+                        )
+
                         # TODO: Change save_container for incorporation with container.create()
                         container = item.to_dict()  # Convert for saving
                         ret_val, message, cid = self.app.actions_manager.save_container(
@@ -146,11 +171,13 @@ class OnPollDecorator:
                         artifact_dict["container_id"] = container_id
                         item.container_id = container_id
 
-                    # TODO: Change save_artifact for incorporation with artifact.create()
-                    self.app.actions_manager.save_artifacts([artifact_dict])
-                    logger.info(
-                        f"Added artifact: {artifact_dict.get('name', 'Unnamed artifact')}"
-                    )
+                    artifact_buffer.append(artifact_dict)
+
+                _flush_artifact_buffer(
+                    artifact_buffer,
+                    self.app.actions_manager.save_artifacts,
+                    logger,
+                )
 
                 return self.app._adapt_action_result(
                     ActionResult(status=True, message="Polling complete"),
