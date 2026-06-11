@@ -67,6 +67,24 @@ def test_init_app_defaults_app_dir_to_app_name(runner):
     assert mock_init_sdk_app.call_args.args[6] == init_cli.WORK_DIR / "test_app"
 
 
+def test_init_app_non_interactive_flag_allows_one_shot_usage(runner):
+    """Test that --non-interactive still allows complete one-shot init usage."""
+    with patch("soar_sdk.cli.init.cli.init_sdk_app") as mock_init_sdk_app:
+        result = runner.invoke(
+            init,
+            [
+                "--non-interactive",
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+            ],
+        )
+
+    assert result.exit_code == 0
+    mock_init_sdk_app.assert_called_once()
+
+
 def test_init_app_includes_static_tests_by_default(runner, tmp_path):
     """Test that init command generates public pre-commit config by default."""
     app_dir = tmp_path / "test_app"
@@ -154,6 +172,57 @@ def test_init_with_partial_args_fails_without_prompting(runner):
     assert "App description" not in output
 
 
+def test_init_without_args_in_non_tty_prints_required_options(runner):
+    """Test that no-arg init does not run the wizard outside a TTY."""
+    with (
+        patch("soar_sdk.cli.init.cli._is_tty", return_value=False),
+        patch("soar_sdk.cli.init.cli.run_init_wizard") as mock_run_init_wizard,
+    ):
+        result = runner.invoke(init, [])
+
+    output = click.unstyle(result.output)
+    assert result.exit_code == 1
+    assert "Interactive app initialization is unavailable" in output
+    assert "soarapps init --name <app_name> --description <description>" in output
+    assert "--name" in output
+    assert "--description" in output
+    mock_run_init_wizard.assert_not_called()
+
+
+def test_init_non_interactive_flag_without_args_prints_required_options(runner):
+    """Test that --non-interactive disables the no-arg wizard."""
+    with (
+        patch("soar_sdk.cli.init.cli._is_tty", return_value=True),
+        patch("soar_sdk.cli.init.cli.run_init_wizard") as mock_run_init_wizard,
+    ):
+        result = runner.invoke(init, ["--non-interactive"])
+
+    output = click.unstyle(result.output)
+    assert result.exit_code == 1
+    assert "Interactive app initialization is unavailable" in output
+    assert "soarapps init --name <app_name> --description <description>" in output
+    assert "--name" in output
+    assert "--description" in output
+    mock_run_init_wizard.assert_not_called()
+
+
+def test_init_tty_detection_requires_stdin_and_stdout():
+    """Test that init wizard TTY detection requires stdin and stdout."""
+    with (
+        patch("soar_sdk.cli.init.cli.sys.stdin") as stdin,
+        patch("soar_sdk.cli.init.cli.sys.stdout") as stdout,
+    ):
+        stdin.isatty.return_value = True
+        stdout.isatty.return_value = True
+        assert init_cli._is_tty() is True
+
+        stdout.isatty.return_value = False
+        assert init_cli._is_tty() is False
+
+        stdin.isatty.return_value = False
+        assert init_cli._is_tty() is False
+
+
 def test_init_wizard_creates_public_app(runner, tmp_path):
     """Test that no-arg init runs the guided wizard and creates a public app."""
     app_dir = tmp_path / "test_app"
@@ -168,7 +237,11 @@ def test_init_wizard_creates_public_app(runner, tmp_path):
         ]
     )
 
-    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+    with (
+        patch("soar_sdk.cli.init.cli._is_tty", return_value=True),
+        patch("subprocess.run"),
+        patch("shutil.which") as mock_which,
+    ):
         mock_which.return_value = "/usr/bin/example"
 
         result = runner.invoke(init, [], input=f"{wizard_input}\n")
@@ -194,7 +267,11 @@ def test_init_wizard_creates_private_app(runner, tmp_path):
         ]
     )
 
-    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+    with (
+        patch("soar_sdk.cli.init.cli._is_tty", return_value=True),
+        patch("subprocess.run"),
+        patch("shutil.which") as mock_which,
+    ):
         mock_which.return_value = "/usr/bin/example"
 
         result = runner.invoke(init, [], input=f"{wizard_input}\n")
@@ -244,7 +321,8 @@ def test_init_wizard_cancel_does_not_create_app(runner, tmp_path):
         ]
     )
 
-    result = runner.invoke(init, [], input=f"{wizard_input}\n")
+    with patch("soar_sdk.cli.init.cli._is_tty", return_value=True):
+        result = runner.invoke(init, [], input=f"{wizard_input}\n")
 
     assert result.exit_code == 0
     assert "App creation cancelled" in result.output
@@ -276,7 +354,11 @@ def test_init_wizard_advanced_settings(runner, tmp_path):
         ]
     )
 
-    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+    with (
+        patch("soar_sdk.cli.init.cli._is_tty", return_value=True),
+        patch("subprocess.run"),
+        patch("shutil.which") as mock_which,
+    ):
         mock_which.return_value = "/usr/bin/example"
 
         result = runner.invoke(init, [], input=f"{wizard_input}\n")

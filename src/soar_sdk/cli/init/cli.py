@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import uuid
 from pathlib import Path
 from typing import Annotated, cast
@@ -129,9 +130,22 @@ def init_callback(
             ),
         ),
     ] = False,
+    non_interactive: Annotated[
+        bool,
+        typer.Option(
+            "--non-interactive",
+            help=(
+                "Disable the guided wizard and require all needed options to be provided."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Initialize a new SOAR app."""
     if _should_run_init_wizard(ctx):
+        if non_interactive or not _is_tty():
+            _print_non_interactive_init_help(ctx)
+            raise typer.Exit(code=1)
+
         wizard_config = run_init_wizard(console=console, default_app_dir=app_dir)
         if wizard_config is None:
             raise typer.Exit()
@@ -171,6 +185,19 @@ def _should_run_init_wizard(ctx: typer.Context) -> bool:
         ctx.get_parameter_source(option_name) is click.core.ParameterSource.DEFAULT
         for option_name in _INIT_OPTION_NAMES
     )
+
+
+def _is_tty() -> bool:
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def _print_non_interactive_init_help(ctx: typer.Context) -> None:
+    console.print(
+        "[red]Interactive app initialization is unavailable.[/]\n"
+        "Run non-interactively with the required options:\n\n"
+        "  soarapps init --name <app_name> --description <description>\n"
+    )
+    console.print(ctx.get_help())
 
 
 def _require_init_option(value: str | None, option_name: str) -> str:
