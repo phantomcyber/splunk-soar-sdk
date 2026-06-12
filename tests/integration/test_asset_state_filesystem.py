@@ -5,7 +5,7 @@ from .soar_client import AppOnStackClient
 AUTH_FILESYSTEM_MARKER = "papp-37866-auth-filesystem-marker"
 CACHE_FILESYSTEM_MARKER = "papp-37866-cache-filesystem-marker"
 INGEST_FILESYSTEM_MARKER = "papp-37866-ingest-filesystem-marker"
-STATE_DIRECTORY = "/opt/phantom/var/splunk_data/local_data/app_states"
+STATE_DIRECTORY = "/opt/phantom/local_data/app_states"
 DEFAULT_APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
 PLAINTEXT_APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf57"
 
