@@ -31,6 +31,8 @@ class AppContext:
     publisher: str
     appid: str
     fips_compliant: bool
+    encrypt_cache_state: bool = True
+    encrypt_ingest_state: bool = True
     app_content: list[ast.stmt] = dataclasses.field(default_factory=list)
     asset_cls: ast.ClassDef = dataclasses.field(
         default_factory=create_default_asset_cls
@@ -169,6 +171,14 @@ class AppRenderer:
                     ast.keyword(
                         arg="fips_compliant",
                         value=ast.Constant(value=self.context.fips_compliant),
+                    ),
+                    ast.keyword(
+                        arg="encrypt_cache_state",
+                        value=ast.Constant(value=self.context.encrypt_cache_state),
+                    ),
+                    ast.keyword(
+                        arg="encrypt_ingest_state",
+                        value=ast.Constant(value=self.context.encrypt_ingest_state),
                     ),
                     ast.keyword(
                         arg="asset_cls",

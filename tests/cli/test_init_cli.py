@@ -47,6 +47,9 @@ def test_init_app_creates_directory_structure(runner, tmp_path):
     assert (app_dir / ".pre-commit-config.yaml").exists()
     assert (app_dir / "logo.svg").exists()
     assert (app_dir / "logo_dark.svg").exists()
+    app_py = (app_dir / "src" / "app.py").read_text()
+    assert "encrypt_cache_state=True" in app_py
+    assert "encrypt_ingest_state=True" in app_py
 
 
 def test_init_app_defaults_app_dir_to_app_name(runner):
@@ -159,6 +162,33 @@ def test_init_app_private_flag_omits_static_tests(runner, tmp_path):
     assert "repo: https://github.com/phantomcyber/dev-cicd-tools" in pre_commit_config
     assert "- id: release-notes" in pre_commit_config
     assert "- id: static-tests" not in pre_commit_config
+
+
+def test_init_app_state_encryption_flags(runner, tmp_path):
+    """Test that state encryption flags are rendered into generated app code."""
+    app_dir = tmp_path / "test_app"
+
+    with patch("subprocess.run"), patch("shutil.which") as mock_which:
+        mock_which.return_value = "/usr/bin/example"
+
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+                "--no-encrypt-cache-state",
+                "--no-encrypt-ingest-state",
+            ],
+        )
+
+    assert result.exit_code == 0
+    app_py = (app_dir / "src" / "app.py").read_text()
+    assert "encrypt_cache_state=False" in app_py
+    assert "encrypt_ingest_state=False" in app_py
 
 
 def test_init_with_partial_args_fails_without_prompting(runner):
@@ -348,6 +378,8 @@ def test_init_wizard_advanced_settings(runner, tmp_path):
             "Acme Apps",
             "Acme Product",
             "y",
+            "n",
+            "n",
             "https://packages.example/simple",
             "n",
             "y",
@@ -379,6 +411,8 @@ def test_init_wizard_advanced_settings(runner, tmp_path):
     assert "product_name='Acme Product'" in app_py
     assert "publisher='Acme Apps'" in app_py
     assert "fips_compliant=True" in app_py
+    assert "encrypt_cache_state=False" in app_py
+    assert "encrypt_ingest_state=False" in app_py
 
 
 def test_init_wizard_required_prompt_retries_on_empty_value():

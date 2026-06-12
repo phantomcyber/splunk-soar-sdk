@@ -37,6 +37,8 @@ class InitWizardConfig:
     uv_index: str = DEFAULT_UV_INDEX
     product: str | None = None
     fips_compliant: bool = False
+    encrypt_cache_state: bool = True
+    encrypt_ingest_state: bool = True
     overwrite: bool = False
 
 
@@ -84,6 +86,8 @@ def run_init_wizard(
         )
         config.product = Prompt.ask("Product name", default=name).strip() or None
         config.fips_compliant = Confirm.ask("FIPS compliant?", default=False)
+        config.encrypt_cache_state = Confirm.ask("Encrypt cache state?", default=True)
+        config.encrypt_ingest_state = Confirm.ask("Encrypt ingest state?", default=True)
         config.uv_index = _ask_required(
             "Python package index", default=DEFAULT_UV_INDEX, console=console
         )
@@ -159,6 +163,10 @@ def _print_summary(config: InitWizardConfig, console: Console) -> None:
     table.add_row("Vendor", config.vendor)
     table.add_row("Publisher", config.publisher)
     table.add_row("FIPS compliant", "yes" if config.fips_compliant else "no")
+    table.add_row("Encrypt cache state", "yes" if config.encrypt_cache_state else "no")
+    table.add_row(
+        "Encrypt ingest state", "yes" if config.encrypt_ingest_state else "no"
+    )
     table.add_row("Package index", config.uv_index)
     table.add_row("Overwrite", "yes" if config.overwrite else "no")
 
