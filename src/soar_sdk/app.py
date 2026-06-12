@@ -74,6 +74,15 @@ class App:
         min_phantom_version: Minimum required SOAR version. Defaults to configured minimum.
         fips_compliant: Whether the app is FIPS compliant. Defaults to False.
         asset_cls: Asset class to use for configuration. Defaults to BaseAsset.
+        encrypt_cache_state: Whether to encrypt ``asset.cache_state`` at rest. Defaults to True.
+        encrypt_ingest_state: Whether to encrypt ``asset.ingest_state`` at rest. Defaults to True.
+
+    Note:
+        Unencrypted asset state can be useful if you intend for users to read or
+        edit the asset state directly from the filesystem, outside of SOAR.
+        Please note that this use case is not officially supported, and a future
+        version of SOAR will begin storing the asset state in the database
+        instead of the filesystem.
 
     Raises:
         ValueError: If appid is not a valid UUID.
@@ -106,8 +115,12 @@ class App:
         min_phantom_version: str = MIN_PHANTOM_VERSION,
         fips_compliant: bool = False,
         asset_cls: type[BaseAsset] = BaseAsset,
+        encrypt_cache_state: bool = True,
+        encrypt_ingest_state: bool = True,
     ) -> None:
         self.asset_cls = asset_cls
+        self._encrypt_cache_state = encrypt_cache_state
+        self._encrypt_ingest_state = encrypt_ingest_state
         self._raw_asset_config: dict[str, Any] = {}
         self.__logger = getLogger()
         if not is_valid_uuid(appid):
@@ -239,13 +252,21 @@ class App:
             app_id = str(self.app_meta_info["appid"])
 
             self._asset._auth_state = AssetState(
-                self.actions_manager, "auth", asset_id, app_id=app_id
+                self.actions_manager, "auth", asset_id, app_id=app_id, encrypted=True
             )
             self._asset._cache_state = AssetState(
-                self.actions_manager, "cache", asset_id, app_id=app_id
+                self.actions_manager,
+                "cache",
+                asset_id,
+                app_id=app_id,
+                encrypted=self._encrypt_cache_state,
             )
             self._asset._ingest_state = AssetState(
-                self.actions_manager, "ingest", asset_id, app_id=app_id
+                self.actions_manager,
+                "ingest",
+                asset_id,
+                app_id=app_id,
+                encrypted=self._encrypt_ingest_state,
             )
         return self._asset
 

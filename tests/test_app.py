@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from unittest import mock
 
 import httpx
@@ -12,8 +13,49 @@ from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.crypto import encrypt
 from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.params import Params
+from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
+
+STATE_ENCRYPTION_APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
+
+
+def _make_state_encryption_app(**kwargs):
+    return App(
+        name="state_encryption_app",
+        appid=STATE_ENCRYPTION_APP_ID,
+        app_type="sandbox",
+        logo="logo.svg",
+        logo_dark="logo_dark.svg",
+        product_vendor="Splunk",
+        product_name="Example App",
+        publisher="Splunk",
+        **kwargs,
+    )
+
+
+def _write_state_partitions(
+    app: App, input_spec: InputSpecification
+) -> dict[str, object]:
+    @app.action()
+    def write_state(params: Params, asset: BaseAsset) -> ActionOutput:
+        asset.auth_state["secret"] = "auth"
+        asset.cache_state["visible"] = "cache"
+        asset.ingest_state["visible"] = "ingest"
+        return ActionOutput()
+
+    input_spec.action = "write_state"
+    input_spec.identifier = "write_state"
+
+    app.handle(input_spec.model_dump_json())
+
+    return app.actions_manager.load_state()
+
+
+def _decrypt_state_partition(
+    raw_state: dict[str, object], state_key: str, asset_id: str = "1"
+) -> dict[str, object]:
+    return json.loads(encryption_helper.decrypt(raw_state[state_key], asset_id))
 
 
 def test_app_run(example_app):
@@ -106,6 +148,59 @@ def test_handle_asset_state(example_app: App, simple_action_input: InputSpecific
     simple_action_input.identifier = "get_state"
     _ = example_app.handle(simple_action_input.model_dump_json())
     assert example_app.actions_manager.get_action_results()[-1].status
+
+
+def test_app_state_encryption_defaults(
+    example_app: App, simple_action_input: InputSpecification
+):
+    raw_state = _write_state_partitions(example_app, simple_action_input)
+
+    assert _decrypt_state_partition(raw_state, "auth") == {"secret": "auth"}
+    assert _decrypt_state_partition(raw_state, "cache") == {"visible": "cache"}
+    assert _decrypt_state_partition(raw_state, "ingest") == {"visible": "ingest"}
+
+
+def test_app_can_disable_cache_state_encryption(
+    simple_action_input: InputSpecification,
+):
+    app = _make_state_encryption_app(encrypt_cache_state=False)
+
+    raw_state = _write_state_partitions(app, simple_action_input)
+
+    assert _decrypt_state_partition(raw_state, "auth") == {"secret": "auth"}
+    assert raw_state["cache"] == {"visible": "cache"}
+    assert _decrypt_state_partition(raw_state, "ingest") == {"visible": "ingest"}
+
+
+def test_app_can_disable_ingest_state_encryption(
+    simple_action_input: InputSpecification,
+):
+    app = _make_state_encryption_app(encrypt_ingest_state=False)
+
+    raw_state = _write_state_partitions(app, simple_action_input)
+
+    assert _decrypt_state_partition(raw_state, "auth") == {"secret": "auth"}
+    assert _decrypt_state_partition(raw_state, "cache") == {"visible": "cache"}
+    assert raw_state["ingest"] == {"visible": "ingest"}
+
+
+def test_auth_state_stays_encrypted_when_cache_and_ingest_are_plaintext(
+    simple_action_input: InputSpecification,
+):
+    app = _make_state_encryption_app(
+        encrypt_cache_state=False, encrypt_ingest_state=False
+    )
+
+    raw_state = _write_state_partitions(app, simple_action_input)
+
+    assert _decrypt_state_partition(raw_state, "auth") == {"secret": "auth"}
+    assert raw_state["cache"] == {"visible": "cache"}
+    assert raw_state["ingest"] == {"visible": "ingest"}
+
+
+def test_app_does_not_accept_auth_state_encryption_flag():
+    with pytest.raises(TypeError, match="encrypt_auth_state"):
+        _make_state_encryption_app(encrypt_auth_state=False)
 
 
 def test_decrypted_field_not_present(
@@ -416,6 +511,45 @@ def test_handle_webhook_loads_existing_state(
     )
     assert response["status_code"] == 200
     assert json.loads(response["content"])["loaded"] == {"pre_existing": "state_value"}
+
+
+def test_handle_webhook_writes_plaintext_state_to_file(
+    tmp_path: Path, mock_get_any_soar_call
+):
+    class Asset(BaseAsset):
+        base_url: str
+
+    app = _make_state_encryption_app(
+        asset_cls=Asset, encrypt_cache_state=False, encrypt_ingest_state=False
+    ).enable_webhooks()
+    app.actions_manager.get_state_dir = lambda: str(tmp_path)
+
+    @app.webhook("stateful_webhook")
+    def stateful_webhook(request: WebhookRequest) -> WebhookResponse:
+        request.asset.auth_state["secret"] = "auth"
+        request.asset.cache_state["visible"] = "cache"
+        request.asset.ingest_state["visible"] = "ingest"
+        return WebhookResponse.json_response(dict(request.asset.cache_state))
+
+    response = app.handle_webhook(
+        method="GET",
+        headers={},
+        path_parts=["stateful_webhook"],
+        query={},
+        body=None,
+        asset={"base_url": "https://example.com"},
+        soar_rest_client=SoarRestClient(token="test_token", asset_id="1"),
+    )
+
+    raw_state = json.loads((tmp_path / "1_state.json").read_text())
+
+    assert response["status_code"] == 200
+    assert raw_state["cache"] == {"visible": "cache"}
+    assert raw_state["ingest"] == {"visible": "ingest"}
+    assert json.loads(encryption_helper.decrypt(raw_state["auth"], "1")) == {
+        "secret": "auth"
+    }
+    assert mock_get_any_soar_call.call_count == 1
 
 
 def test_handle_webhook_normalizes_querystring(
