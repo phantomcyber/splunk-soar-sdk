@@ -69,6 +69,8 @@ _INIT_OPTION_NAMES = (
     "uv_index",
     "product",
     "fips_compliant",
+    "encrypt_cache_state",
+    "encrypt_ingest_state",
     "overwrite",
     "private",
 )
@@ -120,6 +122,20 @@ def init_callback(
     ] = DEFAULT_UV_INDEX,
     product: str | None = None,
     fips_compliant: bool = False,
+    encrypt_cache_state: Annotated[
+        bool,
+        typer.Option(
+            "--encrypt-cache-state/--no-encrypt-cache-state",
+            help="Encrypt asset.cache_state at rest.",
+        ),
+    ] = True,
+    encrypt_ingest_state: Annotated[
+        bool,
+        typer.Option(
+            "--encrypt-ingest-state/--no-encrypt-ingest-state",
+            help="Encrypt asset.ingest_state at rest.",
+        ),
+    ] = True,
     overwrite: bool = False,
     private: Annotated[
         bool,
@@ -175,6 +191,8 @@ def init_callback(
         uv_index,
         product,
         fips_compliant,
+        encrypt_cache_state,
+        encrypt_ingest_state,
         overwrite,
         private,
     )
@@ -228,6 +246,8 @@ def _init_sdk_app_from_wizard_config(config: InitWizardConfig) -> None:
         config.uv_index,
         config.product,
         config.fips_compliant,
+        config.encrypt_cache_state,
+        config.encrypt_ingest_state,
         config.overwrite,
         config.private,
     )
@@ -252,6 +272,8 @@ def init_sdk_app(
     uv_index: str,
     product: str | None = None,
     fips_compliant: bool = False,
+    encrypt_cache_state: bool = True,
+    encrypt_ingest_state: bool = True,
     overwrite: bool = False,
     private: bool = False,
     app_content: list[ast.stmt] | None = None,
@@ -318,6 +340,8 @@ def init_sdk_app(
         publisher=publisher,
         appid=str(appid),
         fips_compliant=fips_compliant,
+        encrypt_cache_state=encrypt_cache_state,
+        encrypt_ingest_state=encrypt_ingest_state,
     )
 
     if app_content is None:
