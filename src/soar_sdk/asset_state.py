@@ -11,7 +11,14 @@ AssetStateType = dict[AssetStateKeyType, AssetStateValueType]
 
 
 class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
-    """An adapter to the asset state stored within SOAR. The state can be split into multiple partitions; this object represents a single partition. State is automatically encrypted at rest."""
+    """An adapter to one partition of asset state stored within SOAR.
+
+    State is encrypted at rest by default. Unencrypted asset state can be useful
+    if you intend for users to read or edit the asset state directly from the
+    filesystem, outside of SOAR. Please note that this use case is not
+    officially supported, and a future version of SOAR will begin storing the
+    asset state in the database instead of the filesystem.
+    """
 
     def __init__(
         self,
@@ -19,11 +26,13 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         state_key: str,
         asset_id: str,
         app_id: str | None = None,
+        encrypted: bool = True,
     ) -> None:
         self.backend = backend
         self.state_key = state_key
         self.asset_id = asset_id
         self.app_id = app_id
+        self.encrypted = encrypted
         self._transaction_buffer: AssetStateType | None = None
 
     @property
@@ -61,9 +70,11 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
                 self.asset_id
             )
         state = self.backend.load_state() or {}
-        if not (part_encrypted := state.get(self.state_key)):
+        if not (part := state.get(self.state_key)):
             return {}
-        part_json = encryption_helper.decrypt(part_encrypted, self.asset_id)
+        if isinstance(part, dict):
+            return dict(part)
+        part_json = encryption_helper.decrypt(part, self.asset_id)
         return json.loads(part_json)
 
     def put_all(self, new_value: AssetStateType) -> None:
@@ -72,9 +83,13 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
             self._transaction_buffer = dict(new_value)
             return
         part_json = json.dumps(new_value)
-        part_encrypted = encryption_helper.encrypt(part_json, salt=self.asset_id)
         state = self.backend.load_state() or {}
-        state[self.state_key] = part_encrypted
+        if self.encrypted:
+            state[self.state_key] = encryption_helper.encrypt(
+                part_json, salt=self.asset_id
+            )
+        else:
+            state[self.state_key] = json.loads(part_json)
         self.backend.save_state(state)
 
     def __getitem__(self, key: AssetStateKeyType) -> AssetStateValueType:

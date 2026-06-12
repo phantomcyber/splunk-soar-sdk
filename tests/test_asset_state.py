@@ -3,6 +3,7 @@ import json
 import pytest
 
 from soar_sdk.asset_state import AssetState
+from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 
 
 def test_asset_state_full_accessors(example_state: AssetState):
@@ -69,6 +70,68 @@ def test_state_is_encrypted(example_state: AssetState):
         json.loads(raw_state)
 
 
+def test_state_can_be_stored_as_plaintext(example_provider):
+    plaintext_state = AssetState(example_provider, "example", "1", encrypted=False)
+
+    plaintext_state.put_all({"key": "original"})
+    plaintext_state["item"] = "value"
+
+    assert plaintext_state.backend.load_state()["example"] == {
+        "key": "original",
+        "item": "value",
+    }
+    assert plaintext_state.get_all() == {"key": "original", "item": "value"}
+
+    plaintext_state.begin_transaction()
+    plaintext_state["key"] = "updated"
+
+    assert plaintext_state.backend.load_state()["example"] == {
+        "key": "original",
+        "item": "value",
+    }
+
+    plaintext_state.commit()
+
+    assert plaintext_state.backend.load_state()["example"] == {
+        "key": "updated",
+        "item": "value",
+    }
+
+
+def test_plaintext_state_reads_legacy_encrypted_state(example_provider):
+    encrypted_state = AssetState(example_provider, "example", "1")
+    encrypted_state.put_all({"legacy": True})
+
+    plaintext_state = AssetState(example_provider, "example", "1", encrypted=False)
+
+    assert plaintext_state.get_all() == {"legacy": True}
+
+    plaintext_state["new"] = "value"
+
+    assert plaintext_state.backend.load_state()["example"] == {
+        "legacy": True,
+        "new": "value",
+    }
+
+
+def test_encrypted_state_reads_legacy_plaintext_state(example_provider):
+    plaintext_state = AssetState(example_provider, "example", "1", encrypted=False)
+    plaintext_state.put_all({"legacy": True})
+
+    encrypted_state = AssetState(example_provider, "example", "1")
+
+    assert encrypted_state.get_all() == {"legacy": True}
+
+    encrypted_state["new"] = "value"
+
+    raw_state = encrypted_state.backend.load_state()["example"]
+    assert isinstance(raw_state, str)
+    assert json.loads(encryption_helper.decrypt(raw_state, "1")) == {
+        "legacy": True,
+        "new": "value",
+    }
+
+
 def test_transaction_commit_persists(example_state: AssetState):
     example_state.put_all({"key": "original"})
 
@@ -78,7 +141,6 @@ def test_transaction_commit_persists(example_state: AssetState):
 
     # Backend still has the original value during transaction
     raw_state = example_state.backend.load_state() or {}
-    from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 
     decrypted = json.loads(
         encryption_helper.decrypt(

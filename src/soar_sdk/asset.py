@@ -328,14 +328,14 @@ class BaseAsset(BaseModel):
 
     @property
     def cache_state(self) -> AssetState:
-        """Cache for miscellaneous data persisted by SOAR (encrypted at rest); raises if no app context."""
+        """Cache for miscellaneous data persisted by SOAR (encrypted by default); raises if no app context."""
         if self._cache_state is None:
             raise AppContextRequired()
         return self._cache_state
 
     @property
     def ingest_state(self) -> AssetState:
-        """Ingestion checkpoints persisted by SOAR (encrypted at rest); raises if no app context."""
+        """Ingestion checkpoints persisted by SOAR (encrypted by default); raises if no app context."""
         if self._ingest_state is None:
             raise AppContextRequired()
         return self._ingest_state
