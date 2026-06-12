@@ -15,7 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
-    "utctime_updated": "2026-04-23T18:23:56.685303Z",
+    "utctime_updated": "2026-06-12T17:54:13.232387Z",
     "fips_compliant": false,
     "contributors": [],
     "configuration": {
@@ -1025,6 +1025,90 @@
                 },
                 {
                     "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "action": "write filesystem state",
+            "identifier": "write_filesystem_state",
+            "description": "write filesystem state",
+            "type": "generic",
+            "read_only": false,
+            "versions": "EQ(*)",
+            "verbose": "",
+            "parameters": {},
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "summary.total_objects",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                },
+                {
+                    "data_path": "summary.total_objects_successful",
+                    "data_type": "numeric",
+                    "example_values": [
+                        1
+                    ]
+                }
+            ]
+        },
+        {
+            "action": "read filesystem state",
+            "identifier": "read_filesystem_state",
+            "description": "read filesystem state",
+            "type": "generic",
+            "read_only": true,
+            "versions": "EQ(*)",
+            "verbose": "",
+            "parameters": {},
+            "output": [
+                {
+                    "data_path": "action_result.status",
+                    "data_type": "string",
+                    "example_values": [
+                        "success",
+                        "failure"
+                    ]
+                },
+                {
+                    "data_path": "action_result.message",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.state_file_path",
+                    "data_type": "string"
+                },
+                {
+                    "data_path": "action_result.data.*.raw_state_json",
                     "data_type": "string"
                 },
                 {

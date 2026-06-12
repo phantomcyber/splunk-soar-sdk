@@ -21,6 +21,12 @@ from soar_sdk.params import (
 
 logger = getLogger()
 
+APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
+APP_STATE_DIRECTORY = Path("/opt/phantom/var/splunk_data/local_data/app_states")
+AUTH_FILESYSTEM_MARKER = "papp-37866-auth-filesystem-marker"
+CACHE_FILESYSTEM_MARKER = "papp-37866-cache-filesystem-marker"
+INGEST_FILESYSTEM_MARKER = "papp-37866-ingest-filesystem-marker"
+
 SAMPLE_EMAILS = [
     {
         "from": "phishing@malicious-domain.example.com",
@@ -83,7 +89,7 @@ class Asset(BaseAsset):
 app = App(
     asset_cls=Asset,
     name="example_app",
-    appid="9b388c08-67de-4ca4-817f-26f8fb7cbf55",
+    appid=APP_ID,
     app_type="sandbox",
     product_vendor="Splunk Inc.",
     logo="logo.svg",
@@ -333,6 +339,34 @@ def write_state(params: Params, soar: SOARClient, asset: Asset) -> ActionOutput:
 def read_state(params: Params, soar: SOARClient, asset: Asset) -> ActionOutput:
     assert asset.cache_state == {"value": "banana"}
     return ActionOutput()
+
+
+class FilesystemStateOutput(ActionOutput):
+    state_file_path: str
+    raw_state_json: str
+
+
+def _asset_state_file_path(soar: SOARClient) -> Path:
+    return APP_STATE_DIRECTORY / APP_ID / f"{soar.get_asset_id()}_state.json"
+
+
+@app.action(read_only=False)
+def write_filesystem_state(
+    params: Params, soar: SOARClient, asset: Asset
+) -> ActionOutput:
+    asset.auth_state.put_all({"auth_marker": AUTH_FILESYSTEM_MARKER})
+    asset.cache_state.put_all({"cache_marker": CACHE_FILESYSTEM_MARKER})
+    asset.ingest_state.put_all({"ingest_marker": INGEST_FILESYSTEM_MARKER})
+    return ActionOutput()
+
+
+@app.action()
+def read_filesystem_state(params: Params, soar: SOARClient) -> FilesystemStateOutput:
+    state_file_path = _asset_state_file_path(soar)
+    return FilesystemStateOutput(
+        state_file_path=str(state_file_path),
+        raw_state_json=state_file_path.read_text(encoding="utf-8"),
+    )
 
 
 @app.action(read_only=False)

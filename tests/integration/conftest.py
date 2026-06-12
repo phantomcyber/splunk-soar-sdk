@@ -48,7 +48,7 @@ def automation_broker_name(request):
 
 
 @pytest.fixture(scope="session")
-def example_app_client(request, automation_broker_name):
+def example_app_client(automation_broker_name):
     phantom_url = os.environ.get("PHANTOM_URL")
     if not phantom_url:
         pytest.skip("PHANTOM_URL environment variable not set")
@@ -67,6 +67,43 @@ def example_app_client(request, automation_broker_name):
         username=username,
         password=password,
         app_name="example_app",
+        app_vendor="Splunk Inc.",
+        asset_config=asset_config,
+        verify_cert=False,
+        automation_broker_name=automation_broker_name,
+    )
+
+    client.setup_app()
+
+    yield client
+
+    client.cleanup()
+
+
+@pytest.fixture(scope="session")
+def plaintext_state_app_client(automation_broker_name):
+    phantom_url = os.environ.get("PHANTOM_URL")
+    if not phantom_url:
+        pytest.skip("PHANTOM_URL environment variable not set")
+
+    host = phantom_url.replace("https://", "").replace("http://", "")
+
+    username = os.environ.get("PHANTOM_USERNAME", "admin")
+    password = os.environ.get("PHANTOM_PASSWORD", "password")
+
+    asset_file = (
+        Path(__file__).parent.parent
+        / "example_app_plaintext_state"
+        / "example_asset.json"
+    )
+    with open(asset_file) as f:
+        asset_config = json.load(f)
+
+    client = AppOnStackClient(
+        host=host,
+        username=username,
+        password=password,
+        app_name="example_app_plaintext_state",
         app_vendor="Splunk Inc.",
         asset_config=asset_config,
         verify_cert=False,
@@ -130,7 +167,7 @@ def es_app_client_with_ab():
 
 
 @pytest.fixture(scope="session")
-def webhook_app_client(request, automation_broker_name):
+def webhook_app_client(automation_broker_name):
     phantom_url = os.environ.get("PHANTOM_URL")
     if not phantom_url:
         pytest.skip("PHANTOM_URL environment variable not set")

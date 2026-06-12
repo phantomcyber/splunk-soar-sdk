@@ -1,0 +1,55 @@
+[project]
+name = "exampleapp_plaintext_state"
+version = "0.1.1"
+description = "Example SOAR app with plaintext cache and ingest state"
+license = "Copyright (c) Splunk Inc., 2025"
+readme = "README.md"
+requires-python = ">=3.13, <=3.14"
+authors = [
+    { name = "John Smith", email = "jsmith@example.com" }
+]
+dependencies = [
+    "httpx[http2]>=0.28.1",
+    "pyyaml>=6.0.3",
+    "requests>=2.32.3",
+    "splunk-soar-sdk",
+    "yarl>=1.20.0",
+]
+
+[dependency-groups]
+dev = [
+    "coverage>=7.6.7,<8",
+    "mypy>=1.2.0,<2",
+    "pre-commit>=4.2.0,<5",
+    "pytest>=7.4.2,<8",
+    "pytest-cov>=5.0.0,<6",
+    "pytest-mock>=3.14.0,<4",
+    "pytest-watch>=4.2.0,<5",
+    "pytest-xdist>=3.6.1,<4",
+    "ruff>=0.11.6,<1",
+]
+
+[tool.soar.app]
+main_module = "src.app:app"
+
+[[tool.uv.index]]
+url = "https://pypi.python.org/simple"
+
+[tool.uv.sources]
+splunk-soar-sdk = { path = "../../" }
+
+[tool.uv]
+environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.14'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.13'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64' and python_version == '3.14'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64' and python_version == '3.14'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.13'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64' and python_version == '3.14'",
+]
+required-environments = [
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.13'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64' and python_version == '3.14'",
+]

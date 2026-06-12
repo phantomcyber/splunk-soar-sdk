@@ -44,7 +44,10 @@ def test_get_module_dot_path(main_module, dot_path):
     assert ManifestProcessor.get_module_dot_path(main_module) == dot_path
 
 
-@pytest.mark.parametrize("app", ("example_app", "example_app_with_webhook"))
+@pytest.mark.parametrize(
+    "app",
+    ("example_app", "example_app_with_webhook", "example_app_plaintext_state"),
+)
 def test_build_manifests(app: str):
     test_app = f"tests/{app}"
     processor = ManifestProcessor("example_app.json", project_context=test_app)
