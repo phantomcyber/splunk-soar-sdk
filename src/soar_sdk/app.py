@@ -190,11 +190,13 @@ class App:
         self._raw_asset_config = input_data.config.get_asset_config()
 
         # Decrypt sensitive fields in the asset configuration
-        asset_id = input_data.asset_id
+        # RPC brokers ship values as ephemeral payloads keyed by dec_key, while
+        # classic backends use the asset_id as the decryption salt.
+        decryption_salt = input_data.dec_key or str(input_data.asset_id)
         for field in self.asset_cls.fields_requiring_decryption():
             if self._raw_asset_config.get(field):
                 self._raw_asset_config[field] = platform_encryption_backend.decrypt(
-                    self._raw_asset_config[field], str(asset_id)
+                    self._raw_asset_config[field], decryption_salt
                 )
 
         # Inflate timezone fields in the asset configuration
