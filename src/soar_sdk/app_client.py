@@ -8,7 +8,10 @@ from soar_sdk.abstract import JSONType, SOARClient, SOARClientAuth, SummaryType
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
-from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
+from soar_sdk.shims.phantom.install_info import (
+    is_onprem_broker_install,
+    is_onprem_broker_rpc_install,
+)
 
 if TYPE_CHECKING:
     pass
@@ -159,8 +162,11 @@ class AppClient(SOARClient[SummaryType]):
         # Route through broker api_proxy
         endpoint = f"/rest/broker/api_proxy{endpoint}"
 
-        # Add broker authentication headers
-        headers["ph-auth-token"] = self._broker_ph_auth_token
+        # RPC brokers use ephemeral Bearer tokens, WebSocket brokers use ph-auth-token
+        if is_onprem_broker_rpc_install():
+            headers["Authorization"] = f"Bearer {self._broker_ph_auth_token}"
+        else:
+            headers["ph-auth-token"] = self._broker_ph_auth_token
         headers["PsaasImpersonationToken"] = self._user_hash_key
 
         return endpoint, headers

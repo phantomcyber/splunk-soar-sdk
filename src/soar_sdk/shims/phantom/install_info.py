@@ -3,6 +3,7 @@ try:
         get_product_version,
         get_verify_ssl_setting,
         is_onprem_broker_install,
+        is_onprem_broker_rpc_install,
     )
 
     _soar_is_available = True
@@ -25,6 +26,10 @@ if TYPE_CHECKING or not _soar_is_available:
         """Mock function to simulate the behavior of is_onprem_broker_install."""
         return False
 
+    def is_onprem_broker_rpc_install() -> bool:
+        """Mock function to simulate the behavior of is_onprem_broker_rpc_install."""
+        return False
+
 
 def is_soar_available() -> bool:
     """
@@ -37,5 +42,6 @@ __all__ = [
     "get_product_version",
     "get_verify_ssl_setting",
     "is_onprem_broker_install",
+    "is_onprem_broker_rpc_install",
     "is_soar_available",
 ]

@@ -150,3 +150,13 @@ class InputSpecification(BaseModel):
     soar_auth: SoarAuth | None = None
     user_hash_key: str = ""
     broker_ph_auth_token: str = ""
+
+    @field_validator("user_session_token", mode="before")
+    @classmethod
+    def normalize_user_session_token(cls, value: str | None) -> str:
+        """Coerce a null user_session_token to an empty string.
+
+        Modern (RPC) automation brokers send the token as null when there is no
+        effective user, which the strict string field would otherwise reject.
+        """
+        return value or ""
