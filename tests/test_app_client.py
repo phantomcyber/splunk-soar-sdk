@@ -195,6 +195,27 @@ def test_prepare_broker_request(mock_broker, simple_connector: AppClient):
     assert response.json() == {"version": "6.4.1"}
 
 
+@patch("soar_sdk.app_client.is_onprem_broker_rpc_install", return_value=True)
+@patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
+@respx.mock
+def test_prepare_broker_request_rpc(mock_broker, mock_rpc, simple_connector: AppClient):
+    """Test that RPC broker requests use a Bearer token instead of ph-auth-token."""
+    simple_connector._broker_ph_auth_token = "broker-token"
+    simple_connector._user_hash_key = "hash-key"
+
+    route = respx.get("https://localhost:9999/rest/broker/api_proxy/rest/version").mock(
+        return_value=httpx.Response(200, json={"version": "6.4.1"})
+    )
+    response = simple_connector.get("/rest/version")
+
+    assert route.called
+    request = route.calls[0].request
+    assert request.headers["Authorization"] == "Bearer broker-token"
+    assert request.headers["PsaasImpersonationToken"] == "hash-key"
+    assert "ph-auth-token" not in request.headers
+    assert response.json() == {"version": "6.4.1"}
+
+
 @patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
 @respx.mock
 def test_prepare_broker_request_adds_leading_slash(
