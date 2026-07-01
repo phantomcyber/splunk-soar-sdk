@@ -21,10 +21,12 @@ if TYPE_CHECKING or not _soar_is_available:
 
         @overload
         @staticmethod
-        def sendstatus(status: int, message: str, flag: bool) -> None: ...
+        def sendstatus(  # ty: ignore[invalid-overload]
+            status: int, message: str, flag: bool
+        ) -> None: ...
         @overload
         @staticmethod
-        def sendstatus(
+        def sendstatus(  # ty: ignore[invalid-overload]
             handle: int | None, status: int, message: str, flag: bool
         ) -> None: ...
         @staticmethod
@@ -36,10 +38,14 @@ if TYPE_CHECKING or not _soar_is_available:
 
         @overload
         @staticmethod
-        def debugprint(message: str) -> None: ...
+        def debugprint(  # ty: ignore[invalid-overload]
+            message: str,
+        ) -> None: ...
         @overload
         @staticmethod
-        def debugprint(handle: int | None, message: str, level: int) -> None: ...
+        def debugprint(  # ty: ignore[invalid-overload]
+            handle: int | None, message: str, level: int
+        ) -> None: ...
         @staticmethod
         def debugprint(*args: object) -> None:
             # New SOAR (1 arg): message
@@ -49,10 +55,14 @@ if TYPE_CHECKING or not _soar_is_available:
 
         @overload
         @staticmethod
-        def errorprint(message: str) -> None: ...
+        def errorprint(  # ty: ignore[invalid-overload]
+            message: str,
+        ) -> None: ...
         @overload
         @staticmethod
-        def errorprint(handle: int | None, message: str, level: int) -> None: ...
+        def errorprint(  # ty: ignore[invalid-overload]
+            handle: int | None, message: str, level: int
+        ) -> None: ...
         @staticmethod
         def errorprint(*args: object) -> None:
             # New SOAR (1 arg): message

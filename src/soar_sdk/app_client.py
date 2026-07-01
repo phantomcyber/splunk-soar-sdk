@@ -293,7 +293,7 @@ class AppClient(SOARClient[SummaryType]):
             auth=auth
             or httpx.BasicAuth(self.__basic_auth.username, self.__basic_auth.password)
             if self.basic_auth
-            else None,  # type: ignore[arg-type]
+            else httpx.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,

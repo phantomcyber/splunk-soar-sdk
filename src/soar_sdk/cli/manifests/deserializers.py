@@ -2,7 +2,7 @@ import dataclasses
 import json
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, NamedTuple, cast
+from typing import Any, NamedTuple, TypeAlias, cast
 
 import pydantic
 
@@ -104,7 +104,7 @@ class OutputFieldModel:
 
 # Recursive type representing nested output field structures:
 # leaf nodes are OutputFieldModel, interior nodes are dicts or lists of nested fields.
-type NestedField = list[NestedField] | dict[str, NestedField] | OutputFieldModel
+NestedField: TypeAlias = "list[NestedField] | dict[str, NestedField] | OutputFieldModel"  # noqa: UP040
 
 
 class DeserializedActionMeta(NamedTuple):
@@ -367,7 +367,7 @@ class ActionDeserializer:
                 field_spec.type_
             )  # this helps mypy, but it's still not quite happy
             return field_name, FieldSpec(
-                type_=list[field_type],  # type: ignore[valid-type]
+                type_=list[field_type],  # type: ignore[valid-type]  # ty: ignore[invalid-type-form]
                 default=field_spec.default,
             )
 

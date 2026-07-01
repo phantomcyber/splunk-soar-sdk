@@ -13,9 +13,12 @@ from email.header import decode_header, make_header
 from email.message import Message
 from html import unescape
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Any, TypedDict, cast
 
-from bs4 import BeautifulSoup, UnicodeDammit  # type: ignore[attr-defined]
+from bs4 import (  # type: ignore[attr-defined]
+    BeautifulSoup,
+    UnicodeDammit,  # ty: ignore[unresolved-import]
+)
 from pydantic import HttpUrl, ValidationError
 from requests.structures import CaseInsensitiveDict
 
@@ -182,7 +185,7 @@ class EmailProcessor:
 
         if self._config[PROC_EMAIL_JSON_EXTRACT_DOMAINS]:
             for uri in validated_urls:
-                domain = phantom.get_host_from_url(uri)  # type: ignore[attr-defined]
+                domain = phantom.get_host_from_url(uri)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
                 if domain and (not is_ip(domain)):
                     domains.add(domain)
             if links:
@@ -389,7 +392,7 @@ class EmailProcessor:
             return APP_SUCCESS, False
 
         with open(file_path, "wb") as f:
-            f.write(part_payload)  # type: ignore[arg-type]
+            f.write(cast(bytes, part_payload))
 
         bodies.append({"file_path": file_path, "charset": part.get_content_charset()})
 
@@ -436,7 +439,7 @@ class EmailProcessor:
 
         try:
             with open(file_path, "wb") as f:
-                f.write(part_payload)  # type: ignore[arg-type]
+                f.write(cast(bytes, part_payload))
         except OSError as e:
             try:
                 if "File name too long" in str(e):
@@ -450,7 +453,7 @@ class EmailProcessor:
                     logger.debug(f"Original filename: {file_name}")
                     logger.debug(f"Modified filename: {new_file_name}")
                     with open(file_path, "wb") as long_file:
-                        long_file.write(part_payload)  # type: ignore[arg-type]
+                        long_file.write(cast(bytes, part_payload))
                 else:
                     logger.debug(f"Error occurred while adding file to Vault: {e}")
                     return APP_ERROR
@@ -650,7 +653,7 @@ class EmailProcessor:
                 cur_part = queue.pop(0)
                 payload = cur_part.get_payload()
                 if isinstance(payload, list):
-                    queue.extend(payload)  # type: ignore[arg-type]
+                    queue.extend(cast(list[Message], payload))
                 else:
                     encoding = cur_part["Content-Transfer-Encoding"]
                     if encoding:
@@ -669,7 +672,7 @@ class EmailProcessor:
                         json.dumps({"body": payload})
                     except (TypeError, UnicodeDecodeError):
                         try:
-                            payload = payload.decode("UTF-8")  # type: ignore[union-attr]
+                            payload = cast(bytes, payload).decode("UTF-8")
                         except (UnicodeDecodeError, AttributeError):
                             logger.debug(
                                 "Email body caused unicode exception. Encoding as base64."
@@ -762,7 +765,7 @@ class EmailProcessor:
             payload = mail.get_payload(decode=True)
             if payload:
                 with open(file_path, "wb") as f:
-                    f.write(payload)  # type: ignore[arg-type]
+                    f.write(cast(bytes, payload))
                 bodies.append(
                     {"file_path": file_path, "charset": mail.get_content_charset()}
                 )
@@ -779,12 +782,7 @@ class EmailProcessor:
         container.update(_container_common)
 
         if not self.context.is_hex:
-            try:
-                folder_hex = hashlib.sha256(self.context.folder_name)  # type: ignore[arg-type]
-            except Exception:
-                folder_hex = hashlib.sha256(self.context.folder_name.encode())
-
-            folder_sdi = folder_hex.hexdigest()
+            folder_sdi = hashlib.sha256(self.context.folder_name.encode()).hexdigest()
         else:
             folder_sdi = self.context.folder_name
 
@@ -898,7 +896,7 @@ class EmailProcessor:
             for artifact in artifacts:
                 artifact["container_id"] = cid
             try:
-                _ids = self.context.soar.save_artifacts(artifacts)  # type: ignore[attr-defined]
+                _ids = self.context.soar.save_artifacts(artifacts)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
                 ret_val, message = APP_SUCCESS, "Success"
                 logger.debug(
                     f"save_artifacts returns, value: {ret_val}, reason: {message}"
@@ -911,7 +909,7 @@ class EmailProcessor:
             return ret_val, message, cid
         else:
             try:
-                cid = self.context.soar.save_container(container)  # type: ignore[attr-defined]
+                cid = self.context.soar.save_container(container)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
                 ret_val, message = APP_SUCCESS, "Success"
                 logger.debug(
                     f"save_container (with artifacts) returns, value: {ret_val}, reason: {message}, id: {cid}"
@@ -1089,8 +1087,8 @@ class EmailProcessor:
 
         logger.debug(f"Vault file name: {file_name}")
 
-        vault_attach_dict[phantom.APP_JSON_ACTION_NAME] = self.context.action_name  # type: ignore[attr-defined]
-        vault_attach_dict[phantom.APP_JSON_APP_RUN_ID] = self.context.app_run_id  # type: ignore[attr-defined]
+        vault_attach_dict[phantom.APP_JSON_ACTION_NAME] = self.context.action_name  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
+        vault_attach_dict[phantom.APP_JSON_APP_RUN_ID] = self.context.app_run_id  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
 
         file_name = decode_uni_string(file_name, file_name)
 
@@ -1129,7 +1127,7 @@ class EmailProcessor:
             cef_artifact["parentSourceDataIdentifier"] = self._guid_to_hash[parent_guid]
 
         try:
-            artifact_id_result = self.context.soar.save_artifact(artifact)  # type: ignore[attr-defined]
+            artifact_id_result = self.context.soar.save_artifact(artifact)  # type: ignore[attr-defined]  # ty: ignore[unresolved-attribute]
             ret_val, status_string = APP_SUCCESS, "Success"
             logger.debug(
                 f"save_artifact returns, value: {ret_val}, reason: {status_string}, id: {artifact_id_result}"
