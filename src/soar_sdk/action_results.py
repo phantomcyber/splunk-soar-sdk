@@ -345,10 +345,11 @@ class PermissiveActionOutput(ActionOutput):
         exclude_none: bool = False,
         exclude_computed_fields: bool = False,
         round_trip: bool = False,
-        warnings: Literal["none", "warn", "error"] | bool = True,
+        warnings: bool | Literal["none", "warn", "error"] = True,
         fallback: Callable[[Any], Any] | None = None,
         serialize_as_any: bool = False,
-    ) -> dict:
+        polymorphic_serialization: bool | None = None,
+    ) -> dict[str, Any]:
         """Basic implementation of ``model_dump`` which just returns the raw dict provided to the constructor. Doesn't implement any kwargs and isn't recommended for use outside of basic serialization by the SDK."""
         return self._permissive_raw
 

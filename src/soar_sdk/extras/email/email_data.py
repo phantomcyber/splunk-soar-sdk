@@ -9,7 +9,10 @@ from typing import Any
 from urllib.parse import urlparse
 
 import extract_msg
-from bs4 import BeautifulSoup, UnicodeDammit  # type: ignore[attr-defined]
+from bs4 import (  # type: ignore[attr-defined]
+    BeautifulSoup,
+    UnicodeDammit,  # ty: ignore[unresolved-import]
+)
 
 from soar_sdk.extras.email.utils import clean_url, decode_uni_string, is_ip
 from soar_sdk.logging import getLogger

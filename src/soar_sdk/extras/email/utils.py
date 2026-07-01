@@ -6,7 +6,9 @@ from email.header import decode_header, make_header
 from pathlib import Path
 from typing import Any
 
-from bs4 import UnicodeDammit  # type: ignore[attr-defined]
+from bs4 import (
+    UnicodeDammit,  # type: ignore[attr-defined]  # ty: ignore[unresolved-import]
+)
 
 from soar_sdk.logging import getLogger
 
@@ -34,7 +36,7 @@ MAGIC_FORMATS = [
 def get_file_contains(file_path: str) -> list[str]:
     """Get file type contains based on extension and magic bytes."""
     try:
-        import magic  # type: ignore[import-not-found]
+        import magic  # type: ignore[import-not-found]  # ty: ignore[unresolved-import]
     except ImportError:
         logger.warning(
             "python-magic not installed, file type detection will be limited"
@@ -173,6 +175,6 @@ def create_dict_hash(input_dict: dict[str, Any]) -> str | None:
         return None
 
     try:
-        return hashlib.sha256(input_dict_str).hexdigest()  # type: ignore[arg-type]
-    except TypeError:
         return hashlib.sha256(input_dict_str.encode("UTF-8")).hexdigest()
+    except TypeError:
+        return None
