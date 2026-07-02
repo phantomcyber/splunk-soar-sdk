@@ -56,7 +56,7 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://github.com/phantomcyber/splunk-soar-sdk"
-Documentation = "https://github.com/phantomcyber/splunk-soar-sdk"
+Documentation = "https://phantomcyber.github.io/splunk-soar-sdk/index.html"
 Repository = "https://github.com/phantomcyber/splunk-soar-sdk"
 
 [project.optional-dependencies]
