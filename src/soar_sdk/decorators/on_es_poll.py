@@ -9,6 +9,7 @@ from pydantic import ValidationError
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
+from soar_sdk.concurrency import parallel_map
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
@@ -28,6 +29,96 @@ if TYPE_CHECKING:
 
 ESPollingYieldType = Finding
 ESPollingSendType = int | None
+
+
+def _pre_create_containers(
+    batch: list[Finding],
+    save_container: Callable[[dict], tuple[bool, str, int | None]],
+    logger: Any,  # noqa: ANN401
+) -> dict[int, int]:
+    """Concurrently pre-create a container for each finding with attachments.
+
+    Returns a mapping of batch index to container ID for findings whose
+    container was created successfully. Findings without attachments and
+    findings whose container creation fails are omitted.
+    """
+    indices = [idx for idx, item in enumerate(batch) if item.attachments]
+
+    def create(idx: int) -> tuple[int, int | None]:
+        item = batch[idx]
+        try:
+            container_data = {
+                "name": item.rule_title,
+                "source_data_identifier": str(uuid.uuid4()),
+            }
+            ret_val, message, container_id = save_container(container_data)
+            if not ret_val or not container_id:
+                logger.warning(
+                    "save_container failed for '%s': %s", item.rule_title, message
+                )
+                return idx, None
+            return idx, container_id
+        except Exception as e:
+            logger.warning(
+                f"Failed to pre-create container for finding '{item.rule_title}': {e}"
+            )
+            return idx, None
+
+    results = parallel_map(create, indices)
+    return {idx: cid for idx, cid in results if cid is not None}
+
+
+def _upload_finding_attachments(
+    item: Finding,
+    container_id: int,
+    base_url: str,
+    soar: SOARClient,
+    logger: Any,  # noqa: ANN401
+) -> int:
+    """Concurrently upload a finding's attachments to the container vault.
+
+    Populates the finding's email with the resulting vault links in the
+    original attachment order and returns the number of files uploaded.
+    """
+
+    def upload(attachment: Any) -> tuple[Any, str | None]:  # noqa: ANN401
+        try:
+            vault_id = soar.vault.create_attachment(
+                container_id, attachment.data, attachment.file_name
+            )
+            return attachment, vault_id
+        except Exception as e:
+            logger.warning(
+                f"Failed to add {attachment.file_name} to container vault: {e}"
+            )
+            return attachment, None
+
+    email_attachments: list[FindingEmailAttachment] = []
+    raw_email_link: str | None = None
+    uploaded = 0
+
+    for attachment, vault_id in parallel_map(upload, item.attachments or []):
+        if vault_id is None:
+            continue
+        vault_link = f"{base_url}/rest/download_attachment?vault_id={vault_id}"
+        email_attachments.append(
+            FindingEmailAttachment(
+                filename=attachment.file_name,
+                filesize=len(attachment.data),
+                url=vault_link,
+            )
+        )
+        if attachment.is_raw_email:
+            raw_email_link = vault_link
+        uploaded += 1
+
+    if item.email is None:
+        item.email = FindingEmail()
+    item.email.attachments = email_attachments or None
+    if raw_email_link:
+        item.email.raw_email_link = raw_email_link
+
+    return uploaded
 
 
 class OnESPollDecorator:
@@ -248,72 +339,19 @@ class OnESPollDecorator:
                         ingest_state.commit()
                     break
 
-                pre_created_containers: dict[int, int] = {}
+                pre_created_containers = _pre_create_containers(
+                    batch, self.app.actions_manager.save_container, logger
+                )
                 total_vault_atts = 0
                 containers_with_atts = 0
 
-                for idx, item in enumerate(batch):
-                    if not item.attachments:
-                        continue
-
-                    try:
-                        container_data = {
-                            "name": item.rule_title,
-                            "source_data_identifier": str(uuid.uuid4()),
-                        }
-                        ret_val, message, container_id = (
-                            self.app.actions_manager.save_container(container_data)
-                        )
-                        if not ret_val or not container_id:
-                            logger.warning(
-                                "save_container failed for '%s': %s",
-                                item.rule_title,
-                                message,
-                            )
-                            continue
-                    except Exception as e:
-                        logger.warning(
-                            f"Failed to pre-create container for "
-                            f"finding '{item.rule_title}': {e}"
-                        )
-                        continue
-
-                    pre_created_containers[idx] = container_id
-                    email_attachments: list[FindingEmailAttachment] = []
-                    raw_email_link: str | None = None
-
-                    for attachment in item.attachments:
-                        try:
-                            vault_id = soar.vault.create_attachment(
-                                container_id,
-                                attachment.data,
-                                attachment.file_name,
-                            )
-                            vault_link = f"{base_url}/rest/download_attachment?vault_id={vault_id}"
-                            email_attachments.append(
-                                FindingEmailAttachment(
-                                    filename=attachment.file_name,
-                                    filesize=len(attachment.data),
-                                    url=vault_link,
-                                )
-                            )
-                            if attachment.is_raw_email:
-                                raw_email_link = vault_link
-                            total_vault_atts += 1
-                        except Exception as e:
-                            logger.warning(
-                                f"Failed to add {attachment.file_name} "
-                                f"to container vault: {e}"
-                            )
-
-                    if email_attachments:
+                for idx, container_id in pre_created_containers.items():
+                    uploaded = _upload_finding_attachments(
+                        batch[idx], container_id, base_url, soar, logger
+                    )
+                    if uploaded:
+                        total_vault_atts += uploaded
                         containers_with_atts += 1
-
-                    if item.email is None:
-                        item.email = FindingEmail()
-                    item.email.attachments = email_attachments or None
-                    if raw_email_link:
-                        item.email.raw_email_link = raw_email_link
 
                 if total_vault_atts:
                     self.app.actions_manager.save_progress(
