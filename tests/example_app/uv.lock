@@ -1148,7 +1148,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "3.19.2"
+version = "3.25.4"
 source = { directory = "../../" }
 dependencies = [
     { name = "authlib", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
@@ -1180,7 +1180,7 @@ requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.10.0" },
     { name = "bleach", specifier = ">=6.2.0" },
     { name = "build", specifier = ">=1.3.0" },
-    { name = "click", specifier = ">=8.0.0,<8.2.0" },
+    { name = "click", specifier = ">=8.0.0,<8.4.0" },
     { name = "distro", specifier = ">=1.8.0" },
     { name = "extract-msg", specifier = ">=0.55.0" },
     { name = "hatchling", specifier = ">=1.28.0" },
@@ -1197,7 +1197,7 @@ requires-dist = [
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "toml", specifier = ">=0.10.2,<1" },
     { name = "tqdm", specifier = ">=4.67.1" },
-    { name = "typer", specifier = ">=0.12.5,<1" },
+    { name = "typer", specifier = ">=0.17.3,<0.18" },
 ]
 provides-extras = ["email"]
 
@@ -1269,7 +1269,7 @@ wheels = [
 
 [[package]]
 name = "typer"
-version = "0.20.0"
+version = "0.17.5"
 source = { registry = "https://pypi.python.org/simple" }
 dependencies = [
     { name = "click", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
@@ -1277,9 +1277,9 @@ dependencies = [
     { name = "shellingham", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
     { name = "typing-extensions", marker = "(platform_machine == 'arm64' and sys_platform == 'darwin') or (platform_machine == 'x86_64' and sys_platform == 'darwin') or (platform_machine == 'aarch64' and sys_platform == 'linux') or (platform_machine == 'x86_64' and sys_platform == 'linux')" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8f/28/7c85c8032b91dbe79725b6f17d2fffc595dff06a35c7a30a37bef73a1ab4/typer-0.20.0.tar.gz", hash = "sha256:1aaf6494031793e4876fb0bacfa6a912b551cf43c1e63c800df8b1a866720c37", size = 106492, upload-time = "2025-10-20T17:03:49.445Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/1d/3e/30bff313f4868538330c6254bbbe178d6143e43c6f3e7a34788d381f701c/typer-0.17.5.tar.gz", hash = "sha256:a6fe2d187feb1b4a10322b910267b6339e4cc98257fae34d22299a47eac704f1", size = 103790, upload-time = "2025-09-19T18:34:31.292Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/78/64/7713ffe4b5983314e9d436a90d5bd4f63b6054e2aca783a3cfc44cb95bbf/typer-0.20.0-py3-none-any.whl", hash = "sha256:5b463df6793ec1dca6213a3cf4c0f03bc6e322ac5e16e13ddd622a889489784a", size = 47028, upload-time = "2025-10-20T17:03:47.617Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/1d/0e129c8cf45b22f9b56250ff40cac9f5d1535b2d33294dcfcb3a7e8f3299/typer-0.17.5-py3-none-any.whl", hash = "sha256:45f2709d44be2f0d0f8bc70c9f845f60ef69d6cc80c6e6ae2cc2f29bae650cf6", size = 46650, upload-time = "2025-09-19T18:34:28.737Z" },
 ]
 
 [[package]]
