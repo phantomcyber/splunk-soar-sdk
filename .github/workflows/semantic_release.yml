@@ -43,16 +43,61 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
         run: semantic-release
+      - name: Capture release version
+        id: release-version
+        run: |
+          if [[ -s release_version.txt ]]; then
+            echo "released=true" >> "$GITHUB_OUTPUT"
+            echo "version=$(cat release_version.txt)" >> "$GITHUB_OUTPUT"
+          else
+            echo "released=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Check out the newly-created tag
+        if: ${{ steps.release-version.outputs.released == 'true' }}
         run: git fetch --tags && git checkout "$(cat release_version.txt)"
       - name: Build package
+        if: ${{ steps.release-version.outputs.released == 'true' }}
         run: uv build
       - name: Publish to PyPI
+        if: ${{ steps.release-version.outputs.released == 'true' }}
         run: uv publish
       - name: Find the GitHub release and upload the artifacts to it
+        if: ${{ steps.release-version.outputs.released == 'true' }}
         uses: actions/github-script@v7
         with:
           script: |
             const { uploadReleaseArtifacts } = await import('${{ github.workspace }}/.github/utils/github.js');
-            uploadReleaseArtifacts({github, context, core});
+            await uploadReleaseArtifacts({github, context, core});
           github-token: ${{ steps.app-token.outputs.token }}
+      - name: Update example apps to released SDK
+        if: ${{ github.ref_name == 'main' && steps.release-version.outputs.released == 'true' }}
+        env:
+          RELEASE_VERSION: ${{ steps.release-version.outputs.version }}
+        run: |
+          git checkout main
+          git pull --ff-only origin main
+
+          for app in \
+            tests/example_app \
+            tests/example_app_plaintext_state \
+            tests/example_app_with_oauth \
+            tests/example_app_with_webhook
+          do
+            uv lock --project "$app" --upgrade-package splunk-soar-sdk
+          done
+
+          git config user.name "semantic-release"
+          git config user.email "semantic-release@users.noreply.github.com"
+          git add \
+            tests/example_app/uv.lock \
+            tests/example_app_plaintext_state/uv.lock \
+            tests/example_app_with_oauth/uv.lock \
+            tests/example_app_with_webhook/uv.lock
+
+          if git diff --cached --quiet; then
+            echo "Example app lockfiles already use splunk-soar-sdk ${RELEASE_VERSION}."
+            exit 0
+          fi
+
+          git commit -m "chore: update example apps to splunk-soar-sdk ${RELEASE_VERSION} [skip ci]"
+          git push origin HEAD:main
