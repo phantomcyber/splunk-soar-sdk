@@ -17,7 +17,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "uv run .github/utils/update_version.py ${nextRelease.version} && uv lock",
+        "prepareCmd": "uv run .github/utils/update_version.py ${nextRelease.version} && uv lock && if [ \"${branch.name}\" = \"main\" ]; then for app in tests/example_app*/; do uv lock --project \"$app\" --upgrade-package splunk-soar-sdk; done; fi",
         "verifyReleaseCmd": "echo \"${nextRelease.version}\" > release_version.txt",
         "generateNotesCmd": "cat >release_notes.txt <<'EOF${nextRelease.gitHead}EOF'\n${nextRelease.notes}\nEOF${nextRelease.gitHead}EOF"
       }
@@ -27,7 +27,9 @@
       {
         "assets": [
           "pyproject.toml",
-          "uv.lock"
+          "uv.lock",
+          "tests/example_app*/pyproject.toml",
+          "tests/example_app*/uv.lock"
         ],
         "message": "chore(release): update version to ${nextRelease.version} [skip ci]"
       }
