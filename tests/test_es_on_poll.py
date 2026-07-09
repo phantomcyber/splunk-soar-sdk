@@ -430,6 +430,58 @@ def test_es_on_poll_with_attachments(
     assert passed_container_ids == [99]
 
 
+def test_es_on_poll_attachment_without_raw_email(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """Test that a finding with only non-raw attachments gets vault links but no raw_email_link."""
+    create_findings_bulk = mocker.patch.object(
+        app_with_action.soar_client,
+        "create_findings_bulk",
+        return_value=BULK_RESPONSE,
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "ok", 99),
+    )
+    vault_mock = MagicMock()
+    vault_mock.create_attachment.return_value = "vault-abc123"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault_mock),
+    )
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+
+    @app_with_action.on_es_poll()
+    def on_es_poll_function(
+        params: OnESPollParams, client=None
+    ) -> Generator[Finding, int | None]:
+        yield Finding(
+            rule_title="Phishing Email",
+            run_threat_analysis=True,
+            attachments=[
+                FindingAttachment(
+                    file_name="report.pdf", data=b"pdf data", is_raw_email=False
+                )
+            ],
+        )
+
+    params = OnESPollParams(start_time=0, end_time=1)
+    result = on_es_poll_function(params, client=app_with_action.soar_client)
+    assert result is True
+
+    finding_payload = create_findings_bulk.call_args[0][0][0]
+    assert finding_payload["email"]["attachments"] == [
+        {
+            "filename": "report.pdf",
+            "filesize": len(b"pdf data"),
+            "url": "https://soar.local/rest/download_attachment?vault_id=vault-abc123",
+        }
+    ]
+    assert finding_payload["email"].get("raw_email_link") is None
+
+
 def test_es_on_poll_missing_security_domain(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):

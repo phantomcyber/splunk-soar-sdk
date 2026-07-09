@@ -68,57 +68,79 @@ def _pre_create_containers(
     return {idx: cid for idx, cid in results if cid is not None}
 
 
-def _upload_finding_attachments(
-    item: Finding,
-    container_id: int,
+def _upload_all_attachments(
+    batch: list[Finding],
+    containers: dict[int, int],
     base_url: str,
     soar: SOARClient,
     logger: Any,  # noqa: ANN401
-) -> int:
-    """Concurrently upload a finding's attachments to the container vault.
+) -> tuple[int, int]:
+    """Concurrently upload every attachment across the whole batch in one wave.
 
-    Populates the finding's email with the resulting vault links in the
-    original attachment order and returns the number of files uploaded.
+    Builds a single flat list of (finding index, attachment) work items across
+    all findings that have a container, then uploads them all through one
+    thread pool so uploads for different findings run in parallel. Results are
+    reassembled per finding in the original attachment order, populating each
+    finding's email with the resulting vault links.
+
+    Returns a tuple of (total files uploaded, findings that received files).
     """
+    work: list[tuple[int, Any]] = [
+        (idx, attachment)
+        for idx, item in enumerate(batch)
+        if idx in containers
+        for attachment in (item.attachments or [])
+    ]
 
-    def upload(attachment: Any) -> tuple[Any, str | None]:  # noqa: ANN401
+    def upload(job: tuple[int, Any]) -> tuple[int, Any, str | None]:
+        idx, attachment = job
         try:
             vault_id = soar.vault.create_attachment(
-                container_id, attachment.data, attachment.file_name
+                containers[idx], attachment.data, attachment.file_name
             )
-            return attachment, vault_id
+            return idx, attachment, vault_id
         except Exception as e:
             logger.warning(
                 f"Failed to add {attachment.file_name} to container vault: {e}"
             )
-            return attachment, None
+            return idx, attachment, None
 
-    email_attachments: list[FindingEmailAttachment] = []
-    raw_email_link: str | None = None
-    uploaded = 0
+    results = parallel_map(upload, work)
 
-    for attachment, vault_id in parallel_map(upload, item.attachments or []):
+    per_finding: dict[int, list[tuple[Any, str]]] = {}
+    for idx, attachment, vault_id in results:
         if vault_id is None:
             continue
         vault_link = f"{base_url}/rest/download_attachment?vault_id={vault_id}"
-        email_attachments.append(
-            FindingEmailAttachment(
-                filename=attachment.file_name,
-                filesize=len(attachment.data),
-                url=vault_link,
+        per_finding.setdefault(idx, []).append((attachment, vault_link))
+
+    total_uploaded = 0
+    findings_with_files = 0
+    for idx, uploads in per_finding.items():
+        item = batch[idx]
+        email_attachments: list[FindingEmailAttachment] = []
+        raw_email_link: str | None = None
+        for attachment, vault_link in uploads:
+            email_attachments.append(
+                FindingEmailAttachment(
+                    filename=attachment.file_name,
+                    filesize=len(attachment.data),
+                    url=vault_link,
+                )
             )
-        )
-        if attachment.is_raw_email:
-            raw_email_link = vault_link
-        uploaded += 1
+            if attachment.is_raw_email:
+                raw_email_link = vault_link
 
-    if item.email is None:
-        item.email = FindingEmail()
-    item.email.attachments = email_attachments or None
-    if raw_email_link:
-        item.email.raw_email_link = raw_email_link
+        if item.email is None:
+            item.email = FindingEmail()
+        item.email.attachments = email_attachments
+        if raw_email_link:
+            item.email.raw_email_link = raw_email_link
 
-    return uploaded
+        total_uploaded += len(email_attachments)
+        findings_with_files += 1
+
+    return total_uploaded, findings_with_files
 
 
 class OnESPollDecorator:
@@ -342,16 +364,9 @@ class OnESPollDecorator:
                 pre_created_containers = _pre_create_containers(
                     batch, self.app.actions_manager.save_container, logger
                 )
-                total_vault_atts = 0
-                containers_with_atts = 0
-
-                for idx, container_id in pre_created_containers.items():
-                    uploaded = _upload_finding_attachments(
-                        batch[idx], container_id, base_url, soar, logger
-                    )
-                    if uploaded:
-                        total_vault_atts += uploaded
-                        containers_with_atts += 1
+                total_vault_atts, containers_with_atts = _upload_all_attachments(
+                    batch, pre_created_containers, base_url, soar, logger
+                )
 
                 if total_vault_atts:
                     self.app.actions_manager.save_progress(
