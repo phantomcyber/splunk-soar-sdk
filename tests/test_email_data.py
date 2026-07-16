@@ -653,6 +653,29 @@ def test_extract_urls_from_content_non_html():
     assert "https://example.com/path" in urls
 
 
+def test_extract_urls_from_content_unicode_domain():
+    """Test URL extraction preserves internationalized domain names."""
+    urls: set[str] = set()
+    _extract_urls_from_content(
+        "Visit https://例子.测试/path for more info", urls, is_html=False
+    )
+
+    assert "https://例子.测试/path" in urls
+
+
+def test_extract_urls_from_html_action_and_meta_refresh():
+    """Test URL extraction includes form actions and meta refresh targets."""
+    urls: set[str] = set()
+    content = """
+    <form action="https://forms.example/submit"></form>
+    <meta http-equiv="refresh" content="0; url=https://redirect.example/next">
+    """
+    _extract_urls_from_content(content, urls, is_html=True)
+
+    assert "https://forms.example/submit" in urls
+    assert "https://redirect.example/next" in urls
+
+
 def test_extract_urls_cleaned_non_http():
     """Test that non-http URLs after cleaning are filtered."""
     urls: set[str] = set()

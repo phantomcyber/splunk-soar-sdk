@@ -21,6 +21,7 @@ from requests.structures import CaseInsensitiveDict
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.extras.email.utils import (
+    URI_REGEX,
     clean_url,
     create_dict_hash,
     decode_uni_string,
@@ -74,7 +75,6 @@ PROC_EMAIL_JSON_MSG_ID = "message_id"
 PROC_EMAIL_JSON_EMAIL_HEADERS = "email_headers"
 PROC_EMAIL_CONTENT_TYPE_MESSAGE = "message/rfc822"
 
-URI_REGEX = r"[Hh][Tt][Tt][Pp][Ss]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 EMAIL_REGEX = r"\b[A-Z0-9._%+-]+@+[A-Z0-9.-]+\.[A-Z]{2,}\b"
 EMAIL_REGEX2 = r'".*"@[A-Z0-9.-]+\.[A-Z]{2,}\b'
 HASH_REGEX = r"\b[0-9a-fA-F]{32}\b|\b[0-9a-fA-F]{40}\b|\b[0-9a-fA-F]{64}\b"
@@ -153,6 +153,7 @@ class EmailProcessor:
         uris = []
         links = soup.find_all(href=True)
         srcs = soup.find_all(src=True)
+        actions = soup.find_all(action=True)
 
         if links:
             for x in links:
@@ -164,6 +165,14 @@ class EmailProcessor:
             for x in srcs:
                 uris.append(clean_url(x.get_text()))
                 uris.append(x["src"])
+
+        if actions:
+            for x in actions:
+                uris.append(x["action"])
+
+        for meta in soup.find_all("meta", attrs={"http-equiv": True, "content": True}):
+            if meta["http-equiv"].lower() == "refresh":
+                uris.extend(re.findall(URI_REGEX, meta["content"]))
 
         file_data = unescape(file_data)
         regex_uris = re.findall(URI_REGEX, file_data)

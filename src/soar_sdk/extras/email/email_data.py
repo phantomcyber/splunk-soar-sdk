@@ -11,14 +11,13 @@ from urllib.parse import urlparse
 import extract_msg
 from bs4 import BeautifulSoup, UnicodeDammit  # type: ignore[attr-defined]
 
-from soar_sdk.extras.email.utils import clean_url, decode_uni_string, is_ip
+from soar_sdk.extras.email.utils import URI_REGEX, clean_url, decode_uni_string, is_ip
 from soar_sdk.logging import getLogger
 
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
 
 logger = getLogger()
 
-URI_REGEX = r"[Hh][Tt][Tt][Pp][Ss]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+#]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
 EMAIL_REGEX = r"\b[A-Z0-9._%+-]+@+[A-Z0-9.-]+\.[A-Z]{2,}\b"
 
 
@@ -140,18 +139,21 @@ def _extract_urls_from_content(content: str, urls: set[str], is_html: bool) -> N
     if is_html:
         try:
             soup = BeautifulSoup(content, "html.parser")
-            for link in soup.find_all(href=True):
-                href = link["href"]
-                if href and not href.startswith("mailto:"):
-                    cleaned = clean_url(href)
-                    if cleaned.startswith("http"):
-                        urls.add(cleaned)
-            for src in soup.find_all(src=True):
-                src_val = src["src"]
-                if src_val:
-                    cleaned = clean_url(src_val)
-                    if cleaned.startswith("http"):
-                        urls.add(cleaned)
+            for attribute in ("href", "src", "action"):
+                for tag in soup.find_all(attrs={attribute: True}):
+                    value = tag[attribute]
+                    if value and not value.lower().startswith("mailto:"):
+                        cleaned = clean_url(value)
+                        if cleaned.lower().startswith(("http://", "https://")):
+                            urls.add(cleaned)
+
+            for meta in soup.find_all(
+                "meta", attrs={"http-equiv": True, "content": True}
+            ):
+                if meta["http-equiv"].lower() != "refresh":
+                    continue
+                for uri in re.findall(URI_REGEX, meta["content"]):
+                    urls.add(clean_url(uri))
         except Exception as e:
             logger.debug(f"Error parsing HTML for URLs: {e}")
 

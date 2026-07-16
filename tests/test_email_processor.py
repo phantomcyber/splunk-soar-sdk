@@ -325,6 +325,26 @@ def test_extract_urls_domains_with_src(
     assert len(urls) >= 1
 
 
+def test_extract_urls_domains_with_unicode_action_and_meta_refresh(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Test action and refresh URLs preserve internationalized domains."""
+    processor = EmailProcessor(mock_context, email_config)
+    urls: set[str] = set()
+    domains: set[str] = set()
+    html = """
+    <form action="https://例子.测试/submit"></form>
+    <meta http-equiv="refresh" content="0; url=https://redirect.example/next">
+    """
+
+    with patch("soar_sdk.extras.email.processor.phantom") as mock_phantom:
+        mock_phantom.get_host_from_url.side_effect = lambda url: url.split("/")[2]
+        processor._extract_urls_domains(html, urls, domains)
+
+    assert "https://例子.测试/submit" in urls
+    assert "https://redirect.example/next" in urls
+
+
 def test_extract_urls_domains_mailto(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:

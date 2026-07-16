@@ -30,6 +30,8 @@ MAGIC_FORMATS = [
     ("^Macromedia Flash", ["flash"]),
 ]
 
+URI_REGEX = r"(?i:https?://)[^\s<>\"']+"
+
 
 def get_file_contains(file_path: str) -> list[str]:
     """Get file type contains based on extension and magic bytes."""
