@@ -669,6 +669,7 @@ def test_extract_urls_from_html_action_and_meta_refresh():
     content = """
     <form action="https://forms.example/submit"></form>
     <meta http-equiv="refresh" content="0; url=https://redirect.example/next">
+    <meta http-equiv="content-security-policy" content="default-src 'self'">
     """
     _extract_urls_from_content(content, urls, is_html=True)
 
