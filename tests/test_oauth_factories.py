@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import httpx
 import pytest
 
@@ -240,48 +242,65 @@ class TestCreateOAuthCallbackHandler:
         assert "Missing authorization code" in response.content
 
     def test_handler_stores_auth_code_on_success(self, mock_asset):
-        def get_oauth_client(asset):
-            from soar_sdk.auth.client import SOARAssetOAuthClient
-            from soar_sdk.auth.models import OAuthConfig
+        oauth_client = Mock()
+        oauth_client.get_pending_session.return_value = Mock(state="expected_state")
+        handler = create_oauth_callback_handler(lambda _asset: oauth_client)
 
-            config = OAuthConfig(
-                client_id=asset.client_id,
-                client_secret=asset.client_secret,
-                token_endpoint=asset.token_endpoint,
-            )
-            return SOARAssetOAuthClient(config, asset.auth_state)
+        class MockRequest:
+            def __init__(self):
+                self.asset = mock_asset
+                self.query = {
+                    "code": ["auth_code_123"],
+                    "state": ["expected_state"],
+                }
 
-        handler = create_oauth_callback_handler(get_oauth_client)
+        response = handler(MockRequest())
+        assert response.status_code == 200
+        assert "Authorization successful" in response.content
+        oauth_client.set_authorization_code.assert_called_once_with("auth_code_123")
+
+    @pytest.mark.parametrize(
+        ("pending_session", "callback_state"),
+        [
+            (None, "expected_state"),
+            (Mock(state=None), "expected_state"),
+            (Mock(state="expected_state"), None),
+            (Mock(state="expected_state"), "wrong_state"),
+        ],
+    )
+    def test_handler_rejects_invalid_state(
+        self, mock_asset, pending_session, callback_state
+    ):
+        oauth_client = Mock()
+        oauth_client.get_pending_session.return_value = pending_session
+        handler = create_oauth_callback_handler(lambda _asset: oauth_client)
 
         class MockRequest:
             def __init__(self):
                 self.asset = mock_asset
                 self.query = {"code": ["auth_code_123"]}
+                if callback_state is not None:
+                    self.query["state"] = [callback_state]
 
         response = handler(MockRequest())
-        assert response.status_code == 200
-        assert "Authorization successful" in response.content
+        assert response.status_code == 400
+        assert "Invalid OAuth state" in response.content
+        oauth_client.set_authorization_code.assert_not_called()
 
     def test_handler_uses_custom_success_message(self, mock_asset):
-        def get_oauth_client(asset):
-            from soar_sdk.auth.client import SOARAssetOAuthClient
-            from soar_sdk.auth.models import OAuthConfig
-
-            config = OAuthConfig(
-                client_id=asset.client_id,
-                client_secret=asset.client_secret,
-                token_endpoint=asset.token_endpoint,
-            )
-            return SOARAssetOAuthClient(config, asset.auth_state)
-
+        oauth_client = Mock()
+        oauth_client.get_pending_session.return_value = Mock(state="expected_state")
         handler = create_oauth_callback_handler(
-            get_oauth_client, success_message="Custom success!"
+            lambda _asset: oauth_client, success_message="Custom success!"
         )
 
         class MockRequest:
             def __init__(self):
                 self.asset = mock_asset
-                self.query = {"code": ["auth_code_123"]}
+                self.query = {
+                    "code": ["auth_code_123"],
+                    "state": ["expected_state"],
+                }
 
         response = handler(MockRequest())
         assert "Custom success!" in response.content

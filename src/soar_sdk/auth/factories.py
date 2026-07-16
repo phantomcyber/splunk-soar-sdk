@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from contextlib import contextmanager
+from hmac import compare_digest
 from typing import TYPE_CHECKING, Any
 
 import httpx
@@ -110,6 +111,18 @@ def create_oauth_callback_handler(
             )
 
         oauth_client = get_oauth_client(request.asset)
+        pending_session = oauth_client.get_pending_session()
+        callback_state = query_params.get("state")
+        if (
+            pending_session is None
+            or not pending_session.state
+            or not callback_state
+            or not compare_digest(pending_session.state, callback_state)
+        ):
+            return WebhookResponse.text_response(
+                content="Invalid OAuth state",
+                status_code=400,
+            )
         oauth_client.set_authorization_code(code)
 
         return WebhookResponse.text_response(

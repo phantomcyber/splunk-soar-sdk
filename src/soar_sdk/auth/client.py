@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hmac
 import secrets
 import urllib.parse
 import uuid
@@ -370,10 +371,18 @@ class SOARAssetOAuthClient:
             raise OAuthClientError("No authorization code in callback")
 
         callback_state = callback_params.get("state")
-        if callback_state:
-            state = self._load_state()
-            if state.session and state.session.state != callback_state:
-                raise OAuthClientError("State mismatch in authorization callback")
+        if not callback_state:
+            raise OAuthClientError("Missing state in authorization callback")
+
+        state = self._load_state()
+        if (
+            not state.session
+            or not state.session.auth_pending
+            or not state.session.state
+        ):
+            raise OAuthClientError("No pending authorization session")
+        if not hmac.compare_digest(state.session.state, callback_state):
+            raise OAuthClientError("State mismatch in authorization callback")
 
         return self.fetch_token_with_authorization_code(code)
 

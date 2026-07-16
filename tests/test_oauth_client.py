@@ -576,17 +576,15 @@ class TestHandleAuthorizationCallback:
         )
         assert token.access_token == "callback_token"
 
-    @respx.mock
-    def test_handle_callback_without_state(self, oauth_client, mock_auth_state):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "no_state_token", "expires_in": 3600},
-            )
-        )
+    def test_handle_callback_without_state(self, oauth_client):
+        with pytest.raises(OAuthClientError, match="Missing state"):
+            oauth_client.handle_authorization_callback({"code": "auth_code"})
 
-        token = oauth_client.handle_authorization_callback({"code": "auth_code"})
-        assert token.access_token == "no_state_token"
+    def test_handle_callback_without_pending_session(self, oauth_client):
+        with pytest.raises(OAuthClientError, match="No pending authorization session"):
+            oauth_client.handle_authorization_callback(
+                {"code": "auth_code", "state": "some_state"}
+            )
 
     def test_handle_callback_with_error(self, oauth_client):
         with pytest.raises(OAuthClientError) as exc_info:
