@@ -335,6 +335,7 @@ def test_extract_urls_domains_with_unicode_action_and_meta_refresh(
     html = """
     <form action="https://例子.测试/submit"></form>
     <meta http-equiv="refresh" content="0; url=https://redirect.example/next">
+    <meta http-equiv="content-security-policy" content="default-src 'self'">
     """
 
     with patch("soar_sdk.extras.email.processor.phantom") as mock_phantom:
