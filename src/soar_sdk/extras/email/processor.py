@@ -831,7 +831,12 @@ class EmailProcessor:
     def _int_process_email(
         self, rfc822_email: str, email_id: str, start_time_epoch: float
     ) -> tuple[int, str, list[dict[str, Any]]]:
-        mail = email.message_from_string(rfc822_email)
+        try:
+            mail = email.message_from_string(rfc822_email)
+        except (RecursionError, ValueError) as e:
+            message = f"Failed to parse RFC822 email: {e}"
+            logger.warning(message)
+            return APP_ERROR, message, []
 
         tmp_dir = tempfile.mkdtemp(prefix="ph_email_")
         self._tmp_dirs.append(tmp_dir)
