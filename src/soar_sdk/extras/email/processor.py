@@ -896,10 +896,13 @@ class EmailProcessor:
             return APP_ERROR, message
 
         try:
-            self._parse_results(results, container_id)
+            parse_status = self._parse_results(results, container_id)
         except Exception:
             self._del_tmp_dirs()
             raise
+
+        if parse_status == APP_ERROR:
+            return APP_ERROR, "Failed to save processed email data"
 
         return APP_SUCCESS, "Email Processed"
 
@@ -912,7 +915,8 @@ class EmailProcessor:
             for artifact in artifacts:
                 artifact["container_id"] = cid
             try:
-                _ids = self.context.soar.save_artifacts(artifacts)  # type: ignore[attr-defined]
+                for artifact in artifacts:
+                    self.context.soar.artifact.create(artifact)
                 ret_val, message = APP_SUCCESS, "Success"
                 logger.debug(
                     f"save_artifacts returns, value: {ret_val}, reason: {message}"
@@ -925,7 +929,7 @@ class EmailProcessor:
             return ret_val, message, cid
         else:
             try:
-                cid = self.context.soar.save_container(container)  # type: ignore[attr-defined]
+                cid = self.context.soar.container.create(container)
                 ret_val, message = APP_SUCCESS, "Success"
                 logger.debug(
                     f"save_container (with artifacts) returns, value: {ret_val}, reason: {message}, id: {cid}"
@@ -942,7 +946,7 @@ class EmailProcessor:
         container: dict[str, Any] | None,
         container_id: int | None,
         files: list[dict[str, Any]],
-    ) -> None:
+    ) -> int:
         using_dummy = False
 
         if container_id:
@@ -956,7 +960,7 @@ class EmailProcessor:
         elif container:
             container["artifacts"] = artifacts
         else:
-            return
+            return APP_ERROR
 
         for artifact in [
             x
@@ -973,12 +977,12 @@ class EmailProcessor:
         if ret_val == APP_ERROR:
             message = f"Failed to save ingested artifacts, error msg: {message}"
             logger.debug(message)
-            return
+            return APP_ERROR
 
         if not container_id:
             message = "save_container did not return a container_id"
             logger.debug(message)
-            return
+            return APP_ERROR
 
         vault_ids: list[str] = []
         vault_artifacts_added = 0
@@ -996,6 +1000,10 @@ class EmailProcessor:
 
             if added_to_vault:
                 vault_artifacts_added += 1
+            if ret_val == APP_ERROR:
+                return APP_ERROR
+
+        return APP_SUCCESS
 
     def _parse_results(
         self, results: list[dict[str, Any]], container_id: int | None = None
@@ -1003,6 +1011,7 @@ class EmailProcessor:
         container_count = DEFAULT_CONTAINER_COUNT
         results = results[:container_count]
 
+        parse_status = APP_SUCCESS
         for result in results:
             if container_id is None:
                 container = result.get("container")
@@ -1044,15 +1053,18 @@ class EmailProcessor:
                 if "emailGuid" in cef_artifact:
                     del cef_artifact["emailGuid"]
 
-            self._handle_save_ingested(
+            save_status = self._handle_save_ingested(
                 artifacts, container, container_id, result.get("files", [])
             )
+            if save_status == APP_ERROR:
+                parse_status = APP_ERROR
+                break
 
         for result in results:
             if result.get("temp_directory"):
                 shutil.rmtree(result["temp_directory"], ignore_errors=True)
 
-        return APP_SUCCESS
+        return parse_status
 
     def _add_vault_hashes_to_dictionary(
         self, cef_artifact: dict[str, Any], vault_id: str
@@ -1143,7 +1155,7 @@ class EmailProcessor:
             cef_artifact["parentSourceDataIdentifier"] = self._guid_to_hash[parent_guid]
 
         try:
-            artifact_id_result = self.context.soar.save_artifact(artifact)  # type: ignore[attr-defined]
+            artifact_id_result = self.context.soar.artifact.create(artifact)
             ret_val, status_string = APP_SUCCESS, "Success"
             logger.debug(
                 f"save_artifact returns, value: {ret_val}, reason: {status_string}, id: {artifact_id_result}"

@@ -1,10 +1,11 @@
 import tempfile
 from email.message import Message
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, create_autospec, patch
 
 import pytest
 
+from soar_sdk.abstract import SOARClient
 from soar_sdk.extras.email import EmailProcessor, ProcessEmailContext
 from soar_sdk.extras.email.processor import validate_url
 from soar_sdk.extras.email.utils import (
@@ -1037,9 +1038,9 @@ def test_process_email(
     """Test process_email main entry point."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
-    mock_context.soar.save_artifacts = MagicMock(return_value=[1, 2])
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.container.create = MagicMock(return_value=123)
+    mock_context.soar.artifact.create = MagicMock(return_value=[1, 2])
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     rfc822_email = """From: sender@example.com
 To: recipient@example.com
@@ -1066,7 +1067,7 @@ def test_process_email_with_container_id(
     """Test process_email with existing container_id."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_artifacts = MagicMock(return_value=[1])
+    mock_context.soar.artifact.create = MagicMock(return_value=[1])
 
     rfc822_email = """From: sender@example.com
 Subject: Container Test
@@ -1092,7 +1093,7 @@ def test_process_email_with_headers(
     """Test process_email with external headers."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     rfc822_email = """From: sender@example.com
 Subject: Headers Test
@@ -1121,7 +1122,7 @@ def test_process_email_with_attachments_data(
     """Test process_email with attachments data."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     rfc822_email = """From: sender@example.com
 Subject: Attachments Test
@@ -1149,7 +1150,7 @@ def test_save_ingested_new_container(
     """Test _save_ingested creates new container."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     container = {
         "name": "Test Container",
@@ -1162,13 +1163,40 @@ def test_save_ingested_new_container(
     assert cid == 123
 
 
+def test_save_ingested_uses_declared_soar_client_apis(
+    email_config: dict[str, bool],
+) -> None:
+    """A strict SOARClient mock rejects undeclared legacy save helpers."""
+    strict_soar = create_autospec(SOARClient, instance=True)
+    strict_soar.container.create.return_value = 123
+    context = ProcessEmailContext(
+        soar=strict_soar,
+        vault=MagicMock(),
+        app_id="test-app-id",
+        folder_name="INBOX",
+        is_hex=False,
+    )
+    processor = EmailProcessor(context, email_config)
+    container = {
+        "name": "Test Container",
+        "artifacts": [{"name": "Test Artifact", "cef": {}}],
+    }
+
+    ret_val, message, container_id = processor._save_ingested(
+        container, using_dummy=False
+    )
+
+    assert (ret_val, message, container_id) == (1, "Success", 123)
+    strict_soar.container.create.assert_called_once_with(container)
+
+
 def test_save_ingested_dummy_container(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
     """Test _save_ingested with dummy container."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_artifacts = MagicMock(return_value=[1, 2])
+    mock_context.soar.artifact.create = MagicMock(return_value=[1, 2])
 
     container = {
         "id": 999,
@@ -1187,7 +1215,7 @@ def test_save_ingested_error(
     """Test _save_ingested handles errors."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(side_effect=Exception("Save failed"))
+    mock_context.soar.container.create = MagicMock(side_effect=Exception("Save failed"))
 
     container = {"name": "Test", "artifacts": []}
 
@@ -1203,7 +1231,7 @@ def test_handle_save_ingested_with_container_id(
     """Test _handle_save_ingested with existing container_id."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_artifacts = MagicMock(return_value=[1])
+    mock_context.soar.artifact.create = MagicMock(return_value=[1])
 
     artifacts = [{"name": "Test", "cef": {"key": "value"}}]
 
@@ -1216,7 +1244,7 @@ def test_handle_save_ingested_with_container(
     """Test _handle_save_ingested with container object."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     artifacts = [{"name": "Test", "cef": {}}]
     container = {"name": "Test Container"}
@@ -1306,7 +1334,7 @@ def test_handle_file(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash123"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.txt"
@@ -1337,7 +1365,7 @@ def test_handle_file_no_filename(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "inferred.pdf"
@@ -1387,7 +1415,7 @@ def test_parse_results(
     """Test _parse_results processes email results."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         results = [
@@ -1413,7 +1441,7 @@ def test_parse_results_with_container_id(
     """Test _parse_results with existing container_id."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_artifacts = MagicMock(return_value=[1])
+    mock_context.soar.artifact.create = MagicMock(return_value=[1])
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         results = [
@@ -1437,7 +1465,7 @@ def test_parse_results_with_parent_guid(
     processor = EmailProcessor(mock_context, email_config)
     processor._guid_to_hash = {"parent-guid": "parent-hash-123"}
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         results = [
@@ -1618,12 +1646,12 @@ def test_handle_save_ingested_with_files(
     """Test _handle_save_ingested with files."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
     mock_context.vault.add_attachment = MagicMock(return_value="vault-id")
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     artifacts = [{"name": "Test", "cef": {}}]
     container = {"name": "Test Container"}
@@ -1637,6 +1665,46 @@ def test_handle_save_ingested_with_files(
             mock_phantom.APP_JSON_ACTION_NAME = "action"
             mock_phantom.APP_JSON_APP_RUN_ID = "run_id"
             processor._handle_save_ingested(artifacts, container, None, files)
+
+
+def test_handle_save_ingested_propagates_file_failure(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Test a failed vault file save fails the complete ingestion."""
+    processor = EmailProcessor(mock_context, email_config)
+    container = {"name": "Test Container"}
+
+    with (
+        patch.object(processor, "_save_ingested", return_value=(1, "Success", 123)),
+        patch.object(processor, "_handle_file", return_value=(0, 0)),
+    ):
+        result = processor._handle_save_ingested(
+            [{"name": "Test", "cef": {}}],
+            container,
+            None,
+            [{"file_path": "/tmp/test.txt", "file_name": "test.txt"}],
+        )
+
+    assert result == 0
+
+
+def test_parse_results_propagates_save_failure(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Test a failed container save stops result parsing and is returned."""
+    processor = EmailProcessor(mock_context, email_config)
+    results = [
+        {
+            "container": {"name": "Test Container"},
+            "artifacts": [{"name": "Test", "cef": {}}],
+            "files": [],
+        }
+    ]
+
+    with patch.object(processor, "_handle_save_ingested", return_value=0):
+        status = processor._parse_results(results)
+
+    assert status == 0
 
 
 def test_process_email_failure(
@@ -1657,6 +1725,32 @@ def test_process_email_failure(
         )
 
     assert ret_val == 0
+
+
+def test_process_email_reports_save_failure(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Test process_email propagates a failed container or artifact save."""
+    processor = EmailProcessor(mock_context, email_config)
+
+    with (
+        patch.object(
+            processor,
+            "_int_process_email",
+            return_value=(1, "Email Parsed", [{"artifacts": [{}]}]),
+        ),
+        patch.object(processor, "_parse_results", return_value=0),
+    ):
+        ret_val, message = processor.process_email(
+            base_connector=MagicMock(),
+            rfc822_email="From: sender@example.com\n\nBody",
+            email_id="test",
+            config=email_config,
+            epoch=1234567890.0,
+        )
+
+    assert ret_val == 0
+    assert message == "Failed to save processed email data"
 
 
 def test_handle_part_rfc822(
@@ -1738,12 +1832,12 @@ def test_handle_save_ingested_error(
     """Test _handle_save_ingested handles save errors."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(side_effect=Exception("Save error"))
+    mock_context.soar.container.create = MagicMock(side_effect=Exception("Save error"))
 
     artifacts = [{"name": "Test", "cef": {}}]
     container = {"name": "Test Container"}
 
-    processor._handle_save_ingested(artifacts, container, None, [])
+    assert processor._handle_save_ingested(artifacts, container, None, []) == 0
 
 
 def test_handle_attachment_long_filename(
@@ -1810,7 +1904,7 @@ def test_handle_file_with_parent_guid(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.txt"
@@ -1840,7 +1934,7 @@ def test_handle_file_no_vault_id(
     processor = EmailProcessor(mock_context, email_config)
 
     mock_context.vault.add_attachment = MagicMock(return_value=None)
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.txt"
@@ -1865,7 +1959,7 @@ def test_save_ingested_dummy_error(
     """Test _save_ingested with dummy container error."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_artifacts = MagicMock(
+    mock_context.soar.artifact.create = MagicMock(
         side_effect=Exception("Artifact error")
     )
 
@@ -2015,12 +2109,12 @@ def test_parse_results_with_files(
     """Test _parse_results processes files."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
     mock_context.vault.add_attachment = MagicMock(return_value="vault-id")
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash123"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "attach.txt"
@@ -2650,7 +2744,7 @@ def test_handle_save_ingested_container_id_none(
     """Test _handle_save_ingested when save returns no container_id."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=None)
+    mock_context.soar.container.create = MagicMock(return_value=None)
 
     artifacts = [{"name": "Test", "cef": {}}]
     container = {"name": "Test Container"}
@@ -2676,12 +2770,12 @@ def test_handle_save_ingested_with_vault_file(
     """Test _handle_save_ingested processes vault files."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
     mock_context.vault.add_attachment = MagicMock(return_value="vault-id")
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     artifacts = [{"name": "Test", "cef": {}}]
     container = {"name": "Test"}
@@ -2707,7 +2801,7 @@ def test_handle_file_added_to_vault(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.txt"
@@ -3306,7 +3400,7 @@ def test_handle_save_ingested_file_not_added(
     """Test _handle_save_ingested when file not added to vault."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     with patch.object(processor, "_handle_file", return_value=(1, False)):
         artifacts = [{"name": "Test", "cef": {}}]
@@ -3343,9 +3437,9 @@ def test_parse_results_empty_artifact_in_list(
     """Test _parse_results handles None artifact in list."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
-    mock_context.soar.save_artifacts = MagicMock(return_value=[1])
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.container.create = MagicMock(return_value=123)
+    mock_context.soar.artifact.create = MagicMock(return_value=[1])
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         results = [
@@ -3614,7 +3708,7 @@ def test_parse_results_parent_guid_in_artifact(
     processor = EmailProcessor(mock_context, email_config)
     processor._guid_to_hash = {"parent-guid": "parent-hash"}
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         results = [
@@ -3640,7 +3734,7 @@ def test_parse_results_email_guid_in_artifact(
     """Test _parse_results with emailGuid in artifact cef."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         results = [
@@ -3726,7 +3820,7 @@ def test_handle_file_with_contains(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.txt"
@@ -3755,7 +3849,7 @@ def test_handle_file_save_artifact_exception(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(side_effect=Exception("Save error"))
+    mock_context.soar.artifact.create = MagicMock(side_effect=Exception("Save error"))
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.txt"
@@ -3784,7 +3878,7 @@ def test_handle_file_with_filename_only(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.txt"
@@ -3860,7 +3954,7 @@ def test_handle_file_with_file_contains(
     mock_context.vault.get_attachment = MagicMock(
         return_value=[{"metadata": {"sha256": "hash"}}]
     )
-    mock_context.soar.save_artifact = MagicMock(return_value=1)
+    mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         file_path = Path(tmp_dir) / "test.pdf"
@@ -3889,7 +3983,7 @@ def test_parse_results_parent_guid_not_in_hash(
     processor = EmailProcessor(mock_context, email_config)
     processor._guid_to_hash = {}
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         results = [
@@ -4046,7 +4140,7 @@ def test_parse_results_temp_directory_cleanup(
     """Test _parse_results cleans up temp directories."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     tmp_dir = tempfile.mkdtemp()
     Path(tmp_dir).mkdir(parents=True, exist_ok=True)
@@ -4763,7 +4857,7 @@ def test_parse_results_no_result_temp_directory(
     """Test _parse_results when temp_directory is not in result."""
     processor = EmailProcessor(mock_context, email_config)
 
-    mock_context.soar.save_container = MagicMock(return_value=123)
+    mock_context.soar.container.create = MagicMock(return_value=123)
 
     results = [
         {
