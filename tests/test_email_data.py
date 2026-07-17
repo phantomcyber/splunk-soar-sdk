@@ -677,6 +677,48 @@ def test_extract_urls_from_html_action_and_meta_refresh():
     assert "https://redirect.example/next" in urls
 
 
+def test_extract_email_body_aggregates_repeated_mime_parts():
+    """All inline parts of the same content type remain visible to analysis."""
+    mail = email.message_from_string(
+        """MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary=BOUNDARY
+
+--BOUNDARY
+Content-Type: text/plain
+
+first plain part
+--BOUNDARY
+Content-Type: text/plain
+
+second plain part https://second.example/path
+--BOUNDARY
+Content-Type: text/html
+
+<p>first html part</p>
+--BOUNDARY
+Content-Type: text/html
+
+<a href="https://fourth.example/path">second html part</a>
+--BOUNDARY--
+"""
+    )
+
+    body = extract_email_body(mail)
+    urls = extract_email_urls(mail)
+
+    assert body.plain_text == (
+        "first plain part\nsecond plain part https://second.example/path"
+    )
+    assert body.html == (
+        '<p>first html part</p>\n<a href="https://fourth.example/path">'
+        "second html part</a>"
+    )
+    assert urls == [
+        "https://fourth.example/path",
+        "https://second.example/path",
+    ]
+
+
 def test_extract_urls_cleaned_non_http():
     """Test that non-http URLs after cleaning are filtered."""
     urls: set[str] = set()
@@ -754,7 +796,7 @@ Content-Type: text/html; charset="utf-8"
 
 
 def test_extract_body_duplicate_html_parts():
-    """Test multipart with multiple HTML parts - only first is used."""
+    """Test multipart with multiple HTML parts preserves all bodies."""
     email_content = """From: sender@example.com
 To: recipient@example.com
 Subject: Test
@@ -768,7 +810,7 @@ Content-Type: text/html; charset="utf-8"
 --boundary123
 Content-Type: text/html; charset="utf-8"
 
-<html><body>Second HTML - should be ignored</body></html>
+<html><body>Second HTML</body></html>
 --boundary123--
 """
     mail = email.message_from_string(email_content)
@@ -776,7 +818,32 @@ Content-Type: text/html; charset="utf-8"
 
     assert body.html is not None
     assert "First HTML" in body.html
-    assert "Second HTML" not in body.html
+    assert "Second HTML" in body.html
+
+
+def test_extract_body_ignores_inline_non_text_parts():
+    """Test inline non-text MIME parts are not treated as email bodies."""
+    email_content = """From: sender@example.com
+To: recipient@example.com
+Subject: Test
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="boundary123"
+
+--boundary123
+Content-Type: application/json
+
+{"ignored": true}
+--boundary123
+Content-Type: text/plain; charset="utf-8"
+
+Visible body
+--boundary123--
+"""
+    body = extract_email_body(email.message_from_string(email_content))
+
+    assert body.plain_text is not None
+    assert "Visible body" in body.plain_text
+    assert "ignored" not in body.plain_text
 
 
 def test_extract_msg_plaintext_only(msg_plaintext_only):

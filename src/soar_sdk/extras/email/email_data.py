@@ -207,6 +207,8 @@ def extract_email_body(mail: Message) -> EmailBody:
                 body.plain_text = decoded
         return body
 
+    plain_parts: list[str] = []
+    html_parts: list[str] = []
     for part in mail.walk():
         if part.is_multipart():
             continue
@@ -224,10 +226,13 @@ def extract_email_body(mail: Message) -> EmailBody:
         part_charset = _get_charset(part)
         decoded = _decode_payload(payload, part_charset)
 
-        if content_type == "text/plain" and not body.plain_text:
-            body.plain_text = decoded
-        elif content_type == "text/html" and not body.html:
-            body.html = decoded
+        if content_type == "text/plain":
+            plain_parts.append(decoded)
+        elif content_type == "text/html":
+            html_parts.append(decoded)
+
+    body.plain_text = "\n".join(plain_parts) or None
+    body.html = "\n".join(html_parts) or None
 
     return body
 
