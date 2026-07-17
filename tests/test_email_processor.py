@@ -952,6 +952,25 @@ Content-Type: text/html
     processor._del_tmp_dirs()
 
 
+def test_int_process_email_handles_parser_recursion_error(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Malformed recursive MIME input returns a per-message parsing error."""
+    processor = EmailProcessor(mock_context, email_config)
+
+    with patch(
+        "soar_sdk.extras.email.processor.email.message_from_string",
+        side_effect=RecursionError("maximum recursion depth exceeded"),
+    ):
+        ret_val, message, results = processor._int_process_email(
+            "malformed", "email-id", 1234567890.0
+        )
+
+    assert ret_val == 0
+    assert message == ("Failed to parse RFC822 email: maximum recursion depth exceeded")
+    assert results == []
+
+
 def test_handle_mail_object(
     mock_context: ProcessEmailContext, email_config: dict[str, bool]
 ) -> None:
