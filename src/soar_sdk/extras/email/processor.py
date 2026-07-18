@@ -6,6 +6,7 @@ import json
 import mimetypes
 import re
 import shutil
+import socket
 import tempfile
 from copy import deepcopy
 from dataclasses import dataclass
@@ -97,7 +98,10 @@ IPV6_REGEX += r"|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.
 IPV6_REGEX += (
     r"(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d"
 )
-IPV6_REGEX += r"|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?\s*"
+IPV6_REGEX += (
+    r"|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))"
+    r"(%[0-9A-Za-z._-]{1,16})?\s*"
+)
 
 
 class EmailBodyDict(TypedDict):
@@ -213,6 +217,12 @@ class EmailProcessor:
 
         for match in re.finditer(IPV6_REGEX, file_data):
             ip_candidate = match.group(0).strip()
+            if "%" in ip_candidate:
+                continue
+            try:
+                socket.inet_pton(socket.AF_INET6, ip_candidate)
+            except OSError:
+                continue
             ips.add(ip_candidate)
 
     def _handle_body(
