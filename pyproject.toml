@@ -47,7 +47,7 @@ dependencies = [
     "httpx-retries>=0.4.5",
     "hatchling>=1.28.0",
     # OAuth 2.0 support
-    "authlib>=1.3.0",
+    "authlib>=1.3.0,!=1.7.2",
     "pyjwt[crypto]>=2.8.0",
     "extract-msg>=0.55.0",
     # License attribution
