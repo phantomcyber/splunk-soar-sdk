@@ -1148,7 +1148,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "3.26.1"
+version = "3.26.2"
 source = { directory = "../../" }
 dependencies = [
     { name = "authlib" },
@@ -1168,6 +1168,7 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyjwt", extra = ["crypto"] },
     { name = "requests" },
+    { name = "rich" },
     { name = "setuptools" },
     { name = "toml" },
     { name = "tqdm" },
@@ -1194,6 +1195,7 @@ requires-dist = [
     { name = "pyjwt", extras = ["crypto"], specifier = ">=2.8.0" },
     { name = "python-magic", marker = "extra == 'email'", specifier = ">=0.4.27" },
     { name = "requests", specifier = "<3" },
+    { name = "rich", specifier = ">=13,<15" },
     { name = "setuptools", specifier = ">=80.9.0" },
     { name = "toml", specifier = ">=0.10.2,<1" },
     { name = "tqdm", specifier = ">=4.67.1" },
