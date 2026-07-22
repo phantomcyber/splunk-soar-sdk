@@ -1039,7 +1039,6 @@ def test_process_email(
     processor = EmailProcessor(mock_context, email_config)
 
     mock_context.soar.container.create = MagicMock(return_value=123)
-    mock_context.soar.artifact.create = MagicMock(return_value=[1, 2])
     mock_context.soar.artifact.create = MagicMock(return_value=1)
 
     rfc822_email = """From: sender@example.com
@@ -3865,7 +3864,8 @@ def test_handle_file_save_artifact_exception(
             mock_phantom.APP_JSON_APP_RUN_ID = "run_id"
             ret_val, added = processor._handle_file(curr_file, [], 123, 0)
 
-    assert ret_val == 1
+    assert ret_val == 0
+    assert added == 0
 
 
 def test_handle_file_with_filename_only(
