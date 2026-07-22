@@ -1164,7 +1164,7 @@ class EmailProcessor:
             ret_val, status_string = APP_ERROR, str(e)
             logger.debug(f"save_artifact failed: {e}")
 
-        return APP_SUCCESS, ret_val
+        return ret_val, ret_val
 
     def _set_sdi(self, input_dict: dict[str, Any]) -> int:
         input_dict.pop("source_data_identifier", None)
