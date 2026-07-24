@@ -1,0 +1,17 @@
+version: 2
+
+updates:
+  - package-ecosystem: "uv"
+    directories:
+      - "/"
+      - "/mcp_server"
+      - "/tests/example_app"
+      - "/tests/example_app_plaintext_state"
+      - "/tests/example_app_with_oauth"
+      - "/tests/example_app_with_webhook"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+    commit-message:
+      prefix: "fix"
+      include: "scope"
