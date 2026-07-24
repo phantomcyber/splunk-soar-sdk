@@ -1,0 +1,201 @@
+name: Dependabot Pre-commit Autofix
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependabot-precommit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  generate-fixes:
+    if: >-
+      github.event.pull_request.user.login == 'dependabot[bot]' &&
+      startsWith(github.head_ref, 'dependabot/') &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      has_changes: ${{ steps.autofix.outputs.has_changes }}
+    steps:
+      - name: Check out the Dependabot commit without credentials
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pre-commit
+        run: uv tool install pre-commit --with pre-commit-uv
+
+      - name: Generate a validated pre-commit patch
+        id: autofix
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PATCH_FILE: ${{ runner.temp }}/pre-commit.patch
+        run: |
+          mapfile -d '' changed_files < <(
+            git diff --name-only -z "$BASE_SHA" "$HEAD_SHA"
+          )
+
+          if (( ${#changed_files[@]} == 0 )); then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          previous_tree=$(git write-tree)
+          for pass in 1 2 3; do
+            set +e
+            pre-commit run \
+              --files "${changed_files[@]}" \
+              --show-diff-on-failure
+            status=$?
+            set -e
+
+            git add -A
+            current_tree=$(git write-tree)
+
+            if (( status == 0 )); then
+              break
+            fi
+
+            if [[ "$current_tree" == "$previous_tree" ]]; then
+              echo "::error::pre-commit failed without producing an autofix"
+              exit "$status"
+            fi
+
+            if (( pass == 3 )); then
+              echo "::error::pre-commit did not stabilize after three passes"
+              exit "$status"
+            fi
+
+            previous_tree=$current_tree
+          done
+
+          if git diff --cached --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          git diff --cached --binary --full-index > "$PATCH_FILE"
+          echo "has_changes=true" >> "$GITHUB_OUTPUT"
+
+      - name: Upload the pre-commit patch
+        if: steps.autofix.outputs.has_changes == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: pre-commit-fixes-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pre-commit.patch
+          if-no-files-found: error
+          retention-days: 1
+
+  commit-fixes:
+    if: needs.generate-fixes.outputs.has_changes == 'true'
+    needs:
+      - generate-fixes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create a short-lived GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        with:
+          app-id: ${{ vars.SEMANTIC_RELEASE_APP_ID }}
+          # Dependabot workflows cannot read the Actions secret with this name.
+          # Add the same private key separately as a repository Dependabot secret.
+          private-key: ${{ secrets.SEMANTIC_RELEASE_PRIVATE_KEY }}
+
+      - name: Check out the exact Dependabot commit
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Download the pre-commit patch
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: pre-commit-fixes-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/pre-commit-fixes
+
+      - name: Validate and apply the patch
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PATCH_FILE: ${{ runner.temp }}/pre-commit-fixes/pre-commit.patch
+        run: |
+          remote_sha=$(
+            git ls-remote --heads origin "refs/heads/$HEAD_REF" |
+              cut -f1
+          )
+          if [[ "$remote_sha" != "$HEAD_SHA" ]]; then
+            echo "::notice::Dependabot updated the branch; a newer run will handle it"
+            exit 0
+          fi
+
+          git apply --check "$PATCH_FILE"
+          git apply "$PATCH_FILE"
+
+          declare -A pr_files=()
+          while IFS= read -r -d '' path; do
+            pr_files["$path"]=1
+          done < <(git diff --name-only -z "$BASE_SHA" "$HEAD_SHA")
+
+          found_change=false
+          while IFS= read -r -d '' path; do
+            found_change=true
+
+            if [[ -z "${pr_files[$path]+present}" ]]; then
+              echo "::error file=$path::Autofix changed a file outside the Dependabot PR"
+              exit 1
+            fi
+
+            case "$path" in
+              pyproject.toml|*/pyproject.toml|uv.lock|*/uv.lock)
+                ;;
+              *)
+                echo "::error file=$path::Autofix may only change uv manifests and lockfiles"
+                exit 1
+                ;;
+            esac
+          done < <(git diff --name-only -z)
+
+          if [[ "$found_change" != true ]]; then
+            echo "::error::The autofix patch did not change any files"
+            exit 1
+          fi
+
+          git add -A
+
+      - name: Configure the GitHub App commit identity
+        shell: bash
+        env:
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          bot_id=$(gh api "/users/$APP_SLUG[bot]" --jq .id)
+          git config user.name "$APP_SLUG[bot]"
+          git config user.email "$bot_id+$APP_SLUG[bot]@users.noreply.github.com"
+
+      - name: Commit and push the autofix
+        shell: bash
+        env:
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git commit \
+            -m "style(deps): apply pre-commit autofixes [dependabot skip]"
+          git push origin "HEAD:refs/heads/$HEAD_REF"
