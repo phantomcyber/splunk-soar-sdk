@@ -35,6 +35,9 @@ from soar_sdk.logging import getLogger
 from soar_sdk.meta.webhooks import WebhookMeta
 from soar_sdk.params import Params
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
+from soar_sdk.shims.phantom_common.credential_managers import (
+    apply_credential_management,
+)
 from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
     platform_encryption_backend,
 )
@@ -189,11 +192,18 @@ class App:
         input_data = InputSpecification.model_validate(json.loads(raw_input_data))
         self._raw_asset_config = input_data.config.get_asset_config()
 
+        # Resolve credentials from an external manager (e.g. Hashicorp Vault,
+        # CyberARK) before decryption. These values arrive in plaintext from the
+        # manager, so they are excluded from the decrypt pass below.
+        managed_fields = apply_credential_management(
+            self._raw_asset_config, str(input_data.asset_id)
+        )
+
         # Decrypt sensitive fields in the asset configuration
         # RPC brokers ship values as ephemeral payloads keyed by dec_key, while
         # classic backends use the asset_id as the decryption salt.
         decryption_salt = input_data.dec_key or str(input_data.asset_id)
-        for field in self.asset_cls.fields_requiring_decryption():
+        for field in self.asset_cls.fields_requiring_decryption() - set(managed_fields):
             if self._raw_asset_config.get(field):
                 self._raw_asset_config[field] = platform_encryption_backend.decrypt(
                     self._raw_asset_config[field], decryption_salt
