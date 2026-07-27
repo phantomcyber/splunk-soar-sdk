@@ -1,4 +1,7 @@
-from soar_sdk.meta.actions import ActionMeta
+import pytest
+from pydantic import ValidationError
+
+from soar_sdk.meta.actions import ActionLock, ActionMeta
 
 
 def test_action_meta_dict_with_view_handler():
@@ -92,3 +95,51 @@ def test_action_meta_dict_with_concurrency_lock():
     assert "lock" in result
     assert result["lock"]["enabled"] is True
     assert "enable_concurrency_lock" not in result
+
+
+def test_action_meta_dict_with_complete_lock_metadata():
+    """Test serialization of the complete action synchronization schema."""
+    meta = ActionMeta(
+        action="test_action",
+        identifier="test_identifier",
+        description="Test description",
+        type="generic",
+        read_only=False,
+        lock=ActionLock(
+            concurrency=False,
+            data_path="configuration.server",
+            timeout=600,
+        ),
+    )
+
+    result = meta.model_dump()
+
+    assert result["lock"] == {
+        "enabled": True,
+        "concurrency": False,
+        "data_path": "configuration.server",
+        "timeout": 600,
+    }
+
+
+def test_action_meta_rejects_ambiguous_lock_configuration():
+    """Test that the legacy flag cannot be combined with typed lock metadata."""
+    with pytest.raises(
+        ValidationError,
+        match="lock and enable_concurrency_lock cannot both be configured",
+    ):
+        ActionMeta(
+            action="test_action",
+            identifier="test_identifier",
+            description="Test description",
+            type="generic",
+            read_only=False,
+            lock=ActionLock(concurrency=False),
+            enable_concurrency_lock=True,
+        )
+
+
+def test_action_lock_requires_positive_timeout():
+    """Test that invalid lock acquisition timeouts are rejected."""
+    with pytest.raises(ValidationError):
+        ActionLock(timeout=0)

@@ -5,7 +5,7 @@ import pytest
 
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.code_renderers.action_renderer import ActionRenderer
-from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.meta.actions import ActionLock, ActionMeta
 from soar_sdk.params import Param, Params
 
 
@@ -218,6 +218,42 @@ def test_render_action_verbose(action_meta) -> None:
     }
 
     assert blocks["example_action"] == expected_action
+
+
+def test_render_action_lock(action_meta) -> None:
+    action_meta.lock = ActionLock(
+        enabled=False,
+        concurrency=False,
+        data_path="configuration.server",
+        timeout=600,
+    )
+    expected_action = "\n".join(
+        [
+            "@app.action(description='An example action for testing.', action_type='example', read_only=False, lock=ActionLock(enabled=False, concurrency=False, data_path='configuration.server', timeout=600))",
+            "def example_action(params: ExampleParams, soar: SOARClient, asset: Asset) -> ExampleActionOutput:",
+            "    raise NotImplementedError()",
+        ]
+    )
+
+    renderer = ActionRenderer(action_meta)
+    blocks = {
+        getattr(block, "name", "<UNKNOWN FIELD>"): ast.unparse(block)
+        for block in renderer.render_ast()
+    }
+
+    assert blocks["example_action"] == expected_action
+
+
+def test_render_action_lock_defaults(action_meta) -> None:
+    action_meta.lock = ActionLock()
+
+    renderer = ActionRenderer(action_meta)
+    blocks = {
+        getattr(block, "name", "<UNKNOWN FIELD>"): ast.unparse(block)
+        for block in renderer.render_ast()
+    }
+
+    assert "lock=ActionLock()" in blocks["example_action"]
 
 
 def test_render_action_read_only(action_meta) -> None:
