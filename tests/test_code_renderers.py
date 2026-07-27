@@ -96,6 +96,40 @@ def test_app_renderer():
     assert main_check is not None
 
 
+def test_app_renderer_imports_action_lock_when_used():
+    context = app_renderer.AppContext(
+        name="test_app",
+        app_type="ingestion",
+        logo="logo.png",
+        logo_dark="logo_dark.png",
+        product_vendor="Test Vendor",
+        product_name="Test Product",
+        publisher="Test Publisher",
+        appid="test_app_123",
+        fips_compliant=True,
+        app_content=[
+            ast.Expr(
+                value=ast.Call(
+                    func=ast.Name(id="ActionLock", ctx=ast.Load()),
+                    args=[],
+                    keywords=[],
+                )
+            )
+        ],
+    )
+
+    rendered = app_renderer.AppRenderer(context).render()
+    imports = [
+        statement
+        for statement in rendered.body
+        if isinstance(statement, ast.ImportFrom)
+        and statement.module == "soar_sdk.meta.actions"
+    ]
+
+    assert len(imports) == 1
+    assert [alias.name for alias in imports[0].names] == ["ActionLock"]
+
+
 def test_toml_renderer(mock_jinja_env):
     context = toml_renderer.TomlContext(
         name="test_app",

@@ -32,6 +32,7 @@ from soar_sdk.decorators import (
 from soar_sdk.exceptions import ActionRegistrationError
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.logging import getLogger
+from soar_sdk.meta.actions import ActionLock
 from soar_sdk.meta.webhooks import WebhookMeta
 from soar_sdk.params import Params
 from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestClient
@@ -290,6 +291,7 @@ class App:
         view_template: str | None = None,
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
+        lock: ActionLock | None = None,
         enable_concurrency_lock: bool = False,
     ) -> Action:
         """Dynamically register an action function defined in another module.
@@ -351,7 +353,11 @@ class App:
             versions: Version constraint string for when this action is available.
                 Defaults to "EQ(*)" (all versions).
             summary_type: Pydantic model class for structuring action summary output.
+            lock: Optional synchronization metadata for controlling action locks,
+                concurrency, lock names, and acquisition timeouts.
             enable_concurrency_lock: Whether to enable a concurrency lock for this action. Defaults to False.
+                This argument is retained for backward compatibility; use ``lock``
+                for new actions.
 
         Returns:
             The registered Action instance with all metadata and handlers configured.
@@ -408,6 +414,7 @@ class App:
             view_handler=view_handler,
             versions=versions,
             summary_type=summary_type,
+            lock=lock,
             enable_concurrency_lock=enable_concurrency_lock,
         )(action)
 
@@ -475,6 +482,7 @@ class App:
         view_handler: NamedCallable | None = None,
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
+        lock: ActionLock | None = None,
         enable_concurrency_lock: bool = False,
         flatten_results: bool = True,
     ) -> ActionDecorator:
@@ -496,6 +504,7 @@ class App:
             view_handler=view_handler,
             versions=versions,
             summary_type=summary_type,
+            lock=lock,
             enable_concurrency_lock=enable_concurrency_lock,
             flatten_results=flatten_results,
         )

@@ -1,3 +1,4 @@
+import ast
 import json
 from unittest.mock import Mock, patch
 
@@ -10,8 +11,9 @@ from soar_sdk.cli.manifests.deserializers import (
     DeserializedActionMeta,
 )
 from soar_sdk.cli.manifests.serializers import OutputsSerializer
+from soar_sdk.code_renderers.action_renderer import ActionRenderer
 from soar_sdk.compat import PythonVersion
-from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.meta.actions import ActionLock, ActionMeta
 from soar_sdk.meta.app import AppMeta
 from soar_sdk.params import Params
 
@@ -96,6 +98,44 @@ def test_from_app_json_basic_deserialization(basic_app_data, create_app_json):
     assert result.app_version == "1.0.0"
     assert result.package_name == "test_package"
     assert result.project_name == "test_app"  # Should be derived from parent directory
+
+
+def test_action_lock_round_trip_through_deserializer():
+    action_data = {
+        "action": "update configuration",
+        "identifier": "update_configuration",
+        "description": "Update configuration",
+        "type": "generic",
+        "read_only": False,
+        "versions": "EQ(*)",
+        "parameters": {},
+        "output": [],
+        "lock": {
+            "enabled": True,
+            "concurrency": False,
+            "data_path": "configuration.server",
+            "timeout": 600,
+        },
+    }
+
+    result = ActionDeserializer.from_action_json(action_data)
+
+    assert result.action_meta.lock == ActionLock(
+        concurrency=False,
+        data_path="configuration.server",
+        timeout=600,
+    )
+    assert result.action_meta.model_dump()["lock"] == action_data["lock"]
+
+    rendered_action = next(
+        block
+        for block in ActionRenderer(result.action_meta).render_ast()
+        if isinstance(block, ast.FunctionDef)
+    )
+    assert (
+        ast.unparse(rendered_action.decorator_list[0])
+        == "app.action(description='Update configuration', action_type='generic', read_only=False, lock=ActionLock(concurrency=False, data_path='configuration.server', timeout=600))"
+    )
 
 
 @pytest.mark.parametrize(

@@ -8,7 +8,7 @@ from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.async_utils import run_async_if_needed
 from soar_sdk.exceptions import ActionFailure
-from soar_sdk.meta.actions import ActionMeta
+from soar_sdk.meta.actions import ActionLock, ActionMeta
 from soar_sdk.params import Params
 from soar_sdk.types import Action, NamedCallable, action_protocol
 
@@ -38,6 +38,7 @@ class ActionDecorator:
         view_handler: NamedCallable | None = None,
         versions: str = "EQ(*)",
         summary_type: type[ActionOutput] | None = None,
+        lock: ActionLock | None = None,
         enable_concurrency_lock: bool = False,
         flatten_results: bool = True,
     ) -> None:
@@ -54,6 +55,7 @@ class ActionDecorator:
         self.view_handler = view_handler
         self.versions = versions
         self.summary_type = summary_type
+        self.lock = lock
         self.enable_concurrency_lock = enable_concurrency_lock
         self.flatten_results = flatten_results
 
@@ -164,6 +166,7 @@ class ActionDecorator:
             render_as=self.render_as,
             view_handler=self.view_handler,
             summary_type=self.summary_type,
+            lock=self.lock,
             enable_concurrency_lock=self.enable_concurrency_lock,
         )
 

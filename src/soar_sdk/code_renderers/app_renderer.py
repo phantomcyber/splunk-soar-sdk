@@ -50,8 +50,7 @@ class AppRenderer:
         """
         self.context = context
 
-    @staticmethod
-    def create_default_imports() -> Iterator[ast.Import | ast.ImportFrom]:
+    def create_default_imports(self) -> Iterator[ast.Import | ast.ImportFrom]:
         """Create default imports for the App module.
 
         Returns:
@@ -76,6 +75,16 @@ class AppRenderer:
         yield ast.ImportFrom(
             module="soar_sdk.app", names=[ast.alias(name="App", asname=None)], level=0
         )
+        if any(
+            isinstance(node, ast.Name) and node.id == "ActionLock"
+            for content in self.context.app_content
+            for node in ast.walk(content)
+        ):
+            yield ast.ImportFrom(
+                module="soar_sdk.meta.actions",
+                names=[ast.alias(name="ActionLock", asname=None)],
+                level=0,
+            )
         yield ast.ImportFrom(
             module="soar_sdk.params",
             names=[
