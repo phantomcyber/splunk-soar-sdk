@@ -356,8 +356,8 @@ class App:
             lock: Optional synchronization metadata for controlling action locks,
                 concurrency, lock names, and acquisition timeouts.
             enable_concurrency_lock: Whether to enable a concurrency lock for this action. Defaults to False.
-                This argument is retained for backward compatibility; use ``lock``
-                for new actions.
+                This argument is deprecated and retained for backward compatibility;
+                use ``lock=ActionLock()`` instead.
 
         Returns:
             The registered Action instance with all metadata and handlers configured.
