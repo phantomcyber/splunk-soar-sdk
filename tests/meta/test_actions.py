@@ -79,16 +79,20 @@ def test_action_meta_dict_without_view_handler():
 def test_action_meta_dict_with_concurrency_lock():
     """Test ActionMeta.dict() with enable_concurrency_lock set to True."""
 
-    meta = ActionMeta(
-        action="test_action",
-        identifier="test_identifier",
-        description="Test description",
-        verbose="Test verbose",
-        type="generic",
-        read_only=True,
-        versions="EQ(*)",
-        enable_concurrency_lock=True,
-    )
+    with pytest.warns(
+        DeprecationWarning,
+        match="enable_concurrency_lock is deprecated; use lock=ActionLock",
+    ):
+        meta = ActionMeta(
+            action="test_action",
+            identifier="test_identifier",
+            description="Test description",
+            verbose="Test verbose",
+            type="generic",
+            read_only=True,
+            versions="EQ(*)",
+            enable_concurrency_lock=True,
+        )
 
     result = meta.model_dump()
 

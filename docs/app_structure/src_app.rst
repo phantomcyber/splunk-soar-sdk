@@ -282,9 +282,10 @@ or a constant lock name. Actions that resolve to the same lock name are
 serialized. If ``data_path`` is omitted, Splunk SOAR uses the asset as the lock
 name. ``timeout`` limits how long the platform waits to acquire the lock.
 
-The older ``enable_concurrency_lock=True`` argument remains supported for
-backward compatibility, but it cannot configure concurrency, a lock name, or a
-timeout. New actions should use ``ActionLock``.
+The older ``enable_concurrency_lock=True`` argument is deprecated but remains
+supported for backward compatibility. Use ``lock=ActionLock()`` for equivalent
+behavior and configure concurrency, a lock name, or a timeout through
+``ActionLock``.
 
 .. _app-structure-app-cli:
 

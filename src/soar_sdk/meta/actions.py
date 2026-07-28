@@ -1,3 +1,4 @@
+import warnings
 from typing import Any, Type  # noqa: UP035
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -45,6 +46,11 @@ class ActionMeta(BaseModel):
                 raise ValueError(
                     "lock and enable_concurrency_lock cannot both be configured"
                 )
+            warnings.warn(
+                "enable_concurrency_lock is deprecated; use lock=ActionLock() instead",
+                DeprecationWarning,
+                stacklevel=2,
+            )
             self.lock = ActionLock()
             self.enable_concurrency_lock = False
         return self
