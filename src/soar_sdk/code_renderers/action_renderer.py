@@ -241,33 +241,33 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                     ),
                 )
             )
-        if self.action_meta.lock is not None:
+        if lock := self.action_meta.lock:
             lock_keywords = []
-            if not self.action_meta.lock.enabled:
+            if not lock.enabled:
                 lock_keywords.append(
                     ast.keyword(arg="enabled", value=ast.Constant(value=False))
                 )
-            if self.action_meta.lock.concurrency is not None:
+            if lock.concurrency is not None:
                 lock_keywords.append(
                     ast.keyword(
                         arg="concurrency",
                         value=ast.Constant(
-                            value=self.action_meta.lock.concurrency,
+                            value=lock.concurrency,
                         ),
                     )
                 )
-            if self.action_meta.lock.data_path is not None:
+            if lock.data_path is not None:
                 lock_keywords.append(
                     ast.keyword(
                         arg="data_path",
-                        value=ast.Constant(value=self.action_meta.lock.data_path),
+                        value=ast.Constant(value=lock.data_path),
                     )
                 )
-            if self.action_meta.lock.timeout is not None:
+            if lock.timeout is not None:
                 lock_keywords.append(
                     ast.keyword(
                         arg="timeout",
-                        value=ast.Constant(value=self.action_meta.lock.timeout),
+                        value=ast.Constant(value=lock.timeout),
                     )
                 )
             decorator_keywords.append(
