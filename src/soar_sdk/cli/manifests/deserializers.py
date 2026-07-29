@@ -131,6 +131,8 @@ class ActionDeserializer:
             A DeserializedActionMeta named tuple containing the ActionMeta and
             info about whether the action has a custom view.
         """
+        action.pop("lock", None)
+
         action["parameters"] = cls.parse_parameters(
             action["action"], action.get("parameters", {})
         )

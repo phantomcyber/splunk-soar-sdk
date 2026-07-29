@@ -439,7 +439,6 @@ def test_register_action_with_lock(simple_app: App):
         locked_action,
         identifier="locked_action",
         lock=ActionLock(
-            concurrency=False,
             data_path="configuration.server",
             timeout=600,
         ),

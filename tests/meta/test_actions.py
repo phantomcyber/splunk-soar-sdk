@@ -110,7 +110,6 @@ def test_action_meta_dict_with_complete_lock_metadata():
         type="generic",
         read_only=False,
         lock=ActionLock(
-            concurrency=False,
             data_path="configuration.server",
             timeout=600,
         ),
@@ -138,9 +137,16 @@ def test_action_meta_rejects_ambiguous_lock_configuration():
             description="Test description",
             type="generic",
             read_only=False,
-            lock=ActionLock(concurrency=False),
+            lock=ActionLock(),
             enable_concurrency_lock=True,
         )
+
+
+@pytest.mark.parametrize("field", ["enabled", "concurrency"])
+def test_action_lock_rejects_platform_managed_fields(field):
+    """Test that platform-managed lock fields are not configurable."""
+    with pytest.raises(ValidationError):
+        ActionLock(**{field: False})
 
 
 def test_action_lock_allows_zero_timeout():

@@ -243,19 +243,6 @@ class ActionRenderer(AstRenderer[ActionMeta]):
             )
         if lock := self.action_meta.lock:
             lock_keywords = []
-            if not lock.enabled:
-                lock_keywords.append(
-                    ast.keyword(arg="enabled", value=ast.Constant(value=False))
-                )
-            if lock.concurrency is not None:
-                lock_keywords.append(
-                    ast.keyword(
-                        arg="concurrency",
-                        value=ast.Constant(
-                            value=lock.concurrency,
-                        ),
-                    )
-                )
             if lock.data_path is not None:
                 lock_keywords.append(
                     ast.keyword(

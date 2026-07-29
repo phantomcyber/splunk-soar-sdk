@@ -222,14 +222,12 @@ def test_render_action_verbose(action_meta) -> None:
 
 def test_render_action_lock(action_meta) -> None:
     action_meta.lock = ActionLock(
-        enabled=False,
-        concurrency=False,
         data_path="configuration.server",
         timeout=600,
     )
     expected_action = "\n".join(
         [
-            "@app.action(description='An example action for testing.', action_type='example', read_only=False, lock=ActionLock(enabled=False, concurrency=False, data_path='configuration.server', timeout=600))",
+            "@app.action(description='An example action for testing.', action_type='example', read_only=False, lock=ActionLock(data_path='configuration.server', timeout=600))",
             "def example_action(params: ExampleParams, soar: SOARClient, asset: Asset) -> ExampleActionOutput:",
             "    raise NotImplementedError()",
         ]
