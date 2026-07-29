@@ -14,8 +14,8 @@ class ActionLock(BaseModel):
 
     enabled: bool = True
     concurrency: bool | None = None
-    data_path: str | None = None
-    timeout: int | None = Field(default=None, gt=0)
+    data_path: str | None = Field(default=None, min_length=1)
+    timeout: int | None = Field(default=None, ge=0)
 
 
 class ActionMeta(BaseModel):
