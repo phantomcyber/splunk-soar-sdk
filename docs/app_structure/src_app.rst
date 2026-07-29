@@ -264,7 +264,6 @@ overlapping executions for every asset that points to the same server:
 
     @app.action(
         lock=ActionLock(
-            concurrency=False,
             data_path="configuration.server",
             timeout=600,
         )
@@ -276,16 +275,23 @@ overlapping executions for every asset that points to the same server:
     ) -> UpdateConfigurationOutput:
         ...
 
-``concurrency=False`` restricts the lock to one action run at a time.
+An ``ActionLock`` is always enabled and exclusive. The SDK emits
+``enabled=true`` and ``concurrency=false`` in the app manifest, restricting
+each resolved lock name to one action run at a time.
 ``data_path`` may identify an action parameter, an asset configuration field,
 or a constant lock name. Actions that resolve to the same lock name are
 serialized. If ``data_path`` is omitted, Splunk SOAR uses the asset as the lock
 name. ``timeout`` limits how long the platform waits to acquire the lock.
 
 The older ``enable_concurrency_lock=True`` argument is deprecated but remains
-supported for backward compatibility. Use ``lock=ActionLock()`` for equivalent
-behavior and configure concurrency, a lock name, or a timeout through
-``ActionLock``.
+supported for backward compatibility. Remove the argument to retain the
+platform's default concurrency behavior. Use ``lock=ActionLock()`` only when
+exclusive action locking is required.
+
+.. note::
+    ``soar-apps convert`` does not translate existing manifest ``lock``
+    metadata. Review synchronization requirements and add ``ActionLock``
+    explicitly after conversion when exclusive locking is required.
 
 .. _app-structure-app-cli:
 
