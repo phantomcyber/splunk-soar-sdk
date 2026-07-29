@@ -81,7 +81,7 @@ def test_action_meta_dict_with_concurrency_lock():
 
     with pytest.warns(
         DeprecationWarning,
-        match="enable_concurrency_lock is deprecated; use lock=ActionLock",
+        match="enable_concurrency_lock is deprecated",
     ):
         meta = ActionMeta(
             action="test_action",
@@ -96,8 +96,7 @@ def test_action_meta_dict_with_concurrency_lock():
 
     result = meta.model_dump()
 
-    assert "lock" in result
-    assert result["lock"]["enabled"] is True
+    assert result["lock"] == {"enabled": True}
     assert "enable_concurrency_lock" not in result
 
 

@@ -40,19 +40,20 @@ class ActionMeta(BaseModel):
 
     @model_validator(mode="after")
     def normalize_legacy_concurrency_lock(self) -> "ActionMeta":
-        """Translate the legacy lock flag while rejecting ambiguous configuration."""
+        """Warn for the legacy lock flag while rejecting ambiguous configuration."""
         if getattr(self, "enable_concurrency_lock", False):
             if getattr(self, "lock", None) is not None:
                 raise ValueError(
                     "lock and enable_concurrency_lock cannot both be configured"
                 )
             warnings.warn(
-                "enable_concurrency_lock is deprecated; use lock=ActionLock() instead",
+                "enable_concurrency_lock is deprecated and will be removed in a "
+                "future major release. Remove this argument to retain the platform's "
+                "default concurrency behavior. Use lock=ActionLock(...) only when "
+                "exclusive action locking is required.",
                 DeprecationWarning,
                 stacklevel=2,
             )
-            self.lock = ActionLock()
-            self.enable_concurrency_lock = False
         return self
 
     def model_dump(self, *args: Any, **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401
@@ -90,5 +91,7 @@ class ActionMeta(BaseModel):
                 "concurrency": False,
                 **self.lock.model_dump(exclude_none=True),
             }
+        elif self.enable_concurrency_lock:
+            data["lock"] = {"enabled": True}
 
         return data

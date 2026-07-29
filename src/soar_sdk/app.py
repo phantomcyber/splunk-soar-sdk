@@ -357,7 +357,8 @@ class App:
                 concurrency, lock names, and acquisition timeouts.
             enable_concurrency_lock: Whether to enable a concurrency lock for this action. Defaults to False.
                 This argument is deprecated and retained for backward compatibility;
-                use ``lock=ActionLock()`` instead.
+                remove it to retain the platform's default concurrency behavior. Use
+                ``lock=ActionLock()`` only when exclusive action locking is required.
 
         Returns:
             The registered Action instance with all metadata and handlers configured.
