@@ -143,7 +143,18 @@ def test_action_meta_rejects_ambiguous_lock_configuration():
         )
 
 
-def test_action_lock_requires_positive_timeout():
-    """Test that invalid lock acquisition timeouts are rejected."""
+def test_action_lock_allows_zero_timeout():
+    """Test that a no-wait lock acquisition timeout is accepted."""
+    assert ActionLock(timeout=0).timeout == 0
+
+
+def test_action_lock_rejects_negative_timeout():
+    """Test that negative lock acquisition timeouts are rejected."""
     with pytest.raises(ValidationError):
-        ActionLock(timeout=0)
+        ActionLock(timeout=-1)
+
+
+def test_action_lock_rejects_empty_data_path():
+    """Test that an explicit lock name cannot be empty."""
+    with pytest.raises(ValidationError):
+        ActionLock(data_path="")
