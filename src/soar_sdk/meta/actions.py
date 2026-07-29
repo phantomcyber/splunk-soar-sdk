@@ -12,8 +12,8 @@ from soar_sdk.types import NamedCallable
 class ActionLock(BaseModel):
     """Synchronization metadata for an action."""
 
-    enabled: bool = True
-    concurrency: bool | None = None
+    model_config = ConfigDict(extra="forbid")
+
     data_path: str | None = Field(default=None, min_length=1)
     timeout: int | None = Field(default=None, ge=0)
 
@@ -85,6 +85,10 @@ class ActionMeta(BaseModel):
         data.pop("render_as", None)
 
         if self.lock is not None:
-            data["lock"] = self.lock.model_dump(exclude_none=True)
+            data["lock"] = {
+                "enabled": True,
+                "concurrency": False,
+                **self.lock.model_dump(exclude_none=True),
+            }
 
         return data
