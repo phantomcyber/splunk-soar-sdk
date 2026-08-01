@@ -1,6 +1,7 @@
 import email
 import re
 import warnings
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from email.header import decode_header, make_header
 from email.message import Message
@@ -15,10 +16,29 @@ from soar_sdk.extras.email.utils import URI_REGEX, clean_url, decode_uni_string,
 from soar_sdk.logging import getLogger
 
 _OLE2_MAGIC = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
+MAX_MIME_DEPTH = 50
 
 logger = getLogger()
 
 EMAIL_REGEX = r"\b[A-Z0-9._%+-]+@+[A-Z0-9.-]+\.[A-Z]{2,}\b"
+
+
+def _walk_mime_parts(mail: Message) -> Iterator[Message]:
+    """Iterate MIME parts without recursive traversal and enforce a depth bound."""
+    stack = [(mail, 0)]
+    while stack:
+        part, depth = stack.pop()
+        if depth > MAX_MIME_DEPTH:
+            raise ValueError(
+                f"Email MIME nesting exceeds the supported depth of {MAX_MIME_DEPTH}"
+            )
+        yield part
+
+        if not part.is_multipart():
+            continue
+        payload = part.get_payload()
+        if isinstance(payload, list):
+            stack.extend((child, depth + 1) for child in reversed(payload))
 
 
 @dataclass
@@ -209,7 +229,7 @@ def extract_email_body(mail: Message) -> EmailBody:
 
     plain_parts: list[str] = []
     html_parts: list[str] = []
-    for part in mail.walk():
+    for part in _walk_mime_parts(mail):
         if part.is_multipart():
             continue
 
@@ -259,7 +279,7 @@ def extract_email_attachments(
     if not mail.is_multipart():
         return attachments
 
-    for part in mail.walk():
+    for part in _walk_mime_parts(mail):
         if part.is_multipart():
             continue
 

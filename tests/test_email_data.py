@@ -1,6 +1,9 @@
 import email
 import warnings
+from email.message import Message
 from unittest.mock import MagicMock, patch
+
+import pytest
 
 from soar_sdk.extras.email.email_data import (
     EmailAttachment,
@@ -11,6 +14,7 @@ from soar_sdk.extras.email.email_data import (
     _decode_payload,
     _extract_msg_email_data,
     _extract_urls_from_content,
+    _walk_mime_parts,
     extract_domains_from_urls,
     extract_email_addresses_from_body,
     extract_email_attachments,
@@ -211,6 +215,36 @@ def test_extract_email_data():
     assert result.headers.email_id == "main-test"
     assert len(result.urls) > 0
     assert len(result.attachments) == 1
+
+
+def _nested_mime(depth: int) -> str:
+    body = "Content-Type: text/plain; charset=utf-8\r\n\r\nbody\r\n"
+    for index in range(depth):
+        boundary = f"boundary-{index}"
+        body = (
+            f'Content-Type: multipart/mixed; boundary="{boundary}"\r\n\r\n'
+            f"--{boundary}\r\n{body}\r\n--{boundary}--\r\n"
+        )
+    return f"From: sender@example.com\r\nTo: user@example.com\r\n{body}"
+
+
+def test_extract_email_data_accepts_mime_depth_limit():
+    result = extract_email_data(_nested_mime(50))
+
+    assert result.body.plain_text.strip() == "body"
+
+
+def test_extract_email_data_rejects_excessive_mime_depth():
+    with pytest.raises(ValueError, match="MIME nesting exceeds.*50"):
+        extract_email_data(_nested_mime(51))
+
+
+def test_mime_walk_ignores_non_list_multipart_payload():
+    mail = MagicMock(spec=Message)
+    mail.is_multipart.return_value = True
+    mail.get_payload.return_value = "malformed multipart payload"
+
+    assert list(_walk_mime_parts(mail)) == [mail]
 
 
 def test_email_data_to_dict():
