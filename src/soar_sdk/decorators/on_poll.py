@@ -131,15 +131,19 @@ class OnPollDecorator:
                         )
                         logger.info(f"Creating container: {container['name']}")
 
+                        is_duplicate = "duplicate container found" in message.lower()
+                        if not ret_val and not is_duplicate:
+                            raise ActionFailure(
+                                f"Failed to create container: {message}"
+                            )
+
                         if ret_val:
                             container_id = cid
                             container_created = True
                             item.container_id = container_id
 
                         # Covered by test_on_poll::test_on_poll_yields_container_duplicate, but branch coverage detection on generator functions is wonky
-                        if (
-                            "duplicate container found" in message.lower()
-                        ):  # pragma: no cover
+                        if is_duplicate:  # pragma: no cover
                             logger.info(
                                 "Duplicate container found, reusing existing container"
                             )

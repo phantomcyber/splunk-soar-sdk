@@ -241,7 +241,7 @@ def test_on_poll_yields_container_duplicate(
 def test_on_poll_yields_container_creation_failure(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_poll handles container creation failure correctly."""
+    """Test on_poll fails without resuming after container creation failure."""
     save_container = mocker.patch.object(
         app_with_action.actions_manager,
         "save_container",
@@ -254,17 +254,21 @@ def test_on_poll_yields_container_creation_failure(
     save_artifacts = mocker.patch.object(
         app_with_action.actions_manager, "save_artifacts", return_value=None
     )
+    generator_resumed = False
 
     @app_with_action.on_poll()
     def on_poll_function(params: OnPollParams, client=None):
+        nonlocal generator_resumed
         yield Container(name="c3")
-        yield Artifact(name="a3")  # Should be skipped because no container
+        generator_resumed = True
+        yield Artifact(name="a3")
 
     params = OnPollParams(start_time=0, end_time=1)
     result = on_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
+    assert result is False
     assert save_container.call_count == 1
     save_artifacts.assert_not_called()
+    assert generator_resumed is False
 
 
 def test_on_poll_sets_run_automation_on_last_artifact_per_container(
