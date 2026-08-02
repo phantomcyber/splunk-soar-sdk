@@ -154,6 +154,26 @@ def test_transaction_commit_persists(example_state: AssetState):
     assert example_state.get_all() == {"key": "updated", "new_key": "new_value"}
 
 
+def test_transaction_commit_failure_preserves_buffer_for_rollback(
+    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
+):
+    example_state.put_all({"key": "original"})
+    example_state.begin_transaction()
+    example_state["key"] = "updated"
+
+    def fail_save(_state):
+        raise OSError("disk full")
+
+    monkeypatch.setattr(example_state.backend, "save_state", fail_save)
+
+    with pytest.raises(OSError, match="disk full"):
+        example_state.commit()
+
+    assert example_state.in_transaction
+    assert example_state.get_all() == {"key": "updated"}
+    example_state.rollback()
+
+
 def test_transaction_rollback_discards(example_state: AssetState):
     example_state.put_all({"key": "original"})
 
