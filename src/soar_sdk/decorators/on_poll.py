@@ -150,8 +150,6 @@ class OnPollDecorator:
                             container_id = cid
                             container_created = True
                             item.container_id = container_id
-                        else:
-                            raise ActionFailure(f"Failed to save container: {message}")
 
                         # Covered by test_on_poll::test_on_poll_yields_container_duplicate, but branch coverage detection on generator functions is wonky
                         if is_duplicate:  # pragma: no cover
