@@ -25,7 +25,9 @@ def _flush_artifact_buffer(
         return
     if "run_automation" not in artifact_buffer[-1]:
         artifact_buffer[-1]["run_automation"] = True
-    save_artifacts(artifact_buffer.copy())
+    save_result = save_artifacts(artifact_buffer.copy())
+    if save_result is not None and not save_result[0]:
+        raise ActionFailure(f"Failed to save artifacts: {save_result[1]}")
     for a in artifact_buffer:
         logger.info(f"Added artifact: {a.get('name', 'Unnamed artifact')}")
     artifact_buffer.clear()
@@ -89,6 +91,8 @@ class OnPollDecorator:
             from soar_sdk.models.artifact import Artifact
             from soar_sdk.models.container import Container
 
+            ingest_state = None
+            owns_state_transaction = False
             try:
                 # Validate poll params
                 try:
@@ -103,6 +107,11 @@ class OnPollDecorator:
                     )
 
                 kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
+
+                ingest_state = self.app.asset.ingest_state
+                if not ingest_state.in_transaction:
+                    ingest_state.begin_transaction()
+                    owns_state_transaction = True
 
                 result = function(action_params, *args, **kwargs)
                 result = run_async_if_needed(result)
@@ -141,6 +150,8 @@ class OnPollDecorator:
                             container_id = cid
                             container_created = True
                             item.container_id = container_id
+                        else:
+                            raise ActionFailure(f"Failed to save container: {message}")
 
                         # Covered by test_on_poll::test_on_poll_yields_container_duplicate, but branch coverage detection on generator functions is wonky
                         if is_duplicate:  # pragma: no cover
@@ -183,17 +194,33 @@ class OnPollDecorator:
                     logger,
                 )
 
+                if owns_state_transaction:
+                    ingest_state.commit()
+                    owns_state_transaction = False
+
                 return self.app._adapt_action_result(
                     ActionResult(status=True, message="Polling complete"),
                     self.app.actions_manager,
                 )
             except ActionFailure as e:
+                if (
+                    owns_state_transaction
+                    and ingest_state is not None
+                    and ingest_state.in_transaction
+                ):
+                    ingest_state.rollback()
                 e.set_action_name(action_name)
                 return self.app._adapt_action_result(
                     ActionResult(status=False, message=str(e)),
                     self.app.actions_manager,
                 )
             except Exception as e:
+                if (
+                    owns_state_transaction
+                    and ingest_state is not None
+                    and ingest_state.in_transaction
+                ):
+                    ingest_state.rollback()
                 self.app.actions_manager.add_exception(e)
                 logger.info(f"Error during polling: {e!s}")
                 return self.app._adapt_action_result(

@@ -52,7 +52,11 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
             raise RuntimeError("No active transaction")
         buffered = self._transaction_buffer
         self._transaction_buffer = None
-        self.put_all(buffered)
+        try:
+            self.put_all(buffered)
+        except Exception:
+            self._transaction_buffer = buffered
+            raise
 
     def rollback(self) -> None:
         """Discard buffered writes."""
