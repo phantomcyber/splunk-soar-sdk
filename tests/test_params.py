@@ -20,6 +20,19 @@ def test_sensitive_param_must_be_str():
     assert e.match("Sensitive parameter secret must be type str, not bool")
 
 
+def test_model_dump_for_result_omits_sensitive_parameters():
+    class SecretParams(Params):
+        username: str = Param()
+        password: str = Param(sensitive=True)
+        aliased_secret: str = Param(sensitive=True, alias="api_token")
+
+    params = SecretParams(
+        username="analyst", password="secret", api_token="another-secret"
+    )
+
+    assert params.model_dump_for_result() == {"username": "analyst"}
+
+
 def test_make_request_params_validation():
     """Test that MakeRequestParams validates fields on instantiation in Pydantic v2."""
 

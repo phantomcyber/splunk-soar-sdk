@@ -146,6 +146,20 @@ class Params(BaseModel):
         words = field_name.split("_")
         return " ".join(words).title()
 
+    def model_dump_for_result(self) -> dict[str, Any]:
+        """Serialize action parameters without fields declared sensitive.
+
+        Action parameters are persisted with the action result for display and
+        playbook access. Password-typed values must not be copied into that
+        long-lived result record.
+        """
+        sensitive_fields = {
+            field_name
+            for field_name, field in self.__class__.model_fields.items()
+            if parse_json_schema_extra(field.json_schema_extra).get("sensitive", False)
+        }
+        return self.model_dump(exclude=sensitive_fields)
+
     @classmethod
     def _to_json_schema(cls) -> dict[str, InputFieldSpecification]:
         params: dict[str, InputFieldSpecification] = {}

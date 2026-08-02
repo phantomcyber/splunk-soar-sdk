@@ -722,7 +722,9 @@ class App:
         """
         if type(result) is list or isinstance(result, Iterator):
             if flatten_results:
-                param_dict = action_params.model_dump() if action_params else None
+                param_dict = (
+                    action_params.model_dump_for_result() if action_params else None
+                )
                 action_result = ActionResult(
                     status=True,
                     message=message,
@@ -753,7 +755,9 @@ class App:
 
         if isinstance(result, ActionOutput):
             output_dict = result.model_dump(by_alias=True)
-            param_dict = action_params.model_dump() if action_params else None
+            param_dict = (
+                action_params.model_dump_for_result() if action_params else None
+            )
 
             result = ActionResult(
                 status=True,
