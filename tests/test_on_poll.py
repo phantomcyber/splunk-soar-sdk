@@ -271,6 +271,110 @@ def test_on_poll_yields_container_creation_failure(
     assert generator_resumed is False
 
 
+def test_on_poll_rolls_back_ingest_state_when_artifact_save_fails(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """A failed artifact save must not commit a checkpoint written by the app."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 42),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_artifacts",
+        return_value=(False, "Rejected", None),
+    )
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield Container(name="c1")
+        yield Artifact(name="a1")
+        app_with_action.asset.ingest_state["checkpoint"] = 100
+
+    result = on_poll_function(OnPollParams(start_time=0, end_time=1))
+
+    assert result is False
+    assert "checkpoint" not in app_with_action.asset.ingest_state
+
+
+def test_on_poll_commits_ingest_state_after_successful_saves(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """A checkpoint is committed only after its container and artifacts are durable."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(True, "Created", 42),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_artifacts",
+        return_value=(True, "Created", [1]),
+    )
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield Container(name="c1")
+        yield Artifact(name="a1")
+        app_with_action.asset.ingest_state["checkpoint"] = 100
+
+    result = on_poll_function(OnPollParams(start_time=0, end_time=1))
+
+    assert result is True
+    assert app_with_action.asset.ingest_state["checkpoint"] == 100
+
+
+def test_on_poll_respects_an_existing_ingest_state_transaction(
+    app_with_action: App,
+):
+    ingest_state = app_with_action.asset.ingest_state
+    ingest_state.begin_transaction()
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams):
+        ingest_state["checkpoint"] = 100
+        yield
+
+    result = on_poll_function(OnPollParams(start_time=0, end_time=1))
+
+    assert result is True
+    assert ingest_state.in_transaction
+    ingest_state.rollback()
+
+
+def test_on_poll_handles_action_failure_before_state_transaction(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    mocker.patch.object(
+        app_with_action,
+        "_build_magic_args",
+        side_effect=ActionFailure("argument failure"),
+    )
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield
+
+    assert on_poll_function(OnPollParams(start_time=0, end_time=1)) is False
+
+
+def test_on_poll_handles_exception_before_state_transaction(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    mocker.patch.object(
+        app_with_action,
+        "_build_magic_args",
+        side_effect=RuntimeError("argument failure"),
+    )
+
+    @app_with_action.on_poll()
+    def on_poll_function(params: OnPollParams):
+        yield
+
+    assert on_poll_function(OnPollParams(start_time=0, end_time=1)) is False
+
+
 def test_on_poll_sets_run_automation_on_last_artifact_per_container(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
