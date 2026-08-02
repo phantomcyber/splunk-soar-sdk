@@ -238,6 +238,31 @@ def test_on_poll_yields_container_duplicate(
     save_artifacts.assert_called()
 
 
+def test_on_poll_yields_container_duplicate_failure_response(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """A duplicate response may report false without failing the poll."""
+    save_container = mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(False, "Duplicate container found", None),
+    )
+
+    generator_resumed = False
+
+    @app_with_action.on_poll()
+    def on_poll_function_dup(params: OnPollParams, client=None):
+        nonlocal generator_resumed
+        yield Container(name="c2")
+        generator_resumed = True
+
+    params = OnPollParams(start_time=0, end_time=1)
+    result = on_poll_function_dup(params, client=app_with_action.soar_client)
+    assert result is True
+    assert save_container.call_count == 1
+    assert generator_resumed is True
+
+
 def test_on_poll_yields_container_creation_failure(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
