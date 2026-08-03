@@ -250,6 +250,49 @@ Actions can be registered one of two ways:
 
 The two methods are functionally equivalent. The decorator method is often more convenient for simple actions, while the registration method may be preferable for larger apps where actions are defined in separate modules. Apps may use either or both methods to register their actions.
 
+Action Synchronization
+^^^^^^^^^^^^^^^^^^^^^^
+
+Use :class:`~soar_sdk.meta.actions.ActionLock` when an action must coordinate
+with other action runs. For example, a read-modify-write operation can prevent
+overlapping executions for every asset that points to the same server:
+
+.. code-block:: python
+
+    from soar_sdk.meta.actions import ActionLock
+
+
+    @app.action(
+        lock=ActionLock(
+            data_path="configuration.server",
+            timeout=600,
+        )
+    )
+    def update_configuration(
+        params: UpdateConfigurationParams,
+        soar: SOARClient,
+        asset: Asset,
+    ) -> UpdateConfigurationOutput:
+        ...
+
+An ``ActionLock`` is always enabled and exclusive. The SDK emits
+``enabled=true`` and ``concurrency=false`` in the app manifest, restricting
+each resolved lock name to one action run at a time.
+``data_path`` may identify an action parameter, an asset configuration field,
+or a constant lock name. Actions that resolve to the same lock name are
+serialized. If ``data_path`` is omitted, Splunk SOAR uses the asset as the lock
+name. ``timeout`` limits how long the platform waits to acquire the lock.
+
+The older ``enable_concurrency_lock=True`` argument is deprecated but remains
+supported for backward compatibility. Remove the argument to retain the
+platform's default concurrency behavior. Use ``lock=ActionLock()`` only when
+exclusive action locking is required.
+
+.. note::
+    ``soar-apps convert`` does not translate existing manifest ``lock``
+    metadata. Review synchronization requirements and add ``ActionLock``
+    explicitly after conversion when exclusive locking is required.
+
 .. _app-structure-app-cli:
 
 App CLI Invocation

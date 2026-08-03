@@ -12,6 +12,7 @@ from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.exceptions import ActionFailure, ActionRegistrationError
+from soar_sdk.meta.actions import ActionLock
 from soar_sdk.params import Param, Params
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
 
@@ -428,6 +429,27 @@ def test_register_action_basic(simple_app: App):
     actions = simple_app.get_actions()
     assert "importable_action" in actions
     assert actions["importable_action"] == registered_action
+
+
+def test_register_action_with_lock(simple_app: App):
+    def locked_action(params: Params) -> ActionOutput:
+        return ActionOutput()
+
+    registered_action = simple_app.register_action(
+        locked_action,
+        identifier="locked_action",
+        lock=ActionLock(
+            data_path="configuration.server",
+            timeout=600,
+        ),
+    )
+
+    assert registered_action.meta.model_dump()["lock"] == {
+        "enabled": True,
+        "concurrency": False,
+        "data_path": "configuration.server",
+        "timeout": 600,
+    }
 
 
 @pytest.mark.parametrize(

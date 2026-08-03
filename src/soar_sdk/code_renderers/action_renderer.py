@@ -241,6 +241,32 @@ class ActionRenderer(AstRenderer[ActionMeta]):
                     ),
                 )
             )
+        if lock := self.action_meta.lock:
+            lock_keywords = []
+            if lock.data_path is not None:
+                lock_keywords.append(
+                    ast.keyword(
+                        arg="data_path",
+                        value=ast.Constant(value=lock.data_path),
+                    )
+                )
+            if lock.timeout is not None:
+                lock_keywords.append(
+                    ast.keyword(
+                        arg="timeout",
+                        value=ast.Constant(value=lock.timeout),
+                    )
+                )
+            decorator_keywords.append(
+                ast.keyword(
+                    arg="lock",
+                    value=ast.Call(
+                        func=ast.Name(id="ActionLock", ctx=ast.Load()),
+                        args=[],
+                        keywords=lock_keywords,
+                    ),
+                )
+            )
 
         node = ast.FunctionDef(
             name=self.action_meta.identifier,
