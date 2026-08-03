@@ -1180,7 +1180,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "3.27.0"
+version = "3.27.1"
 source = { directory = "../../" }
 dependencies = [
     { name = "authlib" },
@@ -1209,7 +1209,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "authlib", specifier = ">=1.3.0" },
+    { name = "authlib", specifier = ">=1.3.0,!=1.7.2" },
     { name = "beautifulsoup4", specifier = ">=4.10.0" },
     { name = "bleach", specifier = ">=6.4.0" },
     { name = "build", specifier = ">=1.3.0" },
