@@ -241,7 +241,7 @@ def test_on_poll_yields_container_duplicate(
 def test_on_poll_yields_container_duplicate_failure_response(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """A duplicate response may report false without failing the poll."""
+    """A duplicate response without a container ID must fail the poll."""
     save_container = mocker.patch.object(
         app_with_action.actions_manager,
         "save_container",
@@ -258,9 +258,34 @@ def test_on_poll_yields_container_duplicate_failure_response(
 
     params = OnPollParams(start_time=0, end_time=1)
     result = on_poll_function_dup(params, client=app_with_action.soar_client)
-    assert result is True
+    assert result is False
     assert save_container.call_count == 1
-    assert generator_resumed is True
+    assert generator_resumed is False
+
+
+def test_on_poll_reuses_duplicate_container_id_for_artifacts(
+    app_with_action: App, mocker: pytest_mock.MockerFixture
+):
+    """A duplicate container ID is bound to subsequently yielded artifacts."""
+    mocker.patch.object(
+        app_with_action.actions_manager,
+        "save_container",
+        return_value=(False, "Duplicate container found", 99),
+    )
+    save_artifacts = mocker.patch.object(
+        app_with_action.actions_manager, "save_artifacts", return_value=None
+    )
+
+    @app_with_action.on_poll()
+    def on_poll_function_dup(params: OnPollParams, client=None):
+        yield Container(name="c2")
+        yield Artifact(name="a2")
+
+    result = on_poll_function_dup(OnPollParams(start_time=0, end_time=1))
+
+    assert result is True
+    saved = save_artifacts.call_args[0][0]
+    assert saved[0]["container_id"] == 99
 
 
 def test_on_poll_yields_container_creation_failure(
