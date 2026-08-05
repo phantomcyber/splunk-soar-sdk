@@ -146,7 +146,11 @@ class OnPollDecorator:
                                 f"Failed to create container: {message}"
                             )
 
-                        if ret_val:
+                        if ret_val or is_duplicate:
+                            if cid is None:
+                                raise ActionFailure(
+                                    "Failed to reuse duplicate container: no container ID was returned"
+                                )
                             container_id = cid
                             container_created = True
                             item.container_id = container_id
