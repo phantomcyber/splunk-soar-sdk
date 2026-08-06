@@ -102,6 +102,9 @@ dev = [
     "websockets>=15.0.1",
 ]
 
+# FIXME: Consider a specific dependency group for agent runtime?
+# builder_agent = []
+
 docs = [
     "sphinx>=7.0.0,<8",
     "sphinx-autodoc-typehints>=2.0.0,<3",
