@@ -376,6 +376,9 @@ def init_sdk_app(
     subprocess.run([git_path, "init"], check=True, cwd=app_dir)  # noqa: S603
 
     rprint("[blue]Installing SOAR SDK")
+    # FIXME: consider using --no-sync here to avoid actually pulling the dependencies into the venv right away. See https://docs.astral.sh/uv/reference/cli/#uv-add--no-sync
+    # FIXME: consider --no-workspace here. See https://docs.astral.sh/uv/reference/cli/#uv-add--no-workspace
+    # FIXME: consider an optional version constraint for the sdk here (by default use our own version so the uv cache is exactly correct)
     subprocess.run([uv_path, "add", "splunk-soar-sdk"], check=True, cwd=app_dir)  # noqa: S603
 
     rprint("[blue]Installing pre-commit and ruff")
@@ -383,6 +386,8 @@ def init_sdk_app(
         [uv_path, "add", "--dev", "pre-commit", "ruff"], check=True, cwd=app_dir
     )
 
+    # FIXME: agent runtime shouldn't need pre-commit since it's not in git.
+    # Consider a --no-git option, or --no-pre-commit?
     rprint("[blue]Installing pre-commit hooks")
     subprocess.run([uv_path, "run", "pre-commit", "install"], check=True, cwd=app_dir)  # noqa: S603
 
