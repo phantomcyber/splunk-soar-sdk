@@ -202,6 +202,12 @@ def test_action_output_root_field_to_action_data_unwraps_bare_list():
     assert output.model_dump(by_alias=True) == {"row": ["bob", "42", "active"]}
 
 
+def test_action_output_root_field_parses_back_from_bare_action_data():
+    output = RootListOutput(row=["bob", "42", "active"])
+    reparsed = RootListOutput.model_validate(output.to_action_data())
+    assert reparsed.row == ["bob", "42", "active"]
+
+
 def test_action_output_root_field_to_json_schema_has_no_field_name_segment():
     schema = list(RootListOutput._to_json_schema())
     assert schema == [{"data_path": "action_result.data.*.*", "data_type": "string"}]

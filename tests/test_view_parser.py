@@ -3,7 +3,7 @@ from unittest import mock
 import pytest
 from pydantic import BaseModel
 
-from soar_sdk.action_results import ActionOutput
+from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.models.view import ViewContext
 from soar_sdk.views.view_parser import ViewFunctionParser
 
@@ -11,6 +11,10 @@ from soar_sdk.views.view_parser import ViewFunctionParser
 class SampleViewOutput(ActionOutput):
     name: str
     value: int
+
+
+class SampleRootViewOutput(ActionOutput):
+    row: list[str] = OutputField(is_root=True)
 
 
 class SampleComponentData(BaseModel):
@@ -52,6 +56,25 @@ def test_view_function_parser_parse_action_results_success():
     assert isinstance(parsed_outputs[0], SampleViewOutput)
     assert parsed_outputs[0].name == "test"
     assert parsed_outputs[0].value == 42
+
+
+def test_view_function_parser_parse_action_results_unwraps_root_field_data():
+    def test_function(outputs: list[SampleRootViewOutput]):
+        pass
+
+    parser = ViewFunctionParser(test_function)
+
+    mock_result = mock.Mock()
+    mock_result.get_data.return_value = [["bob", "42", "active"]]
+
+    app_run_metadata = {"total_objects": 1, "total_objects_successful": 1}
+    raw_all_app_runs = [(app_run_metadata, [mock_result])]
+
+    parsed_outputs = parser.parse_action_results(raw_all_app_runs)
+
+    assert len(parsed_outputs) == 1
+    assert isinstance(parsed_outputs[0], SampleRootViewOutput)
+    assert parsed_outputs[0].row == ["bob", "42", "active"]
 
 
 def test_view_function_parser_parse_action_results_invalid_data():

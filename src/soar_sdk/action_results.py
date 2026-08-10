@@ -189,6 +189,10 @@ class ActionOutput(BaseModel):
     @classmethod
     def _apply_optional_defaults(cls, values: Any) -> Any:  # noqa: ANN401
         """Populate missing optional fields with ``None`` before validation."""
+        root_field_name = cls._root_field_name()
+        if root_field_name is not None and not isinstance(values, dict):
+            values = {root_field_name: values}
+
         for field_name, field in cls.model_fields.items():
             if field_name in values or (field.alias and field.alias in values):
                 continue
