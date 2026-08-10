@@ -102,6 +102,7 @@ def OutputField(
     example_values: Sequence[str | int | float | bool] | None = None,
     alias: str | None = None,
     column_name: str | None = None,
+    is_root: bool = False,
 ) -> Any:  # noqa: ANN401
     """Define metadata for an action output field.
 
@@ -116,6 +117,10 @@ def OutputField(
             in documentation and for testing/validation purposes.
         alias: Optional alternative name for the field when serialized.
         column_name: Optional name for the field when displayed in a table.
+        is_root: If True, this field's value is written directly into
+            action_result.data instead of being nested under its field name.
+            Only one field per ActionOutput may set this, and it must be the
+            model's only field.
 
     Note:
         Column name and order must be set together, if one is set but the other is not, an error will be raised.
@@ -138,6 +143,8 @@ def OutputField(
         json_schema_extra["examples"] = example_values
     if column_name is not None:
         json_schema_extra["column_name"] = column_name
+    if is_root:
+        json_schema_extra["is_root"] = True
 
     return Field(
         default=None,
@@ -198,6 +205,47 @@ class ActionOutput(BaseModel):
         return values
 
     @classmethod
+    def _root_field_name(cls) -> str | None:
+        """Return the name of this model's root field, if it declares one.
+
+        A root field (``OutputField(is_root=True)``) is written directly into
+        ``action_result.data`` instead of being nested under its field name.
+        Only one field may be marked as root, and it must be the model's only
+        field.
+        """
+        root_fields = [
+            name
+            for name, field in cls.model_fields.items()
+            if parse_json_schema_extra(field.json_schema_extra).get("is_root")
+        ]
+        if not root_fields:
+            return None
+        if len(root_fields) > 1:
+            raise TypeError(
+                f"{cls.__name__} declares multiple root fields ({sorted(root_fields)}); "
+                "only one OutputField(is_root=True) is allowed per ActionOutput."
+            )
+        if len(cls.model_fields) > 1:
+            other_fields = sorted(set(cls.model_fields) - set(root_fields))
+            raise TypeError(
+                f"{cls.__name__} declares a root field ({root_fields[0]!r}) alongside "
+                f"other fields ({other_fields}); a root field must be the model's only field."
+            )
+        return root_fields[0]
+
+    def to_action_data(self) -> Any:  # noqa: ANN401
+        """Serialize this output for inclusion in ``action_result.data``.
+
+        Normally returns the same dict as ``model_dump(by_alias=True)``. If this
+        model declares a root field (``OutputField(is_root=True)``), returns that
+        field's bare value instead, with no field-name wrapper.
+        """
+        dumped = self.model_dump(by_alias=True)
+        if self.__class__._root_field_name() is not None:
+            return next(iter(dumped.values()))
+        return dumped
+
+    @classmethod
     def _to_json_schema(
         cls,
         parent_datapath: str = "action_result.data.*",
@@ -230,6 +278,8 @@ class ActionOutput(BaseModel):
         if column_order_counter is None:
             column_order_counter = itertools.count()
 
+        root_field_name = cls._root_field_name()
+
         for _field_name, field in cls.model_fields.items():
             field_name = alias if (alias := field.alias) else _field_name
 
@@ -244,9 +294,12 @@ class ActionOutput(BaseModel):
                 allow_list=True,
             )
 
-            datapath = (
-                parent_datapath + f".{field_name}" + (".*" * normalized.list_depth)
-            )
+            if _field_name == root_field_name:
+                datapath = parent_datapath + (".*" * normalized.list_depth)
+            else:
+                datapath = (
+                    parent_datapath + f".{field_name}" + (".*" * normalized.list_depth)
+                )
 
             field_type = normalized.base_type
 

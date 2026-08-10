@@ -752,7 +752,7 @@ class App:
                     if isinstance(item, ActionResult):
                         actions_manager.add_result(item)
                     elif isinstance(item, ActionOutput):
-                        action_result.add_data(item.model_dump(by_alias=True))
+                        action_result.add_data(item.to_action_data())
                 if summary:
                     action_result.set_summary(summary.model_dump(by_alias=True))
                 actions_manager.add_result(action_result)
@@ -772,7 +772,7 @@ class App:
                 return all(statuses) if statuses else True
 
         if isinstance(result, ActionOutput):
-            output_dict = result.model_dump(by_alias=True)
+            output_data = result.to_action_data()
             param_dict = action_params.model_dump() if action_params else None
 
             result = ActionResult(
@@ -780,7 +780,7 @@ class App:
                 message=message,
                 param=param_dict,
             )
-            result.add_data(output_dict)
+            result.add_data(output_data)
             if summary:
                 result.set_summary(summary.model_dump(by_alias=True))
 

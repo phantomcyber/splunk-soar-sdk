@@ -190,3 +190,41 @@ def test_action_output_not_a_type_after_unwrapping():
 
     with pytest.raises(TypeError, match="invalid type annotation"):
         list(OutputWithNonType._to_json_schema())
+
+
+class RootListOutput(ActionOutput):
+    row: list[str] = OutputField(is_root=True)
+
+
+def test_action_output_root_field_to_action_data_unwraps_bare_list():
+    output = RootListOutput(row=["bob", "42", "active"])
+    assert output.to_action_data() == ["bob", "42", "active"]
+    assert output.model_dump(by_alias=True) == {"row": ["bob", "42", "active"]}
+
+
+def test_action_output_root_field_to_json_schema_has_no_field_name_segment():
+    schema = list(RootListOutput._to_json_schema())
+    assert schema == [{"data_path": "action_result.data.*.*", "data_type": "string"}]
+
+
+def test_action_output_without_root_field_to_action_data_matches_model_dump():
+    output = ExampleInnerData(inner_string="value")
+    assert output.to_action_data() == output.model_dump(by_alias=True)
+
+
+def test_action_output_multiple_root_fields_raise_type_error():
+    class MultiRootOutput(ActionOutput):
+        a: str = OutputField(is_root=True)
+        b: str = OutputField(is_root=True)
+
+    with pytest.raises(TypeError, match="multiple root fields"):
+        list(MultiRootOutput._to_json_schema())
+
+
+def test_action_output_root_field_combined_with_other_fields_raises_type_error():
+    class CombinedRootOutput(ActionOutput):
+        row: list[str] = OutputField(is_root=True)
+        extra: str = OutputField()
+
+    with pytest.raises(TypeError, match="must be the model's only field"):
+        list(CombinedRootOutput._to_json_schema())

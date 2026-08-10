@@ -1,5 +1,5 @@
 from soar_sdk.abstract import SOARClient
-from soar_sdk.action_results import ActionOutput
+from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.app import App
 from tests.mocks.dynamic_mocks import ArgReturnMock
 from tests.stubs import SampleActionParams, SampleNestedOutput, SampleOutput
@@ -57,6 +57,55 @@ def test_app_action_called_with_more_complex_result_creates_the_result(
             "bool_value": True,
             "nested_value": {"bool_value": True},
         }
+    ]
+
+
+def test_app_action_with_root_field_output_writes_bare_list_to_data(
+    app_with_action: App,
+):
+    actions_manager_mock = app_with_action.actions_manager
+    actions_manager_mock.add_result = ArgReturnMock()
+
+    class RowOutput(ActionOutput):
+        row: list[str] = OutputField(is_root=True)
+
+    @app_with_action.action()
+    def action_returning_root_field_result(
+        params: SampleActionParams, soar: SOARClient
+    ) -> RowOutput:
+        return RowOutput(row=["bob", "42", "active"])
+
+    result = action_returning_root_field_result(
+        SampleActionParams(field1=5), soar=app_with_action.soar_client
+    )
+    assert result is True
+    assert actions_manager_mock.add_result.call_args[0][0].get_data() == [
+        ["bob", "42", "active"]
+    ]
+
+
+def test_app_action_with_root_field_output_list_writes_bare_lists_to_data(
+    app_with_action: App,
+):
+    actions_manager_mock = app_with_action.actions_manager
+    actions_manager_mock.add_result = ArgReturnMock()
+
+    class RowOutput(ActionOutput):
+        row: list[str] = OutputField(is_root=True)
+
+    @app_with_action.action()
+    def action_returning_root_field_results(
+        params: SampleActionParams, soar: SOARClient
+    ) -> list[RowOutput]:
+        return [RowOutput(row=["bob", "42"]), RowOutput(row=["alice", "7"])]
+
+    result = action_returning_root_field_results(
+        SampleActionParams(field1=5), soar=app_with_action.soar_client
+    )
+    assert result is True
+    assert actions_manager_mock.add_result.call_args[0][0].get_data() == [
+        ["bob", "42"],
+        ["alice", "7"],
     ]
 
 
