@@ -398,10 +398,20 @@ def test_delete(
 def test_direct_action_registration(simple_app: App):
     from tests.mocks.importable_action import importable_action
 
-    simple_app.register_action(
+    registered_action = simple_app.register_action(
         importable_action,
         identifier="register_direct_callable",
     )
+
+    assert registered_action.meta.read_only is False
+
+
+def test_action_defaults_to_not_read_only(simple_app: App):
+    @simple_app.action()
+    def action_function(params: Params) -> ActionOutput:
+        return ActionOutput()
+
+    assert action_function.meta.read_only is False
 
 
 def test_register_action_basic(simple_app: App):
@@ -424,6 +434,7 @@ def test_register_action_basic(simple_app: App):
     assert registered_action.meta.description == "An importable action for testing"
     assert registered_action.meta.verbose == "This is a verbose description"
     assert registered_action.meta.type == "investigate"
+    assert registered_action.meta.read_only is False
 
     # Verify the action is in the app's actions
     actions = simple_app.get_actions()

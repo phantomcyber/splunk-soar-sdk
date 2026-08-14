@@ -159,6 +159,7 @@ from .actions.reverse_string import render_reverse_string_view
 app.register_action(
     "actions.reverse_string:reverse_string",
     action_type="investigate",
+    read_only=True,
     verbose="Reverses a string.",
     view_template="reverse_string.html",
     view_handler=render_reverse_string_view,

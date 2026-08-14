@@ -293,7 +293,7 @@ class App:
         description: str | None = None,
         verbose: str = "",
         action_type: str = "generic",  # TODO: consider introducing enum type for that
-        read_only: bool = True,
+        read_only: bool = False,
         params_class: type[Params] | None = None,
         output_class: type[ActionOutput] | None = None,
         render_as: str | None = None,
@@ -345,7 +345,8 @@ class App:
             action_type: Type of action (e.g., "generic", "investigate", "correct").
                 Defaults to "generic".
             read_only: Whether the action only reads data without making changes.
-                Defaults to True for safety.
+                Defaults to False. Set to True only for actions that do not
+                modify external systems.
             params_class: Pydantic model class for validating action parameters.
                 If not provided, uses generic parameter validation.
             output_class: Pydantic model class for structuring action output.
@@ -486,7 +487,7 @@ class App:
         description: str | None = None,
         verbose: str = "",
         action_type: str = "generic",  # TODO: consider introducing enum type for that
-        read_only: bool = True,
+        read_only: bool = False,
         params_class: type[Params] | None = None,
         output_class: type[ActionOutput] | None = None,
         render_as: str | None = None,
