@@ -90,7 +90,7 @@
             "identifier": "reverse_string",
             "description": "reverse string",
             "type": "test",
-            "read_only": true,
+            "read_only": false,
             "versions": "EQ(*)",
             "verbose": "Reverses a string.",
             "parameters": {

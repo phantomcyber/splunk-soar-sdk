@@ -27,7 +27,7 @@ class ActionDecorator:
         description: str | None = None,
         verbose: str = "",
         action_type: str = "generic",
-        read_only: bool = True,
+        read_only: bool = False,
         params_class: type[Params] | None = None,
         output_class: None
         | type[ActionOutput]

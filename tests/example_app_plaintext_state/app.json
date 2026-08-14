@@ -109,7 +109,7 @@
             "identifier": "read_filesystem_state",
             "description": "read filesystem state",
             "type": "generic",
-            "read_only": true,
+            "read_only": false,
             "versions": "EQ(*)",
             "verbose": "",
             "parameters": {},
