@@ -12,18 +12,18 @@ from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 def rpc_broker(monkeypatch: pytest.MonkeyPatch) -> None:
     """Simulate running on an RPC automation broker.
 
-    SOAR encrypts the asset state on their behalf, and their encryption helpers
-    return values unchanged.
+    SOAR encrypts the asset state at rest on their behalf, so the app must not
+    encrypt or decrypt it itself.
     """
+
+    def unavailable(value: str, salt: str = "unused-salt") -> str:
+        raise AssertionError("RPC brokers must not encrypt or decrypt asset state")
+
     monkeypatch.setattr(
         soar_sdk.asset_state, "is_onprem_broker_rpc_install", lambda: True
     )
-    monkeypatch.setattr(
-        encryption_helper, "encrypt", lambda plain, salt="unused-salt": plain
-    )
-    monkeypatch.setattr(
-        encryption_helper, "decrypt", lambda cipher, salt="unused-salt": cipher
-    )
+    monkeypatch.setattr(encryption_helper, "encrypt", unavailable)
+    monkeypatch.setattr(encryption_helper, "decrypt", unavailable)
 
 
 def test_asset_state_full_accessors(example_state: AssetState):

@@ -1,5 +1,6 @@
 import json
 from collections.abc import Iterator, MutableMapping
+from contextlib import suppress
 from typing import Any
 
 from soar_sdk.logging import getLogger
@@ -12,15 +13,6 @@ AssetStateValueType = Any
 AssetStateType = dict[AssetStateKeyType, AssetStateValueType]
 
 logger = getLogger()
-
-
-def _decode_json_object(value: str) -> AssetStateType | None:
-    """Decode a JSON object, or None if the value is not one."""
-    try:
-        decoded = json.loads(value)
-    except json.JSONDecodeError:
-        return None
-    return decoded if isinstance(decoded, dict) else None
 
 
 class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
@@ -106,26 +98,29 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         self.backend.save_state(state)
 
     def _decode_part(self, part: str) -> AssetStateType:
-        """Decode a stored part of the asset state.
+        """Decode a stored part of the asset state, decrypting it if needed.
 
-        On RPC automation brokers the state is held as-is, so a stored part is
-        either plaintext or ciphertext this install holds no key for. State
-        which cannot be read is discarded instead of failing the action.
+        A part stored on an RPC automation broker is either plaintext or
+        ciphertext this install holds no key for, so state which cannot be read
+        is discarded instead of failing the action.
         """
         if not is_onprem_broker_rpc_install():
             return json.loads(encryption_helper.decrypt(part, self.asset_id))
 
-        if (decoded := _decode_json_object(part)) is not None:
+        decoded = None
+        with suppress(json.JSONDecodeError):
+            decoded = json.loads(part)
+        if isinstance(decoded, dict):
             return decoded
 
         logger.error(f"Discarding unreadable {self.state_key} state")
         return {}
 
     def _encode_part(self, part_json: str) -> str | AssetStateType:
-        """Encrypt a part of the asset state, if encryption is available.
+        """Encode a part of the asset state, encrypting it if needed.
 
-        RPC automation brokers store it as-is, since SOAR encrypts the asset
-        state at rest on their behalf and their encryption helpers are no-ops.
+        RPC automation brokers store the mapping as-is, since SOAR encrypts the
+        asset state at rest on their behalf.
         """
         if not self.encrypted or is_onprem_broker_rpc_install():
             return json.loads(part_json)
