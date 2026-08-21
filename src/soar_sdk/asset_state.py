@@ -5,6 +5,7 @@ from typing import Any
 from soar_sdk.logging import getLogger
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
+from soar_sdk.shims.phantom.install_info import is_onprem_broker_rpc_install
 
 AssetStateKeyType = str
 AssetStateValueType = Any
@@ -25,9 +26,8 @@ def _decode_json_object(value: str) -> AssetStateType | None:
 class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
     """An adapter to one partition of asset state stored within SOAR.
 
-    State is encrypted at rest by default. On installs which encrypt the asset
-    state on the app's behalf, such as RPC automation brokers, it is stored
-    as-is.
+    State is encrypted at rest by default. On RPC automation brokers, where SOAR
+    encrypts the asset state on the app's behalf, it is stored as-is.
 
     Unencrypted asset state can be useful if you intend for users to read or
     edit the asset state directly from the filesystem, outside of SOAR. Please
@@ -106,48 +106,31 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         self.backend.save_state(state)
 
     def _decode_part(self, part: str) -> AssetStateType:
-        """Decode a stored part of the asset state, encrypted or not.
+        """Decode a stored part of the asset state.
 
-        Some installs, such as RPC automation brokers, provide an encryption
-        helper which returns values unchanged, so a stored part may be
-        plaintext, or ciphertext this install holds no key for. State that
-        cannot be read is discarded instead of failing the action.
+        On RPC automation brokers the state is held as-is, so a stored part is
+        either plaintext or ciphertext this install holds no key for. State
+        which cannot be read is discarded instead of failing the action.
         """
-        try:
-            candidates = (encryption_helper.decrypt(part, self.asset_id), part)
-        except Exception as e:
-            # Encryption helpers differ per install type. Some raise on values
-            # they did not encrypt, and others return them unchanged.
-            logger.debug(f"Could not decrypt {self.state_key} state: {e}")
-            candidates = (part,)
+        if not is_onprem_broker_rpc_install():
+            return json.loads(encryption_helper.decrypt(part, self.asset_id))
 
-        for candidate in candidates:
-            if (decoded := _decode_json_object(candidate)) is not None:
-                return decoded
+        if (decoded := _decode_json_object(part)) is not None:
+            return decoded
 
         logger.error(f"Discarding unreadable {self.state_key} state")
         return {}
 
     def _encode_part(self, part_json: str) -> str | AssetStateType:
-        """Encrypt a part of the asset state, if encryption is available."""
-        if not self.encrypted:
+        """Encrypt a part of the asset state, if encryption is available.
+
+        RPC automation brokers store it as-is, since SOAR encrypts the asset
+        state at rest on their behalf and their encryption helpers are no-ops.
+        """
+        if not self.encrypted or is_onprem_broker_rpc_install():
             return json.loads(part_json)
 
-        try:
-            encrypted = encryption_helper.encrypt(part_json, salt=self.asset_id)
-        except Exception as e:
-            logger.debug(f"Could not encrypt {self.state_key} state: {e}")
-            encrypted = part_json
-
-        if not encrypted or encrypted == part_json:
-            # Encryption is unavailable on this install: helpers on RPC
-            # automation brokers return the value unchanged, since SOAR encrypts
-            # the asset state at rest instead, and on-prem stores return an
-            # empty string when they cannot encrypt. Store the mapping itself,
-            # which stays readable on every install, rather than a string which
-            # only looks encrypted.
-            return json.loads(part_json)
-        return encrypted
+        return encryption_helper.encrypt(part_json, salt=self.asset_id)
 
     def __getitem__(self, key: AssetStateKeyType) -> AssetStateValueType:
         return self.get_all()[key]
