@@ -1,9 +1,26 @@
 import json
 
 import pytest
+import pytest_mock
 
+import soar_sdk.asset_state
 from soar_sdk.asset_state import AssetState
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
+
+
+@pytest.fixture
+def noop_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Simulate an install whose encryption helper returns values unchanged.
+
+    RPC automation brokers behave this way, since SOAR encrypts the asset state
+    on their behalf.
+    """
+    monkeypatch.setattr(
+        encryption_helper, "encrypt", lambda plain, salt="unused-salt": plain
+    )
+    monkeypatch.setattr(
+        encryption_helper, "decrypt", lambda cipher, salt="unused-salt": cipher
+    )
 
 
 def test_asset_state_full_accessors(example_state: AssetState):
@@ -130,6 +147,74 @@ def test_encrypted_state_reads_legacy_plaintext_state(example_provider):
         "legacy": True,
         "new": "value",
     }
+
+
+def test_noop_encryption_stores_readable_state(
+    example_state: AssetState, noop_encryption: None
+):
+    example_state.put_all({"token": "abc"})
+    example_state["expires_in"] = 3600
+
+    # A no-op helper cannot produce ciphertext, so the state is stored as a
+    # mapping rather than a string which only looks encrypted.
+    assert example_state.backend.load_state()["example"] == {
+        "token": "abc",
+        "expires_in": 3600,
+    }
+    assert example_state.get_all() == {"token": "abc", "expires_in": 3600}
+
+
+def test_noop_encryption_reads_legacy_encrypted_state(
+    example_state: AssetState, noop_encryption: None
+):
+    example_state.backend.save_state({"example": json.dumps({"legacy": True})})
+
+    assert example_state.get_all() == {"legacy": True}
+
+
+def test_state_is_stored_as_plaintext_when_encryption_fails(
+    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
+):
+    def fail_encrypt(plain, salt="unused-salt"):
+        raise ValueError("no encryption key available")
+
+    monkeypatch.setattr(encryption_helper, "encrypt", fail_encrypt)
+    example_state.put_all({"key": "value"})
+
+    assert example_state.backend.load_state()["example"] == {"key": "value"}
+    assert example_state.get_all() == {"key": "value"}
+
+
+def test_get_all_reads_plaintext_when_decryption_fails(example_state: AssetState):
+    example_state.backend.save_state({"example": json.dumps({"key": "value"})})
+
+    # The stub helper cannot decrypt a value it did not encrypt.
+    assert example_state.get_all() == {"key": "value"}
+
+
+def test_get_all_reads_plaintext_when_decryption_returns_nothing(
+    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(
+        encryption_helper, "decrypt", lambda cipher, salt="unused-salt": ""
+    )
+    example_state.backend.save_state({"example": json.dumps({"key": "value"})})
+
+    assert example_state.get_all() == {"key": "value"}
+
+
+@pytest.mark.parametrize("stored_state", ["ZW5jcnlwdGVkLWVsc2V3aGVyZQ==", "1337"])
+def test_unreadable_state_is_discarded(
+    example_state: AssetState,
+    noop_encryption: None,
+    mocker: pytest_mock.MockerFixture,
+    stored_state: str,
+):
+    warning = mocker.patch.object(soar_sdk.asset_state.logger, "warning")
+    example_state.backend.save_state({"example": stored_state})
+
+    assert example_state.get_all() == {}
+    warning.assert_called_once()
 
 
 def test_transaction_commit_persists(example_state: AssetState):

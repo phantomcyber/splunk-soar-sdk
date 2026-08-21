@@ -2,6 +2,7 @@ import json
 from collections.abc import Iterator, MutableMapping
 from typing import Any
 
+from soar_sdk.logging import getLogger
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 
@@ -9,15 +10,30 @@ AssetStateKeyType = str
 AssetStateValueType = Any
 AssetStateType = dict[AssetStateKeyType, AssetStateValueType]
 
+logger = getLogger()
+
+
+def _decode_json_object(value: str) -> AssetStateType | None:
+    """Decode a JSON object, or None if the value is not one."""
+    try:
+        decoded = json.loads(value)
+    except json.JSONDecodeError:
+        return None
+    return decoded if isinstance(decoded, dict) else None
+
 
 class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
     """An adapter to one partition of asset state stored within SOAR.
 
-    State is encrypted at rest by default. Unencrypted asset state can be useful
-    if you intend for users to read or edit the asset state directly from the
-    filesystem, outside of SOAR. Please note that this use case is not
-    officially supported, and a future version of SOAR will begin storing the
-    asset state in the database instead of the filesystem.
+    State is encrypted at rest by default. On installs which encrypt the asset
+    state on the app's behalf, such as RPC automation brokers, it is stored
+    as-is.
+
+    Unencrypted asset state can be useful if you intend for users to read or
+    edit the asset state directly from the filesystem, outside of SOAR. Please
+    note that this use case is not officially supported, and a future version of
+    SOAR will begin storing the asset state in the database instead of the
+    filesystem.
     """
 
     def __init__(
@@ -78,23 +94,58 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
             return {}
         if isinstance(part, dict):
             return dict(part)
-        part_json = encryption_helper.decrypt(part, self.asset_id)
-        return json.loads(part_json)
+        return self._decode_part(part)
 
     def put_all(self, new_value: AssetStateType) -> None:
         """Entirely replace this part of the asset state."""
         if self.in_transaction:
             self._transaction_buffer = dict(new_value)
             return
-        part_json = json.dumps(new_value)
         state = self.backend.load_state() or {}
-        if self.encrypted:
-            state[self.state_key] = encryption_helper.encrypt(
-                part_json, salt=self.asset_id
-            )
-        else:
-            state[self.state_key] = json.loads(part_json)
+        state[self.state_key] = self._encode_part(json.dumps(new_value))
         self.backend.save_state(state)
+
+    def _decode_part(self, part: str) -> AssetStateType:
+        """Decode a stored part of the asset state, encrypted or not.
+
+        Some installs, such as RPC automation brokers, provide an encryption
+        helper which returns values unchanged, so a stored part may be
+        plaintext, or ciphertext this install holds no key for. State that
+        cannot be read is discarded instead of failing the action.
+        """
+        try:
+            candidates = (encryption_helper.decrypt(part, self.asset_id), part)
+        except Exception as e:
+            # Encryption helpers differ per install type. Some raise on values
+            # they did not encrypt, and others return them unchanged.
+            logger.debug(f"Could not decrypt {self.state_key} state: {e}")
+            candidates = (part,)
+
+        for candidate in candidates:
+            if (decoded := _decode_json_object(candidate)) is not None:
+                return decoded
+
+        logger.warning(f"Discarding unreadable {self.state_key} state")
+        return {}
+
+    def _encode_part(self, part_json: str) -> str | AssetStateType:
+        """Encrypt a part of the asset state, if encryption is available."""
+        if not self.encrypted:
+            return json.loads(part_json)
+
+        try:
+            encrypted = encryption_helper.encrypt(part_json, salt=self.asset_id)
+        except Exception as e:
+            logger.debug(f"Could not encrypt {self.state_key} state: {e}")
+            encrypted = part_json
+
+        if encrypted == part_json:
+            # The encryption helper is a no-op on this install, such as an RPC
+            # automation broker, where SOAR encrypts the asset state at rest
+            # instead. Store the mapping itself, which stays readable on every
+            # install, rather than a string which only looks encrypted.
+            return json.loads(part_json)
+        return encrypted
 
     def __getitem__(self, key: AssetStateKeyType) -> AssetStateValueType:
         return self.get_all()[key]
