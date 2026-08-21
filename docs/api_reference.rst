@@ -64,6 +64,35 @@ BaseAsset
    :show-inheritance:
    :exclude-members: validate_no_reserved_fields
 
+Validated Network Hosts
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Use :data:`soar_sdk.networking.Host` for an asset field that accepts an IP address
+or hostname without a URL scheme, port, or path. It normalizes IP addresses and
+hostnames while retaining a plain ``str`` value. Surrounding whitespace, a trailing
+DNS dot, and accidental trailing slashes are removed.
+
+Use :func:`soar_sdk.networking.format_url_host` when inserting the value into a URL.
+The function adds the brackets required around an IPv6 address in a URL authority.
+
+.. code-block:: python
+
+   from soar_sdk.asset import AssetField, BaseAsset
+   from soar_sdk.networking import Host, format_url_host
+
+
+   class Asset(BaseAsset):
+      device: Host = AssetField(description="Device IP address or hostname")
+      port: int = AssetField(default=443)
+
+
+   def get_base_url(asset: Asset) -> str:
+      return f"https://{format_url_host(asset.device)}:{asset.port}/"
+
+.. autodata:: soar_sdk.networking.Host
+
+.. autofunction:: soar_sdk.networking.format_url_host
+
 
 .. _action-param-label:
 
