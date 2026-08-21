@@ -1,5 +1,6 @@
 import ast
 import datetime
+import importlib.metadata
 import json
 import os
 import re
@@ -73,6 +74,7 @@ _INIT_OPTION_NAMES = (
     "encrypt_ingest_state",
     "overwrite",
     "private",
+    "lean",
 )
 
 
@@ -155,6 +157,18 @@ def init_callback(
             ),
         ),
     ] = False,
+    lean: Annotated[
+        bool,
+        typer.Option(
+            "--lean/--full",
+            help=(
+                "Skip git/pre-commit/ruff setup and defer installing dependencies into "
+                "a local .venv. Intended for programmatic callers that never run code "
+                "from the scaffolded project in place (e.g. agent-driven scaffolding); "
+                "pyproject.toml and uv.lock are still fully written and resolved."
+            ),
+        ),
+    ] = False,
 ) -> None:
     """Initialize a new SOAR app."""
     if _should_run_init_wizard(ctx):
@@ -195,6 +209,7 @@ def init_callback(
         encrypt_ingest_state,
         overwrite,
         private,
+        lean=lean,
     )
 
 
@@ -276,6 +291,7 @@ def init_sdk_app(
     encrypt_ingest_state: bool = True,
     overwrite: bool = False,
     private: bool = False,
+    lean: bool = False,
     app_content: list[ast.stmt] | None = None,
     asset_class: ast.ClassDef | None = None,
 ) -> None:
@@ -367,27 +383,38 @@ def init_sdk_app(
         # This should never happen, since this command will be running from within uv, but we have to null check anyways
         raise typer.Exit(code=1)
 
-    git_path = shutil.which("git")
-    if not git_path:
-        rprint("[red]git command not found. Please install git to continue.[/]")
-        raise typer.Exit(code=1)
+    if not lean:
+        git_path = shutil.which("git")
+        if not git_path:
+            rprint("[red]git command not found. Please install git to continue.[/]")
+            raise typer.Exit(code=1)
 
-    rprint("[blue]Initializing git repository")
-    subprocess.run([git_path, "init"], check=True, cwd=app_dir)  # noqa: S603
+        rprint("[blue]Initializing git repository")
+        subprocess.run([git_path, "init"], check=True, cwd=app_dir)  # noqa: S603
+
+    uv_add = [uv_path, "add"]
+    if lean:
+        uv_add += ["--no-sync", "--no-workspace"]
 
     rprint("[blue]Installing SOAR SDK")
-    subprocess.run([uv_path, "add", "splunk-soar-sdk"], check=True, cwd=app_dir)  # noqa: S603
-
-    rprint("[blue]Installing pre-commit and ruff")
+    sdk_version = importlib.metadata.version("splunk-soar-sdk")
     subprocess.run(  # noqa: S603
-        [uv_path, "add", "--dev", "pre-commit", "ruff"], check=True, cwd=app_dir
+        [*uv_add, f"splunk-soar-sdk=={sdk_version}"], check=True, cwd=app_dir
     )
 
-    rprint("[blue]Installing pre-commit hooks")
-    subprocess.run([uv_path, "run", "pre-commit", "install"], check=True, cwd=app_dir)  # noqa: S603
+    rprint("[blue]Adding pre-commit and ruff")
+    subprocess.run(  # noqa: S603
+        [*uv_add, "--dev", "pre-commit", "ruff"], check=True, cwd=app_dir
+    )
 
-    rprint("[blue]Running ruff format on the app code")
-    subprocess.run([uv_path, "run", "ruff", "format"], check=True, cwd=app_dir)  # noqa: S603
+    if not lean:
+        rprint("[blue]Installing pre-commit hooks")
+        subprocess.run(  # noqa: S603
+            [uv_path, "run", "pre-commit", "install"], check=True, cwd=app_dir
+        )
+
+        rprint("[blue]Running ruff format on the app code")
+        subprocess.run([uv_path, "run", "ruff", "format"], check=True, cwd=app_dir)  # noqa: S603
 
     rprint(f"[green]Successfully created app at[/] {app_dir}")
 

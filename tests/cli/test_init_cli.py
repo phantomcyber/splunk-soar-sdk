@@ -544,6 +544,82 @@ def test_init_without_uv_installed_fails(runner, tmp_path):
     assert "uv command not found" in result.stdout
 
 
+def test_init_app_lean_skips_dev_tooling(runner, tmp_path):
+    """Test that --lean skips git/pre-commit-install/ruff-format and defers dependency sync."""
+    app_dir = tmp_path / "test_app"
+
+    with (
+        patch("subprocess.run") as mock_run,
+        patch("shutil.which") as mock_which,
+        patch("importlib.metadata.version", return_value="9.9.9"),
+    ):
+        mock_which.return_value = "/usr/bin/example"
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+                "--lean",
+            ],
+        )
+
+    assert result.exit_code == 0
+    assert (app_dir / "pyproject.toml").exists()
+    assert (app_dir / ".pre-commit-config.yaml").exists()
+    assert (app_dir / ".gitignore").exists()
+    assert not (app_dir / ".git").exists()
+
+    commands_run = [call.args[0] for call in mock_run.call_args_list]
+    assert ["/usr/bin/example", "init"] not in commands_run
+    assert [
+        "/usr/bin/example",
+        "add",
+        "--no-sync",
+        "--no-workspace",
+        "splunk-soar-sdk==9.9.9",
+    ] in commands_run
+    assert [
+        "/usr/bin/example",
+        "add",
+        "--no-sync",
+        "--no-workspace",
+        "--dev",
+        "pre-commit",
+        "ruff",
+    ] in commands_run
+    assert not any(cmd[:2] == ["/usr/bin/example", "run"] for cmd in commands_run)
+
+
+def test_init_app_lean_does_not_require_git(runner, tmp_path):
+    """Test that --lean succeeds even when git is not installed."""
+    app_dir = tmp_path / "test_app"
+
+    with (
+        patch("subprocess.run"),
+        patch("shutil.which") as mock_which,
+        patch("importlib.metadata.version", return_value="9.9.9"),
+    ):
+        mock_which.side_effect = lambda x: None if x == "git" else "/usr/bin/example"
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "A test app",
+                "--app-dir",
+                str(app_dir),
+                "--lean",
+            ],
+        )
+
+    assert result.exit_code == 0
+
+
 def test_resolve_dependencies(tmp_path):
     """Test that resolve_dependencies processes requirements.txt and calls uv add correctly."""
 
