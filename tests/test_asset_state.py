@@ -307,3 +307,13 @@ def test_get_all_with_force_reload(example_state: AssetState):
 
     assert reload_called is True
     assert result == {"key": "original_value"}
+
+
+def test_force_reload_skips_state_file_on_rpc_broker(
+    example_state: AssetState, rpc_broker: None, mocker: pytest_mock.MockerFixture
+):
+    example_state.put_all({"token": "abc"})
+    reload = mocker.patch.object(example_state.backend, "reload_state_from_file")
+
+    assert example_state.get_all(force_reload=True) == {"token": "abc"}
+    reload.assert_not_called()

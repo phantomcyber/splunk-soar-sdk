@@ -76,7 +76,9 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         """Get the entirety of this part of the asset state."""
         if self._transaction_buffer is not None:
             return dict(self._transaction_buffer)
-        if force_reload:
+        if force_reload and not is_onprem_broker_rpc_install():
+            # RPC automation brokers read the state from SOAR on every load, and
+            # their state file is a stale copy which would overwrite it.
             # backend is from phantom_common shim, whose imports are replaced with Any
             self.backend.reload_state_from_file(  # ty: ignore[unresolved-attribute]
                 self.asset_id
