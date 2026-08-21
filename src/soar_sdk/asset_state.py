@@ -125,7 +125,7 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
             if (decoded := _decode_json_object(candidate)) is not None:
                 return decoded
 
-        logger.warning(f"Discarding unreadable {self.state_key} state")
+        logger.error(f"Discarding unreadable {self.state_key} state")
         return {}
 
     def _encode_part(self, part_json: str) -> str | AssetStateType:
@@ -139,11 +139,13 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
             logger.debug(f"Could not encrypt {self.state_key} state: {e}")
             encrypted = part_json
 
-        if encrypted == part_json:
-            # The encryption helper is a no-op on this install, such as an RPC
-            # automation broker, where SOAR encrypts the asset state at rest
-            # instead. Store the mapping itself, which stays readable on every
-            # install, rather than a string which only looks encrypted.
+        if not encrypted or encrypted == part_json:
+            # Encryption is unavailable on this install: helpers on RPC
+            # automation brokers return the value unchanged, since SOAR encrypts
+            # the asset state at rest instead, and on-prem stores return an
+            # empty string when they cannot encrypt. Store the mapping itself,
+            # which stays readable on every install, rather than a string which
+            # only looks encrypted.
             return json.loads(part_json)
         return encrypted
 

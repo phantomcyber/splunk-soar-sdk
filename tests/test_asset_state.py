@@ -185,6 +185,19 @@ def test_state_is_stored_as_plaintext_when_encryption_fails(
     assert example_state.get_all() == {"key": "value"}
 
 
+def test_state_is_stored_as_plaintext_when_encryption_returns_nothing(
+    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
+):
+    # On-prem encryption stores return an empty string rather than raising.
+    monkeypatch.setattr(
+        encryption_helper, "encrypt", lambda plain, salt="unused-salt": ""
+    )
+    example_state.put_all({"key": "value"})
+
+    assert example_state.backend.load_state()["example"] == {"key": "value"}
+    assert example_state.get_all() == {"key": "value"}
+
+
 def test_get_all_reads_plaintext_when_decryption_fails(example_state: AssetState):
     example_state.backend.save_state({"example": json.dumps({"key": "value"})})
 
@@ -210,11 +223,11 @@ def test_unreadable_state_is_discarded(
     mocker: pytest_mock.MockerFixture,
     stored_state: str,
 ):
-    warning = mocker.patch.object(soar_sdk.asset_state.logger, "warning")
+    error = mocker.patch.object(soar_sdk.asset_state.logger, "error")
     example_state.backend.save_state({"example": stored_state})
 
     assert example_state.get_all() == {}
-    warning.assert_called_once()
+    error.assert_called_once()
 
 
 def test_transaction_commit_persists(example_state: AssetState):
