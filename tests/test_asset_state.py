@@ -9,12 +9,15 @@ from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 
 
 @pytest.fixture
-def noop_encryption(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Simulate an install whose encryption helper returns values unchanged.
+def rpc_broker(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Simulate running on an RPC automation broker.
 
-    RPC automation brokers behave this way, since SOAR encrypts the asset state
-    on their behalf.
+    SOAR encrypts the asset state on their behalf, and their encryption helpers
+    return values unchanged.
     """
+    monkeypatch.setattr(
+        soar_sdk.asset_state, "is_onprem_broker_rpc_install", lambda: True
+    )
     monkeypatch.setattr(
         encryption_helper, "encrypt", lambda plain, salt="unused-salt": plain
     )
@@ -149,14 +152,29 @@ def test_encrypted_state_reads_legacy_plaintext_state(example_provider):
     }
 
 
-def test_noop_encryption_stores_readable_state(
-    example_state: AssetState, noop_encryption: None
+def test_unreadable_state_is_not_discarded_off_rpc_broker(
+    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
+):
+    def fail_decrypt(cipher, salt="unused-salt"):
+        raise ValueError("no encryption key available")
+
+    monkeypatch.setattr(encryption_helper, "decrypt", fail_decrypt)
+    example_state.backend.save_state({"example": "ZW5jcnlwdGVkLWVsc2V3aGVyZQ=="})
+
+    # Installs which encrypt their own state, such as WebSocket automation
+    # brokers, surface unreadable state instead of discarding it.
+    with pytest.raises(ValueError, match="no encryption key available"):
+        example_state.get_all()
+
+
+def test_rpc_broker_stores_state_unencrypted(
+    example_state: AssetState, rpc_broker: None
 ):
     example_state.put_all({"token": "abc"})
     example_state["expires_in"] = 3600
 
-    # A no-op helper cannot produce ciphertext, so the state is stored as a
-    # mapping rather than a string which only looks encrypted.
+    # SOAR encrypts the state at rest, so it is stored as a mapping rather than
+    # a string which only looks encrypted.
     assert example_state.backend.load_state()["example"] == {
         "token": "abc",
         "expires_in": 3600,
@@ -164,62 +182,18 @@ def test_noop_encryption_stores_readable_state(
     assert example_state.get_all() == {"token": "abc", "expires_in": 3600}
 
 
-def test_noop_encryption_reads_legacy_encrypted_state(
-    example_state: AssetState, noop_encryption: None
+def test_rpc_broker_reads_legacy_plaintext_state(
+    example_state: AssetState, rpc_broker: None
 ):
     example_state.backend.save_state({"example": json.dumps({"legacy": True})})
 
     assert example_state.get_all() == {"legacy": True}
 
 
-def test_state_is_stored_as_plaintext_when_encryption_fails(
-    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
-):
-    def fail_encrypt(plain, salt="unused-salt"):
-        raise ValueError("no encryption key available")
-
-    monkeypatch.setattr(encryption_helper, "encrypt", fail_encrypt)
-    example_state.put_all({"key": "value"})
-
-    assert example_state.backend.load_state()["example"] == {"key": "value"}
-    assert example_state.get_all() == {"key": "value"}
-
-
-def test_state_is_stored_as_plaintext_when_encryption_returns_nothing(
-    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
-):
-    # On-prem encryption stores return an empty string rather than raising.
-    monkeypatch.setattr(
-        encryption_helper, "encrypt", lambda plain, salt="unused-salt": ""
-    )
-    example_state.put_all({"key": "value"})
-
-    assert example_state.backend.load_state()["example"] == {"key": "value"}
-    assert example_state.get_all() == {"key": "value"}
-
-
-def test_get_all_reads_plaintext_when_decryption_fails(example_state: AssetState):
-    example_state.backend.save_state({"example": json.dumps({"key": "value"})})
-
-    # The stub helper cannot decrypt a value it did not encrypt.
-    assert example_state.get_all() == {"key": "value"}
-
-
-def test_get_all_reads_plaintext_when_decryption_returns_nothing(
-    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
-):
-    monkeypatch.setattr(
-        encryption_helper, "decrypt", lambda cipher, salt="unused-salt": ""
-    )
-    example_state.backend.save_state({"example": json.dumps({"key": "value"})})
-
-    assert example_state.get_all() == {"key": "value"}
-
-
 @pytest.mark.parametrize("stored_state", ["ZW5jcnlwdGVkLWVsc2V3aGVyZQ==", "1337"])
-def test_unreadable_state_is_discarded(
+def test_rpc_broker_discards_unreadable_state(
     example_state: AssetState,
-    noop_encryption: None,
+    rpc_broker: None,
     mocker: pytest_mock.MockerFixture,
     stored_state: str,
 ):
