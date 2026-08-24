@@ -114,7 +114,7 @@ The auth handler automatically:
 Token Storage
 -------------
 
-Tokens are automatically stored in the asset's ``auth_state`` and encrypted at rest. The SDK handles:
+Tokens are automatically stored in the asset's ``auth_state``, which SOAR keeps encrypted at rest. The SDK handles:
 
 - Token persistence across action runs
 - Automatic refresh when tokens expire

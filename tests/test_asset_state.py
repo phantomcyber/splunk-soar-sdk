@@ -1,9 +1,29 @@
 import json
 
 import pytest
+import pytest_mock
 
+import soar_sdk.asset_state
 from soar_sdk.asset_state import AssetState
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
+
+
+@pytest.fixture
+def rpc_broker(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Simulate running on an RPC automation broker.
+
+    SOAR encrypts the asset state at rest on their behalf, so the app must not
+    encrypt or decrypt it itself.
+    """
+
+    def unavailable(value: str, salt: str = "unused-salt") -> str:
+        raise AssertionError("RPC brokers must not encrypt or decrypt asset state")
+
+    monkeypatch.setattr(
+        soar_sdk.asset_state, "is_onprem_broker_rpc_install", lambda: True
+    )
+    monkeypatch.setattr(encryption_helper, "encrypt", unavailable)
+    monkeypatch.setattr(encryption_helper, "decrypt", unavailable)
 
 
 def test_asset_state_full_accessors(example_state: AssetState):
@@ -132,6 +152,58 @@ def test_encrypted_state_reads_legacy_plaintext_state(example_provider):
     }
 
 
+def test_unreadable_state_is_not_discarded_off_rpc_broker(
+    example_state: AssetState, monkeypatch: pytest.MonkeyPatch
+):
+    def fail_decrypt(cipher, salt="unused-salt"):
+        raise ValueError("no encryption key available")
+
+    monkeypatch.setattr(encryption_helper, "decrypt", fail_decrypt)
+    example_state.backend.save_state({"example": "ZW5jcnlwdGVkLWVsc2V3aGVyZQ=="})
+
+    # Installs which encrypt their own state, such as WebSocket automation
+    # brokers, surface unreadable state instead of discarding it.
+    with pytest.raises(ValueError, match="no encryption key available"):
+        example_state.get_all()
+
+
+def test_rpc_broker_stores_state_unencrypted(
+    example_state: AssetState, rpc_broker: None
+):
+    example_state.put_all({"token": "abc"})
+    example_state["expires_in"] = 3600
+
+    # SOAR encrypts the state at rest, so it is stored as a mapping rather than
+    # a string which only looks encrypted.
+    assert example_state.backend.load_state()["example"] == {
+        "token": "abc",
+        "expires_in": 3600,
+    }
+    assert example_state.get_all() == {"token": "abc", "expires_in": 3600}
+
+
+def test_rpc_broker_reads_legacy_plaintext_state(
+    example_state: AssetState, rpc_broker: None
+):
+    example_state.backend.save_state({"example": json.dumps({"legacy": True})})
+
+    assert example_state.get_all() == {"legacy": True}
+
+
+@pytest.mark.parametrize("stored_state", ["ZW5jcnlwdGVkLWVsc2V3aGVyZQ==", "1337"])
+def test_rpc_broker_discards_unreadable_state(
+    example_state: AssetState,
+    rpc_broker: None,
+    mocker: pytest_mock.MockerFixture,
+    stored_state: str,
+):
+    error = mocker.patch.object(soar_sdk.asset_state.logger, "error")
+    example_state.backend.save_state({"example": stored_state})
+
+    assert example_state.get_all() == {}
+    error.assert_called_once()
+
+
 def test_transaction_commit_persists(example_state: AssetState):
     example_state.put_all({"key": "original"})
 
@@ -235,3 +307,13 @@ def test_get_all_with_force_reload(example_state: AssetState):
 
     assert reload_called is True
     assert result == {"key": "original_value"}
+
+
+def test_force_reload_skips_state_file_on_rpc_broker(
+    example_state: AssetState, rpc_broker: None, mocker: pytest_mock.MockerFixture
+):
+    example_state.put_all({"token": "abc"})
+    reload = mocker.patch.object(example_state.backend, "reload_state_from_file")
+
+    assert example_state.get_all(force_reload=True) == {"token": "abc"}
+    reload.assert_not_called()

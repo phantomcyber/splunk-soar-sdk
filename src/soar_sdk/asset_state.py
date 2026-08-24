@@ -1,23 +1,31 @@
 import json
 from collections.abc import Iterator, MutableMapping
+from contextlib import suppress
 from typing import Any
 
+from soar_sdk.logging import getLogger
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
+from soar_sdk.shims.phantom.install_info import is_onprem_broker_rpc_install
 
 AssetStateKeyType = str
 AssetStateValueType = Any
 AssetStateType = dict[AssetStateKeyType, AssetStateValueType]
 
+logger = getLogger()
+
 
 class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
     """An adapter to one partition of asset state stored within SOAR.
 
-    State is encrypted at rest by default. Unencrypted asset state can be useful
-    if you intend for users to read or edit the asset state directly from the
-    filesystem, outside of SOAR. Please note that this use case is not
-    officially supported, and a future version of SOAR will begin storing the
-    asset state in the database instead of the filesystem.
+    State is encrypted at rest by default. On RPC automation brokers, where SOAR
+    encrypts the asset state on the app's behalf, it is stored as-is.
+
+    Unencrypted asset state can be useful if you intend for users to read or
+    edit the asset state directly from the filesystem, outside of SOAR. Please
+    note that this use case is not officially supported, and a future version of
+    SOAR will begin storing the asset state in the database instead of the
+    filesystem.
     """
 
     def __init__(
@@ -68,7 +76,9 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
         """Get the entirety of this part of the asset state."""
         if self._transaction_buffer is not None:
             return dict(self._transaction_buffer)
-        if force_reload:
+        if force_reload and not is_onprem_broker_rpc_install():
+            # RPC automation brokers read the state from SOAR on every load, and
+            # their state file is a stale copy which would overwrite it.
             # backend is from phantom_common shim, whose imports are replaced with Any
             self.backend.reload_state_from_file(  # ty: ignore[unresolved-attribute]
                 self.asset_id
@@ -78,23 +88,46 @@ class AssetState(MutableMapping[AssetStateKeyType, AssetStateValueType]):
             return {}
         if isinstance(part, dict):
             return dict(part)
-        part_json = encryption_helper.decrypt(part, self.asset_id)
-        return json.loads(part_json)
+        return self._decode_part(part)
 
     def put_all(self, new_value: AssetStateType) -> None:
         """Entirely replace this part of the asset state."""
         if self.in_transaction:
             self._transaction_buffer = dict(new_value)
             return
-        part_json = json.dumps(new_value)
         state = self.backend.load_state() or {}
-        if self.encrypted:
-            state[self.state_key] = encryption_helper.encrypt(
-                part_json, salt=self.asset_id
-            )
-        else:
-            state[self.state_key] = json.loads(part_json)
+        state[self.state_key] = self._encode_part(json.dumps(new_value))
         self.backend.save_state(state)
+
+    def _decode_part(self, part: str) -> AssetStateType:
+        """Decode a stored part of the asset state, decrypting it if needed.
+
+        A part stored on an RPC automation broker is either plaintext or
+        ciphertext this install holds no key for, so state which cannot be read
+        is discarded instead of failing the action.
+        """
+        if not is_onprem_broker_rpc_install():
+            return json.loads(encryption_helper.decrypt(part, self.asset_id))
+
+        decoded = None
+        with suppress(json.JSONDecodeError):
+            decoded = json.loads(part)
+        if isinstance(decoded, dict):
+            return decoded
+
+        logger.error(f"Discarding unreadable {self.state_key} state")
+        return {}
+
+    def _encode_part(self, part_json: str) -> str | AssetStateType:
+        """Encode a part of the asset state, encrypting it if needed.
+
+        RPC automation brokers store the mapping as-is, since SOAR encrypts the
+        asset state at rest on their behalf.
+        """
+        if not self.encrypted or is_onprem_broker_rpc_install():
+            return json.loads(part_json)
+
+        return encryption_helper.encrypt(part_json, salt=self.asset_id)
 
     def __getitem__(self, key: AssetStateKeyType) -> AssetStateValueType:
         return self.get_all()[key]
