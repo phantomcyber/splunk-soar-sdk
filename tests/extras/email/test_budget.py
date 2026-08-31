@@ -165,6 +165,30 @@ def test_warning_messages_cover_raw_email_and_multiple_roots() -> None:
     )
 
 
+def test_warning_message_rejects_poll_only_reason() -> None:
+    warning = EmailAnalysisWarning(
+        code=EmailBudgetLimitType.POLL_BYTES,
+        observed=121,
+        limit=120,
+        scope="poll",
+    )
+
+    with pytest.raises(ValueError, match="poll_bytes.*published warning"):
+        warning.user_message()
+
+
+def test_attachment_warning_uses_fallback_name_and_singular_byte() -> None:
+    warning = EmailAnalysisWarning(
+        code=EmailBudgetLimitType.ATTACHMENT_BYTES,
+        observed=1,
+        limit=1,
+        scope="attachment",
+    )
+
+    assert 'attachment "unnamed_attachment"' in warning.user_message()
+    assert "1 byte" in warning.user_message()
+
+
 def test_poll_budget_only_counts_committed_messages() -> None:
     budget = EmailPollBudget(_limits(max_poll_bytes=120))
 
@@ -196,6 +220,34 @@ def test_poll_budget_accepts_exact_remaining_boundary() -> None:
 
     with pytest.raises(ValueError, match="per-poll"):
         budget.commit(1)
+
+
+def test_budget_trackers_reject_invalid_initial_and_observed_values() -> None:
+    limits = _limits(max_poll_bytes=120)
+
+    with pytest.raises(ValueError, match="depth"):
+        EmailMessageBudget(limits).accept_nested_depth(-1)
+    with pytest.raises(ValueError, match="committed_bytes"):
+        EmailPollBudget(limits, committed_bytes=-1)
+    with pytest.raises(ValueError, match="committed_bytes"):
+        EmailPollBudget(limits, committed_bytes=121)
+    with pytest.raises(ValueError, match="projected_bytes"):
+        EmailPollBudget(limits).can_commit(-1)
+
+
+def test_warning_coalescing_skips_unrelated_existing_reasons() -> None:
+    tracker = EmailMessageBudget(_limits(max_attachment_bytes=20))
+
+    assert not tracker.accept_attachment("oversized.bin", 21)
+    assert tracker.accept_attachment("accepted.bin", 9)
+    assert not tracker.accept_attachment("aggregate-one.bin", 12)
+    assert not tracker.accept_attachment("aggregate-two.bin", 12)
+
+    assert [warning.code for warning in tracker.warnings] == [
+        EmailBudgetLimitType.ATTACHMENT_BYTES,
+        EmailBudgetLimitType.MESSAGE_ATTACHMENT_BYTES,
+    ]
+    assert tracker.warnings[1].skipped_count == 2
 
 
 class BudgetAsset(EmailBudgetAssetMixin, BaseAsset):
