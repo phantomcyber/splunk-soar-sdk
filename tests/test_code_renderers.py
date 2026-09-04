@@ -185,6 +185,7 @@ def test_pre_commit_config_public_includes_static_tests():
     (
         ("string", True, "str"),
         ("password", True, "str"),
+        ("python_script", True, "str"),
         ("numeric", False, "float"),
         ("boolean", False, "bool"),
     ),
@@ -223,6 +224,14 @@ def test_asset_renderer():
             data_type="numeric",
             value_list=None,
         ),
+        asset_renderer.AssetContext(
+            name="parser",
+            description="Python parser",
+            required=True,
+            default=None,
+            data_type="python_script",
+            value_list=None,
+        ),
     ]
 
     renderer = asset_renderer.AssetRenderer(asset_fields)
@@ -234,6 +243,7 @@ def test_asset_renderer():
             "class Asset(BaseAsset):",
             "    username: str = AssetField(description='Username for authentication')",
             "    port: float | None = AssetField(description='Port number', default=443)",
+            "    parser: str = AssetField(description='Python parser', is_python_script=True)",
         ]
     )
 

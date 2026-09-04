@@ -39,6 +39,7 @@ def AssetField(
     alias: str | None = None,
     category: FieldCategory = FieldCategory.CONNECTIVITY,
     is_file: bool = False,
+    is_python_script: bool = False,
 ) -> Any:  # noqa: ANN401
     """Define an asset configuration field with SOAR-specific metadata.
 
@@ -56,10 +57,17 @@ def AssetField(
         category: Grouping used to organize fields in the SOAR UI.
         is_file: Marks the field as a file upload field. The field must be typed as
             str and will receive the file contents as a string.
+        is_python_script: Marks the field as a Python script upload field. The field
+            must be typed as str and will receive the file contents as a string.
+            Packaging an app with this field raises its minimum SOAR version to
+            8.8.0 when necessary.
 
     Returns:
         A Pydantic ``Field`` carrying the metadata needed for manifest generation.
     """
+    if is_file and is_python_script:
+        raise ValueError("AssetField cannot be both a file and a Python script")
+
     json_schema_extra: dict[str, Any] = {"category": category}
     if required is not None:
         json_schema_extra["required"] = required
@@ -69,6 +77,8 @@ def AssetField(
         json_schema_extra["sensitive"] = sensitive
     if is_file:
         json_schema_extra["is_file"] = True
+    if is_python_script:
+        json_schema_extra["is_python_script"] = True
 
     # Use ... for required fields
     field_default: Any = (
@@ -272,6 +282,13 @@ class BaseAsset(BaseModel):
                         f"File parameter {field_name} must be type str, not {normalized.base_type.__name__}"
                     )
                 type_name = "file"
+
+            if json_schema_extra.get("is_python_script", False):
+                if normalized.base_type is not str:
+                    raise TypeError(
+                        f"Python script parameter {field_name} must be type str, not {normalized.base_type.__name__}"
+                    )
+                type_name = "python_script"
 
             if not (description := field.description):
                 description = cls._default_field_description(field_name)

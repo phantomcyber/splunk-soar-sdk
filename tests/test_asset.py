@@ -153,6 +153,29 @@ def test_file_field_must_be_str():
         BrokenFileAsset.to_json_schema()
 
 
+def test_python_script_field():
+    class PythonScriptAsset(BaseAsset):
+        parser: str = AssetField(
+            is_python_script=True, description="Upload Python parser"
+        )
+
+    schema = PythonScriptAsset.to_json_schema()
+    assert schema["parser"]["data_type"] == "python_script"
+
+
+def test_python_script_field_must_be_str():
+    class BrokenPythonScriptAsset(BaseAsset):
+        parser: int = AssetField(is_python_script=True)
+
+    with pytest.raises(TypeError, match="must be type str"):
+        BrokenPythonScriptAsset.to_json_schema()
+
+
+def test_python_script_field_cannot_also_be_file():
+    with pytest.raises(ValueError, match="cannot be both"):
+        AssetField(is_file=True, is_python_script=True)
+
+
 def test_asset_field_legacy_optional_behavior():
     """Test that AssetField with required=False and default=None uses validate_default=False."""
 

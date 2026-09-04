@@ -100,6 +100,11 @@ class AssetRenderer(AstRenderer[list[AssetContext]]):
                     )
                 )
 
+            if field.data_type == "python_script":
+                field_kwargs.append(
+                    ast.keyword(arg="is_python_script", value=ast.Constant(value=True))
+                )
+
             if field.alias is not None:
                 field_kwargs.append(
                     ast.keyword(arg="alias", value=ast.Constant(value=field.alias))

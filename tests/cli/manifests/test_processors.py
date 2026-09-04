@@ -8,6 +8,7 @@ import toml
 from packaging.requirements import Requirement
 
 from soar_sdk import __version__
+from soar_sdk.asset import AssetField, BaseAsset
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.compat import UPDATE_TIME_FORMAT
 from soar_sdk.meta.dependencies import DEPENDENCIES_TO_SKIP, normalize_package_name
@@ -93,6 +94,25 @@ def test_build_manifest_includes_sdk_packaging_provenance():
     manifest = processor.build().to_json_manifest()
 
     assert manifest["packaged_by"] == f"splunk-soar-sdk {__version__}"
+
+
+def test_build_manifest_raises_minimum_for_python_script(
+    mocker: pytest_mock.MockerFixture,
+) -> None:
+    class PythonScriptAsset(BaseAsset):
+        parser: str = AssetField(is_python_script=True)
+
+    processor = ManifestProcessor(
+        "example_app.json", project_context="./tests/example_app"
+    )
+    app_meta = processor.load_toml_app_meta()
+    app = processor.import_app_instance(app_meta)
+    mocker.patch.object(app, "asset_cls", PythonScriptAsset)
+    mocker.patch.object(processor, "import_app_instance", return_value=app)
+
+    manifest = processor.build().to_json_manifest()
+
+    assert manifest["min_phantom_version"] == "8.8.0"
 
 
 @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="data")

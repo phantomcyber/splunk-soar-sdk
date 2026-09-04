@@ -78,6 +78,9 @@ def test_generate_asset_definition(app_meta, tmp_path):
         "boolean": AssetFieldSpecification(
             label="boolean", required=False, data_type="boolean", default=True
         ),
+        "parser": AssetFieldSpecification(
+            label="Parser", required=True, data_type="python_script"
+        ),
         "_underscore": AssetFieldSpecification(data_type="string"),
     }
     asset_class = cli.generate_asset_definition_ast(app_meta=app_meta)
@@ -91,6 +94,7 @@ def test_generate_asset_definition(app_meta, tmp_path):
             "    timezone: ZoneInfo | None = AssetField(default=ZoneInfo('UTC'))",
             "    number: float | None = AssetField(default=42)",
             "    boolean: bool | None = AssetField(default=True)",
+            "    parser: str = AssetField(is_python_script=True)",
             "    underscore: str | None = AssetField(alias='_underscore')",
         ]
     )
