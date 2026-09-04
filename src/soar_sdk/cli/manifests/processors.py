@@ -8,6 +8,7 @@ import toml
 from packaging.specifiers import SpecifierSet
 
 from soar_sdk.app import App
+from soar_sdk.cli.manifests.compatibility import resolve_minimum_phantom_version
 from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.compat import UPDATE_TIME_FORMAT, PythonVersion
 from soar_sdk.meta.adapters import TOMLDataAdapter
@@ -51,6 +52,7 @@ class ManifestProcessor:
         app_meta.utctime_updated = datetime.now(UTC).strftime(UPDATE_TIME_FORMAT)
         for field, value in app.app_meta_info.items():
             setattr(app_meta, field, value)
+        app_meta.min_phantom_version = resolve_minimum_phantom_version(app_meta)
 
         uv_lock = self.load_app_uv_lock()
         dependencies = uv_lock.build_package_list(app_meta.project_name)
