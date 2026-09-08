@@ -10,6 +10,7 @@ import respx
 import toml
 from typer.testing import CliRunner
 
+from soar_sdk import __version__
 from soar_sdk.cli.package.cli import package
 from soar_sdk.cli.package.utils import (
     phantom_get_login_session,
@@ -341,6 +342,7 @@ def test_package_build_writes_manifest_wheel_paths(
         manifest = json.loads(manifest_file.read())
 
     expected_path = f"wheels/shared/{local_wheel}"
+    assert manifest["packaged_by"] == f"splunk-soar-sdk {__version__}"
     expected_wheel = {
         "module": "splunk-soar-sdk",
         "input_file": expected_path,
