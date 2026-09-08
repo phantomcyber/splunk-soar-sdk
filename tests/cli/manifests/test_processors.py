@@ -7,6 +7,7 @@ import pytest_mock
 import toml
 from packaging.requirements import Requirement
 
+from soar_sdk import __version__
 from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.compat import UPDATE_TIME_FORMAT
 from soar_sdk.meta.dependencies import DEPENDENCIES_TO_SKIP, normalize_package_name
@@ -76,6 +77,16 @@ def test_manifest_processor_creating_json_from_meta(mocker: pytest_mock.MockerFi
     save_json_manifest = mocker.patch.object(processor, "save_json_manifest")
     processor.create()
     save_json_manifest.assert_called_once()
+
+
+def test_build_manifest_includes_sdk_packaging_provenance():
+    processor = ManifestProcessor(
+        "example_app.json", project_context="./tests/example_app"
+    )
+
+    manifest = processor.build().to_json_manifest()
+
+    assert manifest["packaged_by"] == f"splunk-soar-sdk {__version__}"
 
 
 @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="data")

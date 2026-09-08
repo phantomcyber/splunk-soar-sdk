@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 
+from soar_sdk import __version__
 from soar_sdk.asset import AssetFieldSpecification
 from soar_sdk.compat import PythonVersion
 
@@ -34,6 +35,7 @@ class AppMeta(BaseModel):
     python_version: str = Field(default_factory=PythonVersion.all_csv)
     product_version_regex: str = ".*"
     publisher: str = ""
+    packaged_by: str = f"splunk-soar-sdk {__version__}"
     utctime_updated: str = ""
     fips_compliant: bool = False
     contributors: list[AppContributor] = Field(default_factory=list)

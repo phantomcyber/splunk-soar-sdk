@@ -15,6 +15,7 @@
     "python_version": "3.13,3.14",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
+    "packaged_by": "splunk-soar-sdk 4.1.2",
     "utctime_updated": "2026-04-23T18:23:57.332931Z",
     "fips_compliant": false,
     "contributors": [],
