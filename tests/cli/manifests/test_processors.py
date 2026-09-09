@@ -13,10 +13,16 @@ from soar_sdk.compat import UPDATE_TIME_FORMAT
 from soar_sdk.meta.dependencies import DEPENDENCIES_TO_SKIP, normalize_package_name
 
 DEPENDENCY_SECTIONS = ("pip313_dependencies", "pip314_dependencies")
+FIXTURE_SDK_VERSION = "test-version"
 PYTHON_DEPENDENCY_PREFIX = {
     "pip313_dependencies": "python313",
     "pip314_dependencies": "python314",
 }
+
+
+@pytest.fixture
+def mock_fixture_sdk_version(mocker: pytest_mock.MockerFixture) -> None:
+    mocker.patch("soar_sdk.meta.app.__version__", FIXTURE_SDK_VERSION)
 
 
 def _without_resolved_dependencies(manifest: dict) -> dict:
@@ -118,7 +124,7 @@ def test_get_module_dot_path(main_module, dot_path):
     "app",
     ("example_app", "example_app_with_webhook", "example_app_plaintext_state"),
 )
-def test_build_manifests(app: str):
+def test_build_manifests(app: str, mock_fixture_sdk_version: None):
     test_app = f"tests/{app}"
     processor = ManifestProcessor("example_app.json", project_context=test_app)
     app_meta = processor.build().to_json_manifest()

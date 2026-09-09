@@ -9,6 +9,10 @@ from .dependencies import DependencyList
 from .webhooks import WebhookMeta
 
 
+def _packaged_by() -> str:
+    return f"splunk-soar-sdk {__version__}"
+
+
 class AppContributor(BaseModel):
     """Canonical format for the 'contributors' object in the app manifest."""
 
@@ -35,7 +39,7 @@ class AppMeta(BaseModel):
     python_version: str = Field(default_factory=PythonVersion.all_csv)
     product_version_regex: str = ".*"
     publisher: str = ""
-    packaged_by: str = f"splunk-soar-sdk {__version__}"
+    packaged_by: str = Field(default_factory=_packaged_by)
     utctime_updated: str = ""
     fips_compliant: bool = False
     contributors: list[AppContributor] = Field(default_factory=list)
