@@ -199,12 +199,13 @@ class TestUvPackage:
         )
         assert wheel.input_file_aarch64 is None
 
-    def test_resolve_sdist(self):
+    @pytest.mark.parametrize("package_name", ["splunk-sdk", "pythonwhois-alt"])
+    def test_resolve_allowed_sdist(self, package_name):
         package = UvPackage(
-            name="splunk-sdk",
+            name=package_name,
             version="2.1.0",
             sdist=UvSourceDistribution(
-                url="https://example.com/splunk-sdk-2.1.0.tar.gz",
+                url=f"https://example.com/{package_name}-2.1.0.tar.gz",
                 hash="sha256:deadbeef",
                 size=123456,
             ),

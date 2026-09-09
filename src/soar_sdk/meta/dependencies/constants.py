@@ -43,5 +43,6 @@ DEPENDENCIES_TO_BUILD = normalize_package_set(
         "splunk_sdk",  # https://github.com/splunk/splunk-sdk-python/pull/656,
         "splunk_soar_sdk",  # Useful to build from source when developing the SDK
         "red_black_tree_mod",  # Required for email parsing
+        "pythonwhois_alt",  # Source-only package required by the WHOIS connector
     }
 )
