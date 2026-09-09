@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.svg" alt="Splunk SOAR SDK logo" width="180">
+</p>
+
 # Splunk SOAR SDK - the official tool for Splunk SOAR app development
 
 <!-- NOTE: Coverage is not dynamically generated, but it is true because CI fails below 100% coverage -->
