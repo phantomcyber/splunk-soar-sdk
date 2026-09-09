@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1254" height="1254" viewBox="0 0 1254 1254" role="img" aria-labelledby="title desc">
+  <title id="title">Splunk SOAR SDK logo</title>
+  <desc id="desc">A cyan shield containing a code bracket and a symmetric workflow of three nodes.</desc>
+
+  <path
+    d="M627 115 1070 297c7 3 11 10 11 18v128c0 306-160 566-454 695C333 1009 173 749 173 443V315c0-8 4-15 11-18Z"
+    fill="#082553"
+    stroke="#10BDEB"
+    stroke-width="54"
+    stroke-linejoin="round"
+  />
+
+  <!-- The upper path is an exact vertical mirror of the lower path around the center node. -->
+  <g fill="none" stroke="#FFF" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M627 550V447"/>
+    <path d="M627 504h-173c-18 0-33 14-33 34"/>
+    <path d="M627 504h173c18 0 33 14 33 34"/>
+    <path d="M627 710v103"/>
+    <path d="M627 756h173c18 0 33-14 33-34"/>
+    <path d="M627 756H454c-18 0-33-14-33-34"/>
+  </g>
+
+  <!-- Code-bracket signal sits in front of the white workflow paths. -->
+  <path d="M421 538 339 630l82 92M833 538l82 92-82 92" fill="none" stroke="#10BDEB" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Workflow nodes -->
+  <circle cx="627" cy="365" r="82" fill="#10BDEB"/>
+  <circle cx="627" cy="365" r="39" fill="#FFF"/>
+
+  <circle cx="627" cy="630" r="82" fill="#F9AB00"/>
+  <circle cx="627" cy="630" r="39" fill="#FFF"/>
+
+  <circle cx="627" cy="889" r="82" fill="#10BDEB"/>
+  <circle cx="627" cy="889" r="39" fill="#FFF"/>
+</svg>

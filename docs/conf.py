@@ -104,6 +104,9 @@ html_theme = "furo"
 html_theme_options = {
     "navigation_with_keys": True,
 }
+html_logo = "_static/logo.svg"
+html_favicon = "_static/favicon.png"
+html_static_path = ["_static"]
 
 html_context = {
     "display_github": True,
