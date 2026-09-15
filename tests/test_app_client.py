@@ -66,6 +66,48 @@ def soar_client() -> ConcreteSOARClient:
     return ConcreteSOARClient()
 
 
+@pytest.mark.parametrize("verify_ssl", [True, False])
+def test_app_client_uses_platform_tls_setting(verify_ssl: bool):
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=verify_ssl),
+        patch("soar_sdk.app_client.httpx.Client") as mock_client,
+        patch.object(
+            AppClient,
+            "get_soar_base_url",
+            return_value="https://localhost:9999",
+        ),
+    ):
+        AppClient()
+
+    mock_client.assert_called_once_with(
+        base_url="https://localhost:9999",
+        verify=verify_ssl,
+    )
+
+
+@pytest.mark.parametrize("verify_ssl", [True, False])
+def test_authenticate_soar_client_uses_platform_tls_setting(
+    simple_connector: AppClient,
+    verify_ssl: bool,
+):
+    auth = SOARClientAuth(
+        base_url="https://10.34.5.6",
+        broker_ph_auth_token="broker-token",
+    )
+
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=verify_ssl),
+        patch("soar_sdk.app_client.httpx.Client") as mock_client,
+        patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True),
+    ):
+        simple_connector.authenticate_soar_client(auth)
+
+    mock_client.assert_called_once_with(
+        base_url="https://10.34.5.6",
+        verify=verify_ssl,
+    )
+
+
 @respx.mock
 def test_soar_client_get(soar_client: ConcreteSOARClient):
     route = respx.get("https://localhost:9999/rest/test").mock(
