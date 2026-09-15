@@ -1,7 +1,7 @@
 import json
 import tarfile
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from urllib.parse import urlparse
 
 import httpx
@@ -194,6 +194,51 @@ def test_install_with_soar_instance_env_var(
         ],
     )
     assert result.exit_code == 0
+
+
+@pytest.mark.parametrize("use_token", [False, True])
+@pytest.mark.parametrize("insecure", [False, True])
+def test_install_tls_verification(
+    app_tarball: Path, monkeypatch, use_token: bool, insecure: bool
+):
+    monkeypatch.setenv("PHANTOM_USERNAME", "admin")
+    monkeypatch.setenv("PHANTOM_PASSWORD", "password")
+    if use_token:
+        monkeypatch.setenv("PH_AUTH_TOKEN", "token")
+    else:
+        monkeypatch.delenv("PH_AUTH_TOKEN", raising=False)
+
+    response = httpx.Response(
+        200,
+        headers={"Set-Cookie": "csrftoken=csrf-token"},
+        request=httpx.Request("GET", "https://10.1.23.4/"),
+    )
+    install_response = httpx.Response(
+        201,
+        request=httpx.Request("POST", "https://10.1.23.4/app_install"),
+    )
+
+    with patch(
+        "soar_sdk.cli.package.utils.httpx.AsyncClient", autospec=True
+    ) as mock_client_class:
+        client = mock_client_class.return_value.__aenter__.return_value
+        client.get = AsyncMock(return_value=response)
+        client.post = AsyncMock(return_value=install_response)
+        client.cookies = httpx.Cookies()
+        client.base_url = httpx.URL("https://10.1.23.4")
+
+        args = ["install", app_tarball.as_posix(), "10.1.23.4"]
+        if insecure:
+            args.append("--insecure")
+        result = runner.invoke(package, args)
+
+    assert result.exit_code == 0, result.stdout
+    client_kwargs = mock_client_class.call_args.kwargs
+    assert client_kwargs["verify"] is not insecure
+    if use_token:
+        assert client_kwargs["headers"] == {"ph-auth-token": "token"}
+    else:
+        assert client_kwargs["auth"] == ("admin", "password")
 
 
 @pytest.mark.asyncio
