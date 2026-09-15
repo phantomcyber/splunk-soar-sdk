@@ -34,7 +34,7 @@ def _configuration_uses_data_type(data_type: str) -> Callable[[AppMeta], bool]:
 
 FEATURE_REQUIREMENTS = (
     FeatureRequirement(
-        minimum_phantom_version="8.8.0",
+        minimum_phantom_version="8.9.0",
         is_used=_configuration_uses_data_type("python_script"),
     ),
 )
