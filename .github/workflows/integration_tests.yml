@@ -116,7 +116,8 @@ jobs:
           uv run soarapps package install \
             /tmp/example_app.tgz \
             "$phantom_ip" \
-            --username "${{ vars.PHANTOM_USERNAME }}"
+            --username "${{ vars.PHANTOM_USERNAME }}" \
+            --insecure
 
       - name: Install example_app_with_webhook on Phantom instance
         env:
@@ -128,7 +129,8 @@ jobs:
           uv run soarapps package install \
             /tmp/example_app_with_webhook.tgz \
             "$phantom_ip" \
-            --username "${{ vars.PHANTOM_USERNAME }}"
+            --username "${{ vars.PHANTOM_USERNAME }}" \
+            --insecure
 
       - name: Install example_app_plaintext_state on Phantom instance
         env:
@@ -140,7 +142,8 @@ jobs:
           uv run soarapps package install \
             /tmp/example_app_plaintext_state.tgz \
             "$phantom_ip" \
-            --username "${{ vars.PHANTOM_USERNAME }}"
+            --username "${{ vars.PHANTOM_USERNAME }}" \
+            --insecure
 
       - name: Run integration tests
         env:
