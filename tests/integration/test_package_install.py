@@ -63,6 +63,7 @@ def test_package_install_with_ph_auth_token(
         [
             "package",
             "install",
+            "--insecure",
             "--force",
             example_app_package.as_posix(),
         ],
@@ -92,6 +93,7 @@ def test_package_install_with_phantom_username_password(
         [
             "package",
             "install",
+            "--insecure",
             "--force",
             example_app_package.as_posix(),
         ],
