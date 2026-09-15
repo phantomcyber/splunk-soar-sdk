@@ -32,6 +32,8 @@ You can also do this from the command line::
 
     soarapps package install myapp.tgz soar.example.com
 
+TLS certificates are verified by default. If the Splunk SOAR instance does not have a valid certificate, pass ``--insecure`` to explicitly disable certificate verification.
+
 Getting Help
 ============
 

@@ -256,6 +256,7 @@ async def upload_app(
     username: str = "",
     password: str = "",
     token: str = "",
+    verify: bool = True,
 ) -> httpx.Response:
     """Asynchronously upload an app tgz to a Splunk SOAR system, via REST API."""
     base_url = (
@@ -266,9 +267,11 @@ async def upload_app(
 
     payload = {"app": app_tarball.read_bytes()}
     if token:
-        session_ctx = phantom_get_token_session(base_url, token)
+        session_ctx = phantom_get_token_session(base_url, token, verify=verify)
     else:
-        session_ctx = phantom_get_login_session(base_url, username, password)
+        session_ctx = phantom_get_login_session(
+            base_url, username, password, verify=verify
+        )
     async with session_ctx as client:
         response = await phantom_install_app(client, "app_install", payload, force)
     return response
@@ -286,6 +289,10 @@ def install(
         typer.Option(envvar="PHANTOM_USERNAME"),
     ] = "",
     force: bool = False,
+    insecure: Annotated[
+        bool,
+        typer.Option("--insecure", help="Disable TLS certificate verification."),
+    ] = False,
 ) -> None:
     """Install the app tgz to the specified Splunk SOAR system.
 
@@ -311,7 +318,13 @@ def install(
 
     if token:
         app_install_request = asyncio.run(
-            upload_app(soar_instance, app_tarball, force, token=token)
+            upload_app(
+                soar_instance,
+                app_tarball,
+                force,
+                token=token,
+                verify=not insecure,
+            )
         )
     else:
         if not username:
@@ -322,7 +335,12 @@ def install(
 
         app_install_request = asyncio.run(
             upload_app(
-                soar_instance, app_tarball, force, username=username, password=password
+                soar_instance,
+                app_tarball,
+                force,
+                username=username,
+                password=password,
+                verify=not insecure,
             )
         )
 
