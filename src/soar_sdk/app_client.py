@@ -9,6 +9,7 @@ from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
 from soar_sdk.shims.phantom.install_info import (
+    get_verify_ssl_setting,
     is_onprem_broker_install,
     is_onprem_broker_rpc_install,
 )
@@ -37,7 +38,7 @@ class AppClient(SOARClient[SummaryType]):
 
         self._client = httpx.Client(
             base_url=self.get_soar_base_url(),
-            verify=False,  # noqa: S501
+            verify=get_verify_ssl_setting(),
         )
         self.csrf_token: str = ""
 
@@ -99,7 +100,7 @@ class AppClient(SOARClient[SummaryType]):
         session_id = soar_auth.user_session_token
         self._client = httpx.Client(
             base_url=soar_auth.base_url,
-            verify=False,  # noqa: S501
+            verify=get_verify_ssl_setting(),
         )
 
         if is_onprem_broker_install() and self._broker_ph_auth_token:
