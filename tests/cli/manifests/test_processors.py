@@ -112,7 +112,7 @@ def test_build_manifest_raises_minimum_for_python_script(
 
     manifest = processor.build().to_json_manifest()
 
-    assert manifest["min_phantom_version"] == "8.8.0"
+    assert manifest["min_phantom_version"] == "8.9.0"
 
 
 @mock.patch("builtins.open", new_callable=mock.mock_open, read_data="data")

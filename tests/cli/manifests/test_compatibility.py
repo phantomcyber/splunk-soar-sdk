@@ -26,7 +26,12 @@ def _app_meta(
 
 @pytest.mark.parametrize(
     ("min_phantom_version", "expected"),
-    (("7.0.0", "8.8.0"), ("8.8.0", "8.8.0"), ("9.0.0", "9.0.0")),
+    (
+        ("7.0.0", "8.9.0"),
+        ("8.8.0", "8.9.0"),
+        ("8.9.0", "8.9.0"),
+        ("9.0.0", "9.0.0"),
+    ),
 )
 def test_python_script_minimum_phantom_version(
     min_phantom_version: str, expected: str
