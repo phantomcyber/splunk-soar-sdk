@@ -39,6 +39,9 @@ jobs:
         run: |
           git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
           git fetch origin ${{ github.head_ref }}:${{ github.head_ref }}
+          printf '%s\n' \
+            "BASE_SHA=$(git rev-parse '${{ github.base_ref }}')" \
+            "HEAD_SHA=$(git rev-parse '${{ github.head_ref }}')" >> "$GITHUB_ENV"
           git checkout ${{ github.base_ref }}
           git merge --ff-only ${{ github.head_ref }}
       - name: Run Semantic Release as a dry run
@@ -49,16 +52,16 @@ jobs:
           semantic-release --dry-run --no-ci
       - name: Validate changelog fragments
         env:
-          BASE_REF: ${{ github.base_ref }}
-          HEAD_REF: ${{ github.head_ref }}
+          BASE_SHA: ${{ env.BASE_SHA }}
+          HEAD_SHA: ${{ env.HEAD_SHA }}
         run: |
           if [[ -s release_version.txt ]]; then
             python3 .github/utils/changelog.py validate \
               --version "$(cat release_version.txt)" \
-              --require-new "$BASE_REF" "$HEAD_REF"
+              --require-new "$BASE_SHA" "$HEAD_SHA"
           else
             python3 .github/utils/changelog.py validate \
-              --forbid-new "$BASE_REF" "$HEAD_REF"
+              --forbid-new "$BASE_SHA" "$HEAD_SHA"
           fi
       - name: Comment release notes on the PR
         uses: actions/github-script@v7
