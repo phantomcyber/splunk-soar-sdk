@@ -6,6 +6,20 @@ List any new features you've added to the SDK:
 Describe any bugs you've fixed. Link to the relevant GitHub Issues, if any:
  -
 
+<!-- Changelog workflow guidance authored by Codex. -->
+## Changelog
+For a release-producing change, add exactly one `.changes/<short-slug>.rst`
+file containing one user-facing item. Use one of these exact prefixes; CI
+supplies the release version and date:
+
+    * Feature: Add ...
+    * Fix: Prevent ...
+    * Docs: Explain ...
+
+For a breaking change, put `Breaking:` immediately after the category and
+include the user impact and migration step. Docs-only, test-only, CI-only, and
+maintenance changes do not need a fragment.
+
 ## Pull Request Checklist
  - [ ] I have added or updated unit tests where appropriate.
  - [ ] I have updated documentation and example apps where appropriate.

@@ -39,6 +39,8 @@ jobs:
           python-version: 3.13
       - name: Install semantic-release dependencies
         run: npm install --global semantic-release @semantic-release/exec @semantic-release/git
+      - name: Validate pending changelog fragments
+        run: python3 .github/utils/changelog.py validate
       - name: Run Semantic Release
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}

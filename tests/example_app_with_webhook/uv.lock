@@ -1269,7 +1269,6 @@ docs = [
     { name = "sphinx-autodoc-typehints", specifier = ">=2.0.0,<3" },
     { name = "sphinx-copybutton", specifier = ">=0.5.2" },
     { name = "sphinx-design", specifier = ">=0.6.1" },
-    { name = "sphinx-git", specifier = ">=11.0.0" },
     { name = "sphinx-last-updated-by-git", specifier = ">=0.3.8" },
     { name = "sphinxcontrib-typer", specifier = ">=0.5.1" },
 ]

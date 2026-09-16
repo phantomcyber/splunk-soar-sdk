@@ -45,7 +45,6 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.githubpages",
     "sphinxcontrib.typer",
-    "sphinx_git",
     "sphinx_copybutton",
     "sphinx_autodoc_typehints",
     "sphinx_last_updated_by_git",
