@@ -1,0 +1,4 @@
+# Authored by Codex.
+interface:
+  display_name: "Changelog Authoring"
+  short_description: "Write one version-independent SDK changelog fragment"

@@ -27,6 +27,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Set up NodeJS
         uses: actions/setup-node@v4
         with:
@@ -45,6 +47,19 @@ jobs:
         run: |
           unset GITHUB_ACTIONS GITHUB_REF GITHUB_EVENT_NAME
           semantic-release --dry-run --no-ci
+      - name: Validate changelog fragments
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [[ -s release_version.txt ]]; then
+            python3 .github/utils/changelog.py validate \
+              --version "$(cat release_version.txt)" \
+              --require-new "$BASE_REF" "$HEAD_REF"
+          else
+            python3 .github/utils/changelog.py validate \
+              --forbid-new "$BASE_REF" "$HEAD_REF"
+          fi
       - name: Comment release notes on the PR
         uses: actions/github-script@v7
         with:
