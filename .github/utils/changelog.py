@@ -21,6 +21,21 @@ CATEGORY_PATTERN = "|".join(CATEGORIES)
 ENTRY_PATTERN = re.compile(
     rf"^\* (?P<category>{CATEGORY_PATTERN}): (?P<text>\S.*)$",
 )
+RELEASE_TYPES = {
+    "feat": "minor",
+    "fix": "patch",
+    "perf": "patch",
+    "revert": "patch",
+}
+COMMIT_HEADER_PATTERN = re.compile(
+    r"^(?P<type>[A-Za-z][A-Za-z0-9-]*)"
+    r"(?:\((?P<scope>[^()\r\n]+)\))?"
+    r"(?P<breaking>!)?: (?P<description>\S.*)$",
+)
+BREAKING_FOOTER_PATTERN = re.compile(
+    r"(?m)^[ \t]*BREAKING(?: CHANGE|-CHANGE):[ \t]*\S.*$",
+)
+REVERT_HEADER_PATTERN = re.compile(r'^Revert ".+"$')
 FRAGMENT_NAME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*\.rst$")
 VERSION_PATTERN = re.compile(
     r"^(?P<major>\d+)\.(?P<minor>\d+)\.(?P<patch>\d+)"
@@ -154,6 +169,78 @@ def validate_fragments(fragments_path: Path = FRAGMENTS_PATH) -> list[Change]:
     changes: list[Change] = []
     for path in fragment_paths(fragments_path):
         changes.extend(_parse_fragment(path))
+    return changes
+
+
+def release_type_for_commit(message: str) -> str | None:
+    """Return the semantic-release level for a Conventional Commit message."""
+
+    lines = [line for line in message.splitlines() if not line.startswith("#")]
+    header = next((line for line in lines if line.strip()), "")
+    if REVERT_HEADER_PATTERN.fullmatch(header):
+        return "patch"
+
+    match = COMMIT_HEADER_PATTERN.fullmatch(header)
+    if match is None:
+        return None
+    if match.group("breaking") or BREAKING_FOOTER_PATTERN.search("\n".join(lines)):
+        return "major"
+    return RELEASE_TYPES.get(match.group("type").lower())
+
+
+def _indexed_fragment_paths() -> list[Path]:
+    """Return pending fragments present in the Git index."""
+
+    git_path = shutil.which("git")
+    if git_path is None:
+        raise ChangelogError("git is required to validate commit changelog coverage")
+    result = subprocess.run(  # noqa: S603
+        [git_path, "ls-files", "--cached", "--full-name", "--", ".changes"],
+        check=True,
+        capture_output=True,
+        cwd=ROOT,
+        text=True,
+    )
+    return sorted(
+        ROOT / item
+        for item in result.stdout.splitlines()
+        if (
+            item.startswith(".changes/")
+            and item.count("/") == 1
+            and item.endswith(".rst")
+        )
+    )
+
+
+def validate_commit_message(
+    message: str,
+    *,
+    fragments_path: Path = FRAGMENTS_PATH,
+    indexed_fragment_paths: list[Path] | None = None,
+) -> list[Change]:
+    """Require pending changelog language for a release-producing commit."""
+
+    release_type = release_type_for_commit(message)
+    if release_type is None:
+        return []
+
+    indexed_paths = (
+        _indexed_fragment_paths()
+        if indexed_fragment_paths is None
+        else indexed_fragment_paths
+    )
+    if not indexed_paths:
+        raise ChangelogError(
+            f"this commit will create a semantic-release {release_type} release; "
+            "stage a pending .changes/*.rst fragment before committing",
+        )
+
+    changes = validate_fragments(fragments_path)
+    if release_type == "major" and not any(change.breaking for change in changes):
+        raise ChangelogError(
+            "a breaking commit requires a pending fragment entry that begins "
+            "with 'Breaking:' after its category",
+        )
     return changes
 
 
@@ -464,6 +551,12 @@ def _parser() -> argparse.ArgumentParser:
         "notes", help="print release notes from pending fragments"
     )
     notes.add_argument("--version", required=True)
+
+    commit = commands.add_parser(
+        "validate-commit",
+        help="require pending changelog language for release commits",
+    )
+    commit.add_argument("message_path", type=Path)
     return parser
 
 
@@ -472,7 +565,12 @@ def main(argv: list[str] | None = None) -> int:
 
     arguments = _parser().parse_args(argv)
     try:
-        if arguments.command == "notes":
+        if arguments.command == "validate-commit":
+            changes = validate_commit_message(
+                arguments.message_path.read_text(encoding="utf-8")
+            )
+            print(f"Validated commit changelog coverage ({len(changes)} item(s)).")
+        elif arguments.command == "notes":
             print(release_notes(version=arguments.version))
         elif arguments.command == "render":
             count = render_changelog(

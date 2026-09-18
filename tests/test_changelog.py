@@ -87,6 +87,87 @@ def test_validate_fragment_rejects_multiple_items(tmp_path: Path) -> None:
         changelog.validate_fragments(fragments_path)
 
 
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("fix(docs): correct the rendered changelog\n", "patch"),
+        ("feat(api): add a client method\n", "minor"),
+        ("feat!: rename the client method\n", "major"),
+        (
+            "fix(api): change the client method\n\n"
+            "BREAKING CHANGE: migrate callers to the new method.\n",
+            "major",
+        ),
+        ('Revert "feat(api): add a client method"\n', "patch"),
+        ("docs: correct the rendered changelog\n", None),
+        ("chore(release): update version to 5.0.1 [skip ci]\n", None),
+    ],
+)
+def test_release_type_for_commit(message: str, expected: str | None) -> None:
+    """Mirror semantic-release's release-producing commit categories."""
+
+    assert changelog.release_type_for_commit(message) == expected
+
+
+def test_validate_commit_requires_indexed_fragment(tmp_path: Path) -> None:
+    """Require release-producing commits to stage pending changelog language."""
+
+    fragments_path = tmp_path / ".changes"
+    fragments_path.mkdir()
+
+    with pytest.raises(changelog.ChangelogError, match="stage a pending"):
+        changelog.validate_commit_message(
+            "fix(api): prevent an SDK error\n",
+            fragments_path=fragments_path,
+            indexed_fragment_paths=[],
+        )
+
+
+def test_validate_commit_accepts_pending_fragment(tmp_path: Path) -> None:
+    """Accept a release-producing commit with a valid indexed fragment."""
+
+    fragments_path = tmp_path / ".changes"
+    fragments_path.mkdir()
+    fragment_path = fragments_path / "release-item.rst"
+    fragment_path.write_text("* Fix: Prevent an SDK error.\n", encoding="utf-8")
+
+    changes = changelog.validate_commit_message(
+        "fix(api): prevent an SDK error\n",
+        fragments_path=fragments_path,
+        indexed_fragment_paths=[fragment_path],
+    )
+
+    assert len(changes) == 1
+
+
+def test_validate_commit_requires_breaking_language(tmp_path: Path) -> None:
+    """Require migration guidance for a breaking release commit."""
+
+    fragments_path = tmp_path / ".changes"
+    fragments_path.mkdir()
+    fragment_path = fragments_path / "release-item.rst"
+    fragment_path.write_text("* Feature: Add a replacement API.\n", encoding="utf-8")
+
+    with pytest.raises(changelog.ChangelogError, match="begins with 'Breaking:'"):
+        changelog.validate_commit_message(
+            "feat!: replace the API\n",
+            fragments_path=fragments_path,
+            indexed_fragment_paths=[fragment_path],
+        )
+
+
+def test_validate_commit_ignores_non_release_commit(tmp_path: Path) -> None:
+    """Do not require changelog language for commits semantic-release ignores."""
+
+    changes = changelog.validate_commit_message(
+        "chore(ci): refresh workflow tooling\n",
+        fragments_path=tmp_path / ".changes",
+        indexed_fragment_paths=[],
+    )
+
+    assert changes == []
+
+
 def test_render_consumes_fragments_in_existing_major_group(tmp_path: Path) -> None:
     """Insert a stable release before existing entries and consume its fragment."""
 
