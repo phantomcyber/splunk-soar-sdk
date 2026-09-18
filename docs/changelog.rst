@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 5
    :open:
 
+   .. rubric:: 5.0.1 (2026-09-18)
+
+   * Docs: Document the SDK release history and CI-managed changelog workflow.
+
    .. rubric:: 5.0.0 (2026-09-15)
 
    **Breaking changes:**
@@ -25,7 +29,6 @@ bugfix.
      accordingly.
 
 .. dropdown:: SDK 4
-   :open:
 
    .. rubric:: 4.4.2 (2026-09-15)
 
