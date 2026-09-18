@@ -620,7 +620,7 @@
                     "required": false,
                     "primary": false,
                     "allow_list": false,
-                    "default": false
+                    "default": true
                 }
             },
             "output": [

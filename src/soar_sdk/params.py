@@ -328,5 +328,5 @@ class MakeRequestParams(Params):
     verify_ssl: bool = Param(
         description="Whether to verify the SSL certificate. Default is False.",
         required=False,
-        default=False,
+        default=True,
     )
