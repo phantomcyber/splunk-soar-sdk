@@ -218,20 +218,24 @@ def test_render_handles_the_backfilled_changelog(tmp_path: Path) -> None:
 
     changelog_path = tmp_path / "changelog.rst"
     shutil.copyfile(SCRIPT_PATH.parents[2] / "docs/changelog.rst", changelog_path)
+    latest_version = max(changelog._release_versions(changelog_path))
+    next_patch_version = (
+        f"{latest_version[0]}.{latest_version[1]}.{latest_version[2] + 1}"
+    )
     fragments_path = tmp_path / ".changes"
     fragments_path.mkdir()
     fragment_path = fragments_path / "future-fix.rst"
     fragment_path.write_text("* Fix: Prevent a future SDK error.\n", encoding="utf-8")
 
     changelog.render_changelog(
-        version="5.0.1",
+        version=next_patch_version,
         release_date="2026-09-16",
         changelog_path=changelog_path,
         fragments_path=fragments_path,
     )
 
     rendered = changelog_path.read_text(encoding="utf-8")
-    assert rendered.index("5.0.1") < rendered.index("5.0.0")
+    assert rendered.index(next_patch_version) < rendered.index("5.0.0")
     assert rendered.count(".. dropdown:: SDK") == 5
     assert rendered.count("   :open:") == 1
     assert not fragment_path.exists()
