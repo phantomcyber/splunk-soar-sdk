@@ -43,6 +43,11 @@ repos:
 
   - repo: local
     hooks:
+      - id: changelog-release
+        name: changelog-release
+        language: system
+        entry: python3 .github/utils/changelog.py validate-commit
+        stages: [ commit-msg ]
       - id: changelog-fragments
         name: changelog-fragments
         language: system
