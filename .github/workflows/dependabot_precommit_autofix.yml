@@ -45,16 +45,15 @@ jobs:
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CHANGELOG_FRAGMENT: .changes/dependabot-${{ github.event.pull_request.number }}.rst
           PATCH_FILE: ${{ runner.temp }}/pre-commit.patch
         run: |
+          printf '%s\n' '* Fix: Update dependencies.' > "$CHANGELOG_FRAGMENT"
+
           mapfile -d '' changed_files < <(
             git diff --name-only -z "$BASE_SHA" "$HEAD_SHA"
           )
-
-          if (( ${#changed_files[@]} == 0 )); then
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          changed_files+=("$CHANGELOG_FRAGMENT")
 
           previous_tree=$(git write-tree)
           for pass in 1 2 3; do
@@ -136,6 +135,8 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          CHANGELOG_ENTRY: '* Fix: Update dependencies.'
+          CHANGELOG_FRAGMENT: .changes/dependabot-${{ github.event.pull_request.number }}.rst
           PATCH_FILE: ${{ runner.temp }}/pre-commit-fixes/pre-commit.patch
         run: |
           remote_sha=$(
@@ -159,12 +160,18 @@ jobs:
           while IFS= read -r -d '' path; do
             found_change=true
 
-            if [[ -z "${pr_files[$path]+present}" ]]; then
+            if [[ "$path" != "$CHANGELOG_FRAGMENT" && -z "${pr_files[$path]+present}" ]]; then
               echo "::error file=$path::Autofix changed a file outside the Dependabot PR"
               exit 1
             fi
 
             case "$path" in
+              "$CHANGELOG_FRAGMENT")
+                if [[ ! -f "$path" ]] || ! cmp -s "$path" <(printf '%s\n' "$CHANGELOG_ENTRY"); then
+                  echo "::error file=$path::Autofix generated an invalid changelog fragment"
+                  exit 1
+                fi
+                ;;
               pyproject.toml|*/pyproject.toml|uv.lock|*/uv.lock)
                 ;;
               *)
