@@ -9,8 +9,16 @@ Increments to the major version number imply a breaking change, to the minor
 version imply a new feature, and to the patch version imply a non-breaking
 bugfix.
 
-.. dropdown:: SDK 5
+.. dropdown:: SDK 6
    :open:
+
+   .. rubric:: 6.0.0 (2026-09-19)
+
+   **Breaking changes:**
+
+   * Fix: Breaking: Verify SSL certificates by default for ``MakeRequestParams``; set ``verify_ssl=False`` explicitly when connecting to endpoints with self-signed certificates.
+
+.. dropdown:: SDK 5
 
    .. rubric:: 5.0.1 (2026-09-18)
 
