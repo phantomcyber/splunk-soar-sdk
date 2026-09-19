@@ -26,7 +26,7 @@ The App Class
 
 .. autoclass:: soar_sdk.app.App
    :show-inheritance:
-   :exclude-members: action, test_connectivity, on_poll, register_action, enable_webhooks, view_handler, generic_action
+   :exclude-members: action, test_connectivity, on_poll, register_action, enable_webhooks, view_handler, make_request
 
 .. _api_ref_key_methods_label:
 
@@ -39,7 +39,7 @@ Key App Methods
 .. automethod:: soar_sdk.app.App.register_action
 .. automethod:: soar_sdk.app.App.enable_webhooks
 .. automethod:: soar_sdk.app.App.view_handler
-.. automethod:: soar_sdk.app.App.generic_action
+.. automethod:: soar_sdk.app.App.make_request
 
 .. _asset-configuration-label:
 
@@ -154,7 +154,7 @@ On poll functions require a specific parameter class called `OnPollParams`. YYou
 .. autoclass:: soar_sdk.params.OnPollParams
 
 Parameters for the Make Request Action
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Make Request action functions require a specific parameter class called :class:`~soar_sdk.params.MakeRequestParams`. You should use this class as-is, instead of overriding it.
 
 .. autoclass:: soar_sdk.params.MakeRequestParams
@@ -223,7 +223,7 @@ Defining Action Outputs
 .. autofunction:: soar_sdk.action_results.OutputField
 
 Make Request Action Output
-^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 For ``make request`` functions, we have provided a convenience class called :class:`~soar_sdk.action_results.MakeRequestOutput`. This class extends the :class:`~soar_sdk.action_results.ActionOutput` class and adds a ``status_code`` and ``response_body`` field. You can use this class to return the response from the ``make request`` action.
 
 .. autoclass:: soar_sdk.action_results.MakeRequestOutput
