@@ -39,6 +39,7 @@ jobs:
         run: npm install --global semantic-release @semantic-release/exec @semantic-release/git
       - name: Check out the target branch and merge onto it
         env:
+          BASE_BRANCH: ${{ github.base_ref }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
@@ -46,7 +47,11 @@ jobs:
           printf '%s\n' \
             "BASE_SHA=$BASE_SHA" \
             "HEAD_SHA=$HEAD_SHA" >> "$GITHUB_ENV"
-          git checkout --detach "$BASE_SHA"
+          case "$BASE_BRANCH" in
+            main|alpha|beta) release_branch="$BASE_BRANCH" ;;
+            *) release_branch=main ;;
+          esac
+          git checkout -B "$release_branch" "$BASE_SHA"
           git merge --ff-only "$HEAD_SHA"
       - name: Run Semantic Release as a dry run
         env:
