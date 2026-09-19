@@ -615,7 +615,7 @@
                 "verify_ssl": {
                     "order": 6,
                     "name": "verify_ssl",
-                    "description": "Whether to verify the SSL certificate. Default is False.",
+                    "description": "Whether to verify the SSL certificate. Default is True.",
                     "data_type": "boolean",
                     "required": false,
                     "primary": false,
