@@ -112,6 +112,7 @@ docs = [
     "sphinx-copybutton>=0.5.2",
     "sphinx-last-updated-by-git>=0.3.8",
     "sphinx-design>=0.6.1",
+    "sphinx-llm>=1.0.0,<2",
 ]
 
 [[tool.uv.index]]
