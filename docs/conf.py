@@ -49,8 +49,13 @@ extensions = [
     "sphinx_autodoc_typehints",
     "sphinx_last_updated_by_git",
     "sphinx_design",
+    "sphinx_llm.txt",
     "myst_parser",
 ]
+
+# Publish Markdown renditions and an ``llms.txt`` index alongside the HTML
+# documentation so that LLMs and agents can consume the same built content.
+llms_txt_suffix_mode = "replace"
 
 source_suffix = {
     ".rst": "restructuredtext",
