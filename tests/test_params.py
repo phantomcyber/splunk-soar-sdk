@@ -48,6 +48,25 @@ def test_make_request_params_subclass_schema():
     )
 
 
+def test_make_request_params_verify_ssl_schema_matches_secure_default():
+    verify_ssl = MakeRequestParams._to_json_schema()["verify_ssl"]
+
+    assert verify_ssl["default"] is True
+    assert verify_ssl["description"] == (
+        "Whether to verify the SSL certificate. Default is True."
+    )
+
+
+def test_make_request_params_verify_ssl_behavior():
+    default_params = MakeRequestParams(http_method="GET", endpoint="/test")
+    opt_out_params = MakeRequestParams(
+        http_method="GET", endpoint="/test", verify_ssl=False
+    )
+
+    assert default_params.verify_ssl is True
+    assert opt_out_params.verify_ssl is False
+
+
 def test_params_field_without_annotation():
     class BrokenParams(Params):
         field_no_type: str
