@@ -218,6 +218,9 @@ def test_render_handles_the_backfilled_changelog(tmp_path: Path) -> None:
 
     changelog_path = tmp_path / "changelog.rst"
     shutil.copyfile(SCRIPT_PATH.parents[2] / "docs/changelog.rst", changelog_path)
+    dropdown_count = changelog_path.read_text(encoding="utf-8").count(
+        ".. dropdown:: SDK"
+    )
     latest_version = max(changelog._release_versions(changelog_path))
     next_patch_version = (
         f"{latest_version[0]}.{latest_version[1]}.{latest_version[2] + 1}"
@@ -236,7 +239,7 @@ def test_render_handles_the_backfilled_changelog(tmp_path: Path) -> None:
 
     rendered = changelog_path.read_text(encoding="utf-8")
     assert rendered.index(next_patch_version) < rendered.index("5.0.0")
-    assert rendered.count(".. dropdown:: SDK") == 5
+    assert rendered.count(".. dropdown:: SDK") == dropdown_count
     assert rendered.count("   :open:") == 1
     assert not fragment_path.exists()
 
