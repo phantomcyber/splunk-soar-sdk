@@ -1032,7 +1032,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "6.0.0"
+version = "6.0.1"
 source = { directory = "../../" }
 dependencies = [
     { name = "authlib" },
