@@ -4,7 +4,6 @@ Ported from platform's custom_template.py.
 """
 
 import hashlib
-import json
 import re
 import uuid
 from collections.abc import Iterable, Iterator
@@ -14,6 +13,7 @@ from typing import TypeVar
 import bleach
 import humanize
 from jinja2 import Environment
+from jinja2.utils import htmlsafe_json_dumps
 
 
 def widget_uuid(length: int = 8) -> str:
@@ -134,13 +134,13 @@ def sformat(s: str, value: object) -> str:
 
 
 def jslist(obj: list) -> str:
-    """Convert list to JavaScript array string."""
-    return "[" + ",".join([f"'{s}'" for s in obj]) + "]"
+    """Convert a list to a JavaScript-safe array string."""
+    return to_json(obj)
 
 
 def to_json(obj: object) -> str:
-    """Convert object to JSON string."""
-    return json.dumps(obj)
+    """Convert an object to a JavaScript-safe JSON string."""
+    return htmlsafe_json_dumps(obj)
 
 
 def absval(obj: int | float) -> int | float:

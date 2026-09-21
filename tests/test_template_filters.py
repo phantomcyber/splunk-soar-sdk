@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from jinja2 import Environment
+from markupsafe import Markup
 
 from soar_sdk.views import template_filters
 
@@ -135,14 +136,33 @@ def test_sformat():
 
 
 def test_jslist():
-    assert template_filters.jslist([1, 2, 3]) == "['1','2','3']"
+    assert template_filters.jslist([1, 2, 3]) == "[1, 2, 3]"
     assert template_filters.jslist([]) == "[]"
-    assert template_filters.jslist(["a", "b", "c"]) == "['a','b','c']"
+    assert template_filters.jslist(["a", "b", "c"]) == '["a", "b", "c"]'
 
 
 def test_to_json():
     data = {"a": 1, "b": 2}
-    assert template_filters.to_json(data) == '{"a": 1, "b": 2}'
+    result = template_filters.to_json(data)
+
+    assert isinstance(result, Markup)
+    assert result == '{"a": 1, "b": 2}'
+
+
+def test_to_json_escapes_script_context_delimiters():
+    result = template_filters.to_json("</script><script>alert('x') & more</script>")
+
+    assert result == (
+        '"\\u003c/script\\u003e\\u003cscript\\u003ealert(\\u0027x\\u0027) '
+        '\\u0026 more\\u003c/script\\u003e"'
+    )
+
+
+def test_jslist_uses_script_safe_json_serialization():
+    result = template_filters.jslist(["</script>", "x'"])
+
+    assert isinstance(result, Markup)
+    assert result == '["\\u003c/script\\u003e", "x\\u0027"]'
 
 
 @pytest.mark.parametrize(
