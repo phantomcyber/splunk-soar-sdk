@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 6
    :open:
 
+   .. rubric:: 6.1.0 (2026-09-21)
+
+   * Docs: Publish Markdown pages and an ``llms.txt`` index with the SDK documentation, and validate the generated docs strictly in CI. Written by Codex.
+
    .. rubric:: 6.0.1 (2026-09-19)
 
    * Fix: Describe the secure ``verify_ssl`` default accurately in generated app metadata and documentation.

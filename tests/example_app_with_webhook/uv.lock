@@ -1180,7 +1180,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "6.0.1"
+version = "6.1.0"
 source = { directory = "../../" }
 dependencies = [
     { name = "authlib" },
@@ -1270,6 +1270,7 @@ docs = [
     { name = "sphinx-copybutton", specifier = ">=0.5.2" },
     { name = "sphinx-design", specifier = ">=0.6.1" },
     { name = "sphinx-last-updated-by-git", specifier = ">=0.3.8" },
+    { name = "sphinx-llm", specifier = ">=1.0.0,<2" },
     { name = "sphinxcontrib-typer", specifier = ">=0.5.1" },
 ]
 
