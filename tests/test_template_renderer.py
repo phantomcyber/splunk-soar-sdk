@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 from jinja2 import TemplateNotFound
 
+from soar_sdk.paths import SDK_TEMPLATES
 from soar_sdk.views.template_renderer import (
     ERROR_TEMPLATE_PATH,
     JinjaTemplateRenderer,
@@ -33,6 +34,25 @@ def test_jinja_template_renderer_render_template_success():
         result = renderer.render_template("test.html", {"title": "Test Title"})
 
         assert result == "<h1>Test Title</h1>"
+
+
+def test_pie_chart_template_uses_script_safe_json():
+    renderer = JinjaTemplateRenderer(str(SDK_TEMPLATES))
+
+    result = renderer.render_template(
+        "components/pie_chart.html",
+        {
+            "title": "Threat Distribution",
+            "labels": ["</script><script>alert('x')</script>"],
+            "values": [1],
+            "colors": ["#dc3545"],
+        },
+    )
+
+    assert (
+        'const labels = ["\\u003c/script\\u003e\\u003cscript\\u003ealert(\\u0027x\\u0027)'
+        '\\u003c/script\\u003e"];'
+    ) in result
 
 
 def test_jinja_template_renderer_render_template_not_found():

@@ -27,9 +27,9 @@
   if (!canvas) return;
 
   const ctx = canvas.getContext('2d');
-  const labels = {{ labels | to_json | safe }};
-  const values = {{ values | to_json | safe }};
-  const colors = {{ colors | to_json | safe }};
+  const labels = {{ labels | to_json }};
+  const values = {{ values | to_json }};
+  const colors = {{ colors | to_json }};
 
   const container = canvas.parentElement;
   const size = Math.min(container.clientWidth - 40, container.clientHeight - 40, 300);

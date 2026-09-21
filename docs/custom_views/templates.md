@@ -29,13 +29,13 @@ The Splunk SOAR SDK provides custom filters for common needs:
 
 <!-- JSON data for JavaScript -->
 <script>
-const data = {{ json_data|to_json|safe }};
+const data = {{ json_data|to_json }};
 </script>
 
 <!-- More filters available... -->
 ```
 
-**Important:** Use `|safe` when outputting JSON data or pre-sanitized HTML. Normal text and variables are automatically escaped.
+**Important:** `to_json` returns script-context-safe JSON and should not be combined with `|safe`. Normal text and variables are automatically escaped.
 
 ## Widget Templates
 
@@ -122,5 +122,4 @@ Templates automatically escape HTML to prevent XSS attacks. The SDK enables:
 - `trim_blocks=True` and `lstrip_blocks=True` for cleaner output
 
 **Use `|safe` for:**
-- JSON data: like `{{ data|to_json|safe }}`
 - Pre-sanitized HTML: like `{{ content|bleach|safe }}`
