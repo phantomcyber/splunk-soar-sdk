@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 6
    :open:
 
+   .. rubric:: 6.1.1 (2026-09-22)
+
+   * Fix: Make custom template JSON filters safe for JavaScript contexts.
+
    .. rubric:: 6.1.0 (2026-09-21)
 
    * Docs: Publish Markdown pages and an ``llms.txt`` index with the SDK documentation, and validate the generated docs strictly in CI. Written by Codex.
