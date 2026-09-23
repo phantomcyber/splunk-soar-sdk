@@ -1,3 +1,5 @@
+import os
+import ssl
 from collections.abc import AsyncIterable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -26,6 +28,17 @@ class BasicAuth:
     password: str
 
 
+def _get_soar_tls_verify() -> ssl.SSLContext | bool:
+    """Return TLS verification settings for requests to the SOAR platform."""
+    if not get_verify_ssl_setting():
+        return False
+
+    ca_bundle = os.environ.get("REQUESTS_CA_BUNDLE")
+    if ca_bundle:
+        return ssl.create_default_context(cafile=ca_bundle)
+    return True
+
+
 class AppClient(SOARClient[SummaryType]):
     """An adapter between apps built with the SDK, and the APIs exposed by the BaseConnector class.
 
@@ -38,7 +51,7 @@ class AppClient(SOARClient[SummaryType]):
 
         self._client = httpx.Client(
             base_url=self.get_soar_base_url(),
-            verify=get_verify_ssl_setting(),
+            verify=_get_soar_tls_verify(),
         )
         self.csrf_token: str = ""
 
@@ -100,7 +113,7 @@ class AppClient(SOARClient[SummaryType]):
         session_id = soar_auth.user_session_token
         self._client = httpx.Client(
             base_url=soar_auth.base_url,
-            verify=get_verify_ssl_setting(),
+            verify=_get_soar_tls_verify(),
         )
 
         if is_onprem_broker_install() and self._broker_ph_auth_token:

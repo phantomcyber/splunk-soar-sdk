@@ -66,10 +66,24 @@ def soar_client() -> ConcreteSOARClient:
     return ConcreteSOARClient()
 
 
-@pytest.mark.parametrize("verify_ssl", [True, False])
-def test_app_client_uses_platform_tls_setting(verify_ssl: bool):
+@pytest.mark.parametrize(
+    ("verify_ssl", "ca_bundle"),
+    [(False, None), (True, None), (True, "/opt/phantom/etc/cacerts.pem")],
+)
+def test_app_client_verifies_with_platform_ca_bundle(
+    monkeypatch: pytest.MonkeyPatch, verify_ssl: bool, ca_bundle: str | None
+):
+    ssl_context = object()
+    if ca_bundle:
+        monkeypatch.setenv("REQUESTS_CA_BUNDLE", ca_bundle)
+    else:
+        monkeypatch.delenv("REQUESTS_CA_BUNDLE", raising=False)
+
     with (
         patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=verify_ssl),
+        patch(
+            "soar_sdk.app_client.ssl.create_default_context", return_value=ssl_context
+        ) as mock_ssl_context,
         patch("soar_sdk.app_client.httpx.Client") as mock_client,
         patch.object(
             AppClient,
@@ -79,33 +93,56 @@ def test_app_client_uses_platform_tls_setting(verify_ssl: bool):
     ):
         AppClient()
 
+    expected_verify = ssl_context if ca_bundle else verify_ssl
     mock_client.assert_called_once_with(
         base_url="https://localhost:9999",
-        verify=verify_ssl,
+        verify=expected_verify,
     )
+    if ca_bundle:
+        mock_ssl_context.assert_called_once_with(cafile=ca_bundle)
+    else:
+        mock_ssl_context.assert_not_called()
 
 
-@pytest.mark.parametrize("verify_ssl", [True, False])
-def test_authenticate_soar_client_uses_platform_tls_setting(
+@pytest.mark.parametrize(
+    ("verify_ssl", "ca_bundle"),
+    [(False, None), (True, None), (True, "/opt/phantom/etc/cacerts.pem")],
+)
+def test_authenticate_soar_client_verifies_with_platform_ca_bundle(
     simple_connector: AppClient,
+    monkeypatch: pytest.MonkeyPatch,
     verify_ssl: bool,
+    ca_bundle: str | None,
 ):
     auth = SOARClientAuth(
         base_url="https://10.34.5.6",
         broker_ph_auth_token="broker-token",
     )
+    ssl_context = object()
+    if ca_bundle:
+        monkeypatch.setenv("REQUESTS_CA_BUNDLE", ca_bundle)
+    else:
+        monkeypatch.delenv("REQUESTS_CA_BUNDLE", raising=False)
 
     with (
         patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=verify_ssl),
+        patch(
+            "soar_sdk.app_client.ssl.create_default_context", return_value=ssl_context
+        ) as mock_ssl_context,
         patch("soar_sdk.app_client.httpx.Client") as mock_client,
         patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True),
     ):
         simple_connector.authenticate_soar_client(auth)
 
+    expected_verify = ssl_context if ca_bundle else verify_ssl
     mock_client.assert_called_once_with(
         base_url="https://10.34.5.6",
-        verify=verify_ssl,
+        verify=expected_verify,
     )
+    if ca_bundle:
+        mock_ssl_context.assert_called_once_with(cafile=ca_bundle)
+    else:
+        mock_ssl_context.assert_not_called()
 
 
 @respx.mock
