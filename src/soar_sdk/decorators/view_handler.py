@@ -1,4 +1,5 @@
 import inspect
+import re
 from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any
@@ -14,6 +15,8 @@ from soar_sdk.views.template_renderer import (
     get_templates_dir,
 )
 from soar_sdk.views.view_parser import ViewFunctionParser
+
+_LEADING_HTML_COMMENTS = re.compile(r"\A\s*(?:<!--.*?-->\s*)+", re.DOTALL)
 
 if TYPE_CHECKING:
     from soar_sdk.app import App
@@ -93,7 +96,7 @@ class ViewHandlerDecorator:
             def handle_html_output(html: str) -> str:
                 # SOAR 7.0+ fully supports prerendering
                 context["prerender"] = True
-                return html
+                return _LEADING_HTML_COMMENTS.sub("", html)
 
             def render_with_error_handling(
                 render_func: Callable[[], str], error_type: str, target_name: str
