@@ -53,6 +53,7 @@ def test_pie_chart_template_uses_script_safe_json():
         'const labels = ["\\u003c/script\\u003e\\u003cscript\\u003ealert(\\u0027x\\u0027)'
         '\\u003c/script\\u003e"];'
     ) in result
+    assert result.lstrip().startswith('<div class="no-padding fill-space')
 
 
 def test_jinja_template_renderer_render_template_not_found():
