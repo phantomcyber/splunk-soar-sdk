@@ -26,6 +26,23 @@ class BasicAuth:
     password: str
 
 
+class _NativeLoopbackTransport(httpx.BaseTransport):
+    """Use the TLS exception only for the configured local SOAR port."""
+
+    def __init__(self, port: int | None) -> None:
+        self._port = port
+        self._local = httpx.HTTPTransport(verify=False)
+        self._verified = httpx.HTTPTransport(verify=True)
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        transport = self._local if request.url.port == self._port else self._verified
+        return transport.handle_request(request)
+
+    def close(self) -> None:
+        self._local.close()
+        self._verified.close()
+
+
 class AppClient(SOARClient[SummaryType]):
     """An adapter between apps built with the SDK, and the APIs exposed by the BaseConnector class.
 
@@ -36,10 +53,7 @@ class AppClient(SOARClient[SummaryType]):
         # Call the BaseConnectors init first
         super().__init__()
 
-        self._client = httpx.Client(
-            base_url=self.get_soar_base_url(),
-            verify=get_verify_ssl_setting(),
-        )
+        self._client = self._create_client(self.get_soar_base_url())
         self.csrf_token: str = ""
 
         self._artifacts_api = Artifact(soar_client=self)
@@ -98,10 +112,7 @@ class AppClient(SOARClient[SummaryType]):
         self._broker_ph_auth_token = soar_auth.broker_ph_auth_token
 
         session_id = soar_auth.user_session_token
-        self._client = httpx.Client(
-            base_url=soar_auth.base_url,
-            verify=get_verify_ssl_setting(),
-        )
+        self._client = self._create_client(soar_auth.base_url)
 
         if is_onprem_broker_install() and self._broker_ph_auth_token:
             return
@@ -119,6 +130,24 @@ class AppClient(SOARClient[SummaryType]):
             current_cookies = self._client.headers.get("Cookie", "")
             update_cookies = f"sessionid={session_id};{current_cookies}"
             self._client.headers.update({"Cookie": update_cookies})
+
+    @staticmethod
+    def _create_client(base_url: str) -> httpx.Client:
+        """Keep native loopback SOAR requests local without requiring an IP SAN."""
+        verify = get_verify_ssl_setting()
+        url = httpx.URL(base_url)
+        if (
+            verify
+            and url.scheme == "https"
+            and url.host == "127.0.0.1"
+            and not is_onprem_broker_install()
+        ):
+            return httpx.Client(
+                base_url=base_url,
+                verify=True,
+                mounts={"https://127.0.0.1": _NativeLoopbackTransport(url.port)},
+            )
+        return httpx.Client(base_url=base_url, verify=verify)
 
     def __login(self) -> None:
         response = self._client.get("/login", follow_redirects=True)
