@@ -1,8 +1,17 @@
+import ssl
+from datetime import UTC, datetime, timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
+from typing import Any
 from unittest.mock import patch
 
 import httpx
 import pytest
 import respx
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import NameOID
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionOutput
@@ -106,6 +115,124 @@ def test_authenticate_soar_client_uses_platform_tls_setting(
         base_url="https://10.34.5.6",
         verify=verify_ssl,
     )
+
+
+@pytest.fixture
+def loopback_https_server(tmp_path):
+    """Serve HTTPS on loopback with a certificate that has only a DNS SAN."""
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "soar.example.com")])
+    certificate = (
+        x509.CertificateBuilder()
+        .subject_name(name)
+        .issuer_name(name)
+        .public_key(key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(datetime.now(UTC) - timedelta(days=1))
+        .not_valid_after(datetime.now(UTC) + timedelta(days=1))
+        .add_extension(
+            x509.SubjectAlternativeName([x509.DNSName("soar.example.com")]),
+            critical=False,
+        )
+        .sign(key, hashes.SHA256())
+    )
+    cert_path = tmp_path / "cert.pem"
+    key_path = tmp_path / "key.pem"
+    cert_path.write_bytes(certificate.public_bytes(serialization.Encoding.PEM))
+    key_path.write_bytes(
+        key.private_bytes(
+            serialization.Encoding.PEM,
+            serialization.PrivateFormat.TraditionalOpenSSL,
+            serialization.NoEncryption(),
+        )
+    )
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            if self.path == "/redirect":
+                self.send_response(302)
+                self.send_header(
+                    "Location", f"https://localhost:{server.server_port}/ok"
+                )
+            else:
+                self.send_response(200)
+                self.send_header("Set-Cookie", "csrftoken=test-csrf; Path=/")
+            self.end_headers()
+
+        def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
+            pass
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    alternate_server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(cert_path, key_path)
+    server.socket = context.wrap_socket(server.socket, server_side=True)
+    alternate_server.socket = context.wrap_socket(
+        alternate_server.socket, server_side=True
+    )
+    thread = Thread(target=server.serve_forever, daemon=True)
+    alternate_thread = Thread(target=alternate_server.serve_forever, daemon=True)
+    thread.start()
+    alternate_thread.start()
+    try:
+        yield (
+            f"https://127.0.0.1:{server.server_port}",
+            f"https://127.0.0.1:{alternate_server.server_port}",
+            cert_path,
+        )
+    finally:
+        server.shutdown()
+        alternate_server.shutdown()
+        thread.join()
+        alternate_thread.join()
+        server.server_close()
+        alternate_server.server_close()
+
+
+def test_native_loopback_skips_certificate_check_only_for_loopback(
+    loopback_https_server, monkeypatch
+):
+    base_url, alternate_url, cert_path = loopback_https_server
+    monkeypatch.setenv("SSL_CERT_FILE", str(cert_path))
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:1")
+    monkeypatch.setenv("NO_PROXY", "localhost")
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=True),
+        patch("soar_sdk.app_client.is_onprem_broker_install", return_value=False),
+        patch.object(AppClient, "get_soar_base_url", return_value=base_url),
+    ):
+        app_client = AppClient()
+        try:
+            assert app_client.client.get("/ok").status_code == 200
+            with pytest.raises(httpx.ConnectError, match="IP address mismatch"):
+                app_client.client.get(alternate_url)
+            with pytest.raises(httpx.ConnectError, match="Hostname mismatch"):
+                app_client.client.get("/redirect", follow_redirects=True)
+
+            app_client.authenticate_soar_client(
+                SOARClientAuth(base_url=base_url, user_session_token="session")
+            )
+            assert app_client.csrf_token == "test-csrf"
+        finally:
+            app_client.client.close()
+
+
+def test_broker_loopback_keeps_certificate_verification(
+    loopback_https_server, monkeypatch
+):
+    base_url, _, cert_path = loopback_https_server
+    monkeypatch.setenv("SSL_CERT_FILE", str(cert_path))
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=True),
+        patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True),
+        patch.object(AppClient, "get_soar_base_url", return_value=base_url),
+    ):
+        app_client = AppClient()
+        try:
+            with pytest.raises(httpx.ConnectError, match="IP address mismatch"):
+                app_client.client.get("/ok")
+        finally:
+            app_client.client.close()
 
 
 @respx.mock
