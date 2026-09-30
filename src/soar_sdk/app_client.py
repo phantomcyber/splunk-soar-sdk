@@ -56,7 +56,7 @@ def _create_soar_client(base_url: str) -> httpx.Client:
     # The installed nginx leaf identifies the loopback peer without a DNS hostname.
     context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     context.check_hostname = False
-    context.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+    context.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN | ssl.VERIFY_X509_STRICT
     context.load_verify_locations(cadata=leaf.group())
 
     origin = f"https://127.0.0.1:{url.port or 443}"
