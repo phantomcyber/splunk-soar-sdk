@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 6
    :open:
 
+   .. rubric:: 6.1.2 (2026-09-30)
+
+   * Fix: Allow native SOAR apps to connect to the local REST endpoint when its certificate covers the stack DNS name instead of 127.0.0.1.
+
    .. rubric:: 6.1.1 (2026-09-22)
 
    * Fix: Make custom template JSON filters safe for JavaScript contexts.
