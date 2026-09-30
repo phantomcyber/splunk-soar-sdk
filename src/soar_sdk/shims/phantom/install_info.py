@@ -2,6 +2,7 @@ try:
     from phantom_common.install_info import (
         get_product_version,
         get_verify_ssl_setting,
+        is_cloud_install,
         is_onprem_broker_install,
         is_onprem_broker_rpc_install,
     )
@@ -22,6 +23,10 @@ if TYPE_CHECKING or not _soar_is_available:
         """Mock function to simulate the behavior of get_product_version."""
         return "6.4.1"
 
+    def is_cloud_install() -> bool:
+        """Mock function to simulate the behavior of is_cloud_install."""
+        return False
+
     def is_onprem_broker_install() -> bool:
         """Mock function to simulate the behavior of is_onprem_broker_install."""
         return False
@@ -41,6 +46,7 @@ def is_soar_available() -> bool:
 __all__ = [
     "get_product_version",
     "get_verify_ssl_setting",
+    "is_cloud_install",
     "is_onprem_broker_install",
     "is_onprem_broker_rpc_install",
     "is_soar_available",

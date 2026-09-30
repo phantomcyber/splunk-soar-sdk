@@ -1,5 +1,8 @@
+import re
+import ssl
 from collections.abc import AsyncIterable, Iterable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import httpx
@@ -10,9 +13,11 @@ from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
 from soar_sdk.shims.phantom.install_info import (
     get_verify_ssl_setting,
+    is_cloud_install,
     is_onprem_broker_install,
     is_onprem_broker_rpc_install,
 )
+from soar_sdk.shims.phantom.paths import NGINX_CERT
 
 if TYPE_CHECKING:
     pass
@@ -26,6 +31,42 @@ class BasicAuth:
     password: str
 
 
+def _create_soar_client(base_url: str) -> httpx.Client:
+    verify = get_verify_ssl_setting()
+    url = httpx.URL(base_url)
+    if not (
+        verify
+        and is_cloud_install()
+        and url.scheme == "https"
+        and url.host == "127.0.0.1"
+    ):
+        return httpx.Client(base_url=base_url, verify=verify)
+
+    certificate = Path(NGINX_CERT).read_text(encoding="ascii")
+    leaf = re.search(
+        r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----",
+        certificate,
+        flags=re.DOTALL,
+    )
+    if leaf is None:
+        raise ValueError(
+            "SOAR nginx certificate file does not contain a PEM certificate"
+        )
+
+    # The installed nginx leaf identifies the loopback peer without a DNS hostname.
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    context.check_hostname = False
+    context.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+    context.load_verify_locations(cadata=leaf.group())
+
+    origin = f"https://127.0.0.1:{url.port or 443}"
+    return httpx.Client(
+        base_url=base_url,
+        verify=verify,
+        mounts={origin: httpx.HTTPTransport(verify=context)},
+    )
+
+
 class AppClient(SOARClient[SummaryType]):
     """An adapter between apps built with the SDK, and the APIs exposed by the BaseConnector class.
 
@@ -36,10 +77,7 @@ class AppClient(SOARClient[SummaryType]):
         # Call the BaseConnectors init first
         super().__init__()
 
-        self._client = httpx.Client(
-            base_url=self.get_soar_base_url(),
-            verify=get_verify_ssl_setting(),
-        )
+        self._client = _create_soar_client(self.get_soar_base_url())
         self.csrf_token: str = ""
 
         self._artifacts_api = Artifact(soar_client=self)
@@ -98,10 +136,7 @@ class AppClient(SOARClient[SummaryType]):
         self._broker_ph_auth_token = soar_auth.broker_ph_auth_token
 
         session_id = soar_auth.user_session_token
-        self._client = httpx.Client(
-            base_url=soar_auth.base_url,
-            verify=get_verify_ssl_setting(),
-        )
+        self._client = _create_soar_client(soar_auth.base_url)
 
         if is_onprem_broker_install() and self._broker_ph_auth_token:
             return

@@ -1,15 +1,146 @@
+import ssl
+from datetime import UTC, datetime, timedelta
+from http.server import BaseHTTPRequestHandler
+from pathlib import Path
+from socketserver import ThreadingTCPServer
+from threading import Thread
 from unittest.mock import patch
 
 import httpx
 import pytest
 import respx
+from cryptography import x509
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import rsa
+from cryptography.x509.oid import ExtendedKeyUsageOID, NameOID
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
-from soar_sdk.app_client import AppClient
+from soar_sdk.app_client import AppClient, _create_soar_client
+
+
+class _TLSHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Set-Cookie", "csrftoken=test-csrf")
+        self.end_headers()
+        self.wfile.write(b"ok")
+
+    def log_message(self, *args):
+        pass
+
+
+class _TLSServer(ThreadingTCPServer):
+    daemon_threads = True
+
+    def __init__(self, context: ssl.SSLContext):
+        self.context = context
+        super().__init__(("127.0.0.1", 0), _TLSHandler)
+
+    def get_request(self):
+        connection, address = super().get_request()
+        return self.context.wrap_socket(connection, server_side=True), address
+
+
+@pytest.fixture
+def loopback_tls(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("NO_PROXY", "127.0.0.1")
+    now = datetime.now(UTC)
+    ca_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    ca_name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "SOAR test CA")])
+    ca_cert = (
+        x509.CertificateBuilder()
+        .subject_name(ca_name)
+        .issuer_name(ca_name)
+        .public_key(ca_key.public_key())
+        .serial_number(x509.random_serial_number())
+        .not_valid_before(now - timedelta(minutes=1))
+        .not_valid_after(now + timedelta(days=1))
+        .add_extension(x509.BasicConstraints(ca=True, path_length=None), critical=True)
+        .add_extension(
+            x509.KeyUsage(
+                digital_signature=True,
+                content_commitment=False,
+                key_encipherment=False,
+                data_encipherment=False,
+                key_agreement=False,
+                key_cert_sign=True,
+                crl_sign=True,
+                encipher_only=False,
+                decipher_only=False,
+            ),
+            critical=True,
+        )
+        .add_extension(
+            x509.SubjectKeyIdentifier.from_public_key(ca_key.public_key()),
+            critical=False,
+        )
+        .sign(ca_key, hashes.SHA256())
+    )
+
+    def make_leaf(filename: str) -> tuple[Path, Path]:
+        name = "soar.example.test"
+        leaf_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+        leaf_cert = (
+            x509.CertificateBuilder()
+            .subject_name(x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, name)]))
+            .issuer_name(ca_name)
+            .public_key(leaf_key.public_key())
+            .serial_number(x509.random_serial_number())
+            .not_valid_before(now - timedelta(minutes=1))
+            .not_valid_after(now + timedelta(days=1))
+            .add_extension(
+                x509.SubjectAlternativeName([x509.DNSName(name)]), critical=False
+            )
+            .add_extension(
+                x509.BasicConstraints(ca=False, path_length=None), critical=True
+            )
+            .add_extension(
+                x509.AuthorityKeyIdentifier.from_issuer_public_key(ca_key.public_key()),
+                critical=False,
+            )
+            .add_extension(
+                x509.ExtendedKeyUsage([ExtendedKeyUsageOID.SERVER_AUTH]),
+                critical=False,
+            )
+            .sign(ca_key, hashes.SHA256())
+        )
+        cert_path = tmp_path / f"{filename}.pem"
+        key_path = tmp_path / f"{filename}.key"
+        cert_path.write_bytes(
+            leaf_cert.public_bytes(serialization.Encoding.PEM)
+            + ca_cert.public_bytes(serialization.Encoding.PEM)
+        )
+        key_path.write_bytes(
+            leaf_key.private_bytes(
+                serialization.Encoding.PEM,
+                serialization.PrivateFormat.TraditionalOpenSSL,
+                serialization.NoEncryption(),
+            )
+        )
+        return cert_path, key_path
+
+    nginx_cert, nginx_key = make_leaf("nginx")
+    other_cert, _ = make_leaf("other")
+    ca_path = tmp_path / "ca.pem"
+    ca_path.write_bytes(ca_cert.public_bytes(serialization.Encoding.PEM))
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+    context.load_cert_chain(nginx_cert, nginx_key)
+    server = _TLSServer(context)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    yield (
+        f"https://127.0.0.1:{server.server_address[1]}",
+        nginx_cert,
+        other_cert,
+        ca_path,
+    )
+    server.shutdown()
+    thread.join()
+    server.server_close()
 
 
 class ConcreteSOARClient(SOARClient[ActionOutput]):
@@ -106,6 +237,89 @@ def test_authenticate_soar_client_uses_platform_tls_setting(
         base_url="https://10.34.5.6",
         verify=verify_ssl,
     )
+
+
+def test_cloud_loopback_pins_nginx_leaf(loopback_tls: tuple[str, Path, Path, Path]):
+    base_url, nginx_cert, other_cert, ca_path = loopback_tls
+    ca_context = ssl.create_default_context(cafile=str(ca_path))
+    with (
+        httpx.Client(verify=ca_context) as client,
+        pytest.raises(httpx.ConnectError, match="IP address mismatch"),
+    ):
+        client.get(base_url)
+
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=True),
+        patch("soar_sdk.app_client.is_cloud_install", return_value=True),
+        patch("soar_sdk.app_client.NGINX_CERT", str(nginx_cert)),
+        _create_soar_client(base_url) as client,
+    ):
+        assert client.get("/rest/version").status_code == 200
+
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=True),
+        patch("soar_sdk.app_client.is_cloud_install", return_value=True),
+        patch("soar_sdk.app_client.NGINX_CERT", str(other_cert)),
+        _create_soar_client(base_url) as client,
+        pytest.raises(httpx.ConnectError),
+    ):
+        client.get("/rest/version")
+
+
+def test_cloud_loopback_login_uses_pinned_leaf(
+    loopback_tls: tuple[str, Path, Path, Path],
+):
+    base_url, nginx_cert, _, _ = loopback_tls
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=True),
+        patch("soar_sdk.app_client.is_cloud_install", return_value=True),
+        patch("soar_sdk.app_client.NGINX_CERT", str(nginx_cert)),
+        patch.object(AppClient, "get_soar_base_url", return_value=base_url),
+    ):
+        connector = AppClient()
+        connector.authenticate_soar_client(
+            SOARClientAuth(base_url=base_url, user_session_token="test-session")
+        )
+
+    assert connector.csrf_token == "test-csrf"
+    assert "sessionid=test-session" in connector.client.headers["Cookie"]
+    connector.client.close()
+
+
+@pytest.mark.parametrize(
+    ("base_url", "verify_ssl", "is_cloud"),
+    [
+        ("https://127.0.0.1:443", False, True),
+        ("https://127.0.0.1:443", True, False),
+        ("https://soar.example.test", True, True),
+        ("https://10.34.5.6", True, True),
+        ("http://127.0.0.1:80", True, True),
+    ],
+)
+def test_soar_client_uses_default_transport_outside_verified_cloud_loopback(
+    base_url: str, verify_ssl: bool, is_cloud: bool
+):
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=verify_ssl),
+        patch("soar_sdk.app_client.is_cloud_install", return_value=is_cloud),
+        patch("soar_sdk.app_client.NGINX_CERT", "/missing/nginx-cert.pem"),
+        patch("soar_sdk.app_client.httpx.Client") as mock_client,
+    ):
+        _create_soar_client(base_url)
+
+    mock_client.assert_called_once_with(base_url=base_url, verify=verify_ssl)
+
+
+def test_cloud_loopback_rejects_malformed_nginx_pem(tmp_path: Path):
+    cert_path = tmp_path / "nginx-cert.pem"
+    cert_path.write_text("not a PEM certificate", encoding="ascii")
+    with (
+        patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=True),
+        patch("soar_sdk.app_client.is_cloud_install", return_value=True),
+        patch("soar_sdk.app_client.NGINX_CERT", str(cert_path)),
+        pytest.raises(ValueError, match="does not contain a PEM certificate"),
+    ):
+        _create_soar_client("https://127.0.0.1:443")
 
 
 @respx.mock
