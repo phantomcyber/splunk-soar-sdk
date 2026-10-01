@@ -466,6 +466,63 @@ def test_handle_webhook(app_with_asset_webhook: App, mock_get_any_soar_call):
     assert mock_get_any_soar_call.call_count == 1
 
 
+@pytest.mark.parametrize("include_directory", [True, False])
+def test_handle_webhook_get_webhook_url_without_action_config(
+    app_with_asset_webhook: App,
+    mock_get_any_soar_call,
+    tmp_path: Path,
+    include_directory,
+):
+    app = app_with_asset_webhook
+    directory = f"microsoft365_{app.app_meta_info['appid']}"
+    if include_directory:
+        directory = "installed_microsoft365"
+    app.app_meta_info["name"] = "Microsoft 365"
+    manifest = {"name": "Microsoft 365", "appid": app.app_meta_info["appid"]}
+    if include_directory:
+        manifest["directory"] = directory
+    responses = {
+        "/rest/system_info": httpx.Response(
+            200, json={"base_url": "https://soar.example.com/"}
+        ),
+        "/rest/feature_flag/webhooks": httpx.Response(
+            200, json={"config": {"webhooks_port": 4500}}
+        ),
+    }
+    login_response = httpx.Response(
+        200, headers={"Set-Cookie": "csrftoken=mocked_csrf_token; Path=/; HttpOnly"}
+    )
+    mock_get_any_soar_call.mock(
+        side_effect=lambda request: responses.get(request.url.path, login_response)
+    )
+
+    @app.webhook("oauth_callback")
+    def oauth_callback(request: WebhookRequest) -> WebhookResponse:
+        return WebhookResponse.text_response(app.get_webhook_url("oauth_callback"))
+
+    app.app_root = tmp_path / "apps" / directory / "1.4.2"
+    client = SoarRestClient(token="test_token", asset_id=42)
+    client.base_url = "https://soar.example.com/rest"
+    with (
+        mock.patch.object(app.actions_manager, "get_config", return_value=None),
+        mock.patch.object(app.actions_manager, "get_app_json", return_value=manifest),
+    ):
+        response = app.handle_webhook(
+            method="GET",
+            headers={},
+            path_parts=["oauth_callback"],
+            query={},
+            body=None,
+            asset={"base_url": "https://example.com"},
+            soar_rest_client=client,
+        )
+
+    assert response["status_code"] == 200
+    assert response["content"] == (
+        f"https://soar.example.com:4500/webhook/{directory}/42/oauth_callback"
+    )
+
+
 def test_handle_webhook_with_state(app_with_asset_webhook: App, mock_get_any_soar_call):
     @app_with_asset_webhook.webhook("stateful_webhook")
     def stateful_webhook(request: WebhookRequest) -> WebhookResponse:
@@ -688,10 +745,17 @@ def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
         asset_id="123",
     )
 
-    with mock.patch.object(
-        app_with_asset_webhook.actions_manager,
-        "get_config",
-        return_value={"directory": "my_test_app_dir"},
+    with (
+        mock.patch.object(
+            app_with_asset_webhook.actions_manager,
+            "get_config",
+            return_value={"directory": "my_test_app_dir"},
+        ),
+        mock.patch.object(
+            app_with_asset_webhook.actions_manager,
+            "get_app_json",
+            return_value={"directory": "installed_app_dir"},
+        ),
     ):
         url = app_with_asset_webhook.get_webhook_url("oauth/callback")
 
@@ -701,7 +765,20 @@ def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
     )
 
 
-def test_get_webhook_url_without_directory(app_with_asset_webhook: App, respx_mock):
+@pytest.mark.parametrize("config", [{}, None])
+@pytest.mark.parametrize(
+    ("app_name", "expected_name"),
+    [
+        ("test_app_with_asset_webhook", "test_app_with_asset_webhook"),
+        ("Microsoft 365", "microsoft365"),
+        ("Test-App_2", "testapp_2"),
+        ("!!!", "app_for_phantom"),
+    ],
+)
+def test_get_webhook_url_without_directory(
+    app_with_asset_webhook: App, respx_mock, config, app_name, expected_name
+):
+    app_with_asset_webhook.app_meta_info["name"] = app_name
     respx_mock.get(url__regex=r".*rest/system_info.*").mock(
         return_value=httpx.Response(
             200,
@@ -717,11 +794,13 @@ def test_get_webhook_url_without_directory(app_with_asset_webhook: App, respx_mo
     with mock.patch.object(
         app_with_asset_webhook.actions_manager,
         "get_config",
-        return_value={},
+        return_value=config,
     ):
         url = app_with_asset_webhook.get_webhook_url("callback")
 
-    expected_directory = f"{app_with_asset_webhook.app_meta_info['name']}_{app_with_asset_webhook.app_meta_info['appid']}"
+    expected_directory = (
+        f"{expected_name}_{app_with_asset_webhook.app_meta_info['appid']}"
+    )
     assert (
         url
         == f"https://soar.example.com:3500/webhook/{expected_directory}/456/callback"
