@@ -873,18 +873,19 @@ class App:
         webhook_port = self._get_webhook_port()
         webhook_base = f"{parsed.scheme}://{parsed.hostname}:{webhook_port}"
 
-        config = (
-            self.actions_manager.get_config() or self.actions_manager.get_app_json()
+        config = self.actions_manager.get_config() or {}
+        directory = config.get("directory") or self.actions_manager.get_app_json().get(
+            "directory"
         )
-        app_name = (
-            "".join(
+        if not directory:
+            app_name = "".join(
                 char
                 for char in str(self.app_meta_info["name"]).lower()
                 if char.isalnum() or char == "_"
             )
-            or "app_for_phantom"
-        )
-        directory = config.get("directory", f"{app_name}_{self.app_meta_info['appid']}")
+            if not app_name:
+                raise ValueError("Unable to determine app directory name")
+            directory = f"{app_name}_{self.app_meta_info['appid']}"
         asset_id = str(self.soar_client.get_asset_id())
 
         return f"{webhook_base}/webhook/{directory}/{asset_id}/{route}"
