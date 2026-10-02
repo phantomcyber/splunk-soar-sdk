@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 6
    :open:
 
+   .. rubric:: 6.1.3 (2026-10-02)
+
+   * Fix: Build webhook URLs without action configuration and raise a clear error when the app directory cannot be determined.
+
    .. rubric:: 6.1.2 (2026-09-30)
 
    * Fix: Allow native SOAR apps to connect to the local REST endpoint when its certificate covers the stack DNS name instead of 127.0.0.1.
