@@ -192,6 +192,40 @@ def test_view_handler_direct_html_return(simple_app: App):
     assert mock_context["prerender"] is True
 
 
+def test_view_handler_removes_leading_html_comments(simple_app: App):
+    """Leading comments must not hide the widget root from timeline rendering."""
+
+    @simple_app.view_handler()
+    def test_view(outputs: list[SampleViewOutput]) -> str:
+        return "\n<!-- license --><!-- template -->\n<div>Rendered output</div>"
+
+    mock_context = {
+        "accepts_prerender": True,
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
+    mock_app_runs = [
+        (
+            {"total_objects": 1, "total_objects_successful": 1},
+            [
+                mock.Mock(
+                    get_data=lambda: [
+                        {"message": "test_msg", "count": 1, "items": ["x"]}
+                    ]
+                )
+            ],
+        )
+    ]
+
+    result = test_view(mock.Mock(), mock_app_runs, mock_context)
+
+    assert result == "<div>Rendered output</div>"
+    assert mock_context["prerender"] is True
+
+
 def test_view_handler_error_handling_invalid_return_type(simple_app: App):
     """Test view_handler error handling for invalid return types."""
 

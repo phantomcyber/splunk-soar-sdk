@@ -47,6 +47,9 @@ All custom views in Splunk SOAR use the widget template system, providing consis
 
 Choose a base header. The base headers sets up base template defining widget structure, styling, standard functionality like resizing.
 
+Place the ``extends`` statement before any rendered content. Container timeline widgets expect the
+rendered response to begin with the widget element, so put HTML comments inside a template block.
+
 #### `base/logo_header.html`
 Use when you want your app's logo in the widget header (most common).
 
@@ -101,10 +104,10 @@ Widgets automatically conform to Splunk SOAR's light and dark themes. Background
 ### Example Template
 
 ```html
-<!-- templates/service_status.html -->
 {% extends 'base/logo_header.html' %}
 
 {% block widget_content %}
+<!-- templates/service_status.html -->
 <h3>Service Status</h3>
 {% for service in services %}
 <div style="margin-bottom: 1rem;">
