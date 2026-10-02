@@ -772,7 +772,6 @@ def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
         ("test_app_with_asset_webhook", "test_app_with_asset_webhook"),
         ("Microsoft 365", "microsoft365"),
         ("Test-App_2", "testapp_2"),
-        ("!!!", "app_for_phantom"),
     ],
 )
 def test_get_webhook_url_without_directory(
@@ -801,6 +800,84 @@ def test_get_webhook_url_without_directory(
     expected_directory = (
         f"{expected_name}_{app_with_asset_webhook.app_meta_info['appid']}"
     )
+    assert (
+        url
+        == f"https://soar.example.com:3500/webhook/{expected_directory}/456/callback"
+    )
+
+
+@pytest.mark.parametrize("config", [{}, None])
+@pytest.mark.parametrize("app_name", ["", "!!!"])
+def test_get_webhook_url_without_directory_rejects_unnormalizable_name(
+    app_with_asset_webhook: App, respx_mock, config, app_name
+):
+    app_with_asset_webhook.app_meta_info["name"] = app_name
+    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={"base_url": "https://soar.example.com"},
+        )
+    )
+    app_with_asset_webhook.soar_client.update_client(
+        SOARClientAuth(base_url="https://soar.example.com"),
+        asset_id="456",
+    )
+
+    with (
+        mock.patch.object(
+            app_with_asset_webhook.actions_manager,
+            "get_config",
+            return_value=config,
+        ),
+        mock.patch.object(
+            app_with_asset_webhook.actions_manager,
+            "get_app_json",
+            return_value={},
+        ),
+        pytest.raises(ValueError, match="^Unable to determine app directory name$"),
+    ):
+        app_with_asset_webhook.get_webhook_url("callback")
+
+
+@pytest.mark.parametrize("app_name", ["", "!!!"])
+@pytest.mark.parametrize(
+    ("config", "expected_directory"),
+    [
+        ({"directory": "action_app_dir"}, "action_app_dir"),
+        ({}, "installed_app_dir"),
+        (None, "installed_app_dir"),
+        ({"other_setting": "value"}, "installed_app_dir"),
+    ],
+)
+def test_get_webhook_url_known_directory_ignores_unnormalizable_name(
+    app_with_asset_webhook: App, respx_mock, app_name, config, expected_directory
+):
+    app_with_asset_webhook.app_meta_info["name"] = app_name
+    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={"base_url": "https://soar.example.com"},
+        )
+    )
+    app_with_asset_webhook.soar_client.update_client(
+        SOARClientAuth(base_url="https://soar.example.com"),
+        asset_id="456",
+    )
+
+    with (
+        mock.patch.object(
+            app_with_asset_webhook.actions_manager,
+            "get_config",
+            return_value=config,
+        ),
+        mock.patch.object(
+            app_with_asset_webhook.actions_manager,
+            "get_app_json",
+            return_value={"directory": "installed_app_dir"},
+        ),
+    ):
+        url = app_with_asset_webhook.get_webhook_url("callback")
+
     assert (
         url
         == f"https://soar.example.com:3500/webhook/{expected_directory}/456/callback"
