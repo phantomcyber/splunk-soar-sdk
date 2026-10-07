@@ -198,8 +198,13 @@ def test_install_with_soar_instance_env_var(
 
 @pytest.mark.parametrize("use_token", [False, True])
 @pytest.mark.parametrize("insecure", [False, True])
+@pytest.mark.parametrize("read_timeout", [None, 120.0])
 def test_install_tls_verification(
-    app_tarball: Path, monkeypatch, use_token: bool, insecure: bool
+    app_tarball: Path,
+    monkeypatch,
+    use_token: bool,
+    insecure: bool,
+    read_timeout: float | None,
 ):
     monkeypatch.setenv("PHANTOM_USERNAME", "admin")
     monkeypatch.setenv("PHANTOM_PASSWORD", "password")
@@ -230,11 +235,17 @@ def test_install_tls_verification(
         args = ["install", app_tarball.as_posix(), "10.1.23.4"]
         if insecure:
             args.append("--insecure")
+        if read_timeout is not None:
+            args.extend(["--read-timeout", str(read_timeout)])
         result = runner.invoke(package, args)
 
     assert result.exit_code == 0, result.stdout
     client_kwargs = mock_client_class.call_args.kwargs
     assert client_kwargs["verify"] is not insecure
+    assert client_kwargs["timeout"].read == (
+        read_timeout if read_timeout is not None else 60.0
+    )
+    assert client_kwargs["timeout"].connect == 30.0
     if use_token:
         assert client_kwargs["headers"] == {"ph-auth-token": "token"}
     else:

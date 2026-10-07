@@ -6,11 +6,16 @@ import httpx
 
 @asynccontextmanager
 async def phantom_get_login_session(
-    base_url: str, username: str, password: str, *, verify: bool = True
+    base_url: str,
+    username: str,
+    password: str,
+    *,
+    verify: bool = True,
+    read_timeout: float = 60.0,
 ) -> AsyncGenerator[httpx.AsyncClient]:
     """Contextmanager that creates an authenticated client with CSRF token handling."""
     # Set longer timeouts for large file uploads
-    timeout = httpx.Timeout(30.0, read=60.0)
+    timeout = httpx.Timeout(30.0, read=read_timeout)
     async with httpx.AsyncClient(
         base_url=base_url,
         verify=verify,
@@ -30,10 +35,14 @@ async def phantom_get_login_session(
 
 @asynccontextmanager
 async def phantom_get_token_session(
-    base_url: str, token: str, *, verify: bool = True
+    base_url: str,
+    token: str,
+    *,
+    verify: bool = True,
+    read_timeout: float = 60.0,
 ) -> AsyncGenerator[httpx.AsyncClient]:
     """Contextmanager that creates an authenticated client using a ph-auth-token."""
-    timeout = httpx.Timeout(30.0, read=60.0)
+    timeout = httpx.Timeout(30.0, read=read_timeout)
     async with httpx.AsyncClient(
         base_url=base_url,
         verify=verify,

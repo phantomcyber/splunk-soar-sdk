@@ -257,6 +257,7 @@ async def upload_app(
     password: str = "",
     token: str = "",
     verify: bool = True,
+    read_timeout: float = 60.0,
 ) -> httpx.Response:
     """Asynchronously upload an app tgz to a Splunk SOAR system, via REST API."""
     base_url = (
@@ -267,10 +268,16 @@ async def upload_app(
 
     payload = {"app": app_tarball.read_bytes()}
     if token:
-        session_ctx = phantom_get_token_session(base_url, token, verify=verify)
+        session_ctx = phantom_get_token_session(
+            base_url, token, verify=verify, read_timeout=read_timeout
+        )
     else:
         session_ctx = phantom_get_login_session(
-            base_url, username, password, verify=verify
+            base_url,
+            username,
+            password,
+            verify=verify,
+            read_timeout=read_timeout,
         )
     async with session_ctx as client:
         response = await phantom_install_app(client, "app_install", payload, force)
@@ -293,6 +300,14 @@ def install(
         bool,
         typer.Option("--insecure", help="Disable TLS certificate verification."),
     ] = False,
+    read_timeout: Annotated[
+        float,
+        typer.Option(
+            "--read-timeout",
+            min=0.1,
+            help="Maximum seconds to wait for a SOAR response (default: 60).",
+        ),
+    ] = 60.0,
 ) -> None:
     """Install the app tgz to the specified Splunk SOAR system.
 
@@ -324,6 +339,7 @@ def install(
                 force,
                 token=token,
                 verify=not insecure,
+                read_timeout=read_timeout,
             )
         )
     else:
@@ -341,6 +357,7 @@ def install(
                 username=username,
                 password=password,
                 verify=not insecure,
+                read_timeout=read_timeout,
             )
         )
 
