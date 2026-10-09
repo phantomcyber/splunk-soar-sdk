@@ -1,3 +1,19 @@
+__lazy_modules__ = {
+    "abc",
+    "datetime",
+    "hashlib",
+    "pathlib",
+    "random",
+    "secrets",
+    "soar_sdk.abstract",
+    "soar_sdk.apis.utils",
+    "soar_sdk.exceptions",
+    "soar_sdk.logging",
+    "soar_sdk.models.vault_attachment",
+    "tempfile",
+    "typing",
+}
+
 from typing import TYPE_CHECKING, Any, Protocol, TypedDict, cast
 
 if TYPE_CHECKING:

@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "json",
+    "pathlib",
+    "rich",
+    "shutil",
+    "soar_sdk.cli.manifests.processors",
+    "subprocess",
+    "typer",
+}
+
 import json
 import shutil
 import subprocess

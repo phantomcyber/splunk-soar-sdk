@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "pydantic",
+    "soar_sdk.action_results",
+    "soar_sdk.cli.manifests.serializers",
+    "soar_sdk.params",
+    "soar_sdk.types",
+    "typing",
+    "warnings",
+}
+
 import warnings
 from typing import Any, Type  # noqa: UP035
 

@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "soar_sdk.shims.phantom.encryption_helper",
+    "typing",
+}
+
 try:
     from phantom_common.encryption.encryption_manager_factory import (
         platform_encryption_backend,

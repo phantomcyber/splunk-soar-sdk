@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "pydantic",
+    "typing",
+}
+
 from typing import Any
 
 import pydantic

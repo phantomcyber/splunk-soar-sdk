@@ -3,6 +3,21 @@
 Ported from platform's custom_template.py.
 """
 
+__lazy_modules__ = {
+    "bleach",
+    "collections.abc",
+    "datetime",
+    "hashlib",
+    "humanize",
+    "jinja2",
+    "jinja2.utils",
+    "json",
+    "re",
+    "typing",
+    "uuid",
+}
+
+
 import hashlib
 import re
 import uuid

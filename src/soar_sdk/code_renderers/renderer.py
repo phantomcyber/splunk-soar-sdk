@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "abc",
+    "ast",
+    "collections.abc",
+    "jinja2",
+    "typing",
+}
+
 import abc
 import ast
 from collections.abc import Iterator

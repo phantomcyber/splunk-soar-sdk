@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "soar_sdk.shims.phantom.encryption_helper",
+}
+
 from soar_sdk.shims.phantom.encryption_helper import encryption_helper
 
 

@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "base64",
+    "typing",
+}
+
 try:
     import encryption_helper
 

@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "pydantic",
+    "soar_sdk",
+    "soar_sdk.asset",
+    "soar_sdk.compat",
+    "soar_sdk.meta.actions",
+    "soar_sdk.meta.dependencies",
+    "soar_sdk.meta.webhooks",
+}
+
 from pydantic import BaseModel, Field, field_validator
 
 from soar_sdk import __version__
@@ -48,7 +58,7 @@ class AppMeta(BaseModel):
     actions: list[ActionMeta] = Field(default_factory=list)
 
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
-    pip314_dependencies: DependencyList = Field(default_factory=DependencyList)
+    pip315_dependencies: DependencyList = Field(default_factory=DependencyList)
 
     webhook: WebhookMeta | None = None
     supports_es_polling: bool = False

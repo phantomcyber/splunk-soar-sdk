@@ -10,6 +10,7 @@ from soar_sdk.action_results import ActionOutput, ActionResult
 from soar_sdk.actions_manager import ActionsManager
 from soar_sdk.app import App
 from soar_sdk.asset import AssetField, BaseAsset
+from soar_sdk.compat import PythonVersion
 from soar_sdk.crypto import encrypt
 from soar_sdk.input_spec import AppConfig, InputSpecification
 from soar_sdk.params import Params
@@ -18,6 +19,27 @@ from soar_sdk.shims.phantom_common.app_interface.app_interface import SoarRestCl
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 
 STATE_ENCRYPTION_APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected",
+    [
+        ({}, "3.13,3.15"),
+        ({"python_version": [PythonVersion.PY_3_13]}, [PythonVersion.PY_3_13]),
+        ({"python_version": [PythonVersion.PY_3_15]}, [PythonVersion.PY_3_15]),
+        ({"python_version": PythonVersion.all()}, PythonVersion.all()),
+        ({"python_version": "3.15"}, "3.15"),
+    ],
+)
+def test_app_python_version_defaults_and_overrides(kwargs, expected):
+    app = _make_state_encryption_app(**kwargs)
+    assert app.app_meta_info["python_version"] == expected
+
+
+@pytest.mark.parametrize("python_version", ["3.14", ["3.14"]])
+def test_app_rejects_python314(python_version):
+    with pytest.raises(ValueError, match="Unsupported Python version: 3.14"):
+        _make_state_encryption_app(python_version=python_version)
 
 
 def _make_state_encryption_app(**kwargs):

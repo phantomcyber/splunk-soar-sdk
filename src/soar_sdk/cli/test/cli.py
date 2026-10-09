@@ -1,5 +1,16 @@
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "os",
+    "pathlib",
+    "rich.console",
+    "subprocess",
+    "sys",
+    "typer",
+    "typing",
+}
+
+
 import os
 import subprocess
 import sys

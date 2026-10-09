@@ -7,7 +7,7 @@ workspace-level instructions.
 
 - Use `uv` for dependency management and command execution. Do not introduce a parallel `pip` or
   virtualenv workflow.
-- The supported Python versions are 3.13 and 3.14. Preserve compatibility with both.
+- The supported Python versions are 3.13 and 3.15. Preserve compatibility with both.
 
 ## Testing
 

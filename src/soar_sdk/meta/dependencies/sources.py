@@ -1,3 +1,19 @@
+__lazy_modules__ = {
+    "build",
+    "collections.abc",
+    "functools",
+    "hashlib",
+    "httpx",
+    "io",
+    "logging",
+    "os",
+    "pathlib",
+    "pydantic",
+    "subprocess",
+    "tarfile",
+    "tempfile",
+}
+
 import functools
 import hashlib
 import io

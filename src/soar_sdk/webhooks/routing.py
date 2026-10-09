@@ -3,6 +3,16 @@
 This module provides a router for mapping URL patterns to handler functions.
 """
 
+__lazy_modules__ = {
+    "collections.abc",
+    "dataclasses",
+    "re",
+    "soar_sdk.asset",
+    "soar_sdk.webhooks.models",
+    "typing",
+}
+
+
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass

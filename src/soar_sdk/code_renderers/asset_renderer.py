@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "ast",
+    "collections.abc",
+    "dataclasses",
+    "soar_sdk.code_renderers.renderer",
+    "soar_sdk.meta.datatypes",
+}
+
 import ast
 import dataclasses
 from collections.abc import Iterator

@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "contextlib",
+    "httpx",
+}
+
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 

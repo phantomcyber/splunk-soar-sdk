@@ -1,3 +1,19 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "functools",
+    "inspect",
+    "soar_sdk.abstract",
+    "soar_sdk.action_results",
+    "soar_sdk.app",
+    "soar_sdk.async_utils",
+    "soar_sdk.exceptions",
+    "soar_sdk.meta.actions",
+    "soar_sdk.params",
+    "soar_sdk.types",
+    "traceback",
+    "typing",
+}
+
 import inspect
 import traceback
 from collections.abc import AsyncGenerator, Iterator

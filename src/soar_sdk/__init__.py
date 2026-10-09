@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "importlib.metadata",
+    "logging",
+}
+
 from importlib.metadata import version
 from logging import config
 

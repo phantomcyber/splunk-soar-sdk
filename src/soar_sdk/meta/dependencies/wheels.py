@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "logging",
+    "pathlib",
+    "pydantic",
+    "soar_sdk.meta.dependencies.sources",
+}
+
 from collections.abc import AsyncGenerator
 from logging import getLogger
 from pathlib import Path

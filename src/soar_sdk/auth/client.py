@@ -1,5 +1,19 @@
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "authlib.oauth2.rfc7636",
+    "hmac",
+    "httpx",
+    "secrets",
+    "soar_sdk.asset_state",
+    "soar_sdk.auth.models",
+    "soar_sdk.logging",
+    "typing",
+    "urllib.parse",
+    "uuid",
+}
+
+
 import hmac
 import secrets
 import urllib.parse
