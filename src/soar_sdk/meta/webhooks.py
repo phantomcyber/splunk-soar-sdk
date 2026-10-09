@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "ipaddress",
+    "pydantic",
+}
+
 from ipaddress import ip_network
 
 from pydantic import BaseModel, Field, field_validator

@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "logging",
+    "pydantic",
+    "soar_sdk.meta.dependencies.constants",
+    "soar_sdk.meta.dependencies.sources",
+    "soar_sdk.meta.dependencies.utils",
+    "soar_sdk.meta.dependencies.uv_models",
+    "soar_sdk.meta.dependencies.wheels",
+    "typing",
+}
+
 from logging import getLogger
 from typing import ClassVar
 

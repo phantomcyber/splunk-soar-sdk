@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "soar_sdk",
+    "soar_sdk.cli.init.cli",
+    "soar_sdk.cli.manifests.cli",
+    "soar_sdk.cli.package.cli",
+    "soar_sdk.cli.test.cli",
+    "soar_sdk.paths",
+    "typer",
+}
+
 import typer
 
 from soar_sdk import __version__

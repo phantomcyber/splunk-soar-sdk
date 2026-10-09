@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "soar_sdk.auth.client",
+    "soar_sdk.auth.factories",
+    "soar_sdk.auth.flows",
+    "soar_sdk.auth.httpx_auth",
+    "soar_sdk.auth.models",
+}
+
 from soar_sdk.auth.client import (
     CertificateOAuthClient,
     OAuthClientError,

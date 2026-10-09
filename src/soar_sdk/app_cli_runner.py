@@ -1,3 +1,22 @@
+__lazy_modules__ = {
+    "argparse",
+    "inspect",
+    "json",
+    "os",
+    "pathlib",
+    "pydantic",
+    "soar_sdk.abstract",
+    "soar_sdk.app",
+    "soar_sdk.input_spec",
+    "soar_sdk.logging",
+    "soar_sdk.shims.phantom_common.app_interface.app_interface",
+    "soar_sdk.shims.phantom_common.encryption.encryption_manager_factory",
+    "soar_sdk.types",
+    "soar_sdk.webhooks.models",
+    "typing",
+    "urllib.parse",
+}
+
 import argparse
 import inspect
 import json

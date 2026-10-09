@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "dataclasses",
+    "keyword",
+    "re",
+}
+
 import dataclasses
 import keyword
 import re

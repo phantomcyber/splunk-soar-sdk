@@ -1,3 +1,28 @@
+__lazy_modules__ = {
+    "asyncio",
+    "contextlib",
+    "datetime",
+    "httpx",
+    "humanize",
+    "io",
+    "itertools",
+    "json",
+    "os",
+    "pathlib",
+    "rich.console",
+    "rich.panel",
+    "soar_sdk.cli.manifests.processors",
+    "soar_sdk.cli.package.utils",
+    "soar_sdk.cli.path_utils",
+    "soar_sdk.meta.dependencies",
+    "soar_sdk.paths",
+    "tarfile",
+    "time",
+    "tqdm",
+    "typer",
+    "typing",
+}
+
 import asyncio
 import contextlib
 import json

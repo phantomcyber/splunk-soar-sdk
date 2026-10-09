@@ -1,3 +1,22 @@
+__lazy_modules__ = {
+    "json",
+    "os",
+    "pathlib",
+    "pydantic",
+    "shutil",
+    "soar_sdk.abstract",
+    "soar_sdk.compat",
+    "soar_sdk.input_spec",
+    "soar_sdk.logging",
+    "soar_sdk.meta.actions",
+    "soar_sdk.shims.phantom.action_result",
+    "soar_sdk.shims.phantom.base_connector",
+    "soar_sdk.shims.phantom.install_info",
+    "soar_sdk.types",
+    "tempfile",
+    "typing",
+}
+
 import json
 import os
 import shutil

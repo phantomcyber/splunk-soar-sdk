@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "importlib",
+    "soar_sdk.exceptions",
+    "soar_sdk.logging",
+    "typing",
+}
+
 import importlib
 from collections.abc import Callable
 from typing import Any

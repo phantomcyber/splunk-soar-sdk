@@ -1,5 +1,17 @@
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "abc",
+    "collections.abc",
+    "soar_sdk.asset_state",
+    "soar_sdk.auth.client",
+    "soar_sdk.auth.models",
+    "soar_sdk.logging",
+    "time",
+    "typing",
+}
+
+
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Callable
