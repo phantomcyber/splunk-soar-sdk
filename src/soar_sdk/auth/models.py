@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "enum",
+    "pydantic",
+    "time",
+}
+
+
 import time
 from enum import StrEnum
 

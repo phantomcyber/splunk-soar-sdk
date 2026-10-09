@@ -1,3 +1,19 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "dataclasses",
+    "json",
+    "pathlib",
+    "pydantic",
+    "soar_sdk.action_results",
+    "soar_sdk.cli.utils",
+    "soar_sdk.compat",
+    "soar_sdk.meta.actions",
+    "soar_sdk.meta.app",
+    "soar_sdk.meta.datatypes",
+    "soar_sdk.params",
+    "typing",
+}
+
 import dataclasses
 import json
 from collections.abc import Sequence

@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "dataclasses",
+    "types",
+    "typing",
+}
+
 import types
 from dataclasses import dataclass
 from typing import Any, Union, get_args, get_origin

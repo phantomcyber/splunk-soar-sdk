@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "pydantic",
+}
+
 from pydantic import BaseModel
 
 

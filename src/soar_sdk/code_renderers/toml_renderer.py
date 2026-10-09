@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "dataclasses",
+    "soar_sdk.code_renderers.renderer",
+    "soar_sdk.compat",
+}
+
 import dataclasses
 
 from soar_sdk.code_renderers.renderer import Renderer

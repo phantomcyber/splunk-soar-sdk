@@ -1,3 +1,16 @@
+__lazy_modules__ = {
+    "abc",
+    "collections.abc",
+    "httpx",
+    "pydantic",
+    "pydantic.dataclasses",
+    "soar_sdk.action_results",
+    "soar_sdk.apis.artifact",
+    "soar_sdk.apis.container",
+    "soar_sdk.apis.vault",
+    "typing",
+}
+
 from abc import abstractmethod
 from collections.abc import AsyncIterable, Iterable, Mapping
 from typing import Any, Generic, TypeVar

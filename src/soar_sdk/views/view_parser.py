@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "inspect",
+    "pydantic",
+    "soar_sdk.action_results",
+    "soar_sdk.async_utils",
+    "soar_sdk.models.view",
+    "soar_sdk.types",
+    "typing",
+}
+
 import inspect
 from typing import (
     Any,

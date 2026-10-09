@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "json",
+    "soar_sdk.abstract",
+    "soar_sdk.apis.utils",
+    "soar_sdk.exceptions",
+    "soar_sdk.logging",
+    "soar_sdk.shims.phantom.consts",
+    "soar_sdk.shims.phantom.json_keys",
+    "typing",
+}
+
 import json
 from typing import TYPE_CHECKING
 

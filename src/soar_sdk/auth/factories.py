@@ -1,5 +1,19 @@
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "collections.abc",
+    "contextlib",
+    "hmac",
+    "httpx",
+    "soar_sdk.asset",
+    "soar_sdk.auth.client",
+    "soar_sdk.auth.httpx_auth",
+    "soar_sdk.auth.models",
+    "soar_sdk.webhooks.models",
+    "typing",
+}
+
+
 from collections.abc import Callable
 from contextlib import contextmanager
 from hmac import compare_digest

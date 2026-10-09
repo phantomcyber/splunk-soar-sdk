@@ -1,3 +1,15 @@
+__lazy_modules__ = {
+    "bs4",
+    "email.header",
+    "hashlib",
+    "ipaddress",
+    "json",
+    "pathlib",
+    "re",
+    "soar_sdk.logging",
+    "typing",
+}
+
 import hashlib
 import ipaddress
 import json

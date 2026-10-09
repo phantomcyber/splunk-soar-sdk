@@ -1,3 +1,18 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "functools",
+    "inspect",
+    "pydantic",
+    "soar_sdk.action_results",
+    "soar_sdk.app",
+    "soar_sdk.models.view",
+    "soar_sdk.types",
+    "soar_sdk.views.component_registry",
+    "soar_sdk.views.template_renderer",
+    "soar_sdk.views.view_parser",
+    "typing",
+}
+
 import inspect
 from collections.abc import Callable
 from functools import wraps

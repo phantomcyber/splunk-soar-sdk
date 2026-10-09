@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "zoneinfo",
+}
+
 from zoneinfo import ZoneInfo
 
 

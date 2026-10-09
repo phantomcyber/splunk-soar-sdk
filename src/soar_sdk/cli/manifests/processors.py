@@ -1,3 +1,20 @@
+__lazy_modules__ = {
+    "datetime",
+    "importlib",
+    "json",
+    "packaging.specifiers",
+    "pathlib",
+    "pprint",
+    "soar_sdk.app",
+    "soar_sdk.cli.manifests.compatibility",
+    "soar_sdk.cli.path_utils",
+    "soar_sdk.compat",
+    "soar_sdk.meta.adapters",
+    "soar_sdk.meta.app",
+    "soar_sdk.meta.dependencies",
+    "toml",
+}
+
 import importlib
 import json
 from datetime import UTC, datetime

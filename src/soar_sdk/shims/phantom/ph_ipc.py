@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "soar_sdk.compat",
+    "typing",
+}
+
 from soar_sdk.compat import remove_when_soar_newer_than
 
 try:

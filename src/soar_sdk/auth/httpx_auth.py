@@ -1,5 +1,14 @@
 from __future__ import annotations
 
+__lazy_modules__ = {
+    "base64",
+    "collections.abc",
+    "httpx",
+    "soar_sdk.auth.client",
+    "soar_sdk.auth.models",
+}
+
+
 import base64
 from collections.abc import Generator
 

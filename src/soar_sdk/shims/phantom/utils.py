@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "re",
+    "typing",
+}
+
 try:
     from phantom.utils import (
         CONTAINS_VALIDATORS,

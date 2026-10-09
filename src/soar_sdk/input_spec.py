@@ -1,3 +1,10 @@
+__lazy_modules__ = {
+    "pydantic",
+    "random",
+    "typing",
+    "uuid",
+}
+
 import random
 from typing import Any, Literal
 from uuid import uuid4

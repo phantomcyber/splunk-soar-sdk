@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "enum",
+    "functools",
+    "packaging.version",
+}
+
 import functools
 from enum import Enum
 

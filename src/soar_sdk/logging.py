@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "logging",
+    "packaging.version",
+    "soar_sdk.colors",
+    "soar_sdk.compat",
+    "soar_sdk.shims.phantom.install_info",
+    "soar_sdk.shims.phantom.ph_ipc",
+    "typing",
+}
+
 import logging
 from typing import Any
 

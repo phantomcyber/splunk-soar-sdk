@@ -1,3 +1,10 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "soar_sdk.meta.actions",
+    "soar_sdk.params",
+    "typing",
+}
+
 import typing
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable

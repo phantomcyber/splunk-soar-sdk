@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "typing",
+}
+
 try:
     from phantom import json_keys
 

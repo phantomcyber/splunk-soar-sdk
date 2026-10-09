@@ -1,3 +1,12 @@
+__lazy_modules__ = {
+    "logging",
+    "pydantic",
+    "soar_sdk.meta.dependencies.constants",
+    "soar_sdk.meta.dependencies.package",
+    "soar_sdk.meta.dependencies.utils",
+    "soar_sdk.meta.dependencies.wheels",
+}
+
 from logging import getLogger
 
 from pydantic import BaseModel

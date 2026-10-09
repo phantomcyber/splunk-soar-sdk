@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "pathlib",
+}
+
 from pathlib import Path
 
 SDK_ROOT = Path(__file__).parent

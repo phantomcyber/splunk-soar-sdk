@@ -1,3 +1,35 @@
+__lazy_modules__ = {
+    "ast",
+    "click",
+    "datetime",
+    "importlib.metadata",
+    "json",
+    "os",
+    "pathlib",
+    "re",
+    "rich",
+    "rich.console",
+    "rich.markup",
+    "rich.panel",
+    "shutil",
+    "soar_sdk.cli.init.wizard",
+    "soar_sdk.cli.manifests.deserializers",
+    "soar_sdk.cli.utils",
+    "soar_sdk.code_renderers.action_renderer",
+    "soar_sdk.code_renderers.app_renderer",
+    "soar_sdk.code_renderers.asset_renderer",
+    "soar_sdk.code_renderers.pre_commit_renderer",
+    "soar_sdk.code_renderers.toml_renderer",
+    "soar_sdk.compat",
+    "soar_sdk.meta.app",
+    "soar_sdk.paths",
+    "subprocess",
+    "sys",
+    "typer",
+    "typing",
+    "uuid",
+}
+
 import ast
 import datetime
 import importlib.metadata

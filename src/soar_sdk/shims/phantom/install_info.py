@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "typing",
+}
+
 try:
     from phantom_common.install_info import (
         get_product_version,

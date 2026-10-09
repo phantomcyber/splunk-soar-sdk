@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "itertools",
+    "logging",
+    "soar_sdk.action_results",
+    "soar_sdk.field_utils",
+    "soar_sdk.meta.datatypes",
+    "soar_sdk.params",
+    "typing",
+}
+
 import itertools
 from collections.abc import Iterator
 from logging import getLogger

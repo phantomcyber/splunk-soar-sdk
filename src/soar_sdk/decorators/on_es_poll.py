@@ -1,3 +1,23 @@
+__lazy_modules__ = {
+    "asyncio",
+    "collections.abc",
+    "functools",
+    "inspect",
+    "pydantic",
+    "soar_sdk.abstract",
+    "soar_sdk.action_results",
+    "soar_sdk.app",
+    "soar_sdk.concurrency",
+    "soar_sdk.exceptions",
+    "soar_sdk.logging",
+    "soar_sdk.meta.actions",
+    "soar_sdk.models.finding",
+    "soar_sdk.params",
+    "soar_sdk.types",
+    "typing",
+    "uuid",
+}
+
 import asyncio
 import inspect
 import uuid

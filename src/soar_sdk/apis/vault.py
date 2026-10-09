@@ -1,3 +1,10 @@
+__lazy_modules__ = {
+    "soar_sdk.abstract",
+    "soar_sdk.models.vault_attachment",
+    "soar_sdk.shims.phantom.vault",
+    "typing",
+}
+
 from typing import TYPE_CHECKING
 
 from soar_sdk.models.vault_attachment import VaultAttachment

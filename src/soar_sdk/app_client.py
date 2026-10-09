@@ -1,3 +1,15 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "dataclasses",
+    "httpx",
+    "soar_sdk.abstract",
+    "soar_sdk.apis.artifact",
+    "soar_sdk.apis.container",
+    "soar_sdk.apis.vault",
+    "soar_sdk.shims.phantom.install_info",
+    "typing",
+}
+
 from collections.abc import AsyncIterable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any

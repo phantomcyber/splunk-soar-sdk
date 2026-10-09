@@ -1,3 +1,18 @@
+__lazy_modules__ = {
+    "enum",
+    "pydantic",
+    "pydantic_core",
+    "soar_sdk.asset_state",
+    "soar_sdk.compat",
+    "soar_sdk.exceptions",
+    "soar_sdk.field_utils",
+    "soar_sdk.input_spec",
+    "soar_sdk.meta.datatypes",
+    "typing",
+    "typing_extensions",
+    "zoneinfo",
+}
+
 from enum import Enum
 from typing import Any, NotRequired
 from zoneinfo import ZoneInfo

@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "contextlib",
+    "json",
+    "soar_sdk.logging",
+    "soar_sdk.shims.phantom.base_connector",
+    "soar_sdk.shims.phantom.encryption_helper",
+    "soar_sdk.shims.phantom.install_info",
+    "typing",
+}
+
 import json
 from collections.abc import Iterator, MutableMapping
 from contextlib import suppress

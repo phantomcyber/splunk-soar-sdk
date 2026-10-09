@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "pydantic",
+    "soar_sdk.action_results",
+    "typing",
+}
+
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict
