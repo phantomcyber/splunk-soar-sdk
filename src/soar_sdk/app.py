@@ -132,6 +132,11 @@ class App:
 
         if python_version is None:
             python_version = PythonVersion.all_csv()
+        elif isinstance(python_version, str):
+            PythonVersion.from_csv(python_version)
+        else:
+            for version in python_version:
+                PythonVersion.from_str(str(version))
 
         self.app_meta_info = {
             "name": name,

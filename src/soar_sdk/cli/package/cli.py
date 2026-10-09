@@ -154,7 +154,7 @@ def build(
         with tarfile.open(output_file, "w:gz") as app_tarball:
             # Collect all wheels from both Python versions
             all_wheels = (
-                app_meta.pip313_dependencies.wheel + app_meta.pip314_dependencies.wheel
+                app_meta.pip313_dependencies.wheel + app_meta.pip315_dependencies.wheel
             )
 
             # Run the async collection function within an event loop
@@ -233,7 +233,7 @@ def build(
                     input_file_aarch64=wheel_archive_path,
                 )
                 app_meta.pip313_dependencies.wheel.append(wheel_entry)
-                app_meta.pip314_dependencies.wheel.append(wheel_entry)
+                app_meta.pip315_dependencies.wheel.append(wheel_entry)
 
             console.print("Writing manifest")
             manifest_json = json.dumps(app_meta.to_json_manifest(), indent=4).encode()
