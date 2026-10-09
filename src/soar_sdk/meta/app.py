@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "pydantic",
+    "soar_sdk",
+    "soar_sdk.asset",
+    "soar_sdk.compat",
+    "soar_sdk.meta.actions",
+    "soar_sdk.meta.dependencies",
+    "soar_sdk.meta.webhooks",
+}
+
 from pydantic import BaseModel, Field, field_validator
 
 from soar_sdk import __version__

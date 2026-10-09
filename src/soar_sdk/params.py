@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "pydantic",
+    "pydantic.main",
+    "pydantic_core",
+    "soar_sdk.compat",
+    "soar_sdk.field_utils",
+    "soar_sdk.meta.datatypes",
+    "typing",
+    "typing_extensions",
+}
+
 from typing import Any, ClassVar, NotRequired
 
 from pydantic import Field, model_validator

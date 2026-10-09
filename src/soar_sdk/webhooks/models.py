@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "base64",
+    "collections.abc",
+    "json",
+    "mimetypes",
+    "pydantic",
+    "soar_sdk.asset",
+    "typing",
+}
+
 import base64
 import json
 import mimetypes

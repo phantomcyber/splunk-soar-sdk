@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "soar_sdk.extras.email",
+    "soar_sdk.extras.email.email_data",
+    "soar_sdk.extras.email.processor",
+}
+
 from soar_sdk.extras.email import email_data as rfc5322
 from soar_sdk.extras.email.email_data import (
     EmailData,

@@ -1,3 +1,13 @@
+__lazy_modules__ = {
+    "json",
+    "pathlib",
+    "pprint",
+    "soar_sdk.cli.manifests.notice",
+    "soar_sdk.cli.manifests.processors",
+    "typer",
+    "typing",
+}
+
 import json
 from pathlib import Path
 from pprint import pprint

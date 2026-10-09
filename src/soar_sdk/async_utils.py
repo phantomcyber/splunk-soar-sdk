@@ -1,3 +1,10 @@
+__lazy_modules__ = {
+    "asyncio",
+    "collections.abc",
+    "inspect",
+    "typing",
+}
+
 import asyncio
 import inspect
 from collections.abc import AsyncGenerator, Coroutine

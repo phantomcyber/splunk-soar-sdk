@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "soar_sdk.meta.app",
+    "toml",
+}
+
 import toml
 
 from .app import AppMeta

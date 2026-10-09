@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "contextlib",
+    "os",
+    "pathlib",
+    "sys",
+}
+
 import os
 import sys
 from collections.abc import Iterator

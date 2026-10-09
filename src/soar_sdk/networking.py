@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "ipaddress",
+    "pydantic",
+    "typing",
+}
+
 import ipaddress
 from typing import Annotated
 

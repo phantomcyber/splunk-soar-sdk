@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "functools",
+    "inspect",
+    "pathlib",
+    "soar_sdk.app",
+    "soar_sdk.async_utils",
+    "soar_sdk.meta.webhooks",
+    "soar_sdk.webhooks.models",
+    "typing",
+}
+
 import inspect
 from functools import wraps
 from pathlib import Path

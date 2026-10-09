@@ -31,3 +31,21 @@ Once installed, you can access the CLI using the command:
         soarapps --help
 
 This provides a range of commands to help you develop and manage your Splunk SOAR apps efficiently. A full reference is available in the :ref:`CLI Reference <cli_reference>` section of this documentation.
+
+Import behavior
+---------------
+
+On Python 3.15, SDK modules defer their imports until the imported names are
+used. Python 3.13 keeps its eager import behavior. Logging setup and optional
+SOAR platform fallbacks continue to run when their modules load.
+
+The SDK uses module-local ``__lazy_modules__`` declarations and preserves the
+application's interpreter-wide lazy-import mode and filter. To troubleshoot
+an import-order issue on Python 3.15, set an eager-import filter before importing
+the SDK:
+
+.. code-block:: python
+
+    import sys
+
+    sys.set_lazy_imports_filter(lambda importer, imported, fromlist: False)

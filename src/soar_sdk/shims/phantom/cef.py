@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "typing",
+}
+
 try:
     from phantom.cef import CEF_JSON, CEF_NAME_MAPPING
 

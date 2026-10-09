@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "soar_sdk.compat",
+    "soar_sdk.meta.dependencies.utils",
+}
+
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.meta.dependencies.utils import normalize_package_set
 

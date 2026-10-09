@@ -1,3 +1,17 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "itertools",
+    "pydantic",
+    "pydantic.main",
+    "soar_sdk.compat",
+    "soar_sdk.field_utils",
+    "soar_sdk.logging",
+    "soar_sdk.meta.datatypes",
+    "soar_sdk.shims.phantom.action_result",
+    "typing",
+    "typing_extensions",
+}
+
 import itertools
 from collections.abc import Callable, Iterator, Sequence
 from typing import Any, Literal, NotRequired

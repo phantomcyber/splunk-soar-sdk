@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "concurrent.futures",
+    "typing",
+}
+
 from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from typing import TypeVar

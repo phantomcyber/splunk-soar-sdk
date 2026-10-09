@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "ast",
+    "collections.abc",
+    "dataclasses",
+}
+
 import ast
 import dataclasses
 from collections.abc import Iterator
