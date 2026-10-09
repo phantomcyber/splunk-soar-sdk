@@ -48,7 +48,7 @@ class AppMeta(BaseModel):
     actions: list[ActionMeta] = Field(default_factory=list)
 
     pip313_dependencies: DependencyList = Field(default_factory=DependencyList)
-    pip314_dependencies: DependencyList = Field(default_factory=DependencyList)
+    pip315_dependencies: DependencyList = Field(default_factory=DependencyList)
 
     webhook: WebhookMeta | None = None
     supports_es_polling: bool = False

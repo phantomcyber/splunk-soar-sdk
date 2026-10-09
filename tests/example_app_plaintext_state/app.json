@@ -12,7 +12,7 @@
     "logo": "logo.svg",
     "logo_dark": "logo_dark.svg",
     "product_name": "Example Plaintext State App",
-    "python_version": "3.13,3.14",
+    "python_version": "3.13,3.15",
     "product_version_regex": ".*",
     "publisher": "Splunk Inc.",
     "packaged_by": "splunk-soar-sdk test-version",
@@ -166,13 +166,13 @@
             },
             {
                 "module": "authlib",
-                "input_file": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/authlib-1.6.12-py2.py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/authlib-1.6.12-py2.py3-none-any.whl"
             },
             {
                 "module": "bleach",
-                "input_file": "wheels/shared/bleach-6.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
+                "input_file": "wheels/shared/bleach-6.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/bleach-6.4.0-py3-none-any.whl"
             },
             {
                 "module": "build",
@@ -181,8 +181,8 @@
             },
             {
                 "module": "cffi",
-                "input_file": "wheels/python313/cffi-2.0.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/cffi-2.0.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
+                "input_file": "wheels/python313/cffi-2.1.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/cffi-2.1.1-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
             },
             {
                 "module": "click",
@@ -201,8 +201,8 @@
             },
             {
                 "module": "cryptography",
-                "input_file": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/shared/cryptography-50.0.0-cp311-abi3-manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/shared/cryptography-50.0.0-cp311-abi3-manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "distro",
@@ -231,8 +231,8 @@
             },
             {
                 "module": "h2",
-                "input_file": "wheels/shared/h2-4.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
+                "input_file": "wheels/shared/h2-4.4.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/h2-4.4.1-py3-none-any.whl"
             },
             {
                 "module": "hatchling",
@@ -241,8 +241,8 @@
             },
             {
                 "module": "hpack",
-                "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
+                "input_file": "wheels/shared/hpack-4.2.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/hpack-4.2.0-py3-none-any.whl"
             },
             {
                 "module": "httpcore",
@@ -286,8 +286,8 @@
             },
             {
                 "module": "markupsafe",
-                "input_file": "wheels/python313/markupsafe-3.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/markupsafe-3.0.3-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python313/markupsafe-3.0.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/markupsafe-3.0.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "mdurl",
@@ -301,8 +301,8 @@
             },
             {
                 "module": "multidict",
-                "input_file": "wheels/python313/multidict-6.7.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/multidict-6.7.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python313/multidict-7.0.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/multidict-7.0.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "olefile",
@@ -346,8 +346,8 @@
             },
             {
                 "module": "propcache",
-                "input_file": "wheels/python313/propcache-0.4.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/propcache-0.4.1-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python313/propcache-0.5.4-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/propcache-0.5.4-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "pycparser",
@@ -356,23 +356,23 @@
             },
             {
                 "module": "pydantic",
-                "input_file": "wheels/shared/pydantic-2.12.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pydantic-2.12.5-py3-none-any.whl"
+                "input_file": "wheels/shared/pydantic-2.14.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pydantic-2.14.0-py3-none-any.whl"
             },
             {
                 "module": "pydantic-core",
-                "input_file": "wheels/python313/pydantic_core-2.41.5-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/pydantic_core-2.41.5-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+                "input_file": "wheels/python313/pydantic_core-2.50.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/pydantic_core-2.50.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
             },
             {
                 "module": "pygments",
-                "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
+                "input_file": "wheels/shared/pygments-2.20.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pygments-2.20.0-py3-none-any.whl"
             },
             {
                 "module": "pyjwt",
-                "input_file": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl"
+                "input_file": "wheels/shared/pyjwt-2.13.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pyjwt-2.13.0-py3-none-any.whl"
             },
             {
                 "module": "pyparsing",
@@ -383,11 +383,6 @@
                 "module": "pyproject-hooks",
                 "input_file": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "pyyaml",
-                "input_file": "wheels/python313/pyyaml-6.0.3-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/pyyaml-6.0.3-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "red-black-tree-mod",
@@ -406,8 +401,8 @@
             },
             {
                 "module": "setuptools",
-                "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
+                "input_file": "wheels/shared/setuptools-83.0.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/setuptools-83.0.0-py3-none-any.whl"
             },
             {
                 "module": "shellingham",
@@ -436,18 +431,18 @@
             },
             {
                 "module": "typer",
-                "input_file": "wheels/shared/typer-0.20.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typer-0.20.0-py3-none-any.whl"
+                "input_file": "wheels/shared/typer-0.17.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typer-0.17.5-py3-none-any.whl"
             },
             {
                 "module": "typing-extensions",
-                "input_file": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl"
+                "input_file": "wheels/shared/typing_extensions-4.16.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typing_extensions-4.16.0-py3-none-any.whl"
             },
             {
                 "module": "typing-inspection",
-                "input_file": "wheels/shared/typing_inspection-0.4.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typing_inspection-0.4.2-py3-none-any.whl"
+                "input_file": "wheels/shared/typing_inspection-0.4.4-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typing_inspection-0.4.4-py3-none-any.whl"
             },
             {
                 "module": "tzlocal",
@@ -466,12 +461,13 @@
             },
             {
                 "module": "yarl",
-                "input_file": "wheels/python313/yarl-1.22.0-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python313/yarl-1.22.0-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python313/yarl-1.25.1-cp313-cp313-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python313/yarl-1.25.1-cp313-cp313-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             }
         ]
     },
-    "pip314_dependencies": {
+    "supports_es_polling": false,
+    "pip315_dependencies": {
         "wheel": [
             {
                 "module": "annotated-types",
@@ -485,13 +481,13 @@
             },
             {
                 "module": "authlib",
-                "input_file": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/authlib-1.6.8-py2.py3-none-any.whl"
+                "input_file": "wheels/shared/authlib-1.6.12-py2.py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/authlib-1.6.12-py2.py3-none-any.whl"
             },
             {
                 "module": "bleach",
-                "input_file": "wheels/shared/bleach-6.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/bleach-6.3.0-py3-none-any.whl"
+                "input_file": "wheels/shared/bleach-6.4.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/bleach-6.4.0-py3-none-any.whl"
             },
             {
                 "module": "build",
@@ -500,8 +496,8 @@
             },
             {
                 "module": "cffi",
-                "input_file": "wheels/python314/cffi-2.0.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/cffi-2.0.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
+                "input_file": "wheels/python315/cffi-2.1.1-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+                "input_file_aarch64": "wheels/python315/cffi-2.1.1-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.whl"
             },
             {
                 "module": "click",
@@ -520,8 +516,8 @@
             },
             {
                 "module": "cryptography",
-                "input_file": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/shared/cryptography-46.0.5-cp311-abi3-manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/shared/cryptography-50.0.0-cp311-abi3-manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/shared/cryptography-50.0.0-cp311-abi3-manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "distro",
@@ -550,8 +546,8 @@
             },
             {
                 "module": "h2",
-                "input_file": "wheels/shared/h2-4.3.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/h2-4.3.0-py3-none-any.whl"
+                "input_file": "wheels/shared/h2-4.4.1-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/h2-4.4.1-py3-none-any.whl"
             },
             {
                 "module": "hatchling",
@@ -560,8 +556,8 @@
             },
             {
                 "module": "hpack",
-                "input_file": "wheels/shared/hpack-4.1.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/hpack-4.1.0-py3-none-any.whl"
+                "input_file": "wheels/shared/hpack-4.2.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/hpack-4.2.0-py3-none-any.whl"
             },
             {
                 "module": "httpcore",
@@ -605,8 +601,8 @@
             },
             {
                 "module": "markupsafe",
-                "input_file": "wheels/python314/markupsafe-3.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/markupsafe-3.0.3-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python315/markupsafe-3.0.4-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python315/markupsafe-3.0.4-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "mdurl",
@@ -620,8 +616,8 @@
             },
             {
                 "module": "multidict",
-                "input_file": "wheels/python314/multidict-6.7.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/multidict-6.7.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python315/multidict-7.0.0-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python315/multidict-7.0.0-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "olefile",
@@ -665,8 +661,8 @@
             },
             {
                 "module": "propcache",
-                "input_file": "wheels/python314/propcache-0.4.1-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/propcache-0.4.1-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python315/propcache-0.5.4-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python315/propcache-0.5.4-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "pycparser",
@@ -675,23 +671,23 @@
             },
             {
                 "module": "pydantic",
-                "input_file": "wheels/shared/pydantic-2.12.5-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pydantic-2.12.5-py3-none-any.whl"
+                "input_file": "wheels/shared/pydantic-2.14.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pydantic-2.14.0-py3-none-any.whl"
             },
             {
                 "module": "pydantic-core",
-                "input_file": "wheels/python314/pydantic_core-2.41.5-cp314-cp314-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/pydantic_core-2.41.5-cp314-cp314-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
+                "input_file": "wheels/python315/pydantic_core-2.50.0-cp315-cp315-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                "input_file_aarch64": "wheels/python315/pydantic_core-2.50.0-cp315-cp315-manylinux_2_17_aarch64.manylinux2014_aarch64.whl"
             },
             {
                 "module": "pygments",
-                "input_file": "wheels/shared/pygments-2.19.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pygments-2.19.2-py3-none-any.whl"
+                "input_file": "wheels/shared/pygments-2.20.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pygments-2.20.0-py3-none-any.whl"
             },
             {
                 "module": "pyjwt",
-                "input_file": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/pyjwt-2.11.0-py3-none-any.whl"
+                "input_file": "wheels/shared/pyjwt-2.13.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/pyjwt-2.13.0-py3-none-any.whl"
             },
             {
                 "module": "pyparsing",
@@ -702,11 +698,6 @@
                 "module": "pyproject-hooks",
                 "input_file": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/pyproject_hooks-1.2.0-py3-none-any.whl"
-            },
-            {
-                "module": "pyyaml",
-                "input_file": "wheels/python314/pyyaml-6.0.3-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/pyyaml-6.0.3-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             },
             {
                 "module": "red-black-tree-mod",
@@ -725,8 +716,8 @@
             },
             {
                 "module": "setuptools",
-                "input_file": "wheels/shared/setuptools-80.9.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/setuptools-80.9.0-py3-none-any.whl"
+                "input_file": "wheels/shared/setuptools-83.0.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/setuptools-83.0.0-py3-none-any.whl"
             },
             {
                 "module": "shellingham",
@@ -755,18 +746,18 @@
             },
             {
                 "module": "typer",
-                "input_file": "wheels/shared/typer-0.20.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typer-0.20.0-py3-none-any.whl"
+                "input_file": "wheels/shared/typer-0.17.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typer-0.17.5-py3-none-any.whl"
             },
             {
                 "module": "typing-extensions",
-                "input_file": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typing_extensions-4.15.0-py3-none-any.whl"
+                "input_file": "wheels/shared/typing_extensions-4.16.0-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typing_extensions-4.16.0-py3-none-any.whl"
             },
             {
                 "module": "typing-inspection",
-                "input_file": "wheels/shared/typing_inspection-0.4.2-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/typing_inspection-0.4.2-py3-none-any.whl"
+                "input_file": "wheels/shared/typing_inspection-0.4.4-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/typing_inspection-0.4.4-py3-none-any.whl"
             },
             {
                 "module": "tzlocal",
@@ -785,10 +776,9 @@
             },
             {
                 "module": "yarl",
-                "input_file": "wheels/python314/yarl-1.22.0-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
-                "input_file_aarch64": "wheels/python314/yarl-1.22.0-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
+                "input_file": "wheels/python315/yarl-1.25.1-cp315-cp315-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl",
+                "input_file_aarch64": "wheels/python315/yarl-1.25.1-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             }
         ]
-    },
-    "supports_es_polling": false
+    }
 }

@@ -320,7 +320,7 @@ class BaseAsset(BaseModel):
             field.alias or field_name
             for field_name, field in cls.model_fields.items()
             if isinstance(field.json_schema_extra, dict)
-            and field.json_schema_extra.get("sensitive", False)
+            and parse_json_schema_extra(field.json_schema_extra).get("sensitive", False)
         }
 
     @classmethod

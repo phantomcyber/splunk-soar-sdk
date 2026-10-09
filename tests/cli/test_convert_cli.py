@@ -33,7 +33,7 @@ def app_meta():
         logo="logo.svg",
         logo_dark="logo_dark.svg",
         product_name="Test Product",
-        python_version=["3.13", "3.14"],
+        python_version=["3.13", "3.15"],
         project_name="test_app",
         license="Copyright (c) 2025 Splunk Inc.",
     )
@@ -230,9 +230,9 @@ def test_convert_cli_updates_py_versions(runner, tmp_path, app_meta):
 
     assert result.exit_code == 0
     assert "declares support for Python versions '3.13'" in result.output
-    assert "will support the default versions ['3.13', '3.14']" in result.output
+    assert "will support the default versions ['3.13', '3.15']" in result.output
     assert (
-        'requires-python = ">=3.13, <3.15"'
+        'requires-python = ">=3.13, <3.16, !=3.14.*"'
         in (output_dir / "pyproject.toml").read_text()
     )
 
