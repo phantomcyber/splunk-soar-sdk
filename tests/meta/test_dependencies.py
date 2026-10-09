@@ -112,6 +112,44 @@ class TestUvWheel:
 
 
 class TestUvPackage:
+    @pytest.mark.parametrize(
+        "python_tag,abi_tag", [("cp315", "cp315"), ("cp311", "abi3"), ("py3", "none")]
+    )
+    def test_resolve_py315_for_both_architectures(self, python_tag, abi_tag):
+        filenames = [
+            f"sample-1.0.0-{python_tag}-{abi_tag}-manylinux_2_28_{arch}.whl"
+            for arch in ("x86_64", "aarch64")
+        ]
+        package = UvPackage(
+            name="sample",
+            version="1.0.0",
+            wheels=[UvWheel(filename=name, hash="sha256:test") for name in filenames],
+            source=UvSource(registry="https://pypi.python.org/simple"),
+        )
+
+        wheel = package.resolve_py315()
+
+        assert wheel.input_file == filenames[0]
+        assert wheel.input_file_aarch64 == filenames[1]
+
+    def test_resolve_py315_rejects_python314_binary_wheel(self):
+        package = UvPackage(
+            name="sample",
+            version="1.0.0",
+            wheels=[
+                UvWheel(
+                    filename="sample-1.0.0-cp314-cp314-manylinux_2_28_x86_64.whl",
+                    hash="sha256:test",
+                )
+            ],
+            source=UvSource(registry="https://pypi.python.org/simple"),
+        )
+
+        with pytest.raises(
+            FileNotFoundError, match="Could not find a suitable x86_64 wheel"
+        ):
+            package.resolve_py315()
+
     def test_find_wheel(self):
         package = UvPackage(
             name="certifi",
@@ -248,7 +286,7 @@ class TestUvPackage:
         logger = logging.getLogger("soar_sdk.meta.dependencies")
         with mock.patch.object(logger, "warning") as mock_warn:
             package.resolve_py313()
-            package.resolve_py314()
+            package.resolve_py315()
 
         mock_warn.assert_called_once()
 

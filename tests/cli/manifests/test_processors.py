@@ -13,11 +13,11 @@ from soar_sdk.cli.manifests.processors import ManifestProcessor
 from soar_sdk.compat import UPDATE_TIME_FORMAT
 from soar_sdk.meta.dependencies import DEPENDENCIES_TO_SKIP, normalize_package_name
 
-DEPENDENCY_SECTIONS = ("pip313_dependencies", "pip314_dependencies")
+DEPENDENCY_SECTIONS = ("pip313_dependencies", "pip315_dependencies")
 FIXTURE_SDK_VERSION = "test-version"
 PYTHON_DEPENDENCY_PREFIX = {
     "pip313_dependencies": "python313",
-    "pip314_dependencies": "python314",
+    "pip315_dependencies": "python315",
 }
 
 
@@ -94,6 +94,17 @@ def test_build_manifest_includes_sdk_packaging_provenance():
     manifest = processor.build().to_json_manifest()
 
     assert manifest["packaged_by"] == f"splunk-soar-sdk {__version__}"
+
+
+def test_build_rejects_project_without_supported_python(mocker):
+    processor = ManifestProcessor("unused.json", "tests/example_app")
+    mocker.patch.object(processor, "get_target_python_versions", return_value=[])
+    resolve = mocker.patch("soar_sdk.meta.dependencies.UvLock.resolve_dependencies")
+
+    with pytest.raises(ValueError, match="must support Python 3.13 or 3.15"):
+        processor.build()
+
+    resolve.assert_not_called()
 
 
 def test_build_manifest_raises_minimum_for_python_script(

@@ -348,6 +348,7 @@ class PermissiveActionOutput(ActionOutput):
         warnings: Literal["none", "warn", "error"] | bool = True,
         fallback: Callable[[Any], Any] | None = None,
         serialize_as_any: bool = False,
+        polymorphic_serialization: bool | None = None,
     ) -> dict:
         """Basic implementation of ``model_dump`` which just returns the raw dict provided to the constructor. Doesn't implement any kwargs and isn't recommended for use outside of basic serialization by the SDK."""
         return self._permissive_raw

@@ -1,4 +1,5 @@
 import pytest
+from packaging.specifiers import SpecifierSet
 
 from soar_sdk.compat import PythonVersion, remove_when_soar_newer_than
 
@@ -26,17 +27,17 @@ def test_no_error_when_version_equals_or_above_minimum(version):
 def test_str_python_version():
     """Test that PythonVersion enum returns correct string representation."""
     assert str(PythonVersion.PY_3_13) == "3.13"
-    assert str(PythonVersion.PY_3_14) == "3.14"
+    assert str(PythonVersion.PY_3_15) == "3.15"
 
 
 @pytest.mark.parametrize(
     "versions, expected_requires_python",
     (
-        ([], ">=3.13, <3.15"),
+        ([], ">=3.13, <3.16, !=3.14.*"),
         ([PythonVersion.PY_3_13], ">=3.13, <3.14"),
-        ([PythonVersion.PY_3_14], ">=3.14, <3.15"),
-        ([PythonVersion.PY_3_13, PythonVersion.PY_3_14], ">=3.13, <3.15"),
-        (PythonVersion.all(), ">=3.13, <3.15"),
+        ([PythonVersion.PY_3_15], ">=3.15, <3.16"),
+        ([PythonVersion.PY_3_13, PythonVersion.PY_3_15], ">=3.13, <3.16, !=3.14.*"),
+        (PythonVersion.all(), ">=3.13, <3.16, !=3.14.*"),
     ),
 )
 def test_to_requires_python(
@@ -45,3 +46,15 @@ def test_to_requires_python(
     """Test that to_requires_python converts PythonVersion to PEP-508 compatible string."""
     actual_requires_python = PythonVersion.to_requires_python(versions)
     assert actual_requires_python == expected_requires_python
+    specifiers = SpecifierSet(actual_requires_python)
+    for version in versions or PythonVersion.all():
+        assert str(version) in specifiers
+        assert f"{version}.9" in specifiers
+    assert "3.14" not in specifiers
+    assert "3.14.9" not in specifiers
+    assert "3.16" not in specifiers
+
+
+def test_python314_is_unsupported():
+    with pytest.raises(ValueError, match="Unsupported Python version: 3.14"):
+        PythonVersion.from_str("3.14")

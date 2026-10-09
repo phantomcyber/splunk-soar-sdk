@@ -86,7 +86,11 @@ def test_access_unknown_field():
     assert test.bob
 
 
-def test_model_dump():
+@pytest.mark.parametrize(
+    "kwargs",
+    [{}, {"polymorphic_serialization": True}, {"polymorphic_serialization": False}],
+)
+def test_model_dump(kwargs):
     test = ExampleActionOutput(
         **{
             "_under_field": "test",
@@ -97,7 +101,7 @@ def test_model_dump():
             "list_of_types": [{"inner_string": "test_inner"}, {}],
         }
     )
-    assert test.model_dump() == {
+    assert test.model_dump(**kwargs) == {
         "_under_field": "test",
         "bob": True,
         "list_of_strings": ["a", "b", "c"],

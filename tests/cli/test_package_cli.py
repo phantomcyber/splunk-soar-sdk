@@ -393,7 +393,7 @@ def test_package_build_writes_manifest_wheel_paths(
         "input_file": expected_path,
         "input_file_aarch64": expected_path,
     }
-    for py_version in ["313", "314"]:
+    for py_version in ["313", "315"]:
         section = f"pip{py_version}_dependencies"
         for wheel in manifest[section]["wheel"]:
             print(wheel)
