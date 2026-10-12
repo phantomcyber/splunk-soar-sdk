@@ -238,7 +238,7 @@ def test_install_tls_verification(
     assert result.exit_code == 0, result.stdout
     client_kwargs = mock_client_class.call_args.kwargs
     assert client_kwargs["verify"] is not insecure
-    assert client_kwargs["timeout"] == httpx.Timeout(60.0)
+    assert client_kwargs["timeout"] == httpx.Timeout(120.0)
     if use_token:
         assert client_kwargs["headers"] == {"ph-auth-token": "token"}
     else:
