@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 6
    :open:
 
+   .. rubric:: 6.1.4 (2026-10-13)
+
+   * Fix: Updated dependencies.
+
    .. rubric:: 6.1.3 (2026-10-02)
 
    * Fix: Build webhook URLs without action configuration and raise a clear error when the app directory cannot be determined.
