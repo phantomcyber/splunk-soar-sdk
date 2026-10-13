@@ -16,7 +16,7 @@ if TYPE_CHECKING or not _soar_is_available:
 
     def get_verify_ssl_setting() -> bool:
         """Mock function to simulate the behavior of get_verify_ssl_setting."""
-        return False
+        return True
 
     def get_product_version() -> str:
         """Mock function to simulate the behavior of get_product_version."""
