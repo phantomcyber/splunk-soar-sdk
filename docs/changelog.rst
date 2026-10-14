@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 6
    :open:
 
+   .. rubric:: 6.1.5 (2026-10-14)
+
+   * Fix: Keep leading HTML comments from hiding custom views in container timelines.
+
    .. rubric:: 6.1.4 (2026-10-13)
 
    * Fix: Updated dependencies.
