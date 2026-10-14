@@ -3,6 +3,7 @@ __lazy_modules__ = {
     "functools",
     "inspect",
     "pydantic",
+    "re",
     "soar_sdk.action_results",
     "soar_sdk.app",
     "soar_sdk.models.view",
