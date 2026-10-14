@@ -1,6 +1,9 @@
+import runpy
 import ssl
+import sys
 from datetime import UTC, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from threading import Thread
 from typing import Any
 from unittest.mock import patch
@@ -19,6 +22,7 @@ from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
 from soar_sdk.app_client import AppClient
+from soar_sdk.shims.phantom import install_info
 
 
 class ConcreteSOARClient(SOARClient[ActionOutput]):
@@ -73,6 +77,14 @@ class ConcreteSOARClient(SOARClient[ActionOutput]):
 @pytest.fixture
 def soar_client() -> ConcreteSOARClient:
     return ConcreteSOARClient()
+
+
+def test_off_platform_tls_verification_defaults_to_enabled():
+    with patch.dict(sys.modules, {"phantom_common": None}):
+        shim = runpy.run_path(str(Path(install_info.__file__)))
+
+    assert shim["is_soar_available"]() is False
+    assert shim["get_verify_ssl_setting"]() is True
 
 
 @pytest.mark.parametrize("verify_ssl", [True, False])
