@@ -1,3 +1,32 @@
+__lazy_modules__ = {
+    "base64",
+    "bs4",
+    "contextlib",
+    "copy",
+    "dataclasses",
+    "email",
+    "email.header",
+    "email.message",
+    "hashlib",
+    "html",
+    "json",
+    "mimetypes",
+    "pathlib",
+    "pydantic",
+    "re",
+    "requests.structures",
+    "shutil",
+    "soar_sdk.abstract",
+    "soar_sdk.extras.email.utils",
+    "soar_sdk.logging",
+    "soar_sdk.shims",
+    "soar_sdk.shims.phantom.app",
+    "soar_sdk.shims.phantom.vault",
+    "socket",
+    "tempfile",
+    "typing",
+}
+
 import base64
 import contextlib
 import email

@@ -19,6 +19,44 @@ def runner():
     return CliRunner()
 
 
+@pytest.mark.parametrize(
+    "options, expected",
+    [
+        ([], [PythonVersion.PY_3_13, PythonVersion.PY_3_15]),
+        (["--python-version", "3.13"], [PythonVersion.PY_3_13]),
+        (["--python-version", "3.15"], [PythonVersion.PY_3_15]),
+        (["--python-version", "3.13", "--python-version", "3.15"], PythonVersion.all()),
+    ],
+)
+def test_init_python_version_defaults_and_overrides(runner, options, expected):
+    with patch("soar_sdk.cli.init.cli.init_sdk_app") as create:
+        result = runner.invoke(
+            init, ["--name", "test_app", "--description", "Test app", *options]
+        )
+
+    assert result.exit_code == 0, result.output
+    assert create.call_args.args[3] == expected
+
+
+def test_init_rejects_python314(runner):
+    with patch("soar_sdk.cli.init.cli.init_sdk_app") as create:
+        result = runner.invoke(
+            init,
+            [
+                "--name",
+                "test_app",
+                "--description",
+                "Test app",
+                "--python-version",
+                "3.14",
+            ],
+        )
+
+    assert result.exit_code != 0
+    assert "3.14" in result.output
+    create.assert_not_called()
+
+
 def test_init_app_creates_directory_structure(runner, tmp_path):
     """Test that init command creates the expected directory structure and files."""
     app_dir = tmp_path / "test_app"

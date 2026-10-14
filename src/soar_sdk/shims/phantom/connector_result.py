@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "traceback",
+    "typing",
+}
+
 try:
     from phantom.connector_result import ConnectorResult
 

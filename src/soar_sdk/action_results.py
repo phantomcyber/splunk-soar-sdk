@@ -1,3 +1,17 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "itertools",
+    "pydantic",
+    "pydantic.main",
+    "soar_sdk.compat",
+    "soar_sdk.field_utils",
+    "soar_sdk.logging",
+    "soar_sdk.meta.datatypes",
+    "soar_sdk.shims.phantom.action_result",
+    "typing",
+    "typing_extensions",
+}
+
 import itertools
 from collections.abc import Callable, Iterator, Sequence
 from typing import Any, Literal, NotRequired
@@ -348,6 +362,7 @@ class PermissiveActionOutput(ActionOutput):
         warnings: Literal["none", "warn", "error"] | bool = True,
         fallback: Callable[[Any], Any] | None = None,
         serialize_as_any: bool = False,
+        polymorphic_serialization: bool | None = None,
     ) -> dict:
         """Basic implementation of ``model_dump`` which just returns the raw dict provided to the constructor. Doesn't implement any kwargs and isn't recommended for use outside of basic serialization by the SDK."""
         return self._permissive_raw

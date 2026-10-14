@@ -1,3 +1,8 @@
+__lazy_modules__ = {
+    "pydantic",
+    "pydantic_core.core_schema",
+}
+
 from pydantic import BaseModel, ConfigDict, field_validator
 from pydantic_core.core_schema import ValidationInfo
 

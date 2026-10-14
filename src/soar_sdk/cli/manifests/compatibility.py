@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "dataclasses",
+    "packaging.version",
+    "soar_sdk.compat",
+    "soar_sdk.meta.app",
+}
+
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 

@@ -1,3 +1,12 @@
+__lazy_modules__ = {
+    "logging",
+    "pydantic",
+    "soar_sdk.meta.dependencies.constants",
+    "soar_sdk.meta.dependencies.package",
+    "soar_sdk.meta.dependencies.utils",
+    "soar_sdk.meta.dependencies.wheels",
+}
+
 from logging import getLogger
 
 from pydantic import BaseModel
@@ -81,29 +90,30 @@ class UvLock(BaseModel):
 
         Args:
             packages: List of packages to resolve dependencies for.
-            python_versions: List of Python versions to resolve for (e.g., ["3.13", "3.14"]).
-                           If None, defaults to ["3.13", "3.14"] for backwards compatibility.
+            python_versions: List of Python versions to resolve for (e.g., ["3.13", "3.15"]).
+                           If None, defaults to ["3.13", "3.15"].
 
         Returns:
-            Tuple of (py313_dependencies, py314_dependencies).
+            Tuple of (py313_dependencies, py315_dependencies).
         """
-        python_versions = python_versions or ["3.13", "3.14"]
+        if python_versions is None:
+            python_versions = ["3.13", "3.15"]
         resolve_both = len(python_versions) == 2
 
-        py313_wheels, py314_wheels = [], []
+        py313_wheels, py315_wheels = [], []
 
         for package in packages:
             wheel_313 = package.resolve_py313() if "3.13" in python_versions else None
-            wheel_314 = package.resolve_py314() if "3.14" in python_versions else None
+            wheel_315 = package.resolve_py315() if "3.15" in python_versions else None
 
-            prefix = "shared" if not resolve_both or wheel_313 == wheel_314 else None
+            prefix = "shared" if not resolve_both or wheel_313 == wheel_315 else None
 
             if wheel_313:
                 wheel_313.add_platform_prefix(prefix or "python313")
                 py313_wheels.append(wheel_313)
 
-            if wheel_314:
-                wheel_314.add_platform_prefix(prefix or "python314")
-                py314_wheels.append(wheel_314)
+            if wheel_315:
+                wheel_315.add_platform_prefix(prefix or "python315")
+                py315_wheels.append(wheel_315)
 
-        return DependencyList(wheel=py313_wheels), DependencyList(wheel=py314_wheels)
+        return DependencyList(wheel=py313_wheels), DependencyList(wheel=py315_wheels)

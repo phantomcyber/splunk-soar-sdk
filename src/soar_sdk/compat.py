@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "enum",
+    "functools",
+    "packaging.version",
+}
+
 import functools
 from enum import Enum
 
@@ -29,7 +35,7 @@ class PythonVersion(str, Enum):
     """Enum to represent supported Python versions."""
 
     PY_3_13 = "3.13"
-    PY_3_14 = "3.14"
+    PY_3_15 = "3.15"
 
     def __str__(self) -> str:
         """Returns the string representation of the Python version."""
@@ -44,8 +50,8 @@ class PythonVersion(str, Enum):
         # "3" is a special case for connectors that don't properly define their Python version
         if version_str in ("3", "3.13"):
             return cls.PY_3_13
-        if version_str == "3.14":
-            return cls.PY_3_14
+        if version_str == "3.15":
+            return cls.PY_3_15
 
         raise ValueError(f"Unsupported Python version: {version_str}")
 
@@ -68,7 +74,7 @@ class PythonVersion(str, Enum):
     @classmethod
     def all(cls) -> list["PythonVersion"]:
         """Returns a list of all supported Python versions."""
-        return [cls.PY_3_13, cls.PY_3_14]
+        return [cls.PY_3_13, cls.PY_3_15]
 
     @classmethod
     def all_csv(cls) -> str:
@@ -82,4 +88,11 @@ class PythonVersion(str, Enum):
         py_versions = sorted(Version(str(py)) for py in versions)
         next_version = f"{py_versions[-1].major}.{py_versions[-1].minor + 1}"
 
-        return f">={py_versions[0]}, <{next_version}"
+        requirements = [f">={py_versions[0]}", f"<{next_version}"]
+        supported_minors = {version.minor for version in py_versions}
+        requirements.extend(
+            f"!=3.{minor}.*"
+            for minor in range(py_versions[0].minor, py_versions[-1].minor)
+            if minor not in supported_minors
+        )
+        return ", ".join(requirements)

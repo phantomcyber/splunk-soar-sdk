@@ -1,3 +1,16 @@
+__lazy_modules__ = {
+    "abc",
+    "contextlib",
+    "hashlib",
+    "json",
+    "os",
+    "pathlib",
+    "soar_sdk.compat",
+    "soar_sdk.shims.phantom.action_result",
+    "soar_sdk.shims.phantom.connector_result",
+    "typing",
+}
+
 try:
     from phantom.base_connector import BaseConnector
 

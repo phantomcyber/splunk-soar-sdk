@@ -1,3 +1,20 @@
+__lazy_modules__ = {
+    "bs4",
+    "collections.abc",
+    "dataclasses",
+    "email",
+    "email.header",
+    "email.message",
+    "extract_msg",
+    "html",
+    "re",
+    "soar_sdk.extras.email.utils",
+    "soar_sdk.logging",
+    "typing",
+    "urllib.parse",
+    "warnings",
+}
+
 import email
 import re
 import warnings

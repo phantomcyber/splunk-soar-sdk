@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "httpx",
+    "typing",
+}
+
 from collections.abc import Generator
 from typing import Any
 

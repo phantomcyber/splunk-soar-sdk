@@ -1,3 +1,9 @@
+__lazy_modules__ = {
+    "requests",
+    "soar_sdk.abstract",
+    "typing",
+}
+
 try:
     from phantom_common.app_interface.app_interface import SoarRestClient
 

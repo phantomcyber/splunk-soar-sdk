@@ -1,3 +1,37 @@
+__lazy_modules__ = {
+    "collections.abc",
+    "importlib.util",
+    "inspect",
+    "json",
+    "pathlib",
+    "soar_sdk.abstract",
+    "soar_sdk.action_results",
+    "soar_sdk.actions_manager",
+    "soar_sdk.app_cli_runner",
+    "soar_sdk.app_client",
+    "soar_sdk.asset",
+    "soar_sdk.asset_state",
+    "soar_sdk.compat",
+    "soar_sdk.decorators",
+    "soar_sdk.exceptions",
+    "soar_sdk.input_spec",
+    "soar_sdk.logging",
+    "soar_sdk.meta.actions",
+    "soar_sdk.meta.webhooks",
+    "soar_sdk.params",
+    "soar_sdk.shims.phantom_common.app_interface.app_interface",
+    "soar_sdk.shims.phantom_common.credential_managers",
+    "soar_sdk.shims.phantom_common.encryption.encryption_manager_factory",
+    "soar_sdk.types",
+    "soar_sdk.webhooks.models",
+    "soar_sdk.webhooks.routing",
+    "sys",
+    "typing",
+    "urllib.parse",
+    "uuid",
+    "zoneinfo",
+}
+
 import importlib.util
 import inspect
 import json
@@ -132,6 +166,11 @@ class App:
 
         if python_version is None:
             python_version = PythonVersion.all_csv()
+        elif isinstance(python_version, str):
+            PythonVersion.from_csv(python_version)
+        else:
+            for version in python_version:
+                PythonVersion.from_str(str(version))
 
         self.app_meta_info = {
             "name": name,

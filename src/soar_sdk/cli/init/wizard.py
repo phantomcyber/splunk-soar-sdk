@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "dataclasses",
+    "pathlib",
+    "rich.console",
+    "rich.panel",
+    "rich.prompt",
+    "rich.table",
+    "soar_sdk.compat",
+    "uuid",
+}
+
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path

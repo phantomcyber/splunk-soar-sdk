@@ -1,3 +1,16 @@
+__lazy_modules__ = {
+    "ast",
+    "collections.abc",
+    "pydantic_core",
+    "soar_sdk.action_results",
+    "soar_sdk.cli.utils",
+    "soar_sdk.code_renderers.renderer",
+    "soar_sdk.field_utils",
+    "soar_sdk.meta.actions",
+    "soar_sdk.params",
+    "typing",
+}
+
 import ast
 from collections.abc import Iterator
 from typing import ClassVar

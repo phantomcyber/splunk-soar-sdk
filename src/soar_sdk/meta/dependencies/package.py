@@ -1,3 +1,14 @@
+__lazy_modules__ = {
+    "logging",
+    "pydantic",
+    "soar_sdk.meta.dependencies.constants",
+    "soar_sdk.meta.dependencies.sources",
+    "soar_sdk.meta.dependencies.utils",
+    "soar_sdk.meta.dependencies.uv_models",
+    "soar_sdk.meta.dependencies.wheels",
+    "typing",
+}
+
 from logging import getLogger
 from typing import ClassVar
 
@@ -186,17 +197,17 @@ class UvPackage(BaseModel):
             ],
         )
 
-    def resolve_py314(self) -> DependencyWheel:
-        """Resolve the dependency wheel for Python 3.14."""
+    def resolve_py315(self) -> DependencyWheel:
+        """Resolve the dependency wheel for Python 3.15."""
         return self._resolve(
             abi_precedence=[
-                "cp314",  # Python 3.14-specific ABI
+                "cp315",  # Python 3.15-specific ABI
                 "abi3",  # Python 3 stable ABI
                 "none",  # Source wheels -- no ABI
             ],
             python_precedence=[
-                "cp314",  # Binary wheel for Python 3.14
-                "pp314",  # Source wheel for Python 3.14
+                "cp315",  # Binary wheel for Python 3.15
+                "pp315",  # Source wheel for Python 3.15
                 "py3",  # Source wheel for any Python 3.x
             ],
         )

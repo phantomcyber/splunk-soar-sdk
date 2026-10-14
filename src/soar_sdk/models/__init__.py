@@ -1,3 +1,11 @@
+__lazy_modules__ = {
+    "soar_sdk.models.artifact",
+    "soar_sdk.models.attachment_input",
+    "soar_sdk.models.container",
+    "soar_sdk.models.finding",
+    "soar_sdk.models.vault_attachment",
+}
+
 from .artifact import Artifact
 from .attachment_input import AttachmentInput
 from .container import Container

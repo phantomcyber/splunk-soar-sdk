@@ -1,3 +1,7 @@
+__lazy_modules__ = {
+    "typing",
+}
+
 try:
     from phantom.app import APP_ERROR, APP_SUCCESS
 

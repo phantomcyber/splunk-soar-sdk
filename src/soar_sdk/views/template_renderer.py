@@ -1,3 +1,12 @@
+__lazy_modules__ = {
+    "abc",
+    "jinja2",
+    "pathlib",
+    "soar_sdk.paths",
+    "soar_sdk.views.template_filters",
+    "typing",
+}
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
