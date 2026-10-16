@@ -74,6 +74,10 @@ class ActionMeta(BaseModel):
         data["output"] = OutputsSerializer.serialize_datapaths(
             self.parameters, self.output, summary_class=self.summary_type
         )
+        data["outputSchema"] = OutputsSerializer.serialize_output_schema(
+            self.parameters, self.output, summary_class=self.summary_type
+        )
+        data["outputSchemaMetadata"] = {"source": "sdk-native", "complete": True}
         if self.view_handler:
             self.render_as = "custom"
 

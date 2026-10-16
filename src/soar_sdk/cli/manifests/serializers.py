@@ -12,7 +12,10 @@ __lazy_modules__ = {
 import itertools
 from collections.abc import Iterator
 from logging import getLogger
-from typing import Any
+from types import GenericAlias
+from typing import Any, Literal
+
+from pydantic import Field, create_model
 
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
 from soar_sdk.field_utils import normalize_field_annotation, parse_json_schema_extra
@@ -38,6 +41,56 @@ class ParamsSerializer:
 
 class OutputsSerializer:
     """Serializes ActionOutput classes to JSON schema."""
+
+    @staticmethod
+    def serialize_output_schema(
+        params_class: type[Params],
+        outputs_class: type[ActionOutput],
+        summary_class: type[ActionOutput] | None = None,
+    ) -> dict[str, Any]:
+        """Describe an action result directly as JSON Schema Draft 2020-12."""
+        result_model = create_model(
+            "ActionResultOutputSchema",
+            status=(
+                Literal["success", "failure"],
+                Field(default_factory=lambda: "success"),
+            ),
+            message=(str, Field(default_factory=str)),
+            parameter=(params_class, Field(default_factory=params_class)),
+            context=(dict[str, Any], Field(default_factory=dict)),
+            data=(GenericAlias(list, outputs_class), Field(default_factory=list)),
+            extra_data=(list[dict[str, Any]], Field(default_factory=list)),
+            summary=(summary_class or dict[str, Any], Field(default_factory=dict)),
+        )
+        schema = result_model.model_json_schema(by_alias=True, mode="serialization")
+        schema.pop("title", None)
+        schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+        schema["additionalProperties"] = True
+        schema["properties"]["result_summary"] = {
+            "type": "object",
+            "properties": {
+                "total_objects": {"type": "number", "examples": [1]},
+                "total_objects_successful": {"type": "number", "examples": [1]},
+            },
+            "additionalProperties": True,
+        }
+
+        def normalize_metadata(value: Any) -> None:  # noqa: ANN401
+            if isinstance(value, dict):
+                if "cef_types" in value:
+                    value["x-soar-contains"] = value.pop("cef_types")
+                if "column_name" in value:
+                    value["title"] = value.pop("column_name")
+                if "column_order" in value:
+                    value["x-soar-column-order"] = value.pop("column_order")
+                for child in value.values():
+                    normalize_metadata(child)
+            elif isinstance(value, list):
+                for child in value:
+                    normalize_metadata(child)
+
+        normalize_metadata(schema)
+        return schema
 
     @staticmethod
     def serialize_parameter_datapaths(

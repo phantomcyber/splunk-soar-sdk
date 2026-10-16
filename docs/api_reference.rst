@@ -177,6 +177,12 @@ Much like parameters, outputs can have simple data types such as ``str`` or ``in
       uid: int = OutputField(cef_types=["user id"])
       create_date: str
 
+The generated action metadata includes a JSON Schema Draft 2020-12
+``outputSchema`` for the result envelope. Its ``data.items`` shape comes from
+the ``ActionOutput`` class, and ``OutputField`` CEF types appear as
+``x-soar-contains``. The SDK also emits legacy ``output`` datapaths for
+existing Splunk SOAR installations; authors define the output only once.
+
 Output models can be nested, allowing you to create complex data structures:
 
 .. code-block:: python

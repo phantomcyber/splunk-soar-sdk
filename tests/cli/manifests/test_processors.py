@@ -180,6 +180,17 @@ def test_build_manifests(app: str, mock_fixture_sdk_version: None):
             _assert_dependency_section_is_well_formed(manifest, dependency_section)
         _assert_direct_dependencies_are_present(manifest, f"{test_app}/pyproject.toml")
 
+    for action in app_meta["actions"]:
+        assert action["outputSchema"]["$schema"] == (
+            "https://json-schema.org/draft/2020-12/schema"
+        )
+        assert action["outputSchemaMetadata"] == {
+            "source": "sdk-native",
+            "complete": True,
+        }
+        del action["outputSchema"]
+        del action["outputSchemaMetadata"]
+
     assert _without_resolved_dependencies(app_meta) == _without_resolved_dependencies(
         expected_meta
     )
