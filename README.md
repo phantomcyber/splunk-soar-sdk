@@ -62,6 +62,8 @@ Running the above command will add `splunk-soar-sdk` as a dependency of your Spl
 
 In order to start using SDK and build your first Splunk SOAR App, follow the [Getting Started guide](https://phantomcyber.github.io/splunk-soar-sdk/getting_started/index.html).
 
+Email connectors that process untrusted mailbox content should use the SDK's bounded `analyze_email` API, shared asset fields, standardized incomplete-analysis warnings, and commit-only polling budget. The low-level `extract_email_data` compatibility parser does not enforce ingestion limits. See [Bounded Email Ingestion](https://phantomcyber.github.io/splunk-soar-sdk/email_ingestion.html).
+
 A Splunk SOAR app developed with the SDK will look something like this:
 
 Project structure:

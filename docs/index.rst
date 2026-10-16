@@ -49,6 +49,7 @@ Contents
    app_structure/index
    custom_views/index
    authentication/index
+   email_ingestion
    api_reference
    cli_reference
    changelog

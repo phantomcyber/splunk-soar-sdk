@@ -80,6 +80,7 @@ class EmailAttachment:
     content_id: str | None = None
     content: bytes | None = None
     is_inline: bool = False
+    skip_reason: str | None = None
 
 
 @dataclass
@@ -125,6 +126,11 @@ class EmailData:
                     "size": att.size,
                     "content_id": att.content_id,
                     "is_inline": att.is_inline,
+                    **(
+                        {"skip_reason": att.skip_reason}
+                        if att.skip_reason is not None
+                        else {}
+                    ),
                 }
                 for att in self.attachments
             ],
@@ -380,7 +386,9 @@ def extract_email_data(
     """Extract all components from an email string or MSG bytes.
 
     Automatically detects whether the input is an Outlook MSG file (OLE2 compound
-    document) or a standard RFC 5322 email string, and parses accordingly.
+    document) or a standard RFC 5322 email string, and parses accordingly. This is
+    a low-level compatibility parser and does not enforce ingestion budgets. Apps
+    processing untrusted mailbox content should use ``analyze_email`` instead.
     """
     if isinstance(rfc822_email, bytes) and rfc822_email[:8] == _OLE2_MAGIC:
         return _extract_msg_email_data(
@@ -388,12 +396,14 @@ def extract_email_data(
         )
 
     if isinstance(rfc822_email, bytes):
-        rfc822_email = rfc822_email.decode("utf-8", errors="replace")
-
-    mail = email.message_from_string(rfc822_email)
+        mail = email.message_from_bytes(rfc822_email)
+        raw_email = rfc822_email.decode("utf-8", errors="replace")
+    else:
+        mail = email.message_from_string(rfc822_email)
+        raw_email = rfc822_email
 
     return EmailData(
-        raw_email=rfc822_email,
+        raw_email=raw_email,
         headers=extract_email_headers(mail, email_id),
         body=extract_email_body(mail),
         urls=extract_email_urls(mail),
