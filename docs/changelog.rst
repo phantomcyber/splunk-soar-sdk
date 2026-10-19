@@ -9,8 +9,16 @@ Increments to the major version number imply a breaking change, to the minor
 version imply a new feature, and to the patch version imply a non-breaking
 bugfix.
 
-.. dropdown:: SDK 6
+.. dropdown:: SDK 7
    :open:
+
+   .. rubric:: 7.0.0 (2026-10-19)
+
+   **Breaking changes:**
+
+   * Feature: Breaking: Replace Python 3.14 support with Python 3.15, retaining Python 3.13. SDK imports load lazily on Python 3.15 and remain eager on Python 3.13. Update app Python requirements to ``>=3.13, <3.16, !=3.14.*``, replace explicit 3.14 targets and uv environments with 3.15, run ``uv lock --upgrade`` for compatible dependency wheels, and rebuild the app. The ``PY_3_14`` enum, ``resolve_py314`` method, and ``pip314_dependencies`` manifest field are replaced by their 3.15 equivalents.
+
+.. dropdown:: SDK 6
 
    .. rubric:: 6.1.5 (2026-10-14)
 
