@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.0.1 (2026-10-20)
+
+   * Fix: Verify SOAR API TLS certificates by default when apps run off platform.
+
    .. rubric:: 7.0.0 (2026-10-19)
 
    **Breaking changes:**
