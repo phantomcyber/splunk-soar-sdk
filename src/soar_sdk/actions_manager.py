@@ -33,13 +33,15 @@ if TYPE_CHECKING:
 
 from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.field_utils import parse_json_schema_extra
-from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import platform_encryption_backend
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
 from soar_sdk.shims.phantom.base_connector import BaseConnector
 from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
+from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
+    platform_encryption_backend,
+)
 from soar_sdk.types import Action
 
 logger = getLogger()
@@ -93,7 +95,9 @@ class ActionsManager(BaseConnector):
 
     def handle(self, input_data: InputSpecification, handle: int | None = None) -> str:
         """Runs handling of the input data on connector."""
-        self._enable_action_param_encryption = input_data.enable_action_parameter_encryption
+        self._enable_action_param_encryption = (
+            input_data.enable_action_parameter_encryption
+        )
         self._action_param_dec_key = input_data.dec_key
         action_id = input_data.identifier
         if self.get_action(action_id):
@@ -123,7 +127,9 @@ class ActionsManager(BaseConnector):
             if self._enable_action_param_encryption and self._action_param_dec_key:
                 for field_name, field in handler.meta.parameters.model_fields.items():
                     key = field.alias or field_name
-                    if parse_json_schema_extra(field.json_schema_extra).get("sensitive") and param.get(key):
+                    if parse_json_schema_extra(field.json_schema_extra).get(
+                        "sensitive"
+                    ) and param.get(key):
                         param[key] = platform_encryption_backend.decrypt(
                             param[key], self._action_param_dec_key
                         )

@@ -75,11 +75,16 @@ def test_handle_action_decrypts_sensitive_params(example_app: App):
     example_app.actions_manager._enable_action_param_encryption = True
     example_app.actions_manager._action_param_dec_key = "test_key"
 
-    with mock.patch(
-        "soar_sdk.actions_manager.platform_encryption_backend.decrypt",
-        side_effect=lambda val, key: f"decrypted:{val}",
-    ), mock.patch.object(
-        example_app.actions_manager, "get_action_identifier", return_value="secret_action"
+    with (
+        mock.patch(
+            "soar_sdk.actions_manager.platform_encryption_backend.decrypt",
+            side_effect=lambda val, key: f"decrypted:{val}",
+        ),
+        mock.patch.object(
+            example_app.actions_manager,
+            "get_action_identifier",
+            return_value="secret_action",
+        ),
     ):
         example_app.actions_manager.handle_action(
             {"password": "ciphertext", "username": "alice"}
@@ -101,10 +106,15 @@ def test_handle_action_skips_decryption_when_flag_false(example_app: App):
     example_app.actions_manager._enable_action_param_encryption = False
     example_app.actions_manager._action_param_dec_key = "test_key"
 
-    with mock.patch(
-        "soar_sdk.actions_manager.platform_encryption_backend.decrypt"
-    ) as mock_decrypt, mock.patch.object(
-        example_app.actions_manager, "get_action_identifier", return_value="secret_action2"
+    with (
+        mock.patch(
+            "soar_sdk.actions_manager.platform_encryption_backend.decrypt"
+        ) as mock_decrypt,
+        mock.patch.object(
+            example_app.actions_manager,
+            "get_action_identifier",
+            return_value="secret_action2",
+        ),
     ):
         example_app.actions_manager.handle_action(
             {"password": "ciphertext", "username": "alice"}
