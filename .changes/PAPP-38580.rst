@@ -1,0 +1,1 @@
+* Fix: Decrypt ``Param(sensitive=True)`` action parameters before passing them to the action function when ``enable_action_parameter_encryption`` is set by the platform.
