@@ -111,7 +111,7 @@ def test_action_meta_emits_native_schema_pair_and_legacy_datapaths():
     params_definition = schema["$defs"][params_ref.removeprefix("#/$defs/")]
 
     assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
-    assert schema["properties"]["status"]["enum"] == ["success", "failure"]
+    assert schema["properties"]["status"]["enum"] == ["success", "failed"]
     assert output_definition["properties"]["ip"]["x-soar-contains"] == ["ip"]
     assert output_definition["properties"]["ip"]["examples"] == ["192.0.2.1"]
     assert output_definition["properties"]["is_exit_node"]["type"] == "boolean"

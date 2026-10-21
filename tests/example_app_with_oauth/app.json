@@ -101,7 +101,7 @@
                     "data_type": "string",
                     "example_values": [
                         "success",
-                        "failure"
+                        "failed"
                     ]
                 },
                 {
@@ -139,7 +139,7 @@
                     "data_type": "string",
                     "example_values": [
                         "success",
-                        "failure"
+                        "failed"
                     ]
                 },
                 {
@@ -821,7 +821,7 @@
                     "status": {
                         "enum": [
                             "success",
-                            "failure"
+                            "failed"
                         ],
                         "title": "Status",
                         "type": "string"
@@ -916,7 +916,7 @@
                     "status": {
                         "enum": [
                             "success",
-                            "failure"
+                            "failed"
                         ],
                         "title": "Status",
                         "type": "string"

@@ -8,6 +8,14 @@ from soar_sdk.cli.manifests.serializers import OutputsSerializer, ParamsSerializ
 from soar_sdk.params import Param, Params
 
 
+@pytest.mark.parametrize("status", ["success", "failed"])
+def test_output_schema_accepts_serialized_action_result_status(status):
+    schema = OutputsSerializer.serialize_output_schema(Params, ActionOutput)
+
+    assert status in schema["properties"]["status"]["enum"]
+    assert "failure" not in schema["properties"]["status"]["enum"]
+
+
 def test_output_schema_uses_type_arrays_for_nullable_fields():
     class NullableParams(Params):
         name: str | None = Param(required=False)
@@ -293,7 +301,7 @@ def test_outputs_serialize_with_defaults():
         {
             "data_path": "action_result.status",
             "data_type": "string",
-            "example_values": ["success", "failure"],
+            "example_values": ["success", "failed"],
         },
         {
             "data_path": "action_result.message",
@@ -334,7 +342,7 @@ def test_outputs_serialize_output_class():
         {
             "data_path": "action_result.status",
             "data_type": "string",
-            "example_values": ["success", "failure"],
+            "example_values": ["success", "failed"],
         },
         {
             "data_path": "action_result.message",
@@ -409,7 +417,7 @@ def test_outputs_serialize_with_parameters_class():
         {
             "data_path": "action_result.status",
             "data_type": "string",
-            "example_values": ["success", "failure"],
+            "example_values": ["success", "failed"],
         },
         {
             "data_path": "action_result.message",
@@ -518,7 +526,7 @@ def test_serilized_datapaths_params():
         {
             "data_path": "action_result.status",
             "data_type": "string",
-            "example_values": ["success", "failure"],
+            "example_values": ["success", "failed"],
         },
         {
             "data_path": "action_result.message",

@@ -172,7 +172,7 @@ class OutputsSerializer:
         result_model = create_model(
             "ActionResultOutputSchema",
             status=(
-                Literal["success", "failure"],
+                Literal["success", "failed"],
                 Field(default_factory=lambda: "success"),
             ),
             message=(str, Field(default_factory=str)),
@@ -253,7 +253,7 @@ class OutputsSerializer:
         status = OutputFieldSpecification(
             data_path="action_result.status",
             data_type="string",
-            example_values=["success", "failure"],
+            example_values=["success", "failed"],
         )
         message = OutputFieldSpecification(
             data_path="action_result.message",
