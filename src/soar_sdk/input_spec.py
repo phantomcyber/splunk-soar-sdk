@@ -157,6 +157,7 @@ class InputSpecification(BaseModel):
     soar_auth: SoarAuth | None = None
     user_hash_key: str = ""
     broker_ph_auth_token: str = ""
+    enable_action_parameter_encryption: bool = False
 
     @field_validator("user_session_token", mode="before")
     @classmethod

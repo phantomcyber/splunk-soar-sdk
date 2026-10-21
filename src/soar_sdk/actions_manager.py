@@ -6,12 +6,14 @@ __lazy_modules__ = {
     "shutil",
     "soar_sdk.abstract",
     "soar_sdk.compat",
+    "soar_sdk.field_utils",
     "soar_sdk.input_spec",
     "soar_sdk.logging",
     "soar_sdk.meta.actions",
     "soar_sdk.shims.phantom.action_result",
     "soar_sdk.shims.phantom.base_connector",
     "soar_sdk.shims.phantom.install_info",
+    "soar_sdk.shims.phantom_common.encryption.encryption_manager_factory",
     "soar_sdk.types",
     "tempfile",
     "typing",
@@ -30,6 +32,8 @@ if TYPE_CHECKING:
     from soar_sdk.abstract import SOARClient
 
 from soar_sdk.compat import remove_when_soar_newer_than
+from soar_sdk.field_utils import parse_json_schema_extra
+from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import platform_encryption_backend
 from soar_sdk.input_spec import InputSpecification
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
@@ -51,6 +55,8 @@ class ActionsManager(BaseConnector):
         self.__app_dir: Path | None = None
         self.supports_es_polling: bool = False
         self._soar_client: SOARClient | None = None
+        self._enable_action_param_encryption: bool = False
+        self._action_param_dec_key: str | None = None
 
     def set_soar_client(self, client: "SOARClient") -> None:
         """Set the SOAR client reference for making REST API calls."""
@@ -87,6 +93,8 @@ class ActionsManager(BaseConnector):
 
     def handle(self, input_data: InputSpecification, handle: int | None = None) -> str:
         """Runs handling of the input data on connector."""
+        self._enable_action_param_encryption = input_data.enable_action_parameter_encryption
+        self._action_param_dec_key = input_data.dec_key
         action_id = input_data.identifier
         if self.get_action(action_id):
             self.print_progress_message = True
@@ -112,6 +120,13 @@ class ActionsManager(BaseConnector):
             logger.info("Using ES poll")
 
         if handler := self.get_action(action_id):
+            if self._enable_action_param_encryption and self._action_param_dec_key:
+                for field_name, field in handler.meta.parameters.model_fields.items():
+                    key = field.alias or field_name
+                    if parse_json_schema_extra(field.json_schema_extra).get("sensitive") and param.get(key):
+                        param[key] = platform_encryption_backend.decrypt(
+                            param[key], self._action_param_dec_key
+                        )
             try:
                 params = handler.meta.parameters.model_validate(param)
             except (ValueError, ValidationError) as e:
