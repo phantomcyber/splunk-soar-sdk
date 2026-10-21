@@ -1826,5 +1826,2275 @@
                 "input_file_aarch64": "wheels/python315/yarl-1.25.1-cp315-cp315-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl"
             }
         ]
+    },
+    "actionSchemasLookup": {
+        "test connectivity": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "test summary with list output": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "test empty list output": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "test json output": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "JsonOutput": {
+                        "properties": {
+                            "name": {
+                                "examples": [
+                                    "John",
+                                    "Jane",
+                                    "Jim"
+                                ],
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "age": {
+                                "examples": [
+                                    25,
+                                    30,
+                                    35
+                                ],
+                                "title": "Age",
+                                "type": "integer"
+                            }
+                        },
+                        "title": "JsonOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/JsonOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "test table output": {
+            "inputSchema": {
+                "properties": {
+                    "company_name": {
+                        "default": "Splunk",
+                        "title": "Company Name",
+                        "type": "string",
+                        "x-soar-order": 0,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "JsonOutput": {
+                        "properties": {
+                            "name": {
+                                "examples": [
+                                    "John",
+                                    "Jane",
+                                    "Jim"
+                                ],
+                                "title": "Name",
+                                "type": "string"
+                            },
+                            "age": {
+                                "examples": [
+                                    25,
+                                    30,
+                                    35
+                                ],
+                                "title": "Age",
+                                "type": "integer"
+                            }
+                        },
+                        "title": "JsonOutput",
+                        "type": "object"
+                    },
+                    "TableParams": {
+                        "properties": {
+                            "company_name": {
+                                "default": "Splunk",
+                                "title": "Company Name",
+                                "type": "string",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            }
+                        },
+                        "title": "TableParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/TableParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/JsonOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "reverse string": {
+            "inputSchema": {
+                "properties": {
+                    "input_string": {
+                        "title": "Input String",
+                        "type": "string",
+                        "x-soar-order": 0
+                    }
+                },
+                "required": [
+                    "input_string"
+                ],
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ReverseStringOutput": {
+                        "properties": {
+                            "original_string": {
+                                "title": "Original String",
+                                "type": "string"
+                            },
+                            "reversed_string": {
+                                "title": "Reversed String",
+                                "type": "string"
+                            },
+                            "_underscored_string": {
+                                "title": "Underscored String",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "original_string",
+                            "reversed_string"
+                        ],
+                        "title": "ReverseStringOutput",
+                        "type": "object"
+                    },
+                    "ReverseStringParams": {
+                        "properties": {
+                            "input_string": {
+                                "title": "Input String",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "input_string"
+                        ],
+                        "title": "ReverseStringParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/ReverseStringParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ReverseStringOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "permissive reverse string": {
+            "inputSchema": {
+                "properties": {
+                    "input_string": {
+                        "title": "Input String",
+                        "type": "string",
+                        "x-soar-order": 0
+                    }
+                },
+                "required": [
+                    "input_string"
+                ],
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "NestedOutput": {
+                        "properties": {
+                            "foo": {
+                                "title": "Foo",
+                                "type": "integer"
+                            },
+                            "bar": {
+                                "title": "Bar",
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "foo",
+                            "bar"
+                        ],
+                        "title": "NestedOutput",
+                        "type": "object"
+                    },
+                    "PermissiveReverseStringOutput": {
+                        "additionalProperties": true,
+                        "properties": {
+                            "original_string": {
+                                "title": "Original String",
+                                "type": "string"
+                            },
+                            "reversed_string": {
+                                "title": "Reversed String",
+                                "type": "string"
+                            },
+                            "_underscored_string": {
+                                "title": "Underscored String",
+                                "type": "string"
+                            },
+                            "nested_output": {
+                                "$ref": "#/$defs/NestedOutput"
+                            }
+                        },
+                        "required": [
+                            "original_string",
+                            "reversed_string",
+                            "nested_output"
+                        ],
+                        "title": "PermissiveReverseStringOutput",
+                        "type": "object"
+                    },
+                    "PermissiveReverseStringParams": {
+                        "properties": {
+                            "input_string": {
+                                "title": "Input String",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "input_string"
+                        ],
+                        "title": "PermissiveReverseStringParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/PermissiveReverseStringParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/PermissiveReverseStringOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "generate statistics": {
+            "inputSchema": {
+                "properties": {
+                    "category": {
+                        "title": "Category",
+                        "type": "string",
+                        "x-soar-order": 0
+                    }
+                },
+                "required": [
+                    "category"
+                ],
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "StatisticsOutput": {
+                        "properties": {
+                            "category": {
+                                "title": "Category",
+                                "type": "string"
+                            },
+                            "labels": {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "title": "Labels",
+                                "type": "array"
+                            },
+                            "values": {
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "title": "Values",
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "category",
+                            "labels",
+                            "values"
+                        ],
+                        "title": "StatisticsOutput",
+                        "type": "object"
+                    },
+                    "StatisticsParams": {
+                        "properties": {
+                            "category": {
+                                "title": "Category",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "category"
+                        ],
+                        "title": "StatisticsParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/StatisticsParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/StatisticsOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "make request": {
+            "inputSchema": {
+                "properties": {
+                    "http_method": {
+                        "description": "The HTTP method to use for the request.",
+                        "title": "Http Method",
+                        "type": "string",
+                        "value_list": [
+                            "GET",
+                            "POST",
+                            "PUT",
+                            "DELETE",
+                            "PATCH",
+                            "HEAD",
+                            "OPTIONS"
+                        ],
+                        "x-soar-order": 0,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "endpoint": {
+                        "description": "The endpoint to send the request to. Base url is already included in the endpoint.",
+                        "title": "Endpoint",
+                        "type": "string",
+                        "x-soar-order": 1,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "headers": {
+                        "description": "The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'}",
+                        "title": "Headers",
+                        "type": "string",
+                        "x-soar-order": 2,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "query_parameters": {
+                        "description": "Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2",
+                        "title": "Query Parameters",
+                        "type": "string",
+                        "x-soar-order": 3,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "body": {
+                        "description": "The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'}",
+                        "title": "Body",
+                        "type": "string",
+                        "x-soar-order": 4,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "timeout": {
+                        "description": "The timeout for the request in seconds.",
+                        "title": "Timeout",
+                        "type": "integer",
+                        "x-soar-order": 5,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "verify_ssl": {
+                        "default": true,
+                        "description": "Whether to verify the SSL certificate. Default is True.",
+                        "title": "Verify Ssl",
+                        "type": "boolean",
+                        "x-soar-order": 6,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    }
+                },
+                "required": [
+                    "http_method",
+                    "endpoint"
+                ],
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "MakeRequestOutput": {
+                        "description": "Output class for ``make request`` action.\n\nThis class extends the `ActionOutput` class and adds a status_code and response_body field. You can use this class as is or extend it to add more fields.\n\nExample:\n    >>> class CustomMakeRequestOutput(MakeRequestOutput):\n    ...     error: str = OutputField(example_values=[\"Invalid credentials\"])\n\nNote:\n    The status_code field is used to return the HTTP status code of the response.\n    The response_body field is used to return the response body of the response.",
+                        "properties": {
+                            "status_code": {
+                                "examples": [
+                                    200,
+                                    404,
+                                    500
+                                ],
+                                "title": "Status Code",
+                                "type": "integer"
+                            },
+                            "response_body": {
+                                "examples": [
+                                    "{\"key\": \"value\"}"
+                                ],
+                                "title": "Response Body",
+                                "type": "string"
+                            }
+                        },
+                        "title": "MakeRequestOutput",
+                        "type": "object"
+                    },
+                    "MakeRequestParamsCustom": {
+                        "properties": {
+                            "http_method": {
+                                "description": "The HTTP method to use for the request.",
+                                "title": "Http Method",
+                                "type": "string",
+                                "value_list": [
+                                    "GET",
+                                    "POST",
+                                    "PUT",
+                                    "DELETE",
+                                    "PATCH",
+                                    "HEAD",
+                                    "OPTIONS"
+                                ],
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "endpoint": {
+                                "description": "The endpoint to send the request to. Base url is already included in the endpoint.",
+                                "title": "Endpoint",
+                                "type": "string",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "headers": {
+                                "description": "The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'}",
+                                "title": "Headers",
+                                "type": "string",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "query_parameters": {
+                                "description": "Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2",
+                                "title": "Query Parameters",
+                                "type": "string",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "body": {
+                                "description": "The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'}",
+                                "title": "Body",
+                                "type": "string",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "timeout": {
+                                "description": "The timeout for the request in seconds.",
+                                "title": "Timeout",
+                                "type": "integer",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "verify_ssl": {
+                                "default": true,
+                                "description": "Whether to verify the SSL certificate. Default is True.",
+                                "title": "Verify Ssl",
+                                "type": "boolean",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            }
+                        },
+                        "required": [
+                            "http_method",
+                            "endpoint"
+                        ],
+                        "title": "MakeRequestParamsCustom",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/MakeRequestParamsCustom"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/MakeRequestOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "on poll": {
+            "inputSchema": {
+                "description": "Canonical parameters for the special 'on poll' action.",
+                "properties": {
+                    "start_time": {
+                        "description": "Start of time range, in epoch time (milliseconds).",
+                        "title": "Start Time",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "x-soar-order": 0,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "end_time": {
+                        "description": "End of time range, in epoch time (milliseconds).",
+                        "title": "End Time",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "x-soar-order": 1,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "container_count": {
+                        "description": "Maximum number of container records to query for.",
+                        "title": "Container Count",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "x-soar-order": 2,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "artifact_count": {
+                        "description": "Maximum number of artifact records to query for.",
+                        "title": "Artifact Count",
+                        "type": [
+                            "integer",
+                            "null"
+                        ],
+                        "x-soar-order": 3,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "container_id": {
+                        "description": "Comma-separated list of container IDs to limit the ingestion to.",
+                        "title": "Container Id",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "x-soar-order": 4,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "OnPollParams": {
+                        "description": "Canonical parameters for the special 'on poll' action.",
+                        "properties": {
+                            "start_time": {
+                                "description": "Start of time range, in epoch time (milliseconds).",
+                                "title": "Start Time",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "end_time": {
+                                "description": "End of time range, in epoch time (milliseconds).",
+                                "title": "End Time",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "container_count": {
+                                "description": "Maximum number of container records to query for.",
+                                "title": "Container Count",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "artifact_count": {
+                                "description": "Maximum number of artifact records to query for.",
+                                "title": "Artifact Count",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "container_id": {
+                                "description": "Comma-separated list of container IDs to limit the ingestion to.",
+                                "title": "Container Id",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": true
+                            }
+                        },
+                        "title": "OnPollParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/OnPollParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "on es poll": {
+            "inputSchema": {
+                "description": "Canonical parameters for the special 'on es poll' action.",
+                "properties": {
+                    "start_time": {
+                        "description": "Start of time range, in epoch time (milliseconds).",
+                        "title": "Start Time",
+                        "type": "integer",
+                        "x-soar-order": 0,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "end_time": {
+                        "description": "End of time range, in epoch time (milliseconds).",
+                        "title": "End Time",
+                        "type": "integer",
+                        "x-soar-order": 1,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    },
+                    "container_count": {
+                        "description": "Maximum number of findings to query for.",
+                        "title": "Container Count",
+                        "type": "integer",
+                        "x-soar-order": 2,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "OnESPollParams": {
+                        "description": "Canonical parameters for the special 'on es poll' action.",
+                        "properties": {
+                            "start_time": {
+                                "description": "Start of time range, in epoch time (milliseconds).",
+                                "title": "Start Time",
+                                "type": "integer",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "end_time": {
+                                "description": "End of time range, in epoch time (milliseconds).",
+                                "title": "End Time",
+                                "type": "integer",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            },
+                            "container_count": {
+                                "description": "Maximum number of findings to query for.",
+                                "title": "Container Count",
+                                "type": "integer",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            }
+                        },
+                        "title": "OnESPollParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/OnESPollParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "async process": {
+            "inputSchema": {
+                "properties": {
+                    "num_requests": {
+                        "default": 3,
+                        "description": "Number of concurrent HTTP requests",
+                        "title": "Num Requests",
+                        "type": "integer",
+                        "x-soar-order": 0,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "AsyncTestOutput": {
+                        "properties": {
+                            "execution_time": {
+                                "title": "Execution Time",
+                                "type": "number"
+                            },
+                            "requests_completed": {
+                                "title": "Requests Completed",
+                                "type": "integer"
+                            },
+                            "status_codes": {
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "title": "Status Codes",
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "execution_time",
+                            "requests_completed",
+                            "status_codes"
+                        ],
+                        "title": "AsyncTestOutput",
+                        "type": "object"
+                    },
+                    "AsyncTestParams": {
+                        "properties": {
+                            "num_requests": {
+                                "default": 3,
+                                "description": "Number of concurrent HTTP requests",
+                                "title": "Num Requests",
+                                "type": "integer",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            }
+                        },
+                        "title": "AsyncTestParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/AsyncTestParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/AsyncTestOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "sync process": {
+            "inputSchema": {
+                "properties": {
+                    "num_requests": {
+                        "default": 3,
+                        "description": "Number of sequential HTTP requests",
+                        "title": "Num Requests",
+                        "type": "integer",
+                        "x-soar-order": 0,
+                        "x-soar-primary": false,
+                        "x-soar-allow-list": false
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "SyncTestOutput": {
+                        "properties": {
+                            "execution_time": {
+                                "title": "Execution Time",
+                                "type": "number"
+                            },
+                            "requests_completed": {
+                                "title": "Requests Completed",
+                                "type": "integer"
+                            },
+                            "status_codes": {
+                                "items": {
+                                    "type": "integer"
+                                },
+                                "title": "Status Codes",
+                                "type": "array"
+                            }
+                        },
+                        "required": [
+                            "execution_time",
+                            "requests_completed",
+                            "status_codes"
+                        ],
+                        "title": "SyncTestOutput",
+                        "type": "object"
+                    },
+                    "SyncTestParams": {
+                        "properties": {
+                            "num_requests": {
+                                "default": 3,
+                                "description": "Number of sequential HTTP requests",
+                                "title": "Num Requests",
+                                "type": "integer",
+                                "x-soar-primary": false,
+                                "x-soar-allow-list": false
+                            }
+                        },
+                        "title": "SyncTestParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/SyncTestParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/SyncTestOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "generator action": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "GeneratorActionOutput": {
+                        "properties": {
+                            "iteration": {
+                                "title": "Iteration",
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "iteration"
+                        ],
+                        "title": "GeneratorActionOutput",
+                        "type": "object"
+                    },
+                    "GeneratorActionSummary": {
+                        "properties": {
+                            "total_iterations": {
+                                "title": "Total Iterations",
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "total_iterations"
+                        ],
+                        "title": "GeneratorActionSummary",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/GeneratorActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "$ref": "#/$defs/GeneratorActionSummary"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "write state": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "read state": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "write filesystem state": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "read filesystem state": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "FilesystemStateOutput": {
+                        "properties": {
+                            "state_file_path": {
+                                "title": "State File Path",
+                                "type": "string"
+                            },
+                            "raw_state_json": {
+                                "title": "Raw State Json",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "state_file_path",
+                            "raw_state_json"
+                        ],
+                        "title": "FilesystemStateOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/FilesystemStateOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "stage vault tmp file": {
+            "inputSchema": {
+                "properties": {
+                    "file_name": {
+                        "title": "File Name",
+                        "type": "string",
+                        "x-soar-order": 0
+                    },
+                    "file_content": {
+                        "title": "File Content",
+                        "type": "string",
+                        "x-soar-order": 1
+                    }
+                },
+                "required": [
+                    "file_name",
+                    "file_content"
+                ],
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "StageVaultTmpFileOutput": {
+                        "properties": {
+                            "file_path": {
+                                "title": "File Path",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "file_path"
+                        ],
+                        "title": "StageVaultTmpFileOutput",
+                        "type": "object"
+                    },
+                    "StageVaultTmpFileParams": {
+                        "properties": {
+                            "file_name": {
+                                "title": "File Name",
+                                "type": "string"
+                            },
+                            "file_content": {
+                                "title": "File Content",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "file_name",
+                            "file_content"
+                        ],
+                        "title": "StageVaultTmpFileParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failure"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/StageVaultTmpFileParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/StageVaultTmpFileOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        }
     }
 }

@@ -78,7 +78,7 @@ def test_action_meta_dict_without_view_handler():
     assert "view_handler" not in result
 
 
-def test_action_meta_emits_native_output_schema_and_legacy_datapaths():
+def test_action_meta_emits_native_schema_pair_and_legacy_datapaths():
     """Native output shape and Phantom declarations describe the same action."""
 
     class LookupParams(Params):
@@ -99,7 +99,12 @@ def test_action_meta_emits_native_output_schema_and_legacy_datapaths():
     )
 
     result = meta.model_dump()
-    schema = result["outputSchema"]
+    schemas = meta.to_schema_manifest()
+    assert set(schemas) == {"inputSchema", "outputSchema"}
+    assert schemas["inputSchema"]["properties"]["ip"]["x-soar-contains"] == ["ip"]
+    assert "outputSchema" not in result
+    assert "outputSchemaMetadata" not in result
+    schema = schemas["outputSchema"]
     output_ref = schema["properties"]["data"]["items"]["$ref"]
     output_definition = schema["$defs"][output_ref.removeprefix("#/$defs/")]
     params_ref = schema["properties"]["parameter"]["$ref"]
@@ -112,7 +117,6 @@ def test_action_meta_emits_native_output_schema_and_legacy_datapaths():
     assert output_definition["properties"]["is_exit_node"]["type"] == "boolean"
     assert params_definition["properties"]["ip"]["x-soar-contains"] == ["ip"]
     assert schema["properties"]["extra_data"]["type"] == "array"
-    assert result["outputSchemaMetadata"] == {"source": "sdk-native", "complete": True}
     assert any(
         field["data_path"] == "action_result.data.*.ip" for field in result["output"]
     )

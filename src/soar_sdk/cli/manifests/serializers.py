@@ -2,10 +2,14 @@ __lazy_modules__ = {
     "collections.abc",
     "itertools",
     "logging",
+    "pydantic",
+    "pydantic.json_schema",
+    "pydantic_core",
     "soar_sdk.action_results",
     "soar_sdk.field_utils",
     "soar_sdk.meta.datatypes",
     "soar_sdk.params",
+    "types",
     "typing",
 }
 
@@ -16,6 +20,8 @@ from types import GenericAlias
 from typing import Any, Literal
 
 from pydantic import Field, create_model
+from pydantic.json_schema import GenerateJsonSchema, JsonSchemaValue
+from pydantic_core import core_schema
 
 from soar_sdk.action_results import ActionOutput, OutputFieldSpecification
 from soar_sdk.field_utils import normalize_field_annotation, parse_json_schema_extra
@@ -24,9 +30,123 @@ from soar_sdk.params import Params
 
 logger = getLogger(__name__)
 
+_NULLABLE_CONTAINER_KEYWORDS = {
+    "type",
+    "title",
+    "description",
+    "items",
+    "prefixItems",
+    "minItems",
+    "maxItems",
+    "uniqueItems",
+    "contains",
+    "minContains",
+    "maxContains",
+    "unevaluatedItems",
+    "properties",
+    "patternProperties",
+    "additionalProperties",
+    "propertyNames",
+    "required",
+    "minProperties",
+    "maxProperties",
+    "dependentRequired",
+    "dependentSchemas",
+    "unevaluatedProperties",
+}
+
+
+class _ActionSchemaGenerator(GenerateJsonSchema):
+    """Use compact type arrays and omit null default annotations."""
+
+    def default_schema(self, schema: core_schema.WithDefaultSchema) -> JsonSchemaValue:
+        """Keep runtime defaults while omitting null from the schema metadata."""
+        generated = super().default_schema(schema)
+        if generated.get("default") is None:
+            generated.pop("default", None)
+        return generated
+
+    def get_flattened_anyof(self, schemas: list[JsonSchemaValue]) -> JsonSchemaValue:
+        """Compact alternatives whose constraints still allow the same values."""
+        if schemas and all(set(schema) == {"type"} for schema in schemas):
+            types: list[str] = []
+            for schema in schemas:
+                schema_types = schema["type"]
+                types.extend(
+                    schema_types if isinstance(schema_types, list) else [schema_types]
+                )
+            return {"type": list(dict.fromkeys(types))}
+        if len(schemas) == 2 and schemas[1] == {"type": "null"}:
+            container = schemas[0]
+            if (
+                container.get("type") in ("array", "object")
+                and container.keys() <= _NULLABLE_CONTAINER_KEYWORDS
+            ):
+                return {**container, "type": [container["type"], "null"]}
+        return super().get_flattened_anyof(schemas)
+
+
+def _normalize_schema_metadata(schema: Any) -> None:  # noqa: ANN401
+    """Preserve SOAR hints without rewriting literal defaults or examples."""
+    if not isinstance(schema, dict):
+        return
+    for legacy, native in (
+        ("cef_types", "x-soar-contains"),
+        ("column_name", "title"),
+        ("column_order", "x-soar-column-order"),
+        ("primary", "x-soar-primary"),
+        ("order", "x-soar-order"),
+        ("allow_list", "x-soar-allow-list"),
+    ):
+        if legacy in schema:
+            schema[native] = schema.pop(legacy)
+    if isinstance(schema.get("required"), bool):
+        schema.pop("required")
+    if schema.pop("sensitive", False):
+        schema["writeOnly"] = True
+    for key, child in schema.items():
+        if key in (
+            "properties",
+            "patternProperties",
+            "$defs",
+            "definitions",
+            "dependentSchemas",
+        ):
+            for nested in child.values():
+                _normalize_schema_metadata(nested)
+        elif key in (
+            "items",
+            "additionalProperties",
+            "unevaluatedProperties",
+            "propertyNames",
+            "contains",
+            "unevaluatedItems",
+            "not",
+            "if",
+            "then",
+            "else",
+        ):
+            _normalize_schema_metadata(child)
+        elif key in ("anyOf", "oneOf", "allOf", "prefixItems"):
+            for nested in child:
+                _normalize_schema_metadata(nested)
+
 
 class ParamsSerializer:
     """Serializes Params classes to JSON schema."""
+
+    @staticmethod
+    def serialize_input_schema(params_class: type[Params]) -> dict[str, Any]:
+        """Describe action inputs as JSON Schema Draft 2020-12."""
+        schema = params_class.model_json_schema(
+            by_alias=True, schema_generator=_ActionSchemaGenerator
+        )
+        schema.pop("title", None)
+        schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+        for order, (name, field) in enumerate(params_class.model_fields.items()):
+            schema["properties"][field.alias or name]["x-soar-order"] = order
+        _normalize_schema_metadata(schema)
+        return schema
 
     @staticmethod
     def get_sorted_fields_keys(params_class: type[Params]) -> list[str]:
@@ -62,7 +182,11 @@ class OutputsSerializer:
             extra_data=(list[dict[str, Any]], Field(default_factory=list)),
             summary=(summary_class or dict[str, Any], Field(default_factory=dict)),
         )
-        schema = result_model.model_json_schema(by_alias=True, mode="serialization")
+        schema = result_model.model_json_schema(
+            by_alias=True,
+            mode="serialization",
+            schema_generator=_ActionSchemaGenerator,
+        )
         schema.pop("title", None)
         schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
         schema["additionalProperties"] = True
@@ -75,21 +199,7 @@ class OutputsSerializer:
             "additionalProperties": True,
         }
 
-        def normalize_metadata(value: Any) -> None:  # noqa: ANN401
-            if isinstance(value, dict):
-                if "cef_types" in value:
-                    value["x-soar-contains"] = value.pop("cef_types")
-                if "column_name" in value:
-                    value["title"] = value.pop("column_name")
-                if "column_order" in value:
-                    value["x-soar-column-order"] = value.pop("column_order")
-                for child in value.values():
-                    normalize_metadata(child)
-            elif isinstance(value, list):
-                for child in value:
-                    normalize_metadata(child)
-
-        normalize_metadata(schema)
+        _normalize_schema_metadata(schema)
         return schema
 
     @staticmethod

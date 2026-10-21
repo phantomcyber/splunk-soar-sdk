@@ -74,10 +74,6 @@ class ActionMeta(BaseModel):
         data["output"] = OutputsSerializer.serialize_datapaths(
             self.parameters, self.output, summary_class=self.summary_type
         )
-        data["outputSchema"] = OutputsSerializer.serialize_output_schema(
-            self.parameters, self.output, summary_class=self.summary_type
-        )
-        data["outputSchemaMetadata"] = {"source": "sdk-native", "complete": True}
         if self.view_handler:
             self.render_as = "custom"
 
@@ -109,3 +105,12 @@ class ActionMeta(BaseModel):
             data["lock"] = {"enabled": True}
 
         return data
+
+    def to_schema_manifest(self) -> dict[str, Any]:
+        """Generate the native schema pair stored in actionSchemasLookup."""
+        return {
+            "inputSchema": ParamsSerializer.serialize_input_schema(self.parameters),
+            "outputSchema": OutputsSerializer.serialize_output_schema(
+                self.parameters, self.output, summary_class=self.summary_type
+            ),
+        }
