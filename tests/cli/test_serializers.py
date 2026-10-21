@@ -1,7 +1,7 @@
 from typing import Annotated
 
 import pytest
-from pydantic import Field
+from pydantic import ConfigDict, Field, ValidationError
 
 from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.cli.manifests.serializers import OutputsSerializer, ParamsSerializer
@@ -595,3 +595,66 @@ def test_input_schema_preserves_parameter_rules_aliases_and_soar_hints():
     assert "required" not in fields["note"]
     assert fields["token"]["writeOnly"] is True
     assert fields["count"]["default"] == 0
+
+
+@pytest.mark.parametrize("query", [None, "provided"])
+def test_input_schema_matches_optional_parameter_validation(query):
+    class LookupParams(Params):
+        domain: str
+        query: str | None
+        aliased_query: str | None = Param(alias="filter")
+        count: int = Param(default=5)
+
+    schema = ParamsSerializer.serialize_input_schema(LookupParams)
+
+    assert schema["required"] == ["domain", "filter"]
+    assert schema["properties"]["query"]["type"] == ["string", "null"]
+    assert schema["properties"]["filter"]["type"] == ["string", "null"]
+    assert LookupParams.model_validate(
+        {"domain": "example.com", "filter": None}
+    ).model_dump(by_alias=True) == {
+        "domain": "example.com",
+        "query": None,
+        "filter": None,
+        "count": 5,
+    }
+    supplied = {
+        "domain": "example.com",
+        "query": query,
+        "filter": query,
+        "count": 7,
+    }
+    assert (
+        LookupParams.model_validate(supplied.copy()).model_dump(by_alias=True)
+        == supplied
+    )
+    with pytest.raises(ValidationError, match="domain"):
+        LookupParams.model_validate({})
+    with pytest.raises(ValidationError, match="filter"):
+        LookupParams.model_validate({"domain": "example.com"})
+
+
+@pytest.mark.parametrize("query", [None, "provided"])
+def test_input_schema_optional_alias_respects_name_validation(query):
+    class OptionalAliasParams(Params):
+        model_config = ConfigDict(validate_by_name=True)
+        query: str | None = Param(alias="filter")
+
+    schema = ParamsSerializer.serialize_input_schema(OptionalAliasParams)
+
+    assert "required" not in schema
+    assert OptionalAliasParams.model_validate({}).query is None
+    assert OptionalAliasParams.model_validate({"filter": query}).query == query
+    assert OptionalAliasParams.model_validate({"query": query}).query == query
+
+
+def test_input_schema_omits_required_when_every_parameter_is_optional():
+    class OptionalParams(Params):
+        query: str | None
+
+    schema = ParamsSerializer.serialize_input_schema(OptionalParams)
+
+    assert "required" not in schema
+    assert OptionalParams.model_validate({}).query is None
+    output = OutputsSerializer.serialize_output_schema(OptionalParams, ActionOutput)
+    assert output["$defs"]["OptionalParams"]["required"] == ["query"]

@@ -143,8 +143,24 @@ class ParamsSerializer:
         )
         schema.pop("title", None)
         schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
+        required = schema.get("required", [])
         for order, (name, field) in enumerate(params_class.model_fields.items()):
-            schema["properties"][field.alias or name]["x-soar-order"] = order
+            schema_name = field.alias or name
+            schema["properties"][schema_name]["x-soar-order"] = order
+            normalized = normalize_field_annotation(
+                field.annotation,
+                field_name=name,
+                context="Action parameter",
+                allow_list=False,
+            )
+            # Params fills omitted Optional fields by field name before validation.
+            accepts_name = field.alias in (None, name) or params_class.model_config.get(
+                "validate_by_name", False
+            )
+            if normalized.is_optional and accepts_name and schema_name in required:
+                required.remove(schema_name)
+        if not required:
+            schema.pop("required", None)
         _normalize_schema_metadata(schema)
         return schema
 
