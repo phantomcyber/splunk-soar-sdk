@@ -1,5 +1,7 @@
 from unittest import mock
 
+import pytest
+
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.app import App
 from soar_sdk.input_spec import AppConfig, InputSpecification
@@ -147,3 +149,73 @@ def test_handle_stores_encryption_flag_from_input(example_app: App):
 
     assert example_app.actions_manager._enable_action_param_encryption is True
     assert example_app.actions_manager._action_param_dec_key == "test_key"
+
+
+@pytest.mark.parametrize("value", ["already-decrypted", "", "iv:literal-password"])
+def test_native_plaintext_is_never_decrypted_again(example_app, value):
+    received = []
+
+    @example_app.action()
+    def native_secret(params: SensitiveParams) -> ActionOutput:
+        received.append(params.password)
+        return ActionOutput()
+
+    example_app.actions_manager._enable_action_param_encryption = True
+    example_app.actions_manager._action_param_dec_key = "test_key"
+    with (
+        mock.patch(
+            "soar_sdk.actions_manager._uses_platform_base_connector", True, create=True
+        ),
+        mock.patch(
+            "soar_sdk.actions_manager.platform_encryption_backend.decrypt",
+            side_effect=AssertionError("Native plaintext must not be decrypted again"),
+        ) as decrypt,
+        mock.patch.object(
+            example_app.actions_manager,
+            "get_action_identifier",
+            return_value="native_secret",
+        ),
+    ):
+        example_app.actions_manager.handle_action(
+            {"password": value, "username": "alice"}
+        )
+    assert received == [value]
+    decrypt.assert_not_called()
+
+
+def test_fallback_full_dispatch_decrypts_aliased_sensitive_fields(example_app):
+    from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
+        platform_encryption_backend,
+    )
+
+    class AliasedSecrets(Params):
+        secret: str = Param(
+            description="Secret", alias="external_secret", sensitive=True
+        )
+        username: str = Param(description="Username")
+
+    received = []
+
+    @example_app.action()
+    def aliased_secret(params: AliasedSecrets) -> ActionOutput:
+        received.append((params.secret, params.username))
+        return ActionOutput()
+
+    key = "test_key"
+    input_data = InputSpecification(
+        identifier="aliased_secret",
+        enable_action_parameter_encryption=True,
+        dec_key=key,
+        config=AppConfig(
+            app_version="1.0.0", directory=".", main_module="example_connector.py"
+        ),
+        parameters=[
+            {
+                "external_secret": platform_encryption_backend.encrypt(value, key),
+                "username": name,
+            }
+            for value, name in [("first-secret", "alice"), ("second-secret", "bob")]
+        ],
+    )
+    example_app.actions_manager.handle(input_data)
+    assert received == [("first-secret", "alice"), ("second-secret", "bob")]

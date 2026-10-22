@@ -37,7 +37,12 @@ from soar_sdk.input_spec import InputSpecification
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.shims.phantom.action_result import ActionResult as PhantomActionResult
-from soar_sdk.shims.phantom.base_connector import BaseConnector
+from soar_sdk.shims.phantom.base_connector import (
+    BaseConnector,
+)
+from soar_sdk.shims.phantom.base_connector import (
+    _soar_is_available as _uses_platform_base_connector,
+)
 from soar_sdk.shims.phantom.install_info import is_onprem_broker_install
 from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
     platform_encryption_backend,
@@ -124,7 +129,13 @@ class ActionsManager(BaseConnector):
             logger.info("Using ES poll")
 
         if handler := self.get_action(action_id):
-            if self._enable_action_param_encryption and self._action_param_dec_key:
+            # Native BaseConnector decrypts parameters during validation before
+            # calling handle_action. Only the development shim needs this pass.
+            if (
+                not _uses_platform_base_connector
+                and self._enable_action_param_encryption
+                and self._action_param_dec_key
+            ):
                 for field_name, field in handler.meta.parameters.model_fields.items():
                     key = field.alias or field_name
                     if parse_json_schema_extra(field.json_schema_extra).get(
