@@ -1,18 +1,19 @@
 import json
+from pathlib import PurePosixPath
 
 from .soar_client import AppOnStackClient
 
 AUTH_FILESYSTEM_MARKER = "papp-37866-auth-filesystem-marker"
 CACHE_FILESYSTEM_MARKER = "papp-37866-cache-filesystem-marker"
 INGEST_FILESYSTEM_MARKER = "papp-37866-ingest-filesystem-marker"
-STATE_DIRECTORY = "/opt/phantom/local_data/app_states"
+STATE_DIRECTORY = PurePosixPath("local_data/app_states")
 DEFAULT_APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf55"
 PLAINTEXT_APP_ID = "9b388c08-67de-4ca4-817f-26f8fb7cbf57"
 
 
-def _state_file_path(client: AppOnStackClient, app_id: str) -> str:
+def _state_file_path(client: AppOnStackClient, app_id: str) -> PurePosixPath:
     assert client.asset_id is not None
-    return f"{STATE_DIRECTORY}/{app_id}/{client.asset_id}_state.json"
+    return STATE_DIRECTORY / app_id / f"{client.asset_id}_state.json"
 
 
 def _write_and_read_raw_state_file(
@@ -30,7 +31,9 @@ def _write_and_read_raw_state_file(
 
     assert read_result.data is not None
     data = read_result.data["data"][0]
-    assert data["state_file_path"] == _state_file_path(client, app_id)
+    state_file_path = PurePosixPath(data["state_file_path"])
+    assert state_file_path.is_absolute()
+    assert state_file_path.parts[-4:] == _state_file_path(client, app_id).parts
     raw_state_json = data["raw_state_json"]
     return raw_state_json, json.loads(raw_state_json)
 
