@@ -204,6 +204,98 @@ def test_optional_platform_imports_preserve_fallbacks(available):
     )
 
 
+@pytest.mark.parametrize("eager", [False, True])
+def test_native_dispatch_decrypts_once_with_partial_platform_imports(eager):
+    _run_python(
+        """
+        import json
+        import sys
+        import types
+        from unittest.mock import call, patch
+
+        class PlatformBaseConnector:
+            def _handle_action(self, in_json, handle):
+                data = json.loads(in_json)
+                assert data["enable_action_parameter_encryption"] is True
+                assert data["dec_key"] == "test_key"
+                self.action_identifier = data["identifier"]
+                for param in data["parameters"]:
+                    param["password"] = platform_encryption_backend.decrypt(
+                        param["password"], data["dec_key"]
+                    )
+                    self.handle_action(param)
+                return in_json
+
+            def get_action_identifier(self):
+                return self.action_identifier
+
+        phantom = types.ModuleType("phantom")
+        phantom.__path__ = []
+        platform = types.ModuleType("phantom.base_connector")
+        platform.BaseConnector = PlatformBaseConnector
+        sys.modules["phantom"] = phantom
+        sys.modules["phantom.base_connector"] = platform
+
+        # The connector can exist without the install-info shim's imports.
+        phantom_common = types.ModuleType("phantom_common")
+        phantom_common.__path__ = []
+        sys.modules["phantom_common"] = phantom_common
+
+        from soar_sdk.actions_manager import ActionsManager
+        from soar_sdk.input_spec import AppConfig, InputSpecification
+        from soar_sdk.params import Param, Params
+        from soar_sdk.shims.phantom.install_info import is_soar_available
+        from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import (
+            platform_encryption_backend,
+        )
+
+        assert issubclass(ActionsManager, PlatformBaseConnector)
+        assert is_soar_available() is False
+
+        class SensitiveParams(Params):
+            password: str = Param(description="Password", sensitive=True)
+            username: str = Param(description="Username")
+
+        received = []
+
+        def secret_action(params):
+            received.append((params.password, params.username))
+
+        secret_action.meta = types.SimpleNamespace(parameters=SensitiveParams)
+        manager = ActionsManager()
+        manager.set_action("secret_action", secret_action)
+        secrets = ["already-decrypted", "iv:literal-password"]
+        encrypted = [
+            platform_encryption_backend.encrypt(value, "test_key")
+            for value in secrets
+        ]
+        input_data = InputSpecification(
+            identifier="secret_action",
+            enable_action_parameter_encryption=True,
+            dec_key="test_key",
+            config=AppConfig(
+                app_version="1.0.0", directory=".", main_module="example.py"
+            ),
+            parameters=[
+                {"password": value, "username": "alice"} for value in encrypted
+            ],
+        )
+        original_input = input_data.model_dump()
+        with patch.object(
+            platform_encryption_backend,
+            "decrypt",
+            wraps=platform_encryption_backend.decrypt,
+        ) as decrypt:
+            manager.handle(input_data)
+
+        assert received == [(value, "alice") for value in secrets]
+        assert decrypt.call_args_list == [call(value, "test_key") for value in encrypted]
+        assert input_data.model_dump() == original_input
+        """,
+        eager=eager,
+    )
+
+
 @pytest.mark.skipif(
     sys.version_info < (3, 15), reason="Native lazy-import filters require Python 3.15"
 )
