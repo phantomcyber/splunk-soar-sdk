@@ -901,11 +901,17 @@
                         "properties": {
                             "status": {
                                 "title": "Status",
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "response": {
                                 "title": "Response",
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         },
                         "title": "TestOutput",

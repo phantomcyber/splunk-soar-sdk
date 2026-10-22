@@ -2107,7 +2107,10 @@
                                     "Jim"
                                 ],
                                 "title": "Name",
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "age": {
                                 "examples": [
@@ -2116,7 +2119,10 @@
                                     35
                                 ],
                                 "title": "Age",
-                                "type": "integer"
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
                             }
                         },
                         "title": "JsonOutput",
@@ -2220,7 +2226,10 @@
                                     "Jim"
                                 ],
                                 "title": "Name",
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "age": {
                                 "examples": [
@@ -2229,7 +2238,10 @@
                                     35
                                 ],
                                 "title": "Age",
-                                "type": "integer"
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
                             }
                         },
                         "title": "JsonOutput",
@@ -2343,7 +2355,10 @@
                             },
                             "_underscored_string": {
                                 "title": "Underscored String",
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         },
                         "required": [
@@ -2480,7 +2495,10 @@
                             },
                             "_underscored_string": {
                                 "title": "Underscored String",
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             },
                             "nested_output": {
                                 "$ref": "#/$defs/NestedOutput"
@@ -2787,14 +2805,20 @@
                                     500
                                 ],
                                 "title": "Status Code",
-                                "type": "integer"
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
                             },
                             "response_body": {
                                 "examples": [
                                     "{\"key\": \"value\"}"
                                 ],
                                 "title": "Response Body",
-                                "type": "string"
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
                             }
                         },
                         "title": "MakeRequestOutput",
@@ -2828,28 +2852,40 @@
                             "headers": {
                                 "description": "The headers to send with the request (JSON object). An example is {'Content-Type': 'application/json'}",
                                 "title": "Headers",
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "x-soar-primary": false,
                                 "x-soar-allow-list": false
                             },
                             "query_parameters": {
                                 "description": "Parameters to append to the URL (JSON object or query string). An example is ?key=value&key2=value2",
                                 "title": "Query Parameters",
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "x-soar-primary": false,
                                 "x-soar-allow-list": false
                             },
                             "body": {
                                 "description": "The body to send with the request (JSON object). An example is {'key': 'value', 'key2': 'value2'}",
                                 "title": "Body",
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "x-soar-primary": false,
                                 "x-soar-allow-list": false
                             },
                             "timeout": {
                                 "description": "The timeout for the request in seconds.",
                                 "title": "Timeout",
-                                "type": "integer",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
                                 "x-soar-primary": false,
                                 "x-soar-allow-list": false
                             },
@@ -3175,21 +3211,30 @@
                             "start_time": {
                                 "description": "Start of time range, in epoch time (milliseconds).",
                                 "title": "Start Time",
-                                "type": "integer",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
                                 "x-soar-primary": false,
                                 "x-soar-allow-list": false
                             },
                             "end_time": {
                                 "description": "End of time range, in epoch time (milliseconds).",
                                 "title": "End Time",
-                                "type": "integer",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
                                 "x-soar-primary": false,
                                 "x-soar-allow-list": false
                             },
                             "container_count": {
                                 "description": "Maximum number of findings to query for.",
                                 "title": "Container Count",
-                                "type": "integer",
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
                                 "x-soar-primary": false,
                                 "x-soar-allow-list": false
                             }
@@ -3590,7 +3635,15 @@
                         "type": "array"
                     },
                     "summary": {
-                        "$ref": "#/$defs/GeneratorActionSummary"
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/GeneratorActionSummary"
+                            },
+                            {
+                                "type": "object",
+                                "maxProperties": 0
+                            }
+                        ]
                     },
                     "result_summary": {
                         "type": "object",

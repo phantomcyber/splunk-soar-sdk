@@ -1,9 +1,11 @@
 from typing import Annotated
+from unittest.mock import Mock
 
 import pytest
 from pydantic import ConfigDict, Field, ValidationError
 
 from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.app import App
 from soar_sdk.cli.manifests.serializers import OutputsSerializer, ParamsSerializer
 from soar_sdk.params import Param, Params
 
@@ -658,3 +660,117 @@ def test_input_schema_omits_required_when_every_parameter_is_optional():
     assert OptionalParams.model_validate({}).query is None
     output = OutputsSerializer.serialize_output_schema(OptionalParams, ActionOutput)
     assert output["$defs"]["OptionalParams"]["required"] == ["query"]
+
+
+@pytest.mark.parametrize("provided", [False, True])
+def test_output_schema_accepts_runtime_null_defaults(provided):
+    class Input(Params):
+        value: str = Param(required=False)
+
+    class Output(ActionOutput):
+        value: str = OutputField()
+        values: list[str] = Field(default_factory=list)
+
+    class Summary(ActionOutput):
+        count: int = OutputField()
+
+    params = Input(value="given") if provided else Input()
+    output = Output(value="given") if provided else Output()
+    summary = Summary(count=2) if provided else Summary()
+    manager = Mock()
+    App._adapt_action_result(output, manager, params, summary=summary)
+    result = manager.add_result.call_args.args[0]
+    schema = OutputsSerializer.serialize_output_schema(Input, Output, Summary)
+
+    assert result.get_param()["value"] == ("given" if provided else None)
+    assert result.get_data()[0]["value"] == ("given" if provided else None)
+    assert result.get_summary()["count"] == (2 if provided else None)
+    assert schema["$defs"]["Input"]["properties"]["value"]["type"] == ["string", "null"]
+    assert schema["$defs"]["Output"]["properties"]["value"]["type"] == [
+        "string",
+        "null",
+    ]
+    assert schema["$defs"]["Summary"]["properties"]["count"]["type"] == [
+        "integer",
+        "null",
+    ]
+    assert schema["$defs"]["Output"]["properties"]["values"]["type"] == "array"
+    assert "default" not in schema["$defs"]["Output"]["properties"]["value"]
+    assert (
+        ParamsSerializer.serialize_input_schema(Input)["properties"]["value"]["type"]
+        == "string"
+    )
+    with pytest.raises(ValidationError):
+        Input(value=None)
+    with pytest.raises(ValidationError):
+        Output(value=None)
+
+
+@pytest.mark.parametrize("serialize_by_alias", [False, True])
+def test_output_schema_uses_runtime_parameter_alias_policy(serialize_by_alias):
+    class Input(Params):
+        model_config = ConfigDict(serialize_by_alias=serialize_by_alias)
+        destination: str = Param(alias="target")
+
+    class Output(ActionOutput):
+        value: str = OutputField(alias="_value")
+
+    params = Input(target="example.com")
+    manager = Mock()
+    App._adapt_action_result(Output(_value="ready"), manager, params)
+    result = manager.add_result.call_args.args[0]
+    schema = OutputsSerializer.serialize_output_schema(Input, Output)
+    key = "target" if serialize_by_alias else "destination"
+
+    assert result.get_param() == {key: "example.com"}
+    assert schema["$defs"]["Input"]["required"] == [key]
+    assert list(schema["$defs"]["Input"]["properties"]) == [key]
+    assert result.get_data() == [{"_value": "ready"}]
+    assert "_value" in schema["$defs"]["Output"]["properties"]
+    assert ParamsSerializer.serialize_input_schema(Input)["required"] == ["target"]
+
+
+@pytest.mark.parametrize("has_summary", [False, True])
+def test_output_schema_preserves_optional_runtime_summary(has_summary):
+    class Summary(ActionOutput):
+        total: int
+
+    manager = Mock()
+    App._adapt_action_result(
+        ActionOutput(),
+        manager,
+        Params(),
+        summary=Summary(total=2) if has_summary else None,
+    )
+    result = manager.add_result.call_args.args[0]
+    schema = OutputsSerializer.serialize_output_schema(Params, ActionOutput, Summary)
+
+    assert result.get_summary() == ({"total": 2} if has_summary else {})
+    assert schema["$defs"]["Summary"]["required"] == ["total"]
+    assert schema["properties"]["summary"]["anyOf"] == [
+        {"$ref": "#/$defs/Summary"},
+        {"type": "object", "maxProperties": 0},
+    ]
+
+
+def test_output_schema_places_legacy_list_examples_on_items():
+    class Output(ActionOutput):
+        names: list[str] = OutputField(example_values=["alice", "bob"])
+        nested: list[list[int]] = OutputField(example_values=[1, 2])
+        whole: list[str] = Field(default_factory=list, examples=[["alice", "bob"]])
+        nullable: list[str] | None = Field(default=None, examples=[None, ["alice"]])
+
+    schema = OutputsSerializer.serialize_output_schema(Params, Output)
+    fields = schema["$defs"]["Output"]["properties"]
+
+    assert "examples" not in fields["names"]
+    assert fields["names"]["items"]["examples"] == ["alice", "bob"]
+    assert "examples" not in fields["nested"]
+    assert "examples" not in fields["nested"]["items"]
+    assert fields["nested"]["items"]["items"]["examples"] == [1, 2]
+    assert fields["whole"]["examples"] == [["alice", "bob"]]
+    assert "examples" not in fields["whole"]["items"]
+    assert fields["nullable"]["examples"] == [None, ["alice"]]
+    assert Output(names=["alice"], nested=[[1, 2]], whole=["bob"]).model_dump()[
+        "names"
+    ] == ["alice"]

@@ -215,7 +215,11 @@ annotation. Simple type alternatives use arrays such as
 retaining their item or property definitions; alternatives requiring separate
 constraints or references retain ``anyOf``. Generated ``default: null``
 annotations are omitted. Python defaults and non-null schema defaults are
-preserved.
+preserved. Output schemas also allow null values produced by legacy null
+defaults, use the parameter names stored in action results, and permit an empty
+summary when an action does not set one. List-item examples are attached to
+items; whole-array examples remain on the array. Permissive output models
+can return values outside their declared types.
 
 Output models can be nested, allowing you to create complex data structures:
 

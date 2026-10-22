@@ -59,11 +59,24 @@ _NULLABLE_CONTAINER_KEYWORDS = {
 class _ActionSchemaGenerator(GenerateJsonSchema):
     """Use compact type arrays and omit null default annotations."""
 
+    def model_schema(self, schema: core_schema.ModelSchema) -> JsonSchemaValue:
+        """Match the parameter keys stored by the runtime result adapter."""
+        if self.mode != "serialization" or not issubclass(schema["cls"], Params):
+            return super().model_schema(schema)
+        by_alias = self.by_alias
+        self.by_alias = schema["cls"].model_config.get("serialize_by_alias", False)
+        try:
+            return super().model_schema(schema)
+        finally:
+            self.by_alias = by_alias
+
     def default_schema(self, schema: core_schema.WithDefaultSchema) -> JsonSchemaValue:
         """Keep runtime defaults while omitting null from the schema metadata."""
         generated = super().default_schema(schema)
-        if generated.get("default") is None:
-            generated.pop("default", None)
+        if "default" in generated and generated["default"] is None:
+            generated.pop("default")
+            if self.mode == "serialization":
+                generated = self.get_flattened_anyof([generated, {"type": "null"}])
         return generated
 
     def get_flattened_anyof(self, schemas: list[JsonSchemaValue]) -> JsonSchemaValue:
@@ -79,6 +92,12 @@ class _ActionSchemaGenerator(GenerateJsonSchema):
         if len(schemas) == 2 and schemas[1] == {"type": "null"}:
             container = schemas[0]
             if (
+                isinstance(container.get("type"), list)
+                and "null" in container["type"]
+                and container.keys() <= _NULLABLE_CONTAINER_KEYWORDS
+            ):
+                return container
+            if (
                 container.get("type") in ("array", "object")
                 and container.keys() <= _NULLABLE_CONTAINER_KEYWORDS
             ):
@@ -87,7 +106,7 @@ class _ActionSchemaGenerator(GenerateJsonSchema):
 
 
 def _normalize_schema_metadata(schema: Any) -> None:  # noqa: ANN401
-    """Preserve SOAR hints without rewriting literal defaults or examples."""
+    """Preserve SOAR hints and place legacy examples on the described values."""
     if not isinstance(schema, dict):
         return
     for legacy, native in (
@@ -104,6 +123,25 @@ def _normalize_schema_metadata(schema: Any) -> None:  # noqa: ANN401
         schema.pop("required")
     if schema.pop("sensitive", False):
         schema["writeOnly"] = True
+    schema_types = schema.get("type", [])
+    if (
+        (schema_types == "array" or "array" in schema_types)
+        and isinstance(schema.get("items"), dict)
+        and "examples" in schema
+    ):
+        examples = schema.pop("examples")
+        whole_arrays = [
+            value for value in examples if value is None or isinstance(value, list)
+        ]
+        item_examples = [
+            value
+            for value in examples
+            if value is not None and not isinstance(value, list)
+        ]
+        if whole_arrays:
+            schema["examples"] = whole_arrays
+        if item_examples:
+            schema["items"].setdefault("examples", []).extend(item_examples)
     for key, child in schema.items():
         if key in (
             "properties",
@@ -206,6 +244,14 @@ class OutputsSerializer:
         schema.pop("title", None)
         schema["$schema"] = "https://json-schema.org/draft/2020-12/schema"
         schema["additionalProperties"] = True
+        if summary_class is not None:
+            # The runtime leaves summary empty when an action does not set one.
+            schema["properties"]["summary"] = {
+                "anyOf": [
+                    schema["properties"]["summary"],
+                    {"type": "object", "maxProperties": 0},
+                ]
+            }
         schema["properties"]["result_summary"] = {
             "type": "object",
             "properties": {
