@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.0.3 (2026-10-23)
+
+   * Fix: Avoid decrypting sensitive action parameters twice when the native SOAR or automation broker BaseConnector has already decrypted them.
+
    .. rubric:: 7.0.2 (2026-10-21)
 
    * Fix: Decrypt ``Param(sensitive=True)`` action parameters before passing them to the action function when ``enable_action_parameter_encryption`` is set by the platform.
