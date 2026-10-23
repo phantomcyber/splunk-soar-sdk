@@ -177,6 +177,50 @@ Much like parameters, outputs can have simple data types such as ``str`` or ``in
       uid: int = OutputField(cef_types=["user id"])
       create_date: str
 
+The generated connector manifest contains an ``actionSchemasLookup`` map at
+its root. Each key is the readable action name (for example, ``"whois domain"``),
+not the execution identifier (for example, ``"lookup_domain"``). Each entry
+contains ``inputSchema`` from the action's ``Params`` class and ``outputSchema``
+from its ``ActionOutput`` class, both using JSON Schema Draft 2020-12.
+
+.. code-block:: json
+
+   {
+     "actionSchemasLookup": {
+       "whois domain": {
+         "inputSchema": {
+           "$schema": "https://json-schema.org/draft/2020-12/schema",
+           "type": "object"
+         },
+         "outputSchema": {
+           "$schema": "https://json-schema.org/draft/2020-12/schema",
+           "type": "object"
+         }
+       }
+     }
+   }
+
+The output schema describes the result envelope; its ``data.items`` shape
+comes from ``ActionOutput``. The SDK also emits the legacy ``actions`` list and
+``output`` datapaths for existing Splunk SOAR installations. Native schemas are
+stored only in the root map, and authors define the input and output models
+once. Empty or duplicate readable action names are rejected so a schema cannot
+silently overwrite another entry.
+
+``OutputField`` CEF types appear as ``x-soar-contains``. Parameter primary,
+ordering, and multiple-value hints use ``x-soar-primary``, ``x-soar-order``, and
+``x-soar-allow-list``. Sensitive input hints use the standard ``writeOnly``
+annotation. Simple type alternatives use arrays such as
+``"type": ["string", "null"]``. Nullable containers also use type arrays while
+retaining their item or property definitions; alternatives requiring separate
+constraints or references retain ``anyOf``. Generated ``default: null``
+annotations are omitted. Python defaults and non-null schema defaults are
+preserved. Output schemas also allow null values produced by legacy null
+defaults, use the parameter names stored in action results, and permit an empty
+summary when an action does not set one. List-item examples are attached to
+items; whole-array examples remain on the array. Permissive output models
+can return values outside their declared types.
+
 Output models can be nested, allowing you to create complex data structures:
 
 .. code-block:: python
