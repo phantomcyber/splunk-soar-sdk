@@ -6,6 +6,7 @@ import pytest_mock
 
 from soar_sdk.app import App
 from soar_sdk.asset_state import AssetState
+from soar_sdk.decorators.on_es_poll import _successful_prefix_length
 from soar_sdk.exceptions import ActionFailure
 from soar_sdk.models.finding import Finding, FindingAttachment, FindingEmail
 from soar_sdk.params import OnESPollParams
@@ -1052,7 +1053,7 @@ def test_es_on_poll_vault_upload_failure_continues(
 def test_es_on_poll_bulk_partial_failure(
     app_with_action: App, mocker: pytest_mock.MockerFixture
 ):
-    """Test on_es_poll logs warnings when bulk create returns partial errors."""
+    """Test on_es_poll fails when bulk create returns partial errors."""
     mocker.patch.object(
         app_with_action.soar_client,
         "create_findings_bulk",
@@ -1078,7 +1079,7 @@ def test_es_on_poll_bulk_partial_failure(
 
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
-    assert result is True
+    assert result is False
 
 
 def test_es_on_poll_no_finding_source_when_names_empty(
@@ -1597,3 +1598,169 @@ def test_es_on_poll_no_ingest_state_empty_generator(
 
     params = OnESPollParams(start_time=0, end_time=1)
     assert on_es_poll_function(params, client=app_with_action.soar_client) is True
+
+
+@pytest.mark.parametrize(
+    "response,expected",
+    [
+        ({"status": "success", "created": 4, "failed": 0, "errors": []}, 4),
+        ({"created": 2, "failed": 2, "errors": [{"index": 3}, {"index": 1}]}, 1),
+        ({"created": 0, "failed": 4, "errors": [{"index": i} for i in range(4)]}, 0),
+        ({}, 0),
+        (None, 0),
+        ({"created": True, "failed": 3, "errors": []}, 0),
+        ({"created": 4, "failed": False, "errors": []}, 0),
+        ({"created": -1, "failed": 5, "errors": []}, 0),
+        ({"created": 5, "failed": -1, "errors": []}, 0),
+        ({"created": 2, "failed": 1, "errors": [{"index": 2}]}, 0),
+        ({"created": 3, "failed": 1, "errors": None}, 0),
+        ({"created": 3, "failed": 1, "errors": [None]}, 0),
+        ({"created": 3, "failed": 1, "errors": [{}]}, 0),
+        ({"created": 3, "failed": 1, "errors": [{"index": True}]}, 0),
+        ({"created": 3, "failed": 1, "errors": [{"index": -1}]}, 0),
+        ({"created": 3, "failed": 1, "errors": [{"index": 4}]}, 0),
+        ({"created": 3, "failed": 1, "errors": []}, 0),
+        ({"created": 2, "failed": 2, "errors": [{"index": 2}, {"index": 2}]}, 0),
+        ({"created": 3, "failed": 1, "errors": [{"index": 2}, {"index": 2}]}, 0),
+        ({"status": "partial", "created": 4, "failed": 0, "errors": []}, 0),
+    ],
+)
+def test_bulk_response_confirmed_prefix(response, expected):
+    assert _successful_prefix_length(response, 4) == expected
+
+
+@pytest.mark.parametrize("async_poll", [False, True])
+@pytest.mark.parametrize("batch_length", [4, 25, 26])
+@pytest.mark.parametrize("failure_indices", [[0], [2], [3], [3, 1]])
+def test_es_partial_failure_preserves_prefix_and_retries_suffix(
+    app_with_action, mocker, async_poll, batch_length, failure_indices
+):
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    state.put_all({"progress": {"ids": []}, "page_token": "current"})
+    app_with_action.asset._ingest_state = state
+    container = MagicMock()
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "container",
+        new_callable=lambda: property(lambda self: container),
+    )
+    mocker.patch.object(
+        app_with_action.actions_manager, "save_container", return_value=(True, "ok", 99)
+    )
+    vault = MagicMock()
+    vault.create_attachment.return_value = "vault-id"
+    mocker.patch.object(
+        type(app_with_action.soar_client),
+        "vault",
+        new_callable=lambda: property(lambda self: vault),
+    )
+    bulk = mocker.patch.object(app_with_action.soar_client, "create_findings_bulk")
+
+    def response(items, **kwargs):
+        return {
+            "status": "partial",
+            "created": len(items) - len(failure_indices),
+            "failed": len(failure_indices),
+            "errors": [{"index": i, "error": "rejected"} for i in failure_indices],
+        }
+
+    bulk.side_effect = response
+
+    def findings():
+        progress = state["progress"]
+        for i in range(batch_length):
+            if i in progress["ids"]:
+                continue
+            progress["ids"].append(i)
+            state["progress"] = progress
+            yield Finding(
+                rule_title=str(i),
+                attachments=[FindingAttachment(file_name="raw.eml", data=b"mail")],
+            )
+        # This final write must not survive partial delivery of a short batch.
+        state["page_token"] = "next"
+
+    if async_poll:
+
+        @app_with_action.on_es_poll()
+        async def poll(params: OnESPollParams) -> AsyncGenerator[Finding, int | None]:
+            for item in findings():
+                yield item
+    else:
+
+        @app_with_action.on_es_poll()
+        def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+            yield from findings()
+
+    assert poll(OnESPollParams(start_time=0, end_time=1)) is False
+    prefix = min(failure_indices)
+    assert state.get_all() == {
+        "progress": {"ids": list(range(prefix))},
+        "page_token": "current",
+    }
+    assert not state.in_transaction
+    assert bulk.call_count == 1
+    container.delete.assert_not_called()
+
+    def success(items, **kwargs):
+        return {"status": "success", "created": len(items), "failed": 0, "errors": []}
+
+    bulk.reset_mock()
+    bulk.side_effect = success
+    assert poll(OnESPollParams(start_time=0, end_time=1)) is True
+    retried = [
+        item["rule_title"] for call in bulk.call_args_list for item in call.args[0]
+    ]
+    assert retried == [str(i) for i in range(prefix, batch_length)]
+    assert state["progress"]["ids"] == list(range(batch_length))
+    assert state["page_token"] == "next"
+
+
+@pytest.mark.parametrize("with_state", [False, True])
+def test_es_ambiguous_response_retries_whole_batch(app_with_action, mocker, with_state):
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    mocker.patch.object(
+        app_with_action.soar_client, "create_findings_bulk", return_value={}
+    )
+    state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    state.put_all({"cursor": 0})
+    app_with_action.asset._ingest_state = state if with_state else None
+
+    @app_with_action.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        if with_state:
+            state["cursor"] = 1
+        yield Finding(rule_title="one")
+
+    assert poll(OnESPollParams(start_time=0, end_time=1)) is False
+    assert state.get_all() == {"cursor": 0}
+    assert not state.in_transaction
+
+
+def test_es_partial_failure_keeps_prior_successful_batches(app_with_action, mocker):
+    mock_asset_ingest_config(mocker, app_with_action, {"es_security_domain": "threat"})
+    state = AssetState(app_with_action.actions_manager, "ingest", "1")
+    state.put_all({"cursor": 0})
+    app_with_action.asset._ingest_state = state
+    bulk = mocker.patch.object(app_with_action.soar_client, "create_findings_bulk")
+    bulk.side_effect = [
+        {"status": "success", "created": 25, "failed": 0, "errors": []},
+        {
+            "status": "partial",
+            "created": 3,
+            "failed": 1,
+            "errors": [{"index": 2, "error": "rejected"}],
+        },
+    ]
+
+    @app_with_action.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        for i in range(29):
+            state["cursor"] = i + 1
+            yield Finding(rule_title=str(i))
+
+    assert poll(OnESPollParams(start_time=0, end_time=1)) is False
+    assert bulk.call_count == 2
+    assert state.get_all() == {"cursor": 27}
+    assert not state.in_transaction
