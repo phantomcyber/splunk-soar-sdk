@@ -635,6 +635,8 @@ class App:
 
         The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering, HTML string, or component data model.
         If a template is provided, dict results will be rendered using the template. Component type is automatically inferred from the return type annotation.
+        Optional keyword-only ``params`` and ``summary`` arguments receive lists
+        aligned with the output rows, validated using their annotations.
 
         .. seealso::
 

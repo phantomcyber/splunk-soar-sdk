@@ -89,6 +89,8 @@ class ViewHandlerDecorator:
 
         The decorated function receives parsed ActionOutput objects and can return either a dict for template rendering, HTML string, or component data model.
         If a template is provided, dict results will be rendered using the template. Component type is automatically inferred from the return type annotation.
+        Keyword-only ``params`` and ``summary`` arguments opt into metadata lists
+        aligned with the output rows.
         """
         # Infer component type from return annotation
         component_type = COMPONENT_REGISTRY.get(
