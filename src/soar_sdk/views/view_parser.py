@@ -18,7 +18,7 @@ from typing import (
     get_origin,
 )
 
-from pydantic import BaseModel
+from pydantic import BaseModel, TypeAdapter
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.async_utils import run_async_if_needed
@@ -47,6 +47,11 @@ class ViewFunctionParser(Generic[T]):
         signature = inspect.signature(function)
 
         for param in signature.parameters.values():
+            if param.kind == inspect.Parameter.KEYWORD_ONLY and param.name in (
+                "params",
+                "summary",
+            ):
+                continue
             if param.annotation == inspect.Parameter.empty:
                 continue
 
@@ -89,6 +94,21 @@ class ViewFunctionParser(Generic[T]):
 
         return parsed_outputs
 
+    @staticmethod
+    def _parse_metadata(
+        all_app_runs: AllAppRuns, parameter: inspect.Parameter
+    ) -> list[Any]:
+        """Align requested parameters or summaries with the flattened output rows."""
+        getter = "get_param" if parameter.name == "params" else "get_summary"
+        values = []
+        for _, action_results in all_app_runs:
+            for result in action_results:
+                values.extend([getattr(result, getter)()] * len(result.get_data()))
+
+        if parameter.annotation != inspect.Parameter.empty:
+            return TypeAdapter(parameter.annotation).validate_python(values)
+        return values
+
     def execute(
         self,
         action: str,
@@ -108,7 +128,15 @@ class ViewFunctionParser(Generic[T]):
 
         # Execute
         sig = inspect.signature(self.function)
-        param_count = len(sig.parameters)
+        magic_parameters = {
+            name: parameter
+            for name, parameter in sig.parameters.items()
+            if parameter.kind == inspect.Parameter.KEYWORD_ONLY
+            and name in ("params", "summary")
+        }
+        for name, parameter in magic_parameters.items():
+            kwargs[name] = self._parse_metadata(raw_all_app_runs, parameter)
+        param_count = len(sig.parameters) - len(magic_parameters)
 
         if param_count == 1:
             result = self.function(parsed_outputs, **kwargs)

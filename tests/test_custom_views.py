@@ -3,7 +3,7 @@ from unittest import mock
 import pytest
 from pydantic import BaseModel
 
-from soar_sdk.action_results import ActionOutput, OutputField
+from soar_sdk.action_results import ActionOutput, ActionResult, OutputField
 from soar_sdk.app import App
 from soar_sdk.params import Params
 from soar_sdk.views.components.pie_chart import PieChartData
@@ -108,6 +108,63 @@ def test_view_handler_template_wrapper_functionality(simple_app: App):
         # SOAR 7.0+ returns rendered HTML directly with prerender enabled
         assert result == "<html>rendered</html>"
         assert mock_context["prerender"] is True
+
+
+def test_view_handler_passes_aligned_metadata_to_the_template(simple_app: App):
+    @simple_app.view_handler(template="test_template.html")
+    def view(
+        outputs: list[SampleViewOutput],
+        *,
+        params: list[dict],
+        summary: list[dict],
+    ) -> dict:
+        return {
+            "rows": [
+                {
+                    "message": output.message,
+                    "query": param["query"],
+                    "sid": item_summary["sid"],
+                }
+                for output, param, item_summary in zip(
+                    outputs, params, summary, strict=True
+                )
+            ]
+        }
+
+    first = ActionResult(True, "ok", {"query": "index=one"})
+    first.set_summary({"sid": "one"})
+    first.add_data({"message": "first", "count": 1, "items": []})
+    first.add_data({"message": "second", "count": 2, "items": []})
+    last = ActionResult(True, "ok", {"query": "index=two"})
+    last.set_summary({"sid": "two"})
+    last.add_data({"message": "last", "count": 3, "items": []})
+    app_runs = [({"total_objects": 2, "total_objects_successful": 2}, [first, last])]
+    context = {
+        "QS": {},
+        "container": 1,
+        "app": 2,
+        "no_connection": False,
+        "google_maps_key": False,
+    }
+
+    with mock.patch(
+        "soar_sdk.decorators.view_handler.get_template_renderer"
+    ) as get_renderer:
+        renderer = get_renderer.return_value
+        renderer.render_template.return_value = "<div>rendered</div>"
+        assert view("search", app_runs, context) == "<div>rendered</div>"
+
+    render_context = renderer.render_template.call_args.args[1]
+    assert render_context["rows"] == [
+        {"message": "first", "query": "index=one", "sid": "one"},
+        {"message": "second", "query": "index=one", "sid": "one"},
+        {"message": "last", "query": "index=two", "sid": "two"},
+    ]
+    assert context["prerender"] is True
+    assert first.get_data() == [
+        {"message": "first", "count": 1, "items": []},
+        {"message": "second", "count": 2, "items": []},
+    ]
 
 
 def test_view_handler_template_wrapper_prerender_support(simple_app: App):
