@@ -33,6 +33,9 @@ def test_view_function_parser_auto_detect_output_class_from_list_annotation():
 
     parser = ViewFunctionParser(test_function)
     assert parser.output_class == SampleViewOutput
+    assert (
+        ViewFunctionParser.auto_detect_output_class(test_function) is SampleViewOutput
+    )
 
 
 def test_view_function_parser_auto_detect_output_class_fails_no_annotation():
@@ -414,7 +417,6 @@ def test_view_metadata_validates_requested_models(metadata_app_runs):
 def test_async_view_receives_aligned_metadata(metadata_app_runs):
     async def handler(
         outputs: list[SampleViewOutput],
-        *,
         params: list[SampleViewParams],
         summary: list[SampleViewSummary],
     ) -> str:
@@ -424,3 +426,159 @@ def test_async_view_receives_aligned_metadata(metadata_app_runs):
         ViewFunctionParser(handler).execute("search", metadata_app_runs, {})
         == "last: index=two: two"
     )
+
+
+@pytest.mark.parametrize("name", ["params", "summary"])
+@pytest.mark.parametrize("legacy_arity", [2, 3])
+def test_existing_output_names_keep_their_role_with_context(
+    metadata_app_runs, name, legacy_arity
+):
+    context = ViewContext(
+        QS={}, container=1, app=2, no_connection=False, google_maps_key=False
+    )
+
+    def params_two(ctx, params: list[SampleViewOutput]) -> str:
+        assert ctx is context
+        return params[-1].name
+
+    def summary_two(ctx, summary: list[SampleViewOutput]) -> str:
+        assert ctx is context
+        return summary[-1].name
+
+    def params_three(ctx, action, params: list[SampleViewOutput]) -> str:
+        assert ctx is context
+        assert action == "search"
+        return params[-1].name
+
+    def summary_three(ctx, action, summary: list[SampleViewOutput]) -> str:
+        assert ctx is context
+        assert action == "search"
+        return summary[-1].name
+
+    handler = {
+        ("params", 2): params_two,
+        ("summary", 2): summary_two,
+        ("params", 3): params_three,
+        ("summary", 3): summary_three,
+    }[name, legacy_arity]
+    assert (
+        ViewFunctionParser(handler).execute("search", metadata_app_runs, context)
+        == "last"
+    )
+
+
+@pytest.mark.parametrize(
+    "style", ["ordinary", "leading", "interleaved", "mixed", "positional_only"]
+)
+def test_view_metadata_is_injected_by_name_in_any_position(metadata_app_runs, style):
+    def rows(outputs, params, summary):
+        return [
+            (output.name, param.query, item.sid)
+            for output, param, item in zip(outputs, params, summary, strict=True)
+        ]
+
+    def ordinary(
+        outputs: list[SampleViewOutput],
+        params: list[SampleViewParams],
+        summary: list[SampleViewSummary],
+    ) -> list:
+        return rows(outputs, params, summary)
+
+    def leading(
+        summary: list[SampleViewSummary],
+        params: list[SampleViewParams],
+        outputs: list[SampleViewOutput],
+    ) -> list:
+        return rows(outputs, params, summary)
+
+    def interleaved(
+        params: list[SampleViewParams],
+        outputs: list[SampleViewOutput],
+        summary: list[SampleViewSummary],
+    ) -> list:
+        return rows(outputs, params, summary)
+
+    def mixed(
+        params: list[SampleViewParams],
+        outputs: list[SampleViewOutput],
+        *,
+        summary: list[SampleViewSummary],
+    ) -> list:
+        return rows(outputs, params, summary)
+
+    def positional_only(
+        summary: list[SampleViewSummary],
+        /,
+        outputs: list[SampleViewOutput],
+        params: list[SampleViewParams],
+    ) -> list:
+        return rows(outputs, params, summary)
+
+    handler = {
+        "ordinary": ordinary,
+        "leading": leading,
+        "interleaved": interleaved,
+        "mixed": mixed,
+        "positional_only": positional_only,
+    }[style]
+    assert ViewFunctionParser(handler).execute("search", metadata_app_runs, {}) == [
+        ("first", "index=one", "one"),
+        ("second", "index=one", "one"),
+        ("last", "index=two", "two"),
+    ]
+
+
+def test_view_metadata_can_be_interleaved_with_context_and_action(metadata_app_runs):
+    context = ViewContext(
+        QS={}, container=1, app=2, no_connection=False, google_maps_key=False
+    )
+
+    def handler(
+        summary: list[SampleViewSummary],
+        ctx: ViewContext,
+        params: list[SampleViewParams],
+        action: str,
+        outputs: list[SampleViewOutput],
+    ) -> str:
+        assert ctx is context
+        return f"{action}: {outputs[-1].name}: {params[-1].query}: {summary[-1].sid}"
+
+    assert (
+        ViewFunctionParser(handler).execute("search", metadata_app_runs, context)
+        == "search: last: index=two: two"
+    )
+
+
+def test_view_metadata_preserves_forwarded_args_and_kwargs(metadata_app_runs):
+    def handler(
+        ctx,
+        action,
+        outputs: list[SampleViewOutput],
+        params: list[dict],
+        *args,
+        summary: list[dict],
+        **kwargs,
+    ) -> dict:
+        return {
+            "outputs": [item.name for item in outputs],
+            "params": params,
+            "summary": summary,
+            "args": args,
+            "kwargs": kwargs,
+        }
+
+    result = ViewFunctionParser(handler).execute(
+        "search", metadata_app_runs, {}, "extra", option=True
+    )
+
+    assert result == {
+        "outputs": ["first", "second", "last"],
+        "params": [
+            {"query": "index=one"},
+            {"query": "index=one"},
+            {"query": "index=two"},
+        ],
+        "summary": [{"sid": "one"}, {"sid": "one"}, {"sid": "two"}],
+        "args": ("extra",),
+        "kwargs": {"option": True},
+    }
