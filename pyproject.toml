@@ -53,6 +53,7 @@ dependencies = [
     "extract-msg>=0.55.0",
     # License attribution
     "pip-licenses>=5.0.0",
+    "cryptography>=50.0.0",
 ]
 
 [project.urls]
