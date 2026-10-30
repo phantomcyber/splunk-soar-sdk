@@ -114,7 +114,6 @@ def test_view_handler_passes_aligned_metadata_to_the_template(simple_app: App):
     @simple_app.view_handler(template="test_template.html")
     def view(
         outputs: list[SampleViewOutput],
-        *,
         params: list[dict],
         summary: list[dict],
     ) -> dict:

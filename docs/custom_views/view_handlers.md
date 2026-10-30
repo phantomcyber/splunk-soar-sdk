@@ -29,14 +29,13 @@ def handler(output: list[MyActionOutput]) -> dict:
 
 ### Optional Parameters and Summaries
 
-Declare keyword-only `params` and `summary` arguments to receive the saved action
+Declare named `params` and `summary` arguments to receive the saved action
 parameters and action-result summaries alongside the outputs:
 
 ```python
 @app.view_handler(template="query_results.html")
 def render_queries(
     outputs: list[QueryOutput],
-    *,
     params: list[QueryParams],
     summary: list[QuerySummary],
 ) -> dict:
@@ -64,10 +63,14 @@ Action results with no events contribute no entries to these lists. If there are
 no events at all, the handler receives empty lists, so these arguments cannot
 provide metadata for empty action results.
 
-The existing positional handler forms remain supported: `(outputs)`,
-`(context, outputs)`, and `(context, action, outputs)`. Add the magic arguments
-after `*` to keep them separate from those positional arguments. Handlers that
-omit them retain their existing behavior, and their metadata is not read.
+The SDK injects these arguments by name, like the `soar` and `asset` arguments
+of `@app.action()`. They can appear before, between, or after the usual handler
+arguments, and can also be keyword-only if you prefer.
+
+The existing handler forms remain supported: `(outputs)`, `(context, outputs)`,
+and `(context, action, outputs)`. An existing output argument named `params` or
+`summary` keeps its output role. Handlers that omit the magic arguments retain
+their existing behavior, and their metadata is not read.
 
 ### Return: Template Data
 Handlers must return a dictionary containing data for template rendering. Keys become variables accessible in your Jinja2 template:
