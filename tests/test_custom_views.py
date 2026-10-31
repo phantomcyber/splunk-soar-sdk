@@ -110,7 +110,8 @@ def test_view_handler_template_wrapper_functionality(simple_app: App):
         assert mock_context["prerender"] is True
 
 
-def test_view_handler_passes_aligned_metadata_to_the_template(simple_app: App):
+@pytest.mark.parametrize("passing", ["positional", "keyword", "mixed"])
+def test_view_handler_passes_aligned_metadata_to_the_template(simple_app: App, passing):
     @simple_app.view_handler(template="test_template.html")
     def view(
         outputs: list[SampleViewOutput],
@@ -151,7 +152,13 @@ def test_view_handler_passes_aligned_metadata_to_the_template(simple_app: App):
     ) as get_renderer:
         renderer = get_renderer.return_value
         renderer.render_template.return_value = "<div>rendered</div>"
-        assert view("search", app_runs, context) == "<div>rendered</div>"
+        if passing == "positional":
+            rendered = view("search", app_runs, context)
+        elif passing == "keyword":
+            rendered = view(action="search", all_app_runs=app_runs, context=context)
+        else:
+            rendered = view("search", all_app_runs=app_runs, context=context)
+        assert rendered == "<div>rendered</div>"
 
     render_context = renderer.render_template.call_args.args[1]
     assert render_context["rows"] == [
