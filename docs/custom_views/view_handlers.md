@@ -66,6 +66,9 @@ provide metadata for empty action results.
 The SDK injects these arguments by name, like the `soar` and `asset` arguments
 of `@app.action()`. They can appear before, between, or after the usual handler
 arguments, and can also be keyword-only if you prefer.
+Ordinary parameters accept both positional and keyword passing, following normal
+Python calling conventions. SOAR can also call the decorated view using positional
+or keyword arguments; the SDK supplies the aligned lists to your handler.
 
 The existing handler forms remain supported: `(outputs)`, `(context, outputs)`,
 and `(context, action, outputs)`. An existing output argument named `params` or
