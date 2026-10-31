@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.1.0 (2026-10-31)
+
+   * Feature: Allow view handlers to request optional params and summary lists aligned with their output rows.
+
    .. rubric:: 7.0.3 (2026-10-23)
 
    * Fix: Avoid decrypting sensitive action parameters twice when the native SOAR or automation broker BaseConnector has already decrypted them.
