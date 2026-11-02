@@ -1624,7 +1624,7 @@ requires-dist = [
     { name = "requests", specifier = "<3" },
     { name = "rich", specifier = ">=13,<15" },
     { name = "setuptools", specifier = ">=83.0.0" },
-    { name = "soupsieve", specifier = ">=2.8.4" },
+    { name = "soupsieve", specifier = ">=2.9" },
     { name = "toml", specifier = ">=0.10.2,<1" },
     { name = "tqdm", specifier = ">=4.67.1" },
     { name = "typer", specifier = ">=0.17.3,<0.18" },
