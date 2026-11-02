@@ -54,7 +54,7 @@ dependencies = [
     # License attribution
     "pip-licenses>=5.0.0",
     "cryptography>=50.0.0",
-    "soupsieve>=2.8.4",
+    "soupsieve>=2.9",
     "joserfc>=1.7.4",
     "anyio>=4.14.2",
 ]
