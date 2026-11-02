@@ -27,6 +27,54 @@ def handler(output: list[MyActionOutput]) -> dict:
     return {"results": [r.some_field for r in output]}
 ```
 
+### Optional Parameters and Summaries
+
+Declare named `params` and `summary` arguments to receive the saved action
+parameters and action-result summaries alongside the outputs:
+
+```python
+@app.view_handler(template="query_results.html")
+def render_queries(
+    outputs: list[QueryOutput],
+    params: list[QueryParams],
+    summary: list[QuerySummary],
+) -> dict:
+    return {
+        "rows": [
+            {"event": event, "query": param.query, "sid": item_summary.sid}
+            for event, param, item_summary in zip(outputs, params, summary, strict=True)
+        ]
+    }
+```
+
+`QueryParams` is the action's `Params` subclass and `QuerySummary` is its
+`ActionOutput` summary model. The SDK validates the saved metadata using the
+argument annotations. Use `list[dict]`, or omit the annotation on the magic
+argument, to receive dictionaries instead.
+
+Both arguments are optional and independent. Each requested list has the same
+length and ordering as `outputs`: `params[i]` and `summary[i]` belong to
+`outputs[i]`. For an action result containing three events, its parameters and
+summary appear three times in their respective lists. This also preserves the
+association when the view receives multiple action results or app runs, without
+adding metadata fields to the event data.
+
+Action results with no events contribute no entries to these lists. If there are
+no events at all, the handler receives empty lists, so these arguments cannot
+provide metadata for empty action results.
+
+The SDK injects these arguments by name, like the `soar` and `asset` arguments
+of `@app.action()`. They can appear before, between, or after the usual handler
+arguments, and can also be keyword-only if you prefer.
+Ordinary parameters accept both positional and keyword passing, following normal
+Python calling conventions. SOAR can also call the decorated view using positional
+or keyword arguments; the SDK supplies the aligned lists to your handler.
+
+The existing handler forms remain supported: `(outputs)`, `(context, outputs)`,
+and `(context, action, outputs)`. An existing output argument named `params` or
+`summary` keeps its output role. Handlers that omit the magic arguments retain
+their existing behavior, and their metadata is not read.
+
 ### Return: Template Data
 Handlers must return a dictionary containing data for template rendering. Keys become variables accessible in your Jinja2 template:
 
