@@ -139,11 +139,11 @@ class AppClient(SOARClient[SummaryType]):
             )
             # Fetch the login form before attaching the session, avoiding a
             # redirect to the authenticated homepage just to obtain CSRF.
-            self.__login()
+            self.__fetch_csrf_token()
             self._client.cookies.set("sessionid", session_id)
         else:
             if soar_auth.username:
-                self.__login()
+                self.__fetch_csrf_token()
                 self.__basic_auth = BasicAuth(soar_auth.username, soar_auth.password)
                 session_id = self.get_session_id()
 
@@ -170,7 +170,8 @@ class AppClient(SOARClient[SummaryType]):
             )
         return httpx.Client(base_url=base_url, verify=verify)
 
-    def __login(self) -> None:
+    def __fetch_csrf_token(self) -> None:
+        """Fetch the login form's CSRF cookie and configure subsequent requests."""
         response = self._client.get("/login", follow_redirects=True)
         response.raise_for_status()
         self.csrf_token = response.cookies.get("csrftoken") or ""
