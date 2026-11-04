@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.1.2 (2026-11-04)
+
+   * Fix: Avoid loading the authenticated SOAR homepage during action startup while preserving CSRF compatibility with SOAR 8.6.x.
+
    .. rubric:: 7.1.1 (2026-11-02)
 
    * Fix: Raise SDK app dependency minimums for cryptography, Click, setuptools, Soup Sieve, PyJWT, Authlib, joserfc, and AnyIO. [PSAAS-36009, PSAAS-36010, PSAAS-36011, PSAAS-36012, PSAAS-36013, PSAAS-36014, PSAAS-36015, PSAAS-36016, PSAAS-36473, PSAAS-36474, PSAAS-33721, PSAAS-33720, PSAAS-33690, PSAAS-33689, PSAAS-33688, PSAAS-33687, PSAAS-33686, PSAAS-33685, PSAAS-33669, PSAAS-33668, PSAAS-36956, PSAAS-36954, PSAAS-36955, PSAAS-36831, PSAAS-36951, PSAAS-36868, PSAAS-36869, PSAAS-36472, PSAAS-36957, PSAAS-36841, PSAAS-36913]
