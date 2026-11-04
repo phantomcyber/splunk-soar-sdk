@@ -337,6 +337,43 @@ def test_authenticate_soar_client_on_platform(
     assert mock_get_any_soar_call.call_count == 1
 
 
+@pytest.mark.respx(assert_all_called=False)
+def test_session_csrf_bootstrap_avoids_authenticated_homepage(
+    simple_connector: AppClient,
+    soar_client_auth_token: SOARClientAuth,
+    respx_mock: respx.MockRouter,
+):
+    """Fetch CSRF anonymously, then retain the execution session for REST writes."""
+
+    def login_response(request: httpx.Request) -> httpx.Response:
+        if "sessionid=" in request.headers.get("Cookie", ""):
+            return httpx.Response(302, headers={"Location": "/"})
+        return httpx.Response(
+            200,
+            headers={"Set-Cookie": "csrftoken=login-csrf; Path=/"},
+        )
+
+    login = respx_mock.get("https://10.34.5.6/login").mock(side_effect=login_response)
+    homepage = respx_mock.get("https://10.34.5.6/").mock(
+        side_effect=httpx.ReadTimeout("Slow authenticated homepage")
+    )
+    rest_write = respx_mock.post("https://10.34.5.6/rest/container").mock(
+        return_value=httpx.Response(200, json={"id": 1})
+    )
+
+    simple_connector.authenticate_soar_client(soar_client_auth_token)
+    response = simple_connector.post("/rest/container", json={"name": "test"})
+
+    assert login.call_count == 1
+    assert not homepage.called
+    assert response.json() == {"id": 1}
+    assert rest_write.call_count == 1
+    request = rest_write.calls[0].request
+    assert request.headers["Cookie"] == "sessionid=example_token;csrftoken=login-csrf"
+    assert request.headers["X-CSRFToken"] == "login-csrf"
+    assert simple_connector.client.cookies.get("sessionid") == "example_token"
+
+
 def test_get_executing_container_id(simple_connector: AppClient):
     assert simple_connector.get_executing_container_id() == 0
 

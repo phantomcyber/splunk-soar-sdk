@@ -6,6 +6,7 @@ __lazy_modules__ = {
     "soar_sdk.apis.artifact",
     "soar_sdk.apis.container",
     "soar_sdk.apis.vault",
+    "soar_sdk.compat",
     "soar_sdk.shims.phantom.install_info",
     "typing",
 }
@@ -20,6 +21,7 @@ from soar_sdk.abstract import JSONType, SOARClient, SOARClientAuth, SummaryType
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
+from soar_sdk.compat import remove_when_soar_newer_than
 from soar_sdk.shims.phantom.install_info import (
     get_verify_ssl_setting,
     is_onprem_broker_install,
@@ -130,8 +132,15 @@ class AppClient(SOARClient[SummaryType]):
             return
 
         if session_id:
-            self._client.cookies.set("sessionid", session_id)
+            remove_when_soar_newer_than(
+                "8.6.0",
+                "Remove automation-session CSRF bootstrapping when SOAR 8.7 is n-2 "
+                "at the SOAR 8.9 release; SOAR 8.6.x still requires it.",
+            )
+            # Fetch the login form before attaching the session, avoiding a
+            # redirect to the authenticated homepage just to obtain CSRF.
             self.__login()
+            self._client.cookies.set("sessionid", session_id)
         else:
             if soar_auth.username:
                 self.__login()
