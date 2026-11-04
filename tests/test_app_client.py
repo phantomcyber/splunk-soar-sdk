@@ -374,6 +374,38 @@ def test_session_csrf_bootstrap_avoids_authenticated_homepage(
     assert simple_connector.client.cookies.get("sessionid") == "example_token"
 
 
+@pytest.mark.respx(assert_all_called=False)
+@pytest.mark.parametrize("use_session", [True, False])
+def test_csrf_bootstrap_rejects_redirects(
+    simple_connector: AppClient,
+    respx_mock: respx.MockRouter,
+    use_session: bool,
+):
+    """Neither authentication path should follow CSRF setup into the homepage."""
+    auth = SOARClientAuth(
+        base_url="https://10.34.5.6",
+        user_session_token="execution-session" if use_session else "",
+        username="" if use_session else "user",
+        password="" if use_session else "password",
+    )
+    login = respx_mock.get("https://10.34.5.6/login").mock(
+        return_value=httpx.Response(302, headers={"Location": "/"})
+    )
+    homepage = respx_mock.get("https://10.34.5.6/").mock(
+        side_effect=httpx.ReadTimeout("Slow authenticated homepage")
+    )
+
+    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+        simple_connector.authenticate_soar_client(auth)
+
+    assert exc_info.value.response.status_code == 302
+    assert login.call_count == 1
+    assert "Cookie" not in login.calls[0].request.headers
+    assert "Authorization" not in login.calls[0].request.headers
+    assert not homepage.called
+    assert respx_mock.calls.call_count == 1
+
+
 def test_get_executing_container_id(simple_connector: AppClient):
     assert simple_connector.get_executing_container_id() == 0
 

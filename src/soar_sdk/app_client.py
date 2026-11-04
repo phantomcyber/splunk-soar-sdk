@@ -171,8 +171,8 @@ class AppClient(SOARClient[SummaryType]):
         return httpx.Client(base_url=base_url, verify=verify)
 
     def __fetch_csrf_token(self) -> None:
-        """Fetch the login form's CSRF cookie and configure subsequent requests."""
-        response = self._client.get("/login", follow_redirects=True)
+        """Fetch the login form's CSRF cookie without following redirects."""
+        response = self._client.get("/login", follow_redirects=False)
         response.raise_for_status()
         self.csrf_token = response.cookies.get("csrftoken") or ""
         self._client.cookies.update(response.cookies)
