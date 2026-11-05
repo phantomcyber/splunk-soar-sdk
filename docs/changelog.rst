@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.1.3 (2026-11-05)
+
+   * Fix: Prevent native output during webhook execution from corrupting responses and causing broker timeouts.
+
    .. rubric:: 7.1.2 (2026-11-04)
 
    * Fix: Avoid loading the authenticated SOAR homepage during action startup while preserving CSRF compatibility with SOAR 8.6.x.
