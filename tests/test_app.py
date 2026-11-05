@@ -1,4 +1,8 @@
+import ctypes
+import io
 import json
+import os
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -955,3 +959,74 @@ def test_get_webhook_port_fallback_on_exception(app_with_asset_webhook: App):
         port = app_with_asset_webhook._get_webhook_port()
 
     assert port == 3500
+
+
+@pytest.mark.parametrize("phase", ["load", "handle", "save"])
+@pytest.mark.parametrize("raise_error", [False, True])
+def test_handle_webhook_isolates_native_stdout(
+    app_with_asset_webhook: App,
+    mock_get_any_soar_call,
+    mocker,
+    capfd,
+    phase,
+    raise_error,
+):
+    app = app_with_asset_webhook
+    native_output = b"native-secret-canary"
+    response = WebhookResponse.text_response("Webhook received!")
+
+    def noisy_operation(*args, **kwargs):
+        os.write(1, native_output)
+        # No newline: the C output must be flushed before stdout is restored.
+        ctypes.CDLL(None).printf(native_output)
+        print("Python webhook log")
+        if raise_error:
+            raise RuntimeError("webhook failure")
+        return response
+
+    operations = {
+        "load": mocker.patch.object(app, "_load_webhook_state"),
+        "handle": mocker.patch.object(
+            app.webhook_router, "handle_request", return_value=response
+        ),
+        "save": mocker.patch.object(app, "_save_webhook_state"),
+    }
+    operations[phase].side_effect = noisy_operation
+
+    # Match the platform's Python-stream capture while exercising real FD writes.
+    python_stdout = io.StringIO()
+    python_stderr = io.StringIO()
+    with redirect_stdout(python_stdout), redirect_stderr(python_stderr):
+        if raise_error:
+            with pytest.raises(RuntimeError, match="webhook failure"):
+                app.handle_webhook(
+                    method="GET",
+                    headers={},
+                    path_parts=["test_webhook"],
+                    query={},
+                    body=None,
+                    asset={"base_url": "https://example.com"},
+                    soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
+                )
+        else:
+            result = app.handle_webhook(
+                method="GET",
+                headers={},
+                path_parts=["test_webhook"],
+                query={},
+                body=None,
+                asset={"base_url": "https://example.com"},
+                soar_rest_client=SoarRestClient(token="test_token", asset_id=1),
+            )
+            assert result == response.model_dump()
+
+    os.write(1, b'{"stdout_restored": true}')
+    output = capfd.readouterr()
+    assert json.loads(output.out) == {"stdout_restored": True}
+    assert output.err == ""
+    assert python_stdout.getvalue() == "Python webhook log\n"
+    assert python_stderr.getvalue() == (
+        f"Captured {len(native_output) * 2} bytes of native stdout during webhook execution.\n"
+    )
+    assert "native-secret-canary" not in python_stdout.getvalue()
+    assert "native-secret-canary" not in python_stderr.getvalue()

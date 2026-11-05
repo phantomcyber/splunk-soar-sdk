@@ -23,6 +23,7 @@ __lazy_modules__ = {
     "soar_sdk.shims.phantom_common.credential_managers",
     "soar_sdk.shims.phantom_common.encryption.encryption_manager_factory",
     "soar_sdk.types",
+    "soar_sdk.webhooks._runtime",
     "soar_sdk.webhooks.models",
     "soar_sdk.webhooks.routing",
     "sys",
@@ -77,6 +78,7 @@ from soar_sdk.shims.phantom_common.encryption.encryption_manager_factory import 
     platform_encryption_backend,
 )
 from soar_sdk.types import Action, NamedCallable
+from soar_sdk.webhooks._runtime import capture_native_stdout
 from soar_sdk.webhooks.models import WebhookRequest, WebhookResponse
 from soar_sdk.webhooks.routing import Router
 
@@ -955,6 +957,7 @@ class App:
         state = self.actions_manager.load_state() or {}
         self.actions_manager.save_state_to_file(asset_id, state)
 
+    @capture_native_stdout()
     def handle_webhook(
         self,
         method: str,
