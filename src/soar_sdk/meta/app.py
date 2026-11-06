@@ -83,5 +83,13 @@ class AppMeta(BaseModel):
         """Converts the AppMeta instance to a JSON-compatible dictionary."""
         data = self.model_dump(exclude_none=True)
         # In Pydantic v2 nested model_dump() overrides aren't automatically called
-        data["actions"] = [action.model_dump() for action in self.actions]
+        data["actions"] = []
+        data["actionSchemasLookup"] = {}
+        for action in self.actions:
+            if not action.action.strip():
+                raise ValueError("Action schema names must not be empty")
+            if action.action in data["actionSchemasLookup"]:
+                raise ValueError(f"Duplicate action schema name: {action.action!r}")
+            data["actions"].append(action.model_dump())
+            data["actionSchemasLookup"][action.action] = action.to_schema_manifest()
         return data
