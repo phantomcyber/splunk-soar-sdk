@@ -273,8 +273,11 @@ or associating that attachment; these methods do not upload or retry files.
 Upload URLs and form field values are credentials, stored as
 :class:`~pydantic.SecretStr`. ``repr``, ``model_dump`` and ``model_dump_json``
 mask them; call ``get_secret_value()`` only when building the upload request. Do
-not log them or use upload URLs as finding download links. Findings reference
-the stable ``attachment_id`` values through associations, rather than signed URLs.
+not log them or use upload URLs as finding download links. HTTP client errors
+often include the request URL in their message, so do not log or re-raise upload
+errors unmodified; report a message that omits the URL instead. Findings
+reference the stable ``attachment_id`` values through associations, rather than
+signed URLs.
 
 Once uploads succeed and ES returns the finding IDs, queue their associations:
 
@@ -311,13 +314,17 @@ Error behavior:
   :class:`~soar_sdk.exceptions.ActionFailure` before the runtime is called.
 - A missing, broken, or failing runtime bridge raises
   :class:`~soar_sdk.exceptions.AttachmentApiError`, a subclass of
-  ``ActionFailure``. Original runtime exception details are suppressed to keep
-  pre-signed URLs and credentials out of tracebacks; callers do not need to
-  handle runtime transport exceptions. When the bridge itself raises
-  ``ActionFailure`` (for example, when called outside ``on_es_poll``), its
-  message is kept in the ``AttachmentApiError``.
+  ``ActionFailure``. Runtime failures use fixed SDK messages, including when
+  the bridge raises ``ActionFailure``. Upstream messages are not copied, and
+  the original exception is not retained as ``__cause__`` or ``__context__``.
+  Validation errors are not retained as ``__cause__`` or ``__context__`` either.
+  Invalid raw upload targets are removed from SDK traceback frame locals
+  before raising an error, so error reporters do not capture their credentials.
+  This keeps pre-signed URLs and credentials out of SDK errors and tracebacks;
+  callers do not need to handle runtime transport exceptions.
 - Record creation also raises ``AttachmentApiError`` when the runtime returns
-  invalid targets or targets that do not match the requested file names in
+  invalid targets (including a non-HTTPS upload URL or no form fields) or
+  targets that do not match the requested file names in
   order, including repeated names, or returns duplicate attachment IDs within
   the batch. Association raises it when the runtime does not return a nonblank
   queue message ID.

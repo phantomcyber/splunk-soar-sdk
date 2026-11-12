@@ -11,6 +11,24 @@ from soar_sdk.apis.attachments import Attachments
 from soar_sdk.exceptions import ActionFailure, AttachmentApiError
 
 VALID_ASSOCIATIONS = [{"subject_id": "finding-1", "attachment_ids": ["attachment-1"]}]
+SECRETS = ("upload-secret", "form-secret", "opaque-sensitive-value")
+
+
+def assert_no_retained_secrets(error: BaseException) -> None:
+    """Check where loggers and error reporters could read secrets from SDK code."""
+    assert error.__cause__ is None
+    assert error.__context__ is None
+    rendered = [str(error), repr(error), *traceback.format_exception(error)]
+    tb = error.__traceback__
+    sdk_frames = 0
+    while tb is not None:
+        if tb.tb_frame.f_globals["__name__"].startswith("soar_sdk."):
+            sdk_frames += 1
+            rendered.extend(repr(value) for value in tb.tb_frame.f_locals.values())
+        tb = tb.tb_next
+    assert sdk_frames
+    for secret in SECRETS:
+        assert not any(secret in text for text in rendered)
 
 
 @pytest.fixture
@@ -162,6 +180,8 @@ def test_invalid_target_requests_do_not_reach_runtime(
         attachments.get_upload_targets(file_names, idempotency_key)
 
     assert not isinstance(caught.value, AttachmentApiError)
+    assert caught.value.__cause__ is None
+    assert caught.value.__context__ is None
     attachment_bridge.get_upload_targets.assert_not_called()
 
 
@@ -178,8 +198,11 @@ def test_attachment_apis_require_runtime_bundle(
     monkeypatch.setitem(sys.modules, "attachment_api", None)
     operation = getattr(app_with_action.soar_client.attachments, method_name)
 
-    with pytest.raises(AttachmentApiError, match="ingestion runtime bundle"):
+    with pytest.raises(AttachmentApiError, match="ingestion runtime bundle") as caught:
         operation(*arguments)
+
+    assert caught.value.__cause__ is None
+    assert caught.value.__context__ is None
 
 
 @pytest.mark.parametrize(
@@ -204,11 +227,9 @@ def test_broken_runtime_import_is_sanitized(app_with_action, monkeypatch, error)
             ["email.eml"], "batch-1"
         )
 
-    assert caught.value.__cause__ is None
+    assert_no_retained_secrets(caught.value)
     assert caught.value.__suppress_context__
     rendered = "".join(traceback.format_exception(caught.value))
-    assert "upload-secret" not in rendered
-    assert "form-secret" not in rendered
     assert "server_pb2_grpc" not in rendered
 
 
@@ -223,11 +244,15 @@ def test_broken_runtime_import_is_sanitized(app_with_action, monkeypatch, error)
         ),
     ],
 )
+@pytest.mark.parametrize(
+    "error_type", [RuntimeError, ActionFailure, AttachmentApiError]
+)
 def test_runtime_failures_are_sanitized(
-    attachments, attachment_bridge, method_name, arguments, message
+    attachments, attachment_bridge, method_name, arguments, message, error_type
 ):
-    error = RuntimeError(
-        "StatusCode.UNAVAILABLE: signature=upload-secret; token=form-secret"
+    error = error_type(
+        "StatusCode.UNAVAILABLE: https://uploads.example/?signature=upload-secret; "
+        "token=form-secret; opaque-sensitive-value"
     )
     attachment_bridge.get_upload_targets.side_effect = error
     attachment_bridge.associate_subject_attachments.side_effect = error
@@ -235,15 +260,23 @@ def test_runtime_failures_are_sanitized(
     with pytest.raises(AttachmentApiError, match=message) as caught:
         getattr(attachments, method_name)(*arguments)
 
-    assert caught.value.__cause__ is None
+    assert_no_retained_secrets(caught.value)
     assert caught.value.__suppress_context__
     rendered = "".join(traceback.format_exception(caught.value))
-    assert "upload-secret" not in rendered
-    assert "form-secret" not in rendered
     assert "StatusCode" not in rendered
 
 
-@pytest.mark.parametrize("invalid_targets", [None, [{}], [{"upload_url": "secret"}]])
+@pytest.mark.parametrize(
+    "invalid_targets",
+    [
+        None,
+        [{}],
+        [{"upload_url": "https://uploads.example/?signature=upload-secret"}],
+        {"upload_url": "https://uploads.example/?signature=upload-secret"},
+        "https://uploads.example/?signature=upload-secret",
+    ],
+    ids=["none", "empty", "partial", "not-a-list", "string"],
+)
 def test_invalid_upload_targets_are_reported_without_secrets(
     attachments, attachment_bridge, invalid_targets
 ):
@@ -254,8 +287,7 @@ def test_invalid_upload_targets_are_reported_without_secrets(
     ) as caught:
         attachments.get_upload_targets(["email.eml"], "batch-1")
 
-    assert "secret" not in str(caught.value)
-    assert caught.value.__cause__ is None
+    assert_no_retained_secrets(caught.value)
 
 
 @pytest.mark.parametrize("mismatch", ["missing", "extra", "renamed", "reordered"])
@@ -272,8 +304,12 @@ def test_upload_targets_must_match_requested_files(
     }
     attachment_bridge.get_upload_targets.return_value = targets[mismatch]
 
-    with pytest.raises(AttachmentApiError, match="do not match requested files"):
+    with pytest.raises(
+        AttachmentApiError, match="do not match requested files"
+    ) as caught:
         attachments.get_upload_targets(["email.eml", "second.eml"], "batch-1")
+
+    assert_no_retained_secrets(caught.value)
 
 
 @pytest.mark.parametrize(
@@ -286,8 +322,10 @@ def test_upload_targets_reject_duplicate_attachment_ids(
         {**upload_target_data, "file_name": name} for name in file_names
     ]
 
-    with pytest.raises(AttachmentApiError, match="duplicate attachment IDs"):
+    with pytest.raises(AttachmentApiError, match="duplicate attachment IDs") as caught:
         attachments.get_upload_targets(file_names, "batch-1")
+
+    assert_no_retained_secrets(caught.value)
 
 
 def test_upload_target_matching_preserves_duplicate_filenames(
@@ -326,17 +364,24 @@ def test_invalid_associations_do_not_reach_runtime(
         attachments.associate_subject_attachments(associations)
 
     assert not isinstance(caught.value, AttachmentApiError)
+    assert caught.value.__cause__ is None
+    assert caught.value.__context__ is None
     attachment_bridge.associate_subject_attachments.assert_not_called()
 
 
-@pytest.mark.parametrize("message_id", [None, "", "   ", 123])
+@pytest.mark.parametrize(
+    "message_id",
+    [None, "", "   ", 123, {"token": "form-secret"}],
+)
 def test_association_requires_a_message_id(attachments, attachment_bridge, message_id):
     attachment_bridge.associate_subject_attachments.return_value = message_id
 
     with pytest.raises(
         AttachmentApiError, match="invalid attachment association message ID"
-    ):
+    ) as caught:
         attachments.associate_subject_attachments(VALID_ASSOCIATIONS)
+
+    assert_no_retained_secrets(caught.value)
 
 
 def test_invalid_runtime_bridge_is_rejected(app_with_action, monkeypatch):
@@ -356,30 +401,6 @@ def test_attachment_api_error_formatting():
     assert str(error) == "Attachment API error in on_es_poll: bridge failed"
 
 
-@pytest.mark.parametrize(
-    "method_name, arguments",
-    [
-        ("get_upload_targets", (["email.eml"], "batch-1")),
-        ("associate_subject_attachments", (VALID_ASSOCIATIONS,)),
-    ],
-)
-@pytest.mark.parametrize(
-    "error_type", [ActionFailure, AttachmentApiError], ids=["action", "attachment"]
-)
-def test_bridge_action_failures_keep_their_message(
-    attachments, attachment_bridge, method_name, arguments, error_type
-):
-    error = error_type("Attachment APIs are only available during on_es_poll.")
-    attachment_bridge.get_upload_targets.side_effect = error
-    attachment_bridge.associate_subject_attachments.side_effect = error
-
-    with pytest.raises(AttachmentApiError, match="only available during") as caught:
-        getattr(attachments, method_name)(*arguments)
-
-    assert caught.value.__cause__ is None
-    assert caught.value.__suppress_context__
-
-
 def test_client_reuses_attachments_api(app_with_action):
     client = app_with_action.soar_client
 
@@ -395,3 +416,60 @@ def test_runtime_bridge_is_loaded_once(monkeypatch, attachment_bridge):
     api.associate_subject_attachments(VALID_ASSOCIATIONS)
 
     load.assert_called_once_with("attachment_api")
+
+
+def test_target_validation_failures_do_not_retain_raw_targets(
+    attachments, attachment_bridge, upload_target_data
+):
+    """Raw targets hold unmasked credentials and must not be reachable from frames."""
+    attachment_bridge.get_upload_targets.return_value = [
+        {**upload_target_data, "max_size_bytes": 0}
+    ]
+
+    with pytest.raises(
+        AttachmentApiError, match="Invalid attachment upload targets"
+    ) as caught:
+        attachments.get_upload_targets(["email.eml"], "batch-1")
+
+    assert_no_retained_secrets(caught.value)
+
+
+@pytest.mark.parametrize(
+    "upload_url",
+    [
+        "http://uploads.example/target?signature=upload-secret",
+        "ftp://uploads.example/target?signature=upload-secret",
+        "https:///target?signature=upload-secret",
+        "/target?signature=upload-secret",
+        "https://[upload-secret/target",
+    ],
+    ids=["http", "ftp", "no-host", "relative", "malformed"],
+)
+def test_upload_targets_require_https_urls(
+    attachments, attachment_bridge, upload_target_data, upload_url
+):
+    attachment_bridge.get_upload_targets.return_value = [
+        {**upload_target_data, "upload_url": upload_url}
+    ]
+
+    with pytest.raises(
+        AttachmentApiError, match="Invalid attachment upload targets"
+    ) as caught:
+        attachments.get_upload_targets(["email.eml"], "batch-1")
+
+    assert_no_retained_secrets(caught.value)
+
+
+def test_upload_targets_require_form_fields(
+    attachments, attachment_bridge, upload_target_data
+):
+    attachment_bridge.get_upload_targets.return_value = [
+        {**upload_target_data, "form_fields": []}
+    ]
+
+    with pytest.raises(
+        AttachmentApiError, match="Invalid attachment upload targets"
+    ) as caught:
+        attachments.get_upload_targets(["email.eml"], "batch-1")
+
+    assert_no_retained_secrets(caught.value)
