@@ -11,6 +11,8 @@ from .artifact import Artifact
 from .attachment_input import AttachmentInput
 from .attachment_upload import (
     AttachmentUploadFormField,
+    AttachmentUploadOutcome,
+    AttachmentUploadResult,
     AttachmentUploadTarget,
     SubjectAttachmentAssociation,
 )
@@ -30,6 +32,8 @@ __all__ = [
     "Artifact",
     "AttachmentInput",
     "AttachmentUploadFormField",
+    "AttachmentUploadOutcome",
+    "AttachmentUploadResult",
     "AttachmentUploadTarget",
     "Container",
     "DrilldownDashboard",

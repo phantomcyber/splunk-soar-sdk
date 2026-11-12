@@ -1,20 +1,30 @@
 __lazy_modules__ = {
     "collections.abc",
+    "contextlib",
     "importlib",
     "pydantic",
+    "pathlib",
+    "soar_sdk.apis._attachment_upload",
+    "soar_sdk.concurrency",
     "soar_sdk.exceptions",
     "soar_sdk.models.attachment_upload",
     "typing",
 }
 
 from collections.abc import Callable, Sequence
+from contextlib import suppress
 from importlib import import_module
+from pathlib import Path
 from typing import Annotated, Any, Protocol, runtime_checkable
 
 from pydantic import ConfigDict, Field, TypeAdapter, ValidationError
 
-from soar_sdk.exceptions import ActionFailure, AttachmentApiError
+from soar_sdk.apis._attachment_upload import upload_file
+from soar_sdk.concurrency import parallel_map
+from soar_sdk.exceptions import ActionFailure, AttachmentApiError, AttachmentUploadError
 from soar_sdk.models.attachment_upload import (
+    AttachmentUploadOutcome,
+    AttachmentUploadResult,
     AttachmentUploadTarget,
     NonBlankStr,
     SubjectAttachmentAssociation,
@@ -100,8 +110,9 @@ def _validate_payload[PayloadT](
 class Attachments:
     """API interface for attachment records and finding associations.
 
-    Operations delegate to the attachment bridge supplied by an
-    ingestion runtime bundle. The bridge enforces ``on_es_poll`` execution and
+    Record reservation and finding association delegate to the attachment bridge
+    supplied by an ingestion runtime bundle. File uploads consume its
+    presigned targets directly. The bridge enforces ``on_es_poll`` execution and
     supplies the accepted task's tenant and credentials. Failures raised by the
     bridge are reported as :class:`~soar_sdk.exceptions.AttachmentApiError`.
     Runtime failures use fixed SDK messages. The upstream exception is not
@@ -122,6 +133,100 @@ class Attachments:
         if self._bridge is None:
             self._bridge = _load_bridge()
         return self._bridge
+
+    def upload_file(
+        self,
+        file_path: str | Path,
+        target: AttachmentUploadTarget,
+        *,
+        timeout: float = 30.0,
+    ) -> AttachmentUploadResult:
+        """Stream a downloaded file to its presigned multipart POST target.
+
+        Args:
+            file_path: Path to the downloaded file. The caller owns cleanup.
+            target: Corresponding target returned by ``get_upload_targets``.
+                Its ordered form fields, file name and attachment ID are preserved.
+            timeout: Positive, finite socket timeout in seconds (default 30).
+
+        Returns:
+            A receipt with the existing attachment ID, target name and byte count.
+
+        Raises:
+            AttachmentUploadError: On invalid inputs, expired targets, file errors,
+                rejected uploads, service failures or timeouts. Errors contain no
+                signed URL, form values or response body. There are no retries or
+                redirects. Catch failures per file to continue processing a batch.
+        """
+        return upload_file(file_path, target, timeout)
+
+    def upload_files(
+        self,
+        uploads: Sequence[tuple[str | Path, AttachmentUploadTarget]],
+        *,
+        max_workers: int = 4,
+        timeout: float = 30.0,
+    ) -> list[AttachmentUploadOutcome]:
+        """Upload files concurrently and return one outcome per input, in order.
+
+        Args:
+            uploads: Pairs of local file paths and their corresponding targets.
+                Each target must have a distinct attachment ID. An empty batch
+                returns an empty list without network or runtime bridge calls.
+            max_workers: Maximum concurrent uploads; defaults to 4. Set to 1 for
+                sequential uploads. No more workers than files are started.
+            timeout: Socket timeout per upload, in seconds; defaults to 30.
+
+        Returns:
+            Ordered outcomes carrying each input's attachment ID. A file failure
+            does not stop the other uploads. Only successful outcomes should be
+            referenced in findings or linked. Files remain owned by the caller.
+
+        Raises:
+            ActionFailure: Invalid batch shape, repeated attachment IDs, or an
+                invalid worker count. The batch is rejected before any upload.
+        """
+        if (
+            isinstance(max_workers, bool)
+            or not isinstance(max_workers, int)
+            or max_workers < 1
+        ):
+            raise ActionFailure("Upload max_workers must be a positive integer.")
+        jobs = None
+        with suppress(TypeError):
+            jobs = list(uploads)
+        if jobs is None or any(
+            not isinstance(job, tuple | list)
+            or len(job) != 2
+            or not isinstance(job[0], str | Path)
+            or not isinstance(job[1], AttachmentUploadTarget)
+            for job in jobs
+        ):
+            raise ActionFailure(
+                "Uploads require pairs of file paths and upload targets."
+            )
+        ids = [target.attachment_id for _, target in jobs]
+        if len(set(ids)) != len(ids):
+            raise ActionFailure("Upload targets must have distinct attachment IDs.")
+
+        def upload_one(
+            job: tuple[str | Path, AttachmentUploadTarget],
+        ) -> AttachmentUploadOutcome:
+            path, target = job
+            try:
+                receipt = self.upload_file(path, target, timeout=timeout)
+            except AttachmentUploadError as error:
+                return AttachmentUploadOutcome(
+                    attachment_id=target.attachment_id,
+                    file_name=target.file_name,
+                    success=False,
+                    error_code=error.error_code,
+                    message=error.message,
+                    status_code=error.status_code,
+                )
+            return AttachmentUploadOutcome(success=True, **receipt.model_dump())
+
+        return parallel_map(upload_one, jobs, max_workers=max_workers)
 
     def get_upload_targets(
         self, file_names: Sequence[str], idempotency_key: str
