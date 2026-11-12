@@ -1,9 +1,11 @@
 __lazy_modules__ = {
     "pydantic",
     "typing",
+    "urllib.parse",
 }
 
 from typing import Annotated, TypedDict
+from urllib.parse import urlsplit
 
 from pydantic import (
     AwareDatetime,
@@ -11,6 +13,7 @@ from pydantic import (
     ConfigDict,
     Field,
     SecretStr,
+    field_validator,
     with_config,
 )
 
@@ -30,8 +33,9 @@ class AttachmentUploadFormField(BaseModel):
 class AttachmentUploadTarget(BaseModel):
     """A stable attachment identity and its short-lived multipart upload target.
 
-    Upload URLs and form field values are credentials. They are stored as
-    :class:`~pydantic.SecretStr`, so ``repr``, ``model_dump`` and
+    Upload URLs must be absolute HTTPS URLs, and each target has at least one
+    form field. Upload URLs and form field values are credentials. They are
+    stored as :class:`~pydantic.SecretStr`, so ``repr``, ``model_dump`` and
     ``model_dump_json`` mask them. Read them with ``get_secret_value()`` only
     when uploading, and do not log or store them in findings. Form fields
     retain their order and may contain duplicate names.
@@ -42,9 +46,18 @@ class AttachmentUploadTarget(BaseModel):
     attachment_id: str = Field(min_length=1)
     file_name: str = Field(min_length=1)
     upload_url: SecretStr = Field(min_length=1, repr=False)
-    form_fields: list[AttachmentUploadFormField] = Field(repr=False)
+    form_fields: list[AttachmentUploadFormField] = Field(min_length=1, repr=False)
     expires_at: AwareDatetime
     max_size_bytes: int = Field(gt=0)
+
+    @field_validator("upload_url")
+    @classmethod
+    def _require_https(cls, upload_url: SecretStr) -> SecretStr:
+        """Reject upload targets that would send credentials without TLS."""
+        parts = urlsplit(upload_url.get_secret_value())
+        if parts.scheme != "https" or not parts.hostname:
+            raise ValueError("Upload URL must be an absolute HTTPS URL.")
+        return upload_url
 
 
 NonBlankStr = Annotated[str, Field(min_length=1, pattern=r"\S")]

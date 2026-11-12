@@ -46,8 +46,8 @@ class SoarAPIError(ActionFailure):
 class AttachmentApiError(ActionFailure):
     """Exception raised when the attachment runtime bridge fails.
 
-    Original runtime exception details are suppressed to keep upload credentials
-    out of tracebacks.
+    SDK-generated errors use fixed messages without retaining the upstream
+    exception as ``__cause__`` or ``__context__``.
     """
 
     def __str__(self) -> str:

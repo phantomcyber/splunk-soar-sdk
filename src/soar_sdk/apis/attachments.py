@@ -7,11 +7,11 @@ __lazy_modules__ = {
     "typing",
 }
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from importlib import import_module
 from typing import Annotated, Any, Protocol, runtime_checkable
 
-from pydantic import Field, TypeAdapter, ValidationError
+from pydantic import ConfigDict, Field, TypeAdapter, ValidationError
 
 from soar_sdk.exceptions import ActionFailure, AttachmentApiError
 from soar_sdk.models.attachment_upload import (
@@ -22,16 +22,20 @@ from soar_sdk.models.attachment_upload import (
 
 _BRIDGE_MODULE = "attachment_api"
 
+_HIDE_INPUT = ConfigDict(hide_input_in_errors=True)
 _FILE_NAMES: TypeAdapter[list[str]] = TypeAdapter(
-    Annotated[list[NonBlankStr], Field(min_length=1)]
+    Annotated[list[NonBlankStr], Field(min_length=1)], config=_HIDE_INPUT
 )
-_IDEMPOTENCY_KEY: TypeAdapter[str] = TypeAdapter(NonBlankStr)
-_MESSAGE_ID: TypeAdapter[str] = TypeAdapter(Annotated[NonBlankStr, Field(strict=True)])
+_IDEMPOTENCY_KEY: TypeAdapter[str] = TypeAdapter(NonBlankStr, config=_HIDE_INPUT)
+_MESSAGE_ID: TypeAdapter[str] = TypeAdapter(
+    Annotated[NonBlankStr, Field(strict=True)], config=_HIDE_INPUT
+)
 _TARGETS: TypeAdapter[list[AttachmentUploadTarget]] = TypeAdapter(
-    list[AttachmentUploadTarget]
+    list[AttachmentUploadTarget], config=_HIDE_INPUT
 )
 _ASSOCIATIONS: TypeAdapter[list[SubjectAttachmentAssociation]] = TypeAdapter(
-    Annotated[list[SubjectAttachmentAssociation], Field(min_length=1)]
+    Annotated[list[SubjectAttachmentAssociation], Field(min_length=1)],
+    config=_HIDE_INPUT,
 )
 
 
@@ -58,15 +62,39 @@ def _load_bridge() -> AttachmentBridge:
         bridge = import_module(_BRIDGE_MODULE)
     except Exception as error:
         if isinstance(error, ModuleNotFoundError) and error.name == _BRIDGE_MODULE:
-            raise AttachmentApiError(
-                "Attachment APIs require an ingestion runtime bundle."
-            ) from None
-        raise AttachmentApiError(
-            "The attachment runtime bridge failed to load."
-        ) from None
-    if not isinstance(bridge, AttachmentBridge):
-        raise AttachmentApiError("The attachment runtime bridge is invalid.")
-    return bridge
+            message = "Attachment APIs require an ingestion runtime bundle."
+        else:
+            message = "The attachment runtime bridge failed to load."
+    else:
+        if not isinstance(bridge, AttachmentBridge):
+            raise AttachmentApiError("The attachment runtime bridge is invalid.")
+        return bridge
+    raise AttachmentApiError(message) from None
+
+
+def _invoke_bridge[ResultT](operation: Callable[[], ResultT], message: str) -> ResultT:
+    """Report a runtime failure after its exception context has been cleared."""
+    try:
+        return operation()
+    except Exception:
+        error = AttachmentApiError(message)
+    raise error from None
+
+
+def _validate_payload[PayloadT](
+    adapter: TypeAdapter[PayloadT],
+    payload: object,
+    error_type: type[ActionFailure],
+    message: str,
+) -> PayloadT:
+    """Validate without retaining the original error or raw payload on failure."""
+    try:
+        return adapter.validate_python(payload)
+    except ValidationError:
+        pass
+    # Error reporters may capture locals from the SDK traceback frames.
+    del payload
+    raise error_type(message) from None
 
 
 class Attachments:
@@ -76,8 +104,9 @@ class Attachments:
     ingestion runtime bundle. The bridge enforces ``on_es_poll`` execution and
     supplies the accepted task's tenant and credentials. Failures raised by the
     bridge are reported as :class:`~soar_sdk.exceptions.AttachmentApiError`.
-    Original runtime exception details are suppressed to keep upload credentials
-    out of tracebacks.
+    Runtime failures use fixed SDK messages. The upstream exception is not
+    retained as ``__cause__`` or ``__context__``, keeping its credentials out of
+    SDK errors and tracebacks.
     """
 
     def __init__(self, bridge: AttachmentBridge | None = None) -> None:
@@ -116,27 +145,27 @@ class Attachments:
                 returns invalid targets, mismatched file names, or duplicate
                 attachment IDs.
         """
-        try:
-            names = _FILE_NAMES.validate_python(file_names)
-            key = _IDEMPOTENCY_KEY.validate_python(idempotency_key)
-        except ValidationError:
-            raise ActionFailure(
-                "Attachment upload targets require nonempty file names and "
-                "an idempotency key."
-            ) from None
+        invalid_request = (
+            "Attachment upload targets require nonempty file names and "
+            "an idempotency key."
+        )
+        names = _validate_payload(
+            _FILE_NAMES, file_names, ActionFailure, invalid_request
+        )
+        key = _validate_payload(
+            _IDEMPOTENCY_KEY, idempotency_key, ActionFailure, invalid_request
+        )
         bridge = self._get_bridge()
-        try:
-            targets = bridge.get_upload_targets(names, key)
-        except ActionFailure as error:
-            raise AttachmentApiError(error.message) from None
-        except Exception:
-            raise AttachmentApiError("Attachment record creation failed.") from None
-        try:
-            validated = _TARGETS.validate_python(targets)
-        except ValidationError:
-            raise AttachmentApiError(
-                "Invalid attachment upload targets returned by runtime."
-            ) from None
+        # Keep the raw signed targets out of this frame's locals on error.
+        validated = _validate_payload(
+            _TARGETS,
+            _invoke_bridge(
+                lambda: bridge.get_upload_targets(names, key),
+                "Attachment record creation failed.",
+            ),
+            AttachmentApiError,
+            "Invalid attachment upload targets returned by runtime.",
+        )
         if [target.file_name for target in validated] != names:
             raise AttachmentApiError(
                 "Attachment upload targets do not match requested files."
@@ -166,22 +195,19 @@ class Attachments:
             AttachmentApiError: If the runtime bridge is unavailable, fails, or
                 returns an invalid message ID.
         """
-        try:
-            validated = _ASSOCIATIONS.validate_python(associations)
-        except ValidationError:
-            raise ActionFailure(
-                "At least one valid subject attachment association is required."
-            ) from None
+        validated = _validate_payload(
+            _ASSOCIATIONS,
+            associations,
+            ActionFailure,
+            "At least one valid subject attachment association is required.",
+        )
         bridge = self._get_bridge()
-        try:
-            message_id = bridge.associate_subject_attachments(validated)
-        except ActionFailure as error:
-            raise AttachmentApiError(error.message) from None
-        except Exception:
-            raise AttachmentApiError("Attachment association failed.") from None
-        try:
-            return _MESSAGE_ID.validate_python(message_id)
-        except ValidationError:
-            raise AttachmentApiError(
-                "Runtime returned an invalid attachment association message ID."
-            ) from None
+        return _validate_payload(
+            _MESSAGE_ID,
+            _invoke_bridge(
+                lambda: bridge.associate_subject_attachments(validated),
+                "Attachment association failed.",
+            ),
+            AttachmentApiError,
+            "Runtime returned an invalid attachment association message ID.",
+        )
