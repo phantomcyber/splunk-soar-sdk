@@ -250,6 +250,97 @@ Artifact API
    :members: create
    :show-inheritance:
 
+Attachments API
+~~~~~~~~~~~~~~~
+
+Ingestion runtime bundles provide attachment operations through an
+execution-time bridge, which the SDK exposes as ``soar.attachments``. The bridge
+supplies task-scoped authentication and tenant identity and accepts calls only
+during ``on_es_poll`` execution. It is not a dependency to install from PyPI.
+
+Request targets for a batch of 1 through 20 files, using a UUID idempotency key.
+Reuse the key with the same ordered file names when retrying that batch's target
+lookup. Changing the file names with the same key causes a service conflict.
+The returned targets contain stable attachment IDs, ordered multipart form fields,
+expiration times, and maximum file sizes. These SDK methods reserve records and
+queue associations; the caller uploads the bytes to each target using an upload
+implementation. Send the ordered ``form_fields`` (preserving duplicate names) and
+a multipart ``file`` part to ``upload_url`` before ``expires_at``, respecting
+``max_size_bytes``. Use a separate transport without SOAR authentication, cookies,
+or redirects. If an upload fails, handle that failure before creating the finding
+or associating that attachment; these methods do not upload or retry files.
+
+Upload URLs and form field values are credentials, stored as
+:class:`~pydantic.SecretStr`. ``repr``, ``model_dump`` and ``model_dump_json``
+mask them; call ``get_secret_value()`` only when building the upload request. Do
+not log them or use upload URLs as finding download links. Findings reference
+the stable ``attachment_id`` values through associations, rather than signed URLs.
+
+Once uploads succeed and ES returns the finding IDs, queue their associations:
+
+.. code-block:: python
+
+   targets = soar.attachments.get_upload_targets(
+       ["email.eml", "evidence.pdf", "second.eml"], batch_id
+   )
+
+   # Upload each file to target.upload_url.get_secret_value() with its form
+   # fields, then create the ES findings.
+   # After ES returns first_finding_id and second_finding_id:
+   message_id = soar.attachments.associate_subject_attachments(
+       [
+           {
+               "subject_id": first_finding_id,
+               "attachment_ids": [targets[0].attachment_id, targets[1].attachment_id],
+           },
+           {
+               "subject_id": second_finding_id,
+               "attachment_ids": [targets[2].attachment_id],
+           },
+       ]
+   )
+
+The association response confirms durable enqueueing. Timeline processes the
+association asynchronously. Subject IDs are opaque ES finding IDs and need not
+be UUIDs.
+
+Error behavior:
+
+- Invalid inputs (no file names, blank names or key, an empty association list,
+  blank subject or attachment IDs, or unknown association keys) raise
+  :class:`~soar_sdk.exceptions.ActionFailure` before the runtime is called.
+- A missing, broken, or failing runtime bridge raises
+  :class:`~soar_sdk.exceptions.AttachmentApiError`, a subclass of
+  ``ActionFailure``. Original runtime exception details are suppressed to keep
+  pre-signed URLs and credentials out of tracebacks; callers do not need to
+  handle runtime transport exceptions. When the bridge itself raises
+  ``ActionFailure`` (for example, when called outside ``on_es_poll``), its
+  message is kept in the ``AttachmentApiError``.
+- Record creation also raises ``AttachmentApiError`` when the runtime returns
+  invalid targets or targets that do not match the requested file names in
+  order, including repeated names, or returns duplicate attachment IDs within
+  the batch. Association raises it when the runtime does not return a nonblank
+  queue message ID.
+- Batch limits and idempotency-key UUID validity are enforced by the runtime
+  service. These methods do not retry runtime failures. Target-creation
+  idempotency does not extend to finding association: a queued association does
+  not establish that a repeat association request will succeed.
+
+These methods provide the attachment capability independently of automatic
+polling. The ``@app.on_es_poll()`` decorator still uses its classic SOAR path.
+Automatic runtime selection, the ES finding/reference schema, and checkpoint
+and retry behavior across finding creation and queued association require the
+corresponding integration contracts before that path can be connected.
+
+.. autoclass:: soar_sdk.apis.attachments.Attachments
+   :members: get_upload_targets, associate_subject_attachments
+
+.. autoclass:: soar_sdk.models.attachment_upload.AttachmentUploadTarget
+
+.. autoclass:: soar_sdk.models.attachment_upload.AttachmentUploadFormField
+
+.. autoclass:: soar_sdk.models.attachment_upload.SubjectAttachmentAssociation
+
 Container API
 ~~~~~~~~~~~~~
 
