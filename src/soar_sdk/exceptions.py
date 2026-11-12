@@ -1,10 +1,54 @@
-class ActionFailure(Exception):
-    """Exception raised when an action fails to execute successfully."""
+__lazy_modules__ = {"soar_sdk.action_results", "typing"}
 
-    def __init__(self, message: str, action_name: str | None = None) -> None:
+from typing import Any
+
+from soar_sdk.action_results import ActionOutput, ActionResult
+
+
+class ActionFailure(Exception):
+    """An expected action failure, optionally carrying explicit partial results.
+
+    Args:
+        message: Explanation of the failure.
+        action_name: Optional action name; set automatically by the SDK.
+        data: Explicit partial results or vendor error objects. Typed outputs use
+            the same serialization as successful results.
+        summary: Failure-specific summary, replacing any current action summary.
+            None uses the current action summary; an empty dict overrides it.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        action_name: str | None = None,
+        *,
+        data: list[ActionOutput | dict[str, Any]] | None = None,
+        summary: ActionOutput | dict[str, Any] | None = None,
+    ) -> None:
         self.message = message
         self.action_name = action_name
+        self.data = data
+        self.summary = summary
         super().__init__(self.message)
+
+    def _to_action_result(
+        self, parameters: dict[str, Any], summary: ActionOutput | None
+    ) -> ActionResult:
+        result = ActionResult(status=False, message=str(self), param=parameters)
+        for item in self.data or []:
+            result.add_data(
+                item.model_dump(by_alias=True)
+                if isinstance(item, ActionOutput)
+                else item
+            )
+        failure_summary = self.summary if self.summary is not None else summary
+        if failure_summary is not None:
+            result.set_summary(
+                failure_summary.model_dump(by_alias=True)
+                if isinstance(failure_summary, ActionOutput)
+                else failure_summary
+            )
+        return result
 
     def set_action_name(self, action_name: str) -> None:
         """Set the name of the action that failed."""

@@ -108,9 +108,17 @@ def test_connectivity_action_failed(
 ):
     @app_with_action.test_connectivity()
     def test_connectivity(soar: SOARClient) -> None:
-        raise AssetMisconfiguration("Test connectivity failed")
+        raise AssetMisconfiguration(
+            "Test connectivity failed",
+            data=[{"error": "invalid credentials"}],
+            summary={"connected": False},
+        )
 
     actions_manager = mocker.patch.object(app_with_action, "actions_manager")
     result = test_connectivity(soar=app_with_action.soar_client)
     assert not result
     assert actions_manager.add_result.call_count == 1
+
+    failure = actions_manager.add_result.call_args.args[0]
+    assert failure.get_data() == [{"error": "invalid credentials"}]
+    assert failure.get_summary() == {"connected": False}
