@@ -43,6 +43,22 @@ class SoarAPIError(ActionFailure):
         )
 
 
+class AttachmentApiError(ActionFailure):
+    """Exception raised when the Lunar Base attachment runtime bridge fails.
+
+    Original runtime exception details are suppressed to keep upload credentials
+    out of tracebacks.
+    """
+
+    def __str__(self) -> str:
+        """Return a formatted error message."""
+        return (
+            f"Attachment API error in {self.action_name}: {self.message}"
+            if self.action_name
+            else f"Attachment API error: {self.message}"
+        )
+
+
 class ActionRegistrationError(Exception):
     """Exception raised when there is an error registering an action."""
 
@@ -64,5 +80,6 @@ __all__ = [
     "ActionFailure",
     "ActionRegistrationError",
     "AssetMisconfiguration",
+    "AttachmentApiError",
     "SoarAPIError",
 ]

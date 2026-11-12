@@ -6,6 +6,7 @@ __lazy_modules__ = {
     "pydantic.dataclasses",
     "soar_sdk.action_results",
     "soar_sdk.apis.artifact",
+    "soar_sdk.apis.attachments",
     "soar_sdk.apis.container",
     "soar_sdk.apis.vault",
     "typing",
@@ -21,6 +22,7 @@ from pydantic.dataclasses import dataclass
 
 from soar_sdk.action_results import ActionOutput
 from soar_sdk.apis.artifact import Artifact
+from soar_sdk.apis.attachments import Attachments
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
 
@@ -77,6 +79,18 @@ class SOARClient(Generic[SummaryType]):
     def container(self) -> Container:
         """Object governing interaction with the SOAR container API. Subclasses must define."""
         pass
+
+    @property
+    def attachments(self) -> Attachments:
+        """Object governing Lunar Base attachment records and finding associations.
+
+        Created on first access and reused for the lifetime of the client.
+        """
+        api: Attachments | None = getattr(self, "_attachments_api", None)
+        if api is None:
+            api = Attachments()
+            self._attachments_api = api
+        return api
 
     @abstractmethod
     def get_executing_container_id(self) -> int:
