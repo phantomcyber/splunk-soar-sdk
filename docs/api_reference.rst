@@ -215,6 +215,87 @@ You can add summary data and a result message to your action, by calling :func:`
        return ListUsersOutput(users=users)
 
 
+Expected Failures and Partial Results
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Raise :class:`~soar_sdk.exceptions.ActionFailure` for an expected failure.
+The SDK keeps the action failed and retains its validated parameters using the
+same parameter serialization and platform sensitive-field handling as successful
+results. Unexpected exceptions continue to be recorded separately with a traceback.
+
+For a complete failure, no partial data is required:
+
+.. code-block:: python
+
+   from soar_sdk.action_results import ActionOutput
+   from soar_sdk.exceptions import ActionFailure
+   from soar_sdk.params import Params
+
+   class TicketParams(Params):
+       title: str
+
+   @app.action()
+   def validate_ticket(params: TicketParams) -> ActionOutput:
+       if not params.title.strip():
+           raise ActionFailure("Ticket title must not be blank")
+       return ActionOutput()
+
+When an operation succeeds before a later operation fails, explicitly attach the
+results needed for recovery. In this example, ``ticket_api`` is the connector's
+vendor API client and ``AttachmentUploadError`` is its expected upload exception:
+
+.. code-block:: python
+
+   from soar_sdk.abstract import SOARClient
+
+   class TicketOutput(ActionOutput):
+       ticket_id: str
+       ticket_url: str
+
+   class TicketSummary(ActionOutput):
+       ticket_created: bool
+       attachment_uploaded: bool
+
+   @app.action(summary_type=TicketSummary)
+   def create_ticket(params: TicketParams, soar: SOARClient) -> TicketOutput:
+       ticket = ticket_api.create_ticket(title=params.title)
+       output = TicketOutput(ticket_id=ticket.id, ticket_url=ticket.url)
+       try:
+           ticket_api.upload_attachment(ticket.id)
+       except AttachmentUploadError as exc:
+           raise ActionFailure(
+               "Attachment upload failed",
+               data=[output],
+               summary=TicketSummary(
+                   ticket_created=True, attachment_uploaded=False
+               ),
+           ) from exc
+       return output
+
+``data`` accepts a list of ``ActionOutput`` objects or JSON-compatible dictionaries;
+``None`` and ``[]`` attach no data. Typed outputs use the same alias and nested-model
+serialization as successful results, including ``PermissiveActionOutput`` behavior.
+A vendor error object can be attached directly, for example
+``raise ActionFailure("Vendor rejected request", data=[{"error": {"code": 400}}])``.
+Raw dictionaries do not generate manifest output datapaths; declare output models
+for fields that should be described in the app manifest.
+
+``summary`` accepts an ``ActionOutput`` object or a JSON-compatible dictionary.
+When omitted or ``None``, it preserves the summary set with ``soar.set_summary``
+during the current execution. A supplied summary replaces it without merging;
+``summary={}`` explicitly clears it. Summary and message state is isolated between
+SDK action executions, including nested and asynchronous executions.
+The exception message takes precedence over ``soar.set_message`` and retains the
+existing ``Action failure in <action name>: <message>`` format.
+
+The same failure context is supported by ``make_request``, connectivity, and polling
+handlers. Polling still stops on failure and retains its existing ingestion-state
+behavior. For ordinary iterator actions, yielded values are buffered until successful
+completion; a failure attaches only its explicit ``data``, never previously yielded
+values. No retries, external rollbacks, or reconstruction of completed operations
+are performed. Existing explicit ``ActionResult`` objects retain their behavior.
+
+
 Defining Action Outputs
 ^^^^^^^^^^^^^^^^^^^^^^^
 

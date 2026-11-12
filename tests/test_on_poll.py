@@ -532,12 +532,18 @@ def test_on_poll_failure(app_with_action: App):
     # ActionFailure
     @app_with_action.on_poll()
     def on_poll_actionfailure(params: OnPollParams):
-        raise ActionFailure("failmsg")
+        raise ActionFailure(
+            "failmsg", data=[{"checkpoint": 42}], summary={"saved": True}
+        )
         yield  # pragma: no cover
 
     params = OnPollParams(start_time=0, end_time=1)
     result = on_poll_actionfailure(params)
     assert result is False
+    failure = app_with_action.actions_manager.get_results()[-1]
+    assert failure.get_param() == params.model_dump()
+    assert failure.get_data() == [{"checkpoint": 42}]
+    assert failure.get_summary() == {"saved": True}
 
 
 def test_on_poll_decoration_with_meta(app_with_action: App):

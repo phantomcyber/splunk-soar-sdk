@@ -1,5 +1,6 @@
 __lazy_modules__ = {
     "collections.abc",
+    "soar_sdk._action_context",
     "dataclasses",
     "httpx",
     "soar_sdk.abstract",
@@ -13,10 +14,11 @@ __lazy_modules__ = {
 
 from collections.abc import AsyncIterable, Iterable, Mapping
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import httpx
 
+from soar_sdk._action_context import get_action_context
 from soar_sdk.abstract import JSONType, SOARClient, SOARClientAuth, SummaryType
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.container import Container
@@ -359,16 +361,26 @@ class AppClient(SOARClient[SummaryType]):
 
     def set_summary(self, summary: SummaryType) -> None:
         """Set the summary for the action result."""
-        self._summary = summary
+        if context := get_action_context(self):
+            context.summary = summary
+        else:
+            self._summary = summary
 
     def set_message(self, message: str) -> None:
         """Set the message for the action result."""
-        self._message = message
+        if context := get_action_context(self):
+            context.message = message
+        else:
+            self._message = message
 
     def get_summary(self) -> SummaryType | None:
         """Get the summary for the action result."""
+        if context := get_action_context(self):
+            return cast(SummaryType | None, context.summary)
         return self._summary
 
     def get_message(self) -> str:
         """Get the message for the action result."""
+        if context := get_action_context(self):
+            return context.message
         return self._message

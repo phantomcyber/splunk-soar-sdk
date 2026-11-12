@@ -4,6 +4,7 @@ __lazy_modules__ = {
     "functools",
     "inspect",
     "pydantic",
+    "soar_sdk._action_context",
     "soar_sdk.abstract",
     "soar_sdk.action_results",
     "soar_sdk.app",
@@ -27,6 +28,7 @@ from typing import TYPE_CHECKING, Any, get_args
 
 from pydantic import ValidationError
 
+from soar_sdk._action_context import isolate_action_context
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.concurrency import parallel_map
@@ -213,6 +215,7 @@ class OnESPollDecorator:
 
         @action_protocol
         @wraps(function)
+        @isolate_action_context(self.app.soar_client)
         def inner(
             params: OnESPollParams,
             soar: SOARClient = self.app.soar_client,
@@ -354,7 +357,9 @@ class OnESPollDecorator:
                         if ingest_state is not None and ingest_state.in_transaction:
                             ingest_state.rollback()
                         return self.app._adapt_action_result(
-                            ActionResult(status=False, message=str(e)),
+                            e._to_action_result(
+                                action_params.model_dump(), soar.get_summary()
+                            ),
                             self.app.actions_manager,
                         )
                     except Exception as e:
