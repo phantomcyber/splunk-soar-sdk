@@ -59,6 +59,26 @@ class AttachmentApiError(ActionFailure):
         )
 
 
+class AttachmentUploadError(AttachmentApiError):
+    """A sanitized upload failure with a code, attachment ID and HTTP status.
+
+    ``status_code`` is absent if no HTTP response was received. ``attachment_id``
+    is absent if the supplied target was invalid. No upload is retried.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        error_code: str,
+        attachment_id: str | None,
+        status_code: int | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.error_code = error_code
+        self.attachment_id = attachment_id
+        self.status_code = status_code
+
+
 class ActionRegistrationError(Exception):
     """Exception raised when there is an error registering an action."""
 
@@ -81,5 +101,6 @@ __all__ = [
     "ActionRegistrationError",
     "AssetMisconfiguration",
     "AttachmentApiError",
+    "AttachmentUploadError",
     "SoarAPIError",
 ]

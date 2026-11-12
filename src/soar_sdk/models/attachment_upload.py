@@ -60,6 +60,38 @@ class AttachmentUploadTarget(BaseModel):
         return upload_url
 
 
+class AttachmentUploadResult(BaseModel):
+    """A completed upload's identity, target file name and uploaded byte count.
+
+    The receipt contains no URL or credentials. It confirms upload only;
+    finding creation and attachment association remain separate operations.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    attachment_id: str
+    file_name: str
+    size_bytes: int
+
+
+class AttachmentUploadOutcome(BaseModel):
+    """One batch upload outcome, without URLs, form fields or file contents.
+
+    Successful outcomes contain ``size_bytes``. Failed outcomes contain a safe
+    ``error_code`` and ``message``, plus ``status_code`` when available.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    attachment_id: str
+    file_name: str
+    success: bool
+    size_bytes: int | None = None
+    error_code: str | None = None
+    message: str | None = None
+    status_code: int | None = None
+
+
 NonBlankStr = Annotated[str, Field(min_length=1, pattern=r"\S")]
 """A string containing at least one non-whitespace character."""
 
