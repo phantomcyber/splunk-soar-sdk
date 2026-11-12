@@ -1,1 +1,0 @@
-* Feature: Upload downloaded attachments individually or in bounded parallel batches with ``soar.attachments``, preserving attachment IDs and keeping presigned credentials out of upload errors and results.
