@@ -43,6 +43,22 @@ class SoarAPIError(ActionFailure):
         )
 
 
+class AttachmentApiError(ActionFailure):
+    """Exception raised when the attachment runtime bridge fails.
+
+    SDK-generated errors use fixed messages without retaining the upstream
+    exception as ``__cause__`` or ``__context__``.
+    """
+
+    def __str__(self) -> str:
+        """Return a formatted error message."""
+        return (
+            f"Attachment API error in {self.action_name}: {self.message}"
+            if self.action_name
+            else f"Attachment API error: {self.message}"
+        )
+
+
 class ActionRegistrationError(Exception):
     """Exception raised when there is an error registering an action."""
 
@@ -64,5 +80,6 @@ __all__ = [
     "ActionFailure",
     "ActionRegistrationError",
     "AssetMisconfiguration",
+    "AttachmentApiError",
     "SoarAPIError",
 ]
