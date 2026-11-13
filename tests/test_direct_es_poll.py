@@ -188,7 +188,9 @@ def test_direct_poll_preserves_explicit_analysis_and_automation_flags(
     assert payload["launch_automation"] is True
 
 
-def test_partial_failures_are_reported_and_checkpoint_advances(direct_app, respx_mock):
+def test_partial_failures_are_reported_and_checkpoint_rolls_back(
+    direct_app, respx_mock
+):
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
     app.asset._ingest_state = state
@@ -228,9 +230,110 @@ def test_partial_failures_are_reported_and_checkpoint_advances(direct_app, respx
         None,
     ]
     assert route.call_count == 5
-    assert state["cursor"] == 5
+    assert "cursor" not in state
     assert not state.in_transaction
     assert TOKEN not in repr(vars(result))
+
+
+@pytest.mark.parametrize("with_attachments", [False, True])
+@pytest.mark.parametrize("failure", [403, 429, 503, "timeout"])
+def test_only_failed_batch_is_replayed(
+    direct_app,
+    poll_attachments,
+    respx_mock,
+    mocker,
+    monkeypatch,
+    with_attachments,
+    failure,
+):
+    app = direct_app
+    saved = {}
+    mocker.patch.object(
+        app.actions_manager, "load_state", side_effect=lambda: dict(saved)
+    )
+    mocker.patch.object(app.actions_manager, "save_state", side_effect=saved.update)
+    state = AssetState(app.actions_manager, "ingest", "1", encrypted=False)
+    app.asset._ingest_state = state
+    if not with_attachments:
+        monkeypatch.setattr(app.soar_client, "MAX_BULK_FINDINGS", 2)
+    seen = []
+    reject = True
+
+    def create(request):
+        index = int(json.loads(request.content)["rule_title"])
+        seen.append(index)
+        if reject and index == 2:
+            if failure == "timeout":
+                raise httpx.ReadTimeout(TOKEN)
+            return httpx.Response(failure, text=TOKEN)
+        return httpx.Response(201, json={"_time": "now", "finding_id": str(index)})
+
+    respx_mock.post(ENDPOINT).mock(side_effect=create)
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        for index in range(state.get("cursor", 0), 6):
+            state["cursor"] = index + 1
+            yield (
+                attached_finding(str(index), names=("email.eml",) * 7)
+                if with_attachments
+                else Finding(rule_title=str(index))
+            )
+
+    assert poll(OnESPollParams())
+    assert seen == [0, 1, 2, 3]
+    assert state["cursor"] == 2
+    assert not state.in_transaction
+    assert outcome(app).get_summary()["failed"] == 1
+    reject = False
+    seen.clear()
+    assert poll(OnESPollParams())
+    assert seen == [2, 3, 4, 5]
+    assert state["cursor"] == 6
+    assert not state.in_transaction
+
+
+@pytest.mark.parametrize("is_async", [False, True])
+def test_handler_failure_preserves_previous_batch_checkpoint(
+    direct_app,
+    respx_mock,
+    mocker,
+    monkeypatch,
+    is_async,
+):
+    app = direct_app
+    saved = {}
+    mocker.patch.object(
+        app.actions_manager, "load_state", side_effect=lambda: dict(saved)
+    )
+    mocker.patch.object(app.actions_manager, "save_state", side_effect=saved.update)
+    state = AssetState(app.actions_manager, "ingest", "1", encrypted=False)
+    app.asset._ingest_state = state
+    monkeypatch.setattr(app.soar_client, "MAX_BULK_FINDINGS", 2)
+    respx_mock.post(ENDPOINT).respond(201, json={"_time": "now", "finding_id": "id"})
+
+    def findings():
+        for index in range(3):
+            state["cursor"] = index + 1
+            yield Finding(rule_title=str(index))
+        raise RuntimeError(TOKEN)
+
+    if is_async:
+
+        @app.on_es_poll()
+        async def poll(params: OnESPollParams) -> AsyncGenerator[Finding, int | None]:
+            for finding in findings():
+                yield finding
+    else:
+
+        @app.on_es_poll()
+        def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+            yield from findings()
+
+    assert not poll(OnESPollParams())
+    assert state["cursor"] == 2
+    assert outcome(app).get_summary()["created"] == 2
+    assert not state.in_transaction
 
 
 @pytest.mark.parametrize("all_invalid", [False, True])
@@ -253,6 +356,22 @@ def test_invalid_items_do_not_abort_poll(direct_app, respx_mock, all_invalid):
     assert result.get_summary()["created"] == (0 if all_invalid else 1)
     assert route.call_count == (0 if all_invalid else 1)
     assert "private contents" not in repr(vars(result))
+
+
+def test_invalid_yield_does_not_checkpoint_source_progress(direct_app, respx_mock):
+    app = direct_app
+    state = AssetState(app.actions_manager, "ingest", "1")
+    app.asset._ingest_state = state
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        state["cursor"] = 1
+        yield "invalid"
+
+    assert not poll(OnESPollParams())
+    assert "cursor" not in state
+    assert not respx_mock.calls
+    assert not state.in_transaction
 
 
 @pytest.mark.parametrize(
