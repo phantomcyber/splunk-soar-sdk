@@ -3,6 +3,7 @@
 __lazy_modules__ = {
     "asyncio",
     "contextlib",
+    "copy",
     "soar_sdk.abstract",
     "soar_sdk.action_results",
     "soar_sdk.app",
@@ -14,6 +15,7 @@ __lazy_modules__ = {
 
 import asyncio
 from contextlib import suppress
+from copy import deepcopy
 from typing import TYPE_CHECKING, Any
 
 from soar_sdk.abstract import SOARClient
@@ -43,12 +45,16 @@ def _run_direct_es_poll(
     ingest = app._es_ingest_config
     state = app.asset._ingest_state
     polling_failed = False
+    batch_failed = False
     count = 0
     used_attachment_ids: set[str] = set()
     attachment_count = 0
 
-    def flush() -> None:
-        nonlocal attachment_count
+    def flush() -> bool:
+        nonlocal attachment_count, batch_failed
+        if not batch:
+            return True
+        start = len(results)
         payloads = []
         indexes = []
         findings = []
@@ -102,11 +108,17 @@ def _run_direct_es_poll(
             results.extend(batch_results)
         batch.clear()
         attachment_count = 0
+        batch_failed = any(not result["success"] for result in results[start:])
+        if not batch_failed and state is not None:
+            state.commit()
+            state.begin_transaction()
+        return not batch_failed
 
     try:
         if state is not None:
             state.begin_transaction()
         while not params.container_count or count < params.container_count:
+            checkpoint = deepcopy(state.get_all()) if state is not None else {}
             try:
                 item = (
                     asyncio.run(generator.asend(None))
@@ -117,13 +129,22 @@ def _run_direct_es_poll(
                 break
             file_count = len(item.attachments or []) if isinstance(item, Finding) else 0
             if batch and attachment_count + file_count > 20:
-                flush()
+                # Reading the next finding can advance its source cursor. Commit
+                # only the previous batch, then restore the lookahead's state.
+                if state is not None:
+                    next_state = state.get_all()
+                    state.put_all(checkpoint)
+                if not flush():
+                    break
+                if state is not None:
+                    state.put_all(next_state)
             batch.append((count, item))
             attachment_count += file_count
             count += 1
-            if len(batch) == soar.MAX_BULK_FINDINGS:
-                flush()
-        flush()
+            if len(batch) == soar.MAX_BULK_FINDINGS and not flush():
+                break
+        if not batch_failed:
+            flush()
     except Exception:
         # Handler exceptions can contain credentials or message contents.
         polling_failed = True
@@ -137,11 +158,10 @@ def _run_direct_es_poll(
             polling_failed = True
         if state is not None and state.in_transaction:
             try:
-                if polling_failed:
+                if polling_failed or batch_failed:
                     state.rollback()
                 else:
-                    # Attempts, including reported failures, advance the source
-                    # checkpoint. Replaying a successful POST can duplicate ES data.
+                    # Save trailing handler changes only after successful batches.
                     state.commit()
             except Exception:
                 polling_failed = True

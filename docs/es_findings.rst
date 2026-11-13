@@ -141,16 +141,23 @@ and normally at most 20 local attachments, the upload-target service limit;
 Each action-result data row contains the input index and the created finding ID
 or safe failure details. The summary includes ``created``, ``failed``,
 ``polling_failed``, ``attachments_uploaded``, ``attachments_failed``, ``links_queued``,
-``links_failed`` and ``status``. Mixed outcomes report ``partial`` and processing
-continues; all-failed or handler/state failures report an unsuccessful action.
+``links_failed`` and ``status``. Mixed outcomes report ``partial``; all findings
+in the current batch are attempted. All-failed or handler/state failures report
+an unsuccessful action.
 An empty poll succeeds. Generators are closed on exit, including a count limit.
 
-After normal generator completion, attempted-work checkpoint changes are committed
-even when individual findings failed. Failed POSTs and timeouts are reported, not
-automatically replayed: replaying successes can create duplicates. Handler or state
-failures make the action unsuccessful; buffered state is rolled back where possible.
-Previously created findings remain created and their IDs remain in the result.
-Reconcile those IDs before retrying such a run. Classic polling is unchanged.
+Each successful batch commits its ingest-state checkpoint. A finding creation or
+validation failure stops polling after the current batch and rolls back that
+batch's state. The next scheduled poll can replay it, including findings already
+created within that batch. Timeouts can also replay a request that ES completed.
+Previously checkpointed batches are retained. There are no immediate POST retries.
+Handler or state failures roll back the current batch where possible.
+
+Connectors must stage source progress in ``asset.ingest_state`` before each
+``yield Finding`` and retain any unprocessed source IDs when polling out of order.
+Updating the cursor only after the whole generator completes cannot provide
+per-batch checkpoints. Attachment upload or association failures alone do not
+replay created findings. Classic SDK polling behavior is unchanged.
 
 For each yielded ``Finding``, local ``Finding.attachments`` are handled in order:
 
