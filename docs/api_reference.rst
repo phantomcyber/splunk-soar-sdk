@@ -243,6 +243,11 @@ The ``SOARClient`` class is an app's gateway to the Splunk SOAR platform APIs. I
 APIs
 ----
 
+.. toctree::
+   :maxdepth: 1
+
+   es_findings
+
 Artifact API
 ~~~~~~~~~~~~
 

@@ -79,6 +79,56 @@ class AttachmentUploadError(AttachmentApiError):
         self.status_code = status_code
 
 
+class FindingAPIError(ActionFailure):
+    """Safe ES failure without upstream requests, bodies, or credentials.
+
+    ``status_code`` is available when ES returned a response. ``error_code``
+    identifies the failure in :class:`~soar_sdk.models.es_finding.FindingCreateResult`.
+    """
+
+    error_code = "response"
+
+    def __init__(self, message: str, *, status_code: int | None = None) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class FindingValidationError(FindingAPIError):
+    """Invalid payload or ES 4xx rejection other than authorization/rate limits."""
+
+    error_code = "validation"
+
+
+class FindingConfigurationError(FindingAPIError):
+    """Invalid execution-supplied URL, token, or timeout."""
+
+    error_code = "configuration"
+
+
+class FindingAuthorizationError(FindingAPIError):
+    """ES returned 401 or 403; the orchestrator owns token refresh."""
+
+    error_code = "authorization"
+
+
+class FindingRateLimitError(FindingAPIError):
+    """ES returned 429; the SDK does not retry the request."""
+
+    error_code = "rate_limit"
+
+
+class FindingUnavailableError(FindingAPIError):
+    """ES returned 5xx or a connection/transport error occurred."""
+
+    error_code = "unavailable"
+
+
+class FindingTimeoutError(FindingUnavailableError):
+    """ES timed out; the finding may already exist, so no retry is attempted."""
+
+    error_code = "timeout"
+
+
 class ActionRegistrationError(Exception):
     """Exception raised when there is an error registering an action."""
 
@@ -102,5 +152,12 @@ __all__ = [
     "AssetMisconfiguration",
     "AttachmentApiError",
     "AttachmentUploadError",
+    "FindingAPIError",
+    "FindingAuthorizationError",
+    "FindingConfigurationError",
+    "FindingRateLimitError",
+    "FindingTimeoutError",
+    "FindingUnavailableError",
+    "FindingValidationError",
     "SoarAPIError",
 ]

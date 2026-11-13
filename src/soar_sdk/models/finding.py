@@ -35,11 +35,11 @@ class DrilldownDashboard(BaseModel):
 
 
 class FindingAttachment(BaseModel):
-    """Represents a file attachment to upload to the SOAR vault during on_es_poll.
+    """Represents a local attachment to upload during on_es_poll.
 
-    The SDK uploads these to the container vault before creating the finding,
-    then populates the finding's email.attachments and email.raw_email_link
-    with the resulting vault links.
+    Classic SOAR uploads to the container vault. Direct ES polling uses the
+    ingestion runtime's upload targets and queues finding associations. Both
+    paths populate email.attachments and email.raw_email_link before creation.
     """
 
     file_name: str
