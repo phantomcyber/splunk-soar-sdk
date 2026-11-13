@@ -162,6 +162,7 @@ class App:
         self._encrypt_cache_state = encrypt_cache_state
         self._encrypt_ingest_state = encrypt_ingest_state
         self._raw_asset_config: dict[str, Any] = {}
+        self._es_ingest_config: dict[str, Any] = {}
         self.__logger = getLogger()
         if not is_valid_uuid(appid):
             raise ValueError(f"Appid is not a valid uuid: {appid}")
@@ -231,7 +232,19 @@ class App:
         NOTE: handle is actually a pointer address to spawn's internal state.
         In versions of SOAR >6.4.1, handle will not be passed to the app.
         """
-        input_data = InputSpecification.model_validate(json.loads(raw_input_data))
+        raw_input = json.loads(raw_input_data)
+        self._es_ingest_config = {}
+        if (
+            isinstance(raw_input, dict)
+            and raw_input.get("identifier") == "on_es_poll"
+            and self.soar_client._get_es_finding_context() is not None
+        ):
+            # ES settings are not classic IngestConfig (container_label). Keep
+            # them separate from asset fields and ordinary action parameters.
+            raw_config = raw_input.get("config")
+            if isinstance(raw_config, dict):
+                self._es_ingest_config = raw_config.pop("ingest", None) or {}
+        input_data = InputSpecification.model_validate(raw_input)
         self._raw_asset_config = input_data.config.get_asset_config()
 
         # Resolve credentials from an external manager (e.g. Hashicorp Vault,

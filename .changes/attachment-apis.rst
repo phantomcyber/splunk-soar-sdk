@@ -1,6 +1,4 @@
-* Feature: Add the ``soar.attachments`` API to request attachment upload
-  targets, upload files individually or in bounded parallel batches, and queue
-  finding-to-attachment associations through the ingestion runtime bridge,
-  validating unique attachment IDs and reporting runtime failures as
-  ``AttachmentApiError`` without retaining upstream exceptions or exposing
-  their messages or raw upload credentials in SDK traceback locals.
+* Feature: Add runtime-bound ES finding creation and polling with typed models,
+  per-finding outcomes, attachment upload targets, bounded parallel file uploads,
+  and queued finding-to-attachment associations. Preserve classic SOAR behavior
+  and report safe errors without exposing runtime credentials or file contents.

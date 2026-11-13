@@ -8,6 +8,7 @@ __lazy_modules__ = {
     "soar_sdk.action_results",
     "soar_sdk.app",
     "soar_sdk.concurrency",
+    "soar_sdk.decorators._es_poll",
     "soar_sdk.exceptions",
     "soar_sdk.logging",
     "soar_sdk.meta.actions",
@@ -25,12 +26,13 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args
 
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.concurrency import parallel_map
-from soar_sdk.exceptions import ActionFailure
+from soar_sdk.decorators._es_poll import _run_direct_es_poll
+from soar_sdk.exceptions import ActionFailure, FindingAPIError
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
 from soar_sdk.models.finding import (
@@ -176,6 +178,12 @@ class OnESPollDecorator:
         The generator should yield a `Finding`. Upon receiving an event from the generator, the SDK will submit the Finding to Splunk Enterprise Security and create a linked SOAR Container.
         The generator should accept a "send type" of `int | None`. When a Finding is successfully delivered to ES and linked to a Container, the SDK will send the Container ID back into the generator. The Container is useful for storing large attachments included with the Finding.
         If the Finding cannot be successfully delivered to ES, the SDK will stop polling and return a failed result for the action run.
+
+        With bundle-provided ES execution context, findings are created directly
+        without SOAR containers. The generator receives None; ordered creation
+        outcomes are returned in action-result data and mixed outcomes report
+        partial success. Local attachments are uploaded before finding creation;
+        successful finding/file pairs are then queued for association.
         """
         if self.app.actions_manager.get_action("on_es_poll"):
             raise TypeError(
@@ -228,8 +236,33 @@ class OnESPollDecorator:
                     self.app.actions_manager,
                 )
 
+            try:
+                es_context = soar._get_es_finding_context()
+            except FindingAPIError as error:
+                return self.app._adapt_action_result(
+                    ActionResult(status=False, message=error.message),
+                    self.app.actions_manager,
+                )
             kwargs = self.app._build_magic_args(function, soar=soar, **kwargs)
             generator = function(action_params, *args, **kwargs)
+
+            if es_context is not None:
+                action_params._base_url = es_context[0]
+                token = es_context[1]
+                action_params._access_token = (
+                    token if isinstance(token, SecretStr) else SecretStr(token)
+                )
+                try:
+                    return _run_direct_es_poll(
+                        self.app,
+                        generator,
+                        action_params,
+                        soar,
+                        is_async=is_async_generator,
+                    )
+                finally:
+                    action_params._base_url = None
+                    action_params._access_token = None
 
             asset_id = self.app.actions_manager.get_asset_id()
             asset_data = soar.get(f"/rest/asset/{asset_id}").json()

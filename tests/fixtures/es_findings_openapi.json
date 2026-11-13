@@ -1,0 +1,855 @@
+{
+  "_source": {
+    "file": "packages/missioncontrol/packages/app/public_openapi_specs/mcopenapi_public.yaml",
+    "repository": "app-ess",
+    "commit": "0eb5d6679945524c0e101fc5d67482773f46ae51",
+    "openapi": "3.0.1",
+    "es_version": "8.8.0",
+    "operation": "public_v2_create_manual_finding"
+  },
+  "components": {
+    "schemas": {
+      "CreateManualFindingRequest": {
+        "type": "object",
+        "description": "The request of the create manual finding api call.",
+        "required": [
+          "rule_title",
+          "security_domain"
+        ],
+        "properties": {
+          "rule_title": {
+            "type": "string",
+            "description": "The rule title for the manual finding.",
+            "example": "24 hour risk threshold exceeded for user=evilsender@update.defenceonline.net"
+          },
+          "rule_description": {
+            "type": "string",
+            "description": "The rule description for the manual finding.",
+            "example": "Risk Threshold Exceeded for an object over a 24 hour period"
+          },
+          "security_domain": {
+            "type": "string",
+            "description": "The security domain for the manual finding to be created.",
+            "example": "threat"
+          },
+          "risk_object": {
+            "type": "string",
+            "description": "The risk object for the manual finding to be created.",
+            "example": "bad_user@splunk.com"
+          },
+          "risk_object_type": {
+            "type": "string",
+            "description": "The risk object type for the manual finding to be created.",
+            "example": "user"
+          },
+          "risk_score": {
+            "type": "number",
+            "description": "The risk score for the manual finding to be created.",
+            "example": 100
+          },
+          "status": {
+            "type": "string",
+            "description": "The status id or status label of the manual finding to be created.",
+            "example": "New"
+          },
+          "urgency": {
+            "type": "string",
+            "description": "The urgency id or urgency label of the manual finding to be created.",
+            "example": "informational"
+          },
+          "owner": {
+            "type": "string",
+            "description": "The owner for the manual finding to be created.",
+            "example": "splunk_user"
+          },
+          "disposition": {
+            "type": "string",
+            "description": "The disposition id or disposition label of the manual finding to be created.",
+            "example": "disposition:6"
+          },
+          "drilldown_searches": {
+            "type": "array",
+            "description": "The drilldown searches for the manual finding to be created.",
+            "items": {
+              "$ref": "#/components/schemas/DrilldownSearch"
+            },
+            "example": [
+              {
+                "name": "drilldown_name",
+                "search": "index=_internal",
+                "earliest": "-1d@h",
+                "latest": "$info_max_time$"
+              }
+            ]
+          },
+          "drilldown_dashboards": {
+            "type": "array",
+            "description": "The drilldown dashboards for the manual finding to be created.",
+            "items": {
+              "$ref": "#/components/schemas/DrilldownDashboard"
+            },
+            "example": [
+              {
+                "name": "dashboard_name",
+                "dashboard": "my_dashboard",
+                "tokens": [
+                  "token1",
+                  "token2"
+                ]
+              }
+            ]
+          },
+          "annotations": {
+            "type": "object",
+            "description": "The annotations for the manual finding to be created.",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "example": "T1078"
+              },
+              "example": [
+                "T1078",
+                "T1537"
+              ]
+            },
+            "example": {
+              "mitre_attack": [
+                "T1078",
+                "T1537"
+              ]
+            }
+          },
+          "risk_event_count": {
+            "type": "number",
+            "description": "The risk event count for the manual finding to be created.",
+            "example": 5
+          },
+          "all_risk_objects": {
+            "type": "array",
+            "description": "The risk objects for the manual finding to be created.",
+            "items": {
+              "type": "string",
+              "example": "bad_user@splunk.com"
+            },
+            "example": [
+              "bad_user@splunk.com",
+              "bad_user2@splunk.com"
+            ]
+          },
+          "source": {
+            "type": "array",
+            "description": "The sources for the manual finding to be created.",
+            "items": {
+              "type": "string",
+              "example": "demo_identities"
+            },
+            "example": [
+              "source_1",
+              "source_2"
+            ]
+          },
+          "exclude_map_fields": {
+            "type": "array",
+            "description": "The fields to exclude from the automatic 'orig_' prefix mapping. When writing data to the notable index, the backend will append 'orig_' prefix to certain fields. For fields specified in the `exclude_map_fields`, the backend will not append this prefix. To see which fields will automatically get the prefix, check the `mapfields` parameter in the definition of the notable alert action.",
+            "items": {
+              "type": "string",
+              "example": "investigation_profiles"
+            },
+            "example": [
+              "investigation_profiles",
+              "recommended_actions"
+            ]
+          },
+          "queue_id": {
+            "type": "string",
+            "description": "The queue id of the finding.",
+            "example": "test-queue-triage"
+          },
+          "email": {
+            "$ref": "#/components/schemas/PhishingEmailObject"
+          },
+          "run_threat_analysis": {
+            "type": "boolean",
+            "description": "Flag to submit the finding to Splunk Attack Analyzer (SAA) for threat analysis.",
+            "example": true
+          },
+          "launch_automation": {
+            "type": "boolean",
+            "description": "Flag to dispatch the finding to SOAR for automation after SAA analysis completes (or immediately if run_threat_analysis is false).",
+            "example": true
+          },
+          "automation_rule": {
+            "type": "string",
+            "description": "The name of the automation rule/playbook to execute in SOAR. Required if launch_automation is true.",
+            "example": "phishing_playbook_auto"
+          },
+          "finding_source": {
+            "type": "string",
+            "description": "Identifies where the finding originated. Use this to categorize manual findings by their source system or intake method. If not provided, defaults to \"ES Notable Event\".",
+            "example": "Threat - MS Graph Office 365"
+          },
+          "investigation_type": {
+            "type": "string",
+            "description": "The investigation type to assign to this finding. If not provided, the system default investigation type is used.",
+            "example": "default"
+          },
+          "additional_fields": {
+            "type": "array",
+            "description": "A list of name/value pairs for additional fields to include in the finding. Field names must be from the event_attributes list configured in log_review.conf (e.g. src, dest, user). If the field list cannot be fetched, validation is skipped. Fields are merged into the payload before processing. If a name conflicts with a top-level field, the top-level value takes precedence.",
+            "items": {
+              "type": "object",
+              "description": "A name and value pair describing an event field.",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "The name of the field.",
+                  "example": "src"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The value of the field.",
+                  "example": "192.168.1.100"
+                }
+              },
+              "example": {
+                "name": "src",
+                "value": "192.168.1.100"
+              }
+            },
+            "example": [
+              {
+                "name": "src",
+                "value": "192.168.1.100"
+              },
+              {
+                "name": "dest",
+                "value": "203.0.113.5"
+              },
+              {
+                "name": "user",
+                "value": "analyst_user"
+              }
+            ]
+          }
+        },
+        "example": {
+          "rule_title": "24 hour risk threshold exceeded for user=evilsender@update.defenceonline.net",
+          "rule_description": "Risk Threshold Exceeded for an object over a 24 hour period",
+          "security_domain": "threat",
+          "risk_object": "bad_user@splunk.com",
+          "risk_object_type": "user",
+          "risk_score": 100,
+          "status": "New",
+          "urgency": "informational",
+          "owner": "splunk_user",
+          "disposition": "disposition:6",
+          "drilldown_searches": [
+            {
+              "name": "drilldown_name",
+              "search": "index=_internal",
+              "earliest": "-1d@h",
+              "latest": "$info_max_time$"
+            }
+          ],
+          "drilldown_dashboards": [
+            {
+              "name": "My Dashboard",
+              "dashboard": "my_dashboard",
+              "tokens": [
+                "token1",
+                "token2"
+              ]
+            }
+          ],
+          "exclude_map_fields": [
+            "investigation_profiles",
+            "recommended_actions"
+          ],
+          "risk_event_count": 5,
+          "annotations": {
+            "mitre_attack": [
+              "T1078",
+              "T1537"
+            ]
+          },
+          "all_risk_objects": [
+            "bad_user@splunk.com",
+            "bad_user2@splunk.com"
+          ],
+          "sources": [
+            "source_1",
+            "source_2"
+          ],
+          "queue_id": "test-queue-triage",
+          "finding_source": "Threat - MS Graph Office 365",
+          "email": {
+            "headers": {
+              "id": "AAMkAGFmNTRhODA4LWIxMjQtNDJjYy05NDM2LWQ5MzY1MGFhMTk",
+              "to": "Matt <matt@splunk.com>",
+              "from": "Splunk Security <security@splunk.com>",
+              "subject": "Calling All Employees!",
+              "received": [
+                "BYAPR17MB3032.namprd17.prod.outlook.com"
+              ],
+              "x_mailer": "Zoho Mail",
+              "x_priority": "Medium"
+            },
+            "body": "It's that time of the year again - password reset day. Please follow the steps below...",
+            "urls": [
+              "http://malicious-site.com/phishing",
+              "http://evil.com/steal-credentials"
+            ],
+            "attachments": [
+              {
+                "filename": "invoice.pdf",
+                "filesize": 204800,
+                "url": "https://soar.splunk.com/vault/item/abc123"
+              },
+              {
+                "filename": "urgent_notice.docx",
+                "filesize": 51200,
+                "url": "https://soar.splunk.com/vault/item/att456"
+              }
+            ],
+            "raw_email_link": "https://soar.splunk.com/vault/item/raw-email-123",
+            "reporter": {
+              "from": "reporter@company.com",
+              "to": [
+                "security@company.com"
+              ],
+              "cc": [
+                "manager@company.com"
+              ],
+              "subject": "Suspicious email report",
+              "message_id": "<abc123@mail.example.com>",
+              "id": "AAMkAGFmNTRhODA4",
+              "body": "I received this suspicious email and wanted to report it to the security team.",
+              "date": "Mon, 10 Mar 2025 10:00:00 +0000"
+            }
+          },
+          "run_threat_analysis": true,
+          "launch_automation": true,
+          "automation_rule": "phishing_playbook_auto",
+          "investigation_type": "default"
+        }
+      },
+      "DrilldownSearch": {
+        "type": "object",
+        "description": "The drilldown search for the manual finding to be created.",
+        "required": [
+          "name",
+          "search",
+          "earliest",
+          "latest"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "drilldown_name"
+          },
+          "search": {
+            "type": "string",
+            "example": "drilldown_search"
+          },
+          "earliest": {
+            "type": "string",
+            "example": "-1d@h"
+          },
+          "latest": {
+            "type": "string",
+            "example": "$info_max_time$"
+          }
+        },
+        "example": {
+          "name": "drilldown_name",
+          "search": "index=_internal",
+          "earliest": "-1d@h",
+          "latest": "$info_max_time$"
+        }
+      },
+      "DrilldownDashboard": {
+        "type": "object",
+        "description": "A drilldown dashboard linked to the finding.",
+        "required": [
+          "name",
+          "dashboard"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Display name of the dashboard.",
+            "example": "My Dashboard"
+          },
+          "dashboard": {
+            "type": "string",
+            "description": "Dashboard identifier.",
+            "example": "my_dashboard"
+          },
+          "tokens": {
+            "type": "array",
+            "description": "Optional list of tokens to pass to the dashboard.",
+            "items": {
+              "type": "string",
+              "example": "token1"
+            },
+            "example": [
+              "token1",
+              "token2"
+            ]
+          }
+        },
+        "example": {
+          "name": "My Dashboard",
+          "dashboard": "my_dashboard",
+          "tokens": [
+            "token1",
+            "token2"
+          ]
+        }
+      },
+      "PhishingEmailObject": {
+        "type": "object",
+        "description": "Email object containing all email-related fields for phishing findings.",
+        "properties": {
+          "headers": {
+            "type": "object",
+            "description": "Parsed email headers from the phishing email. Free-form key/value pairs.",
+            "example": {
+              "id": "AAMkAGFm",
+              "to": "victim@company.com",
+              "from": "attacker@malicious.com",
+              "subject": "Urgent"
+            }
+          },
+          "body": {
+            "type": "string",
+            "description": "The body content of the phishing email. Truncated to 500 characters.",
+            "example": "Click here to verify your account immediately or your account will be suspended."
+          },
+          "urls": {
+            "type": "array",
+            "description": "List of URLs found in the email.",
+            "items": {
+              "type": "string",
+              "example": "http://malicious-site.com/phishing"
+            },
+            "example": [
+              "http://malicious-site.com/phishing"
+            ]
+          },
+          "attachments": {
+            "type": "array",
+            "description": "List of email attachment metadata objects.",
+            "items": {
+              "$ref": "#/components/schemas/EmailAttachment"
+            },
+            "example": [
+              {
+                "filename": "invoice.pdf",
+                "filesize": 204800,
+                "url": "https://soar.splunk.com/vault/item/abc123"
+              }
+            ]
+          },
+          "raw_email_link": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to the raw email file stored in SOAR vault. Required when run_threat_analysis is true.",
+            "example": "https://soar.splunk.com/vault/item/raw-email-123"
+          },
+          "reporter": {
+            "type": "object",
+            "description": "Information about the person who reported the phishing email.",
+            "required": [
+              "from"
+            ],
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "email",
+                "description": "Email address of the reporter.",
+                "example": "reporter@company.com"
+              },
+              "to": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "security@company.com"
+                },
+                "description": "Recipient(s) of the reported email.",
+                "example": [
+                  "security@company.com"
+                ]
+              },
+              "cc": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "manager@company.com"
+                },
+                "description": "CC recipient(s) of the reported email.",
+                "example": [
+                  "manager@company.com"
+                ]
+              },
+              "bcc": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "email",
+                  "example": "bcc@company.com"
+                },
+                "description": "BCC recipient(s) of the reported email.",
+                "example": []
+              },
+              "subject": {
+                "type": "string",
+                "description": "Subject of the reported email.",
+                "example": "Urgent: Verify your account"
+              },
+              "message_id": {
+                "type": "string",
+                "description": "Message-ID header of the reported email.",
+                "example": "<abc123@mail.example.com>"
+              },
+              "id": {
+                "type": "string",
+                "description": "Platform-specific identifier (e.g. O365 message ID).",
+                "example": "AAMkAGFmNTRhODA4LWIxMjQ"
+              },
+              "body": {
+                "type": "string",
+                "description": "Body of the reporter's message. Truncated to 500 characters.",
+                "example": "I received this suspicious email and wanted to report it."
+              },
+              "date": {
+                "type": "string",
+                "description": "Date the email was reported.",
+                "example": "Mon, 10 Mar 2025 10:00:00 +0000"
+              }
+            },
+            "example": {
+              "from": "reporter@company.com",
+              "to": [
+                "security@company.com"
+              ],
+              "subject": "Suspicious email report"
+            }
+          }
+        },
+        "example": {
+          "headers": {
+            "id": "AAMkAGFm",
+            "to": "victim@company.com",
+            "from": "attacker@malicious.com",
+            "subject": "Urgent"
+          },
+          "body": "Click here to verify your account.",
+          "urls": [
+            "http://malicious-site.com/phishing"
+          ],
+          "attachments": [
+            {
+              "filename": "invoice.pdf",
+              "filesize": 204800,
+              "url": "https://soar.splunk.com/vault/item/abc123"
+            }
+          ],
+          "raw_email_link": "https://soar.splunk.com/vault/item/raw-email-123",
+          "reporter": {
+            "from": "reporter@company.com",
+            "subject": "Suspicious email"
+          }
+        }
+      },
+      "EmailAttachment": {
+        "type": "object",
+        "description": "An email attachment metadata object.",
+        "required": [
+          "filename"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Name of the attachment file.",
+            "example": "invoice.pdf"
+          },
+          "filesize": {
+            "type": "integer",
+            "format": "int64",
+            "minimum": 0,
+            "maximum": 2147483647,
+            "description": "Size of the attachment file in bytes.",
+            "example": 204800
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to the attachment file (e.g. a SOAR vault link).",
+            "example": "https://soar.splunk.com/vault/item/abc123"
+          }
+        },
+        "example": {
+          "filename": "invoice.pdf",
+          "filesize": 204800,
+          "url": "https://soar.splunk.com/vault/item/abc123"
+        }
+      },
+      "CreateManualFindingResponse": {
+        "type": "object",
+        "description": "The response of the create manual finding api call.",
+        "required": [
+          "_time",
+          "finding_id"
+        ],
+        "properties": {
+          "_time": {
+            "description": "The time when this finding was created.",
+            "type": "string",
+            "example": "2025-02-25T14:27:28.000+00:00"
+          },
+          "finding_id": {
+            "description": "The source_event_id of the finding event written to the index.",
+            "type": "string",
+            "example": "b8684eb9-059d-4d30-8613-f809395feda8@@notable@@b8684eb9059d4d308613f809395feda8"
+          },
+          "risk_object": {
+            "description": "The risk object for which this finding was created.",
+            "type": "string",
+            "example": "bad_user@splunk.com"
+          },
+          "risk_object_type": {
+            "description": "The type of risk object from which this finding was created.",
+            "type": "string",
+            "enum": [
+              "system",
+              "user",
+              "other"
+            ],
+            "example": "user"
+          },
+          "risk_score": {
+            "description": "The risk score assigned to this risk object.",
+            "type": "string",
+            "example": "10.0"
+          },
+          "creator": {
+            "description": "The creator of this finding.",
+            "type": "string",
+            "example": "splunk_user"
+          },
+          "status": {
+            "description": "The status of the finding.",
+            "type": "string",
+            "example": "1"
+          },
+          "urgency": {
+            "description": "The urgency value for the finding. Valid choices are `informational`, `low`, `medium`, `high`, `critical`, or `unknown`.",
+            "type": "string",
+            "example": "informational"
+          },
+          "disposition": {
+            "description": "The disposition of the finding.",
+            "type": "string",
+            "example": "disposition:6"
+          },
+          "owner_realname": {
+            "description": "The display name associated with the owner of the finding.",
+            "type": "string",
+            "example": "Administrator"
+          },
+          "info_max_time": {
+            "description": "The maximum time of the finding.",
+            "type": "string",
+            "example": "2025-02-25T14:27:28.000+00:00"
+          },
+          "drilldown_searches": {
+            "type": "array",
+            "description": "The drilldown searches for the finding.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "example": {
+                "name": "drilldown_name",
+                "search": "index=_internal",
+                "earliest": "-1d@h",
+                "latest": "$info_max_time$"
+              }
+            },
+            "example": [
+              {
+                "name": "drilldown_name",
+                "search": "index=_internal",
+                "earliest": "-1d@h",
+                "latest": "$info_max_time$"
+              }
+            ]
+          },
+          "drilldown_dashboards": {
+            "type": "array",
+            "description": "The drilldown dashboards for the finding.",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "example": {
+                "name": "dashboard_name",
+                "dashboard": "my_dashboard",
+                "tokens": [
+                  "token1",
+                  "token2"
+                ]
+              }
+            },
+            "example": [
+              {
+                "name": "dashboard_name",
+                "dashboard": "my_dashboard",
+                "tokens": [
+                  "token1",
+                  "token2"
+                ]
+              }
+            ]
+          },
+          "queue_id": {
+            "type": "string",
+            "description": "The queue id of the finding.",
+            "example": "test-queue-triage"
+          },
+          "finding_source": {
+            "type": "string",
+            "description": "Identifies where the finding originated. Categorizes manual findings by their source system or intake method.",
+            "example": "Threat - MS Graph Office 365"
+          },
+          "investigation_type": {
+            "type": "string",
+            "description": "The investigation type assigned to this finding.",
+            "example": "default"
+          },
+          "run_threat_analysis": {
+            "type": "boolean",
+            "description": "Whether to run threat analysis on this phishing finding.",
+            "example": true
+          },
+          "launch_automation": {
+            "type": "boolean",
+            "description": "Whether to launch automation workflows for this phishing finding.",
+            "example": true
+          },
+          "automation_rule": {
+            "type": "string",
+            "description": "The name of the automation rule/playbook to execute for this phishing finding.",
+            "example": "phishing_investigation_playbook"
+          },
+          "email": {
+            "type": "object",
+            "additionalProperties": true,
+            "example": {
+              "headers": {
+                "id": "AAMkAGFm",
+                "from": "attacker@evil.com"
+              },
+              "body": "Click here.",
+              "urls": [
+                "http://malicious-site.com"
+              ]
+            }
+          }
+        },
+        "example": {
+          "_time": "2025-02-25T14:27:28.000+00:00",
+          "finding_id": "b8684eb9-059d-4d30-8613-f809395feda8@@notable@@b8684eb9059d4d308613f809395feda8",
+          "risk_object": "bad_user@splunk.com",
+          "risk_object_type": "user",
+          "risk_score": "100",
+          "search_name": "Risk - 24 Hour Risk Threshold Exceeded - Rule",
+          "severities": [
+            "medium"
+          ],
+          "severity": "medium",
+          "status": "1",
+          "status_default": "true",
+          "status_description": "Finding is recent and not reviewed.",
+          "status_label": "New",
+          "urgency": "informational",
+          "owner": "splunk_user",
+          "owner_realname": "Administrator",
+          "drilldown_searches": [
+            {
+              "name": "drilldown_name",
+              "search": "index=_internal",
+              "earliest": "-1d@h",
+              "latest": "$info_max_time$"
+            }
+          ],
+          "drilldown_dashboards": [
+            {
+              "name": "My Dashboard",
+              "dashboard": "my_dashboard",
+              "tokens": [
+                "token1",
+                "token2"
+              ]
+            }
+          ],
+          "queue_id": "test-queue-triage",
+          "finding_source": "Threat - MS Graph Office 365",
+          "run_threat_analysis": true,
+          "launch_automation": true,
+          "automation_rule": "phishing_investigation_playbook",
+          "email": {
+            "headers": {
+              "id": "AAMkAGFmNTRhODA4LWIxMjQtNDJjYy05NDM2LWQ5MzY1MGFhMTk",
+              "to": [
+                "victim@company.com"
+              ],
+              "from": "attacker@malicious.com",
+              "subject": "Urgent: Verify Your Account Now!",
+              "received": [
+                "mail.server1.com",
+                "mail.server2.com"
+              ],
+              "x_mailer": "Unknown Mailer",
+              "x_priority": "High"
+            },
+            "body": "Click here to verify your account immediately or your account will be suspended.",
+            "urls": [
+              "http://malicious-site.com/phishing",
+              "http://evil.com/steal-credentials"
+            ],
+            "attachments": [
+              {
+                "filename": "invoice.pdf",
+                "filesize": 204800,
+                "url": "https://soar.splunk.com/vault/item/abc123"
+              },
+              {
+                "filename": "urgent_notice.docx",
+                "filesize": 51200,
+                "url": "https://soar.splunk.com/vault/item/att456"
+              }
+            ],
+            "raw_email_link": "https://soar.splunk.com/vault/item/raw-email-123",
+            "reporter": {
+              "from": "reporter@company.com",
+              "to": [
+                "security@company.com"
+              ],
+              "cc": [
+                "manager@company.com"
+              ],
+              "subject": "Suspicious email report",
+              "message_id": "<abc123@mail.example.com>",
+              "id": "AAMkAGFmNTRhODA4",
+              "body": "I received this suspicious email and wanted to report it to the security team.",
+              "date": "Mon, 10 Mar 2025 10:00:00 +0000"
+            }
+          }
+        }
+      }
+    }
+  }
+}
