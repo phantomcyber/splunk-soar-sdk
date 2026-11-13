@@ -152,11 +152,6 @@ def test_complete_payload_matches_openapi(es_schema):
         {"drilldown_searches": [{"name": "Incomplete"}]},
         {
             "drilldown_dashboards": [
-                {"name": "Classic", "app": "search", "dashboard_id": "id"}
-            ]
-        },
-        {
-            "drilldown_dashboards": [
                 {
                     "name": "Mail",
                     "dashboard": "mail",
@@ -202,7 +197,13 @@ def test_unencodable_item_does_not_abort_the_batch(
 def test_existing_api_adapts_legacy_payload_without_mutation(
     app_with_action, monkeypatch, respx_mock, es_schema, operation
 ):
-    from soar_sdk.models.finding import Finding, FindingEmail, FindingEmailReporter
+    from soar_sdk.models.finding import (
+        DrilldownDashboard,
+        DrilldownDashboardToken,
+        Finding,
+        FindingEmail,
+        FindingEmailReporter,
+    )
 
     finding = Finding(
         **MINIMAL,
@@ -215,6 +216,17 @@ def test_existing_api_adapts_legacy_payload_without_mutation(
             )
         ),
         additional_fields={"src": "192.0.2.1"},
+        drilldown_dashboards=[
+            DrilldownDashboard(
+                app="search",
+                dashboard_id="mail_dashboard",
+                name="Mail",
+                tokens=[
+                    DrilldownDashboardToken(name="form.email", value="$email$"),
+                    DrilldownDashboardToken(name="form.filter", value="a=b&c"),
+                ],
+            )
+        ],
     )
     payload = finding.to_dict()
     original = json.loads(json.dumps(payload))
@@ -235,6 +247,13 @@ def test_existing_api_adapts_legacy_payload_without_mutation(
             original["email"]["reporter"][field]
         ]
     assert sent["additional_fields"] == [{"name": "src", "value": "192.0.2.1"}]
+    assert sent["drilldown_dashboards"] == [
+        {
+            "name": "Mail",
+            "dashboard": "search/mail_dashboard",
+            "tokens": ["form.email=$email$", "form.filter=a=b&c"],
+        }
+    ]
     assert payload == original
     assert finding.to_dict() == original
 
@@ -253,6 +272,83 @@ def test_empty_legacy_additional_fields_and_email_remain_valid(respx_mock):
     }
 
 
+@pytest.mark.parametrize("tokens", [None, []])
+def test_legacy_dashboard_optional_tokens(respx_mock, tokens):
+    payload = {
+        **MINIMAL,
+        "drilldown_dashboards": [
+            {
+                "app": "security",
+                "dashboard_id": "mail",
+                "name": "Mail",
+                "tokens": tokens,
+            }
+        ],
+    }
+    original = json.loads(json.dumps(payload))
+    route = respx_mock.post(ENDPOINT).respond(201, json=CREATED)
+    _create_es_finding(payload, base_url=BASE_URL, token=TOKEN)
+    expected = {"name": "Mail", "dashboard": "security/mail"}
+    if tokens is not None:
+        expected["tokens"] = tokens
+    assert json.loads(route.calls[0].request.content)["drilldown_dashboards"] == [
+        expected
+    ]
+    assert payload == original
+
+
+@pytest.mark.parametrize(
+    "dashboards",
+    [
+        [],
+        [
+            {
+                "name": "Mail",
+                "dashboard": "security/mail",
+                "tokens": ["form.user=$user$"],
+            }
+        ],
+    ],
+)
+def test_es_dashboard_payloads_are_not_rewritten(respx_mock, dashboards):
+    payload = {**MINIMAL, "drilldown_dashboards": dashboards}
+    original = json.loads(json.dumps(payload))
+    route = respx_mock.post(ENDPOINT).respond(201, json=CREATED)
+    _create_es_finding(payload, base_url=BASE_URL, token=TOKEN)
+    assert json.loads(route.calls[0].request.content) == original
+    assert payload == original
+
+
+@pytest.mark.parametrize(
+    "dashboard",
+    [
+        None,
+        {"app": 1, "dashboard_id": "mail", "name": "Mail"},
+        {"app": "search", "dashboard_id": 1, "name": "Mail"},
+        {"app": "search", "name": "Mail"},
+        *[
+            {"app": "search", "dashboard_id": "mail", "name": "Mail", "tokens": tokens}
+            for tokens in (
+                {},
+                [None],
+                [{"name": "x"}],
+                [{"name": 1, "value": "y"}],
+                [{"name": "x", "value": 1}],
+                [{"name": "x", "value": "y", "unexpected": "z"}],
+            )
+        ],
+        {"app": "search", "dashboard_id": "mail", "name": "Mail", "unexpected": "x"},
+    ],
+)
+def test_malformed_legacy_dashboards_fail_without_http(respx_mock, dashboard):
+    payload = {**MINIMAL, "drilldown_dashboards": [dashboard]}
+    original = json.loads(json.dumps(payload))
+    with pytest.raises(FindingValidationError):
+        _create_es_finding(payload, base_url=BASE_URL, token=TOKEN)
+    assert not respx_mock.calls
+    assert payload == original
+
+
 def test_openapi_model_stays_strict_for_legacy_shapes():
     with pytest.raises(ValidationError):
         CreateFindingRequest(
@@ -263,6 +359,13 @@ def test_openapi_model_stays_strict_for_legacy_shapes():
         )
     with pytest.raises(ValidationError):
         CreateFindingRequest(**MINIMAL, additional_fields={"src": "host"})
+    with pytest.raises(ValidationError):
+        CreateFindingRequest(
+            **MINIMAL,
+            drilldown_dashboards=[
+                {"name": "Classic", "app": "search", "dashboard_id": "id"}
+            ],
+        )
 
 
 @pytest.mark.parametrize("operation", ["create_finding", "create_findings_bulk"])
@@ -275,6 +378,14 @@ def test_classic_proxy_receives_original_legacy_payload(
             "reporter": {"from": "user@example.com", "to": "security@example.com"}
         },
         "additional_fields": {"src": "host"},
+        "drilldown_dashboards": [
+            {
+                "app": "search",
+                "dashboard_id": "mail_dashboard",
+                "name": "Mail",
+                "tokens": [{"name": "form.email", "value": "$email$"}],
+            }
+        ],
     }
     original = json.loads(json.dumps(payload))
     post = mocker.patch.object(app_with_action.soar_client, "post")
