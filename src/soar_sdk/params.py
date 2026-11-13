@@ -11,7 +11,7 @@ __lazy_modules__ = {
 
 from typing import Any, ClassVar, NotRequired
 
-from pydantic import Field, model_validator
+from pydantic import Field, PrivateAttr, SecretStr, model_validator
 from pydantic.main import BaseModel
 from pydantic_core import PydanticUndefined
 from typing_extensions import TypedDict
@@ -253,6 +253,19 @@ class OnPollParams(Params):
 
 class OnESPollParams(Params):
     """Canonical parameters for the special 'on es poll' action."""
+
+    _base_url: str | None = PrivateAttr(default=None)
+    _access_token: SecretStr | None = PrivateAttr(default=None)
+
+    @property
+    def base_url(self) -> str | None:
+        """The execution's ES URL, absent in classic mode and excluded from dumps."""
+        return self._base_url
+
+    @property
+    def access_token(self) -> SecretStr | None:
+        """The execution's ES token; never an action parameter or serialized field."""
+        return self._access_token
 
     start_time: int = Param(
         description="Start of time range, in epoch time (milliseconds).",

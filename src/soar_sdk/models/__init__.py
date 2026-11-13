@@ -3,6 +3,7 @@ __lazy_modules__ = {
     "soar_sdk.models.attachment_input",
     "soar_sdk.models.attachment_upload",
     "soar_sdk.models.container",
+    "soar_sdk.models.es_finding",
     "soar_sdk.models.finding",
     "soar_sdk.models.vault_attachment",
 }
@@ -17,6 +18,7 @@ from .attachment_upload import (
     SubjectAttachmentAssociation,
 )
 from .container import Container
+from .es_finding import CreateFindingRequest, CreateFindingResponse, FindingCreateResult
 from .finding import (
     DrilldownDashboard,
     DrilldownDashboardToken,
@@ -36,11 +38,14 @@ __all__ = [
     "AttachmentUploadResult",
     "AttachmentUploadTarget",
     "Container",
+    "CreateFindingRequest",
+    "CreateFindingResponse",
     "DrilldownDashboard",
     "DrilldownDashboardToken",
     "DrilldownSearch",
     "Finding",
     "FindingAttachment",
+    "FindingCreateResult",
     "FindingEmailAttachment",
     "FindingEmailReporter",
     "SubjectAttachmentAssociation",

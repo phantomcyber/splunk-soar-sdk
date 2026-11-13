@@ -8,7 +8,9 @@ __lazy_modules__ = {
     "soar_sdk.apis.artifact",
     "soar_sdk.apis.attachments",
     "soar_sdk.apis.container",
+    "soar_sdk.apis._es_findings",
     "soar_sdk.apis.vault",
+    "soar_sdk.exceptions",
     "typing",
 }
 
@@ -17,14 +19,20 @@ from collections.abc import AsyncIterable, Iterable, Mapping
 from typing import Any, Generic, TypeVar
 
 import httpx
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 from pydantic.dataclasses import dataclass
 
 from soar_sdk.action_results import ActionOutput
+from soar_sdk.apis._es_findings import (
+    _create_es_finding,
+    _create_es_findings_bulk,
+    _get_runtime_es_context,
+)
 from soar_sdk.apis.artifact import Artifact
 from soar_sdk.apis.attachments import Attachments
 from soar_sdk.apis.container import Container
 from soar_sdk.apis.vault import Vault
+from soar_sdk.exceptions import FindingConfigurationError
 
 JSONType = dict[str, Any] | list[Any] | str | int | float | bool | None
 SummaryType = TypeVar("SummaryType", bound=ActionOutput)
@@ -102,14 +110,35 @@ class SOARClient(Generic[SummaryType]):
         """Return the current Asset ID passed in the Connector Run Action JSON."""
         pass
 
+    def _get_es_finding_context(self) -> tuple[str, str | SecretStr] | None:
+        """Resolve the current execution's ES server URL and token, or classic mode.
+
+        By default this reads the ingestion bundle's lazy es_poll_api bridge.
+        Runtime adapters may override it to read execution-scoped action data.
+        None selects the classic SOAR proxy. An adapter handling ES ingestion
+        must raise FindingConfigurationError when credentials are unavailable,
+        rather than returning None and silently falling back to the proxy.
+        The SDK does not cache the returned credentials or invent action fields.
+        """
+        return _get_runtime_es_context()
+
     MAX_BULK_FINDINGS = 25
 
     def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
-        """Create a single finding in ES via the SOAR proxy.
+        """Create one finding using the execution's configured ES transport.
 
         The ``finding`` argument should be the serialized form of a
         :class:`~soar_sdk.models.finding.Finding` model — use
-        :meth:`~soar_sdk.models.finding.Finding.to_dict` to produce it.
+        :meth:`~soar_sdk.models.finding.Finding.to_dict` to produce it. Direct ES
+        runtimes also accept the serialized public OpenAPI model
+        :class:`~soar_sdk.models.es_finding.CreateFindingRequest`. Legacy reporter
+        recipient strings and additional-field mappings are adapted internally;
+        the classic proxy payload is unchanged.
+
+        Returns the response dictionary, including ``finding_id`` and ``_time``.
+        Runtime adapters supply ES URL/token internally; connectors do not pass
+        credentials. Classic runtimes retain the SOAR proxy behavior. Direct ES
+        calls raise FindingAPIError subclasses and never retry POST requests.
 
         Example::
 
@@ -118,6 +147,10 @@ class SOARClient(Generic[SummaryType]):
             finding = Finding(rule_title="Suspicious Login", security_domain="identity")
             response = soar.create_finding(finding.to_dict())
         """
+        es_context = self._get_es_finding_context()
+        if es_context is not None:
+            base_url, token = es_context
+            return _create_es_finding(finding, base_url=base_url, token=token)
         response = self.post(
             "/rest/enterprise_security/findings", json=finding, timeout=30.0
         )
@@ -128,7 +161,7 @@ class SOARClient(Generic[SummaryType]):
         findings: list[dict[str, Any]],
         container_ids: list[int | None] | None = None,
     ) -> dict[str, Any]:
-        """Create findings in ES via the SOAR bulk endpoint.
+        """Create findings using the execution's configured ES transport.
 
         Accepts up to 25 findings per call. When ``container_ids`` is provided,
         the backend links pre-existing containers to the created findings
@@ -137,7 +170,27 @@ class SOARClient(Generic[SummaryType]):
         Returns the bulk response containing ``status``, ``created``,
         ``failed``, ``findings`` (list of IDs), ``container_ids``
         (list of SOAR container IDs), and ``errors``.
+
+        Direct ES runtimes issue one POST per finding and additionally return
+        ordered ``results`` with input indexes, IDs or safe failure details.
+        ES bulk creation can reorder successful IDs without returning their input
+        indexes. Separate POSTs preserve the finding-to-attachment mapping until
+        ES provides indexed successes or guarantees the successful ID order.
+        No SOAR containers are created; ``container_ids`` input is unsupported
+        in direct ES mode. Runtime adapters supply credentials internally.
         """
+        if len(findings) > self.MAX_BULK_FINDINGS:
+            raise ValueError(
+                f"Maximum {self.MAX_BULK_FINDINGS} findings per request, got {len(findings)}"
+            )
+        es_context = self._get_es_finding_context()
+        if es_context is not None:
+            if container_ids is not None:
+                raise FindingConfigurationError(
+                    "SOAR container IDs are unsupported for direct ES finding creation."
+                )
+            base_url, token = es_context
+            return _create_es_findings_bulk(findings, base_url=base_url, token=token)
         if not findings:
             return {
                 "status": "success",
@@ -147,11 +200,6 @@ class SOARClient(Generic[SummaryType]):
                 "container_ids": [],
                 "errors": [],
             }
-
-        if len(findings) > self.MAX_BULK_FINDINGS:
-            raise ValueError(
-                f"Maximum {self.MAX_BULK_FINDINGS} findings per request, got {len(findings)}"
-            )
 
         endpoint = "/rest/enterprise_security/findings/bulk_create"
         timeout = max(30.0, len(findings) * 5.0)
