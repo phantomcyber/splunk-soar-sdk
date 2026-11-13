@@ -262,13 +262,39 @@ Request targets for a batch of 1 through 20 files, using a UUID idempotency key.
 Reuse the key with the same ordered file names when retrying that batch's target
 lookup. Changing the file names with the same key causes a service conflict.
 The returned targets contain stable attachment IDs, ordered multipart form fields,
-expiration times, and maximum file sizes. These SDK methods reserve records and
-queue associations; the caller uploads the bytes to each target using an upload
-implementation. Send the ordered ``form_fields`` (preserving duplicate names) and
-a multipart ``file`` part to ``upload_url`` before ``expires_at``, respecting
-``max_size_bytes``. Use a separate transport without SOAR authentication, cookies,
-or redirects. If an upload fails, handle that failure before creating the finding
-or associating that attachment; these methods do not upload or retry files.
+expiration times, and maximum file sizes. Call
+``soar.attachments.upload_file(local_path, target)`` for each downloaded file.
+It streams a multipart POST with the original ordered form fields (including
+repeated names), followed by the file part. It uses the target's file name,
+expiry and size limit. Each successful response (HTTP 200, 201 or 204) returns an
+``AttachmentUploadResult`` containing ``attachment_id``, ``file_name`` and
+``size_bytes``. The ID is the existing target's identity; upload does not create
+another attachment record or associate it with a finding.
+
+For parallel uploads, call ``soar.attachments.upload_files([(path, target), ...])``.
+It uses at most four concurrent uploads by default; ``max_workers=1`` makes
+uploads sequential, and any positive integer can override the limit. The SDK
+starts no more workers than there are files. Each file still uses its own S3
+POST; upload targets are consumed, not requested again. No retry is attempted.
+The method waits for all uploads and returns ``AttachmentUploadOutcome`` objects
+in input order, preserving the file-to-attachment mapping even if completion
+order differs. Each outcome contains ``attachment_id``, ``file_name`` and
+``success``. Successful outcomes include ``size_bytes``; failures include a safe
+``error_code``, ``message`` and, when available, ``status_code``.
+
+Invalid pair shapes, repeated attachment IDs and invalid worker counts reject
+the whole batch with ``ActionFailure`` before any upload. An empty batch returns
+``[]``. Individual upload failures are reported in their outcomes and do not
+stop other files. Reserve targets once for the batch through AR-2060 before
+calling ``upload_files``; the existing 20-target reservation limit still applies.
+
+Uploads use isolated HTTPS connections without SOAR authentication,
+cookies, redirects or retries. HTTPS certificates are verified. The socket
+timeout defaults to 30 seconds and can be overridden with a positive finite
+``timeout`` value. It is not an overall batch deadline. Signed URLs, form values,
+file contents and server response bodies are not logged or included in upload
+results or exceptions. The caller owns the downloaded files and must delete them
+in a ``finally`` block, whether polling succeeds or fails.
 
 Upload URLs and form field values are credentials, stored as
 :class:`~pydantic.SecretStr`. ``repr``, ``model_dump`` and ``model_dump_json``
@@ -287,21 +313,30 @@ Once uploads succeed and ES returns the finding IDs, queue their associations:
        ["email.eml", "evidence.pdf", "second.eml"], batch_id
    )
 
-   # Upload each file to target.upload_url.get_secret_value() with its form
-   # fields, then create the ES findings.
-   # After ES returns first_finding_id and second_finding_id:
-   message_id = soar.attachments.associate_subject_attachments(
-       [
-           {
-               "subject_id": first_finding_id,
-               "attachment_ids": [targets[0].attachment_id, targets[1].attachment_id],
-           },
-           {
-               "subject_id": second_finding_id,
-               "attachment_ids": [targets[2].attachment_id],
-           },
-       ]
+   # Keep local_paths in the same order as the names requested above.
+   successful_ids = {"first": [], "second": []}
+   owners = ["first", "first", "second"]
+   outcomes = soar.attachments.upload_files(
+       list(zip(local_paths, targets, strict=True)), max_workers=4
    )
+   for uploaded, owner in zip(outcomes, owners, strict=True):
+       if not uploaded.success:
+           # Record uploaded.attachment_id and uploaded.error_code; continue.
+           continue
+       successful_ids[owner].append(uploaded.attachment_id)
+
+   # Create each finding using only its successfully uploaded attachments.
+   # Link only successful uploads belonging to findings that ES created.
+   # After ES returns first_finding_id and second_finding_id:
+   # Include only the findings whose creation succeeded.
+   created_findings = {"first": first_finding_id, "second": second_finding_id}
+   associations = [
+       {"subject_id": finding_id, "attachment_ids": successful_ids[owner]}
+       for owner, finding_id in created_findings.items()
+       if successful_ids[owner]
+   ]
+   if associations:
+       message_id = soar.attachments.associate_subject_attachments(associations)
 
 The association response confirms durable enqueueing. Timeline processes the
 association asynchronously. Subject IDs are opaque ES finding IDs and need not
@@ -333,6 +368,34 @@ Error behavior:
   idempotency does not extend to finding association: a queued association does
   not establish that a repeat association request will succeed.
 
+Upload failures raise :class:`~soar_sdk.exceptions.AttachmentUploadError`, a
+subclass of ``AttachmentApiError``. Inspect ``error_code``:
+
+- ``validation``: invalid inputs or a file exceeding the target size limit.
+- ``expired``: the target expired before upload started.
+- ``file``: the local file could not be opened or inspected.
+- ``authorization``: HTTP 401 or 403 (including expired credentials rejected by S3).
+- ``rejected``: another HTTP 4xx response.
+- ``unavailable``: network failure, interrupted file transfer, or HTTP 5xx.
+- ``timeout``: a socket operation timed out.
+- ``response``: an unexpected status, including a redirect.
+
+The error carries ``attachment_id`` (absent for an invalid target) and
+``status_code`` (absent without an HTTP response). It retains no original
+exception chain. Catch errors per attachment: exclude failed uploads from finding
+references and linking. A timeout may occur after S3 accepted the bytes; the SDK
+does not automatically retry or reserve a new ID. Linking remains the separate
+AR-2060 bundle → orchestrator → SQS → Timeline operation.
+
+Upload support requires an SDK release containing AR-2060 and AR-2063, on Python
+3.13 or 3.15. It consumes the AR-2060 multipart POST target contract; it does not
+depend on an ES server version. ES finding compatibility is governed separately
+by the finding creation API. This feature is unreleased in the 7.1.3 checkout.
+
+.. autoclass:: soar_sdk.models.attachment_upload.AttachmentUploadOutcome
+
+.. autoclass:: soar_sdk.models.attachment_upload.AttachmentUploadResult
+
 These methods provide the attachment capability independently of automatic
 polling. The ``@app.on_es_poll()`` decorator still uses its classic SOAR path.
 Automatic runtime selection, the ES finding/reference schema, and checkpoint
@@ -340,7 +403,7 @@ and retry behavior across finding creation and queued association require the
 corresponding integration contracts before that path can be connected.
 
 .. autoclass:: soar_sdk.apis.attachments.Attachments
-   :members: get_upload_targets, associate_subject_attachments
+   :members: get_upload_targets, upload_file, upload_files, associate_subject_attachments
 
 .. autoclass:: soar_sdk.models.attachment_upload.AttachmentUploadTarget
 
