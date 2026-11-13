@@ -249,6 +249,13 @@ optional ``tokens`` is a list of strings. These are the ES wire models, rather
 than the classic SOAR dashboard model's ``app``, ``dashboard_id`` and name/value
 token objects.
 
+Existing ``Finding`` dashboard objects are adapted on the direct ES path:
+``app="search", dashboard_id="mail"`` becomes ``dashboard="search/mail"``,
+and each ``{"name": "form.user", "value": "$user$"}`` token becomes
+``"form.user=$user$"``. Token order and values are preserved. Already formatted
+ES dashboards and the caller's objects are unchanged; classic SOAR requests
+retain their original dashboard shape.
+
 ``PhishingEmail`` has optional ``headers`` (free-form object), ``body`` (string),
 ``urls`` (list of strings), ``attachments`` (list of ``EmailAttachment``),
 ``raw_email_link`` (URI string) and ``reporter`` (``EmailReporter``).

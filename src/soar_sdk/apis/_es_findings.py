@@ -61,6 +61,32 @@ def _get_runtime_es_context() -> tuple[str, str | SecretStr] | None:
     return cast(tuple[str, str | SecretStr] | None, context)
 
 
+def _normalize_legacy_dashboard(dashboard: Any) -> Any:  # noqa: ANN401
+    """Preserve the app-qualified dashboard identity and token assignments."""
+    if not isinstance(dashboard, Mapping) or "dashboard" in dashboard:
+        return dashboard
+    if not isinstance(dashboard.get("app"), str) or not isinstance(
+        dashboard.get("dashboard_id"), str
+    ):
+        return dashboard
+    normalized = dict(dashboard)
+    normalized["dashboard"] = (
+        f"{normalized.pop('app')}/{normalized.pop('dashboard_id')}"
+    )
+    tokens = normalized.get("tokens")
+    if isinstance(tokens, list):
+        normalized["tokens"] = [
+            f"{token['name']}={token['value']}"
+            if isinstance(token, Mapping)
+            and set(token) == {"name", "value"}
+            and isinstance(token["name"], str)
+            and isinstance(token["value"], str)
+            else token
+            for token in tokens
+        ]
+    return normalized
+
+
 def _normalize_legacy_finding(
     finding: CreateFindingRequest | Mapping[str, Any],
 ) -> CreateFindingRequest | Mapping[str, Any]:
@@ -68,6 +94,11 @@ def _normalize_legacy_finding(
     if not isinstance(finding, Mapping):
         return finding
     payload = dict(finding)
+    dashboards = payload.get("drilldown_dashboards")
+    if isinstance(dashboards, list):
+        payload["drilldown_dashboards"] = [
+            _normalize_legacy_dashboard(dashboard) for dashboard in dashboards
+        ]
     additional_fields = payload.get("additional_fields")
     if isinstance(additional_fields, Mapping):
         payload["additional_fields"] = [
@@ -95,8 +126,8 @@ def _create_es_finding(
     """Create one finding and return the validated ES response dictionary.
 
     Args:
-        finding: ES request model or serialized Finding. Legacy reporter
-            recipients and additional fields are adapted to the ES wire format.
+        finding: ES request model or serialized Finding. Legacy dashboards,
+            reporter recipients and additional fields are adapted to ES wire format.
         base_url: ES stack origin or OpenAPI server URL, including its namespace
             prefix when already present. The SDK supplies the namespace for an origin.
         token: Execution-scoped ES bearer token from automationOrchestrator.
