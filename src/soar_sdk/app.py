@@ -244,6 +244,29 @@ class App:
             raw_config = raw_input.get("config")
             if isinstance(raw_config, dict):
                 self._es_ingest_config = raw_config.pop("ingest", None) or {}
+            # Ingestion runtimes supply saved ES settings as polling inputs.
+            # Invocation inputs take precedence over asset ingest defaults.
+            parameters = raw_input.get("parameters")
+            if (
+                isinstance(parameters, list)
+                and parameters
+                and isinstance(parameters[0], dict)
+            ):
+                self._es_ingest_config.update(
+                    {
+                        key: parameters[0][key]
+                        for key in (
+                            "es_security_domain",
+                            "es_urgency",
+                            "es_investigation_type",
+                            "es_drilldown_searches",
+                            "es_drilldown_dashboards",
+                            "es_run_threat_analysis",
+                            "es_launch_automation",
+                        )
+                        if key in parameters[0]
+                    }
+                )
         input_data = InputSpecification.model_validate(raw_input)
         self._raw_asset_config = input_data.config.get_asset_config()
 
