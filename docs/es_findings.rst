@@ -83,6 +83,11 @@ classic mode retains its existing container-linking behavior.
 Runtime Integration
 -------------------
 
+Direct polling accepts saved ES ingest settings (``es_security_domain``,
+``es_urgency``, ``es_investigation_type``, drilldowns and analysis/automation flags)
+from polling parameters. These override matching ``config.ingest`` defaults.
+Classic polling and ordinary actions retain their existing input handling.
+
 The protected ``SOARClient._get_es_finding_context()`` hook lazily calls the
 ingestion bundle's ``es_poll_api.get_es_context()`` for the current execution's
 ``(base_url, token)``. It is called per single operation or once per bulk

@@ -45,7 +45,15 @@ def outcome(app):
     return app.actions_manager.add_result.call_args.args[0]
 
 
-@pytest.mark.parametrize("raw", [None, {"identifier": "on_es_poll", "config": None}])
+@pytest.mark.parametrize(
+    "raw",
+    [
+        None,
+        {"identifier": "on_es_poll", "config": None},
+        {"identifier": "on_es_poll", "config": None, "parameters": []},
+        {"identifier": "on_es_poll", "config": None, "parameters": [None]},
+    ],
+)
 def test_app_handle_retains_input_validation(direct_app, raw):
     with pytest.raises(ValidationError):
         direct_app.handle(json.dumps(raw))
@@ -77,6 +85,47 @@ def test_app_handle_preserves_es_settings_and_returns_ids(
     assert json.loads(route.calls[0].request.content)["urgency"] == "high"
     assert TOKEN not in returned
     assert "access_token" not in returned
+    assert app._raw_asset_config.get("ingest") is None
+
+
+@pytest.mark.parametrize("asset_defaults", [False, True])
+def test_polling_parameters_supply_es_settings(
+    direct_app, simple_action_input, respx_mock, mocker, asset_defaults
+):
+    app = direct_app
+    mocker.stop(app.actions_manager.add_result)
+    route = respx_mock.post(ENDPOINT).respond(
+        201, json={"_time": "now", "finding_id": "polling-settings"}
+    )
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="polling settings")
+
+    settings = {
+        "es_security_domain": "threat",
+        "es_urgency": "high",
+        "es_investigation_type": "default",
+        "es_drilldown_searches": [],
+        "es_drilldown_dashboards": [],
+        "es_run_threat_analysis": False,
+        "es_launch_automation": False,
+    }
+    raw = simple_action_input.model_dump()
+    raw.update(identifier="on_es_poll", action="on es poll", parameters=[settings])
+    if asset_defaults:
+        raw["config"]["ingest"] = {
+            "es_security_domain": "endpoint",
+            "es_run_threat_analysis": True,
+            "es_launch_automation": True,
+        }
+    app.handle(json.dumps(raw))
+    result = app.actions_manager.get_action_results()[-1]
+    assert result.get_status()
+    payload = json.loads(route.calls[0].request.content)
+    assert all(
+        payload[key.removeprefix("es_")] == value for key, value in settings.items()
+    )
     assert app._raw_asset_config.get("ingest") is None
 
 
