@@ -1,6 +1,7 @@
 __lazy_modules__ = {
     "asyncio",
     "collections.abc",
+    "copy",
     "functools",
     "inspect",
     "pydantic",
@@ -22,6 +23,7 @@ import asyncio
 import inspect
 import uuid
 from collections.abc import Callable
+from copy import deepcopy
 from functools import wraps
 from typing import TYPE_CHECKING, Any, get_args
 
@@ -49,6 +51,37 @@ if TYPE_CHECKING:
 
 ESPollingYieldType = Finding
 ESPollingSendType = int | None
+
+
+def _successful_prefix_length(response: dict, batch_size: int) -> int:
+    """Return the confirmed successful prefix, or zero for ambiguous outcomes."""
+    if not isinstance(response, dict):
+        return 0
+    created = response.get("created")
+    failed = response.get("failed")
+    errors = response.get("errors")
+    if (
+        type(created) is not int
+        or type(failed) is not int
+        or created < 0
+        or failed < 0
+        or created + failed != batch_size
+        or not isinstance(errors, list)
+    ):
+        return 0
+    indices = []
+    for error in errors:
+        if not isinstance(error, dict):
+            return 0
+        index = error.get("index")
+        if type(index) is not int or not 0 <= index < batch_size:
+            return 0
+        indices.append(index)
+    if len(set(indices)) != failed or len(indices) != failed:
+        return 0
+    if failed:
+        return min(indices)
+    return batch_size if response.get("status") == "success" else 0
 
 
 def _pre_create_containers(
@@ -176,6 +209,7 @@ class OnESPollDecorator:
         The generator should yield a `Finding`. Upon receiving an event from the generator, the SDK will submit the Finding to Splunk Enterprise Security and create a linked SOAR Container.
         The generator should accept a "send type" of `int | None`. When a Finding is successfully delivered to ES and linked to a Container, the SDK will send the Container ID back into the generator. The Container is useful for storing large attachments included with the Finding.
         If the Finding cannot be successfully delivered to ES, the SDK will stop polling and return a failed result for the action run.
+        Record resumable ingest state immediately before each yield, without advancing past unyielded findings. On a partial bulk failure, only state through the successful prefix is committed; findings from the first failure onward may be delivered again. State written only after a yield may be retried conservatively.
         """
         if self.app.actions_manager.get_action("on_es_poll"):
             raise TypeError(
@@ -341,6 +375,11 @@ class OnESPollDecorator:
 
                 if ingest_state is not None:
                     ingest_state.begin_transaction()
+                checkpoints = (
+                    [deepcopy(ingest_state.get_all())]
+                    if ingest_state is not None
+                    else []
+                )
 
                 while len(batch) < remaining:
                     try:
@@ -375,6 +414,8 @@ class OnESPollDecorator:
 
                     _apply_defaults(item)
                     batch.append(item)
+                    if ingest_state is not None:
+                        checkpoints.append(deepcopy(ingest_state.get_all()))
 
                 if not batch:
                     if ingest_state is not None and ingest_state.in_transaction:
@@ -430,23 +471,35 @@ class OnESPollDecorator:
                         self.app.actions_manager,
                     )
 
+                prefix_length = _successful_prefix_length(bulk_response, len(batch))
+                if prefix_length < len(batch):
+                    if ingest_state is not None:
+                        if prefix_length:
+                            ingest_state.put_all(checkpoints[prefix_length])
+                            ingest_state.commit()
+                        else:
+                            ingest_state.rollback()
+                    # A partial response may include successful findings linked to
+                    # these containers. Preserve them rather than running the
+                    # exception cleanup for the entire batch.
+                    msg = (
+                        f"Bulk finding creation was incomplete: {bulk_response}. "
+                        f"Preserved the successful prefix ({prefix_length} finding(s)); "
+                        "polling stopped so the remaining findings can be retried."
+                    )
+                    return self.app._adapt_action_result(
+                        ActionResult(status=False, message=msg),
+                        self.app.actions_manager,
+                    )
+
                 if ingest_state is not None and ingest_state.in_transaction:
                     ingest_state.commit()
-
-                bulk_errors = bulk_response.get("errors", [])
 
                 created = bulk_response.get("created", 0)
                 failed = bulk_response.get("failed", 0)
                 self.app.actions_manager.save_progress(
                     f"Created {created} finding(s), {failed} failed"
                 )
-
-                if bulk_errors:
-                    for error in bulk_errors:
-                        logger.warning(
-                            f"Bulk finding error at index {error.get('index')}: "
-                            f"{error.get('error')}"
-                        )
 
                 findings_created += created
 
