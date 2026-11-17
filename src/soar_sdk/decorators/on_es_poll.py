@@ -9,6 +9,7 @@ __lazy_modules__ = {
     "soar_sdk.app",
     "soar_sdk.concurrency",
     "soar_sdk.decorators._es_poll",
+    "soar_sdk.decorators._es_poll_preparation",
     "soar_sdk.exceptions",
     "soar_sdk.logging",
     "soar_sdk.meta.actions",
@@ -31,7 +32,13 @@ from pydantic import SecretStr, ValidationError
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.concurrency import parallel_map
-from soar_sdk.decorators._es_poll import _default_finding_source, _run_direct_es_poll
+from soar_sdk.decorators._es_poll import _run_direct_es_poll
+from soar_sdk.decorators._es_poll_preparation import (
+    _FINDING_DEFAULT_FIELDS,
+    _add_uploaded_attachment,
+    _default_finding_source,
+    _finding_default_updates,
+)
 from soar_sdk.exceptions import ActionFailure, FindingAPIError
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
@@ -140,23 +147,20 @@ def _upload_all_attachments(
     findings_with_files = 0
     for idx, uploads in per_finding.items():
         item = batch[idx]
-        email_attachments: list[FindingEmailAttachment] = []
-        raw_email_link: str | None = None
+        email_metadata: dict[str, Any] = {}
         for attachment, vault_link in uploads:
-            email_attachments.append(
-                FindingEmailAttachment(
-                    filename=attachment.file_name,
-                    filesize=len(attachment.data),
-                    url=vault_link,
-                )
+            _add_uploaded_attachment(
+                email_metadata, attachment, vault_link, len(attachment.data)
             )
-            if attachment.is_raw_email:
-                raw_email_link = vault_link
+        email_attachments = [
+            FindingEmailAttachment(**metadata)
+            for metadata in email_metadata["attachments"]
+        ]
 
         if item.email is None:
             item.email = FindingEmail()
         item.email.attachments = email_attachments
-        if raw_email_link:
+        if raw_email_link := email_metadata.get("raw_email_link"):
             item.email.raw_email_link = raw_email_link
 
         total_uploaded += len(email_attachments)
@@ -269,10 +273,6 @@ class OnESPollDecorator:
             ingest_config = asset_data.get("configuration", {}).get("ingest", {})
 
             es_security_domain = ingest_config.get("es_security_domain")
-            es_urgency = ingest_config.get("es_urgency")
-            es_run_threat_analysis = ingest_config.get("es_run_threat_analysis", False)
-            es_launch_automation = ingest_config.get("es_launch_automation", False)
-            es_investigation_type = ingest_config.get("es_investigation_type")
             app_name = str(self.app.app_meta_info.get("name", ""))
             asset_name: str = asset_data.get("name", "")
             finding_source = _default_finding_source(app_name, asset_name)
@@ -317,6 +317,17 @@ class OnESPollDecorator:
                         self.app.actions_manager,
                     )
 
+            # Keep classic validation and empty-value handling while sharing
+            # the finding/default precedence rules with direct polling.
+            prepared_ingest = {
+                **ingest_config,
+                "es_urgency": ingest_config.get("es_urgency") or None,
+                "es_investigation_type": ingest_config.get("es_investigation_type")
+                or None,
+                "es_drilldown_searches": drilldown_searches,
+                "es_drilldown_dashboards": drilldown_dashboards,
+            }
+
             if is_async_generator:
 
                 def polling_step(
@@ -345,22 +356,13 @@ class OnESPollDecorator:
                 base_url = self.app.actions_manager.get_soar_base_url().rstrip("/")
 
             def _apply_defaults(item: Finding) -> None:
-                if item.security_domain is None:
-                    item.security_domain = es_security_domain
-                if item.urgency is None and es_urgency:
-                    item.urgency = es_urgency
-                if not item.run_threat_analysis:
-                    item.run_threat_analysis = es_run_threat_analysis
-                if not item.launch_automation:
-                    item.launch_automation = es_launch_automation
-                if item.investigation_type is None and es_investigation_type:
-                    item.investigation_type = es_investigation_type
-                if item.drilldown_searches is None and drilldown_searches:
-                    item.drilldown_searches = drilldown_searches
-                if item.drilldown_dashboards is None and drilldown_dashboards:
-                    item.drilldown_dashboards = drilldown_dashboards
-                if item.finding_source is None and finding_source:
-                    item.finding_source = finding_source
+                current = {
+                    field: getattr(item, field) for field in _FINDING_DEFAULT_FIELDS
+                }
+                for field, value in _finding_default_updates(
+                    current, prepared_ingest, finding_source
+                ).items():
+                    setattr(item, field, value)
 
             while not generator_exhausted:
                 batch: list[Finding] = []

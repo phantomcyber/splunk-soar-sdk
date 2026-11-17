@@ -316,6 +316,160 @@ def test_finding_source_parity_through_runtime_input(
     assert "asset_name" not in app._raw_asset_config
 
 
+def _configure_poll_transport(app, mocker, transport, ingest):
+    app._es_ingest_config = ingest
+    if transport == "classic":
+        mocker.patch.object(
+            app.soar_client, "_get_es_finding_context", return_value=None
+        )
+
+        def get(endpoint, **kwargs):
+            if endpoint == "/rest/system_info":
+                return SimpleNamespace(
+                    json=lambda: {"base_url": "https://soar.example"}
+                )
+            return SimpleNamespace(
+                json=lambda: {
+                    "name": app._asset_name,
+                    "configuration": {"ingest": ingest},
+                }
+            )
+
+        mocker.patch.object(app.soar_client, "get", side_effect=get)
+
+
+@pytest.mark.parametrize("transport", ["classic", "direct"])
+@pytest.mark.parametrize("mode", ["omitted", "explicit", "empty", "enabled"])
+def test_polling_default_precedence_matches_across_transports(
+    direct_app, mocker, transport, mode
+):
+    from soar_sdk.models.finding import FindingEmail
+
+    app = direct_app
+    app._asset_name = "mailbox"
+    defaults = {
+        "security_domain": "threat",
+        "urgency": "high",
+        "investigation_type": "default",
+        "drilldown_searches": [
+            {
+                "name": "Search",
+                "search": "index=mail",
+                "earliest": "-24h",
+                "latest": "now",
+            }
+        ],
+        "drilldown_dashboards": [
+            {"app": "search", "dashboard_id": "overview", "name": "Overview"}
+        ],
+        "run_threat_analysis": mode != "enabled",
+        "launch_automation": mode != "enabled",
+    }
+    _configure_poll_transport(
+        app, mocker, transport, {"es_" + key: value for key, value in defaults.items()}
+    )
+    explicit = {}
+    if mode in {"explicit", "empty"}:
+        explicit = {
+            "security_domain": "identity",
+            "urgency": "low" if mode == "explicit" else "",
+            "investigation_type": "authored" if mode == "explicit" else "",
+            "drilldown_searches": [],
+            "drilldown_dashboards": [],
+        }
+    elif mode == "enabled":
+        explicit = {"run_threat_analysis": True, "launch_automation": True}
+    finding = Finding(
+        rule_title="mail",
+        automation_rule="playbook",
+        email=FindingEmail(raw_email_link="https://files.example/ready"),
+        **explicit,
+    )
+    created = mocker.patch.object(
+        app.soar_client,
+        "create_findings_bulk",
+        return_value={
+            "created": 1,
+            "results": [{"index": 0, "success": True, "finding_id": "created"}],
+        },
+    )
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield finding
+
+    assert poll(OnESPollParams())
+    payload = created.call_args.args[0][0]
+    assert all(
+        payload[field] == value for field, value in {**defaults, **explicit}.items()
+    )
+    assert payload["finding_source"] == "test_app - mailbox"
+
+
+@pytest.mark.parametrize("transport", ["classic", "direct"])
+def test_uploaded_email_metadata_and_raw_selection_match_across_transports(
+    direct_app, poll_attachments, mocker, transport
+):
+    from soar_sdk.models.finding import FindingEmail
+
+    app = direct_app
+    _configure_poll_transport(app, mocker, transport, {"es_security_domain": "threat"})
+    names = ("first.eml", "document.pdf", "last.eml", "failed.eml")
+    finding = attached_finding(names=names)
+    finding.attachments[1].is_raw_email = False
+    finding.email = FindingEmail(
+        body="body", raw_email_link="https://files.example/old"
+    )
+    if transport == "classic":
+        mocker.patch.object(
+            app.actions_manager, "save_container", return_value=(True, "ok", 99)
+        )
+
+        def upload(container_id, data, name):
+            if name == "failed.eml":
+                raise RuntimeError("Upload failed")
+            return "vault-" + name
+
+        vault = SimpleNamespace(create_attachment=mocker.Mock(side_effect=upload))
+        mocker.patch.object(
+            type(app.soar_client),
+            "vault",
+            new_callable=lambda: property(lambda self: vault),
+        )
+    created = mocker.patch.object(
+        app.soar_client,
+        "create_findings_bulk",
+        return_value={
+            "created": 1,
+            "results": [{"index": 0, "success": True, "finding_id": "created"}],
+        },
+    )
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield finding
+
+    assert poll(OnESPollParams())
+    email = created.call_args.args[0][0]["email"]
+    references = (
+        [
+            "https://soar.example/rest/download_attachment?vault_id=vault-" + name
+            for name in names[:3]
+        ]
+        if transport == "classic"
+        else [
+            URL + "/attachment-proxy?attachment_id=" + identifier
+            for identifier in poll_attachments.issued[:3]
+        ]
+    )
+    assert email["attachments"] == [
+        {"filename": name, "filesize": len(b"private-file-contents"), "url": reference}
+        for name, reference in zip(names[:3], references, strict=True)
+    ]
+    assert email["raw_email_link"] == references[2]
+    assert email["body"] == "body"
+
+
 def test_partial_failures_are_reported_and_checkpoint_rolls_back(
     direct_app, respx_mock
 ):

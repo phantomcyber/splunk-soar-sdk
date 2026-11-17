@@ -6,6 +6,7 @@ __lazy_modules__ = {
     "importlib",
     "pathlib",
     "soar_sdk.abstract",
+    "soar_sdk.decorators._es_poll_preparation",
     "soar_sdk.models.finding",
     "tempfile",
     "typing",
@@ -22,6 +23,7 @@ from uuid import UUID, uuid4
 import httpx
 
 from soar_sdk.abstract import SOARClient
+from soar_sdk.decorators._es_poll_preparation import _add_uploaded_attachment
 from soar_sdk.models.finding import Finding
 
 
@@ -125,16 +127,12 @@ def _upload_poll_attachments(
                                     "attachment_id", receipt.attachment_id
                                 )
                             )
-                            email = payloads[index]["email"]
-                            email.setdefault("attachments", []).append(
-                                {
-                                    "filename": attachment.file_name,
-                                    "filesize": receipt.size_bytes,
-                                    "url": reference,
-                                }
+                            _add_uploaded_attachment(
+                                payloads[index]["email"],
+                                attachment,
+                                reference,
+                                receipt.size_bytes,
                             )
-                            if attachment.is_raw_email:
-                                email["raw_email_link"] = reference
                     results[index].append(entry)
                     completed += 1
     except Exception:
