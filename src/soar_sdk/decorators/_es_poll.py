@@ -8,6 +8,7 @@ __lazy_modules__ = {
     "soar_sdk.action_results",
     "soar_sdk.app",
     "soar_sdk.decorators._es_poll_attachments",
+    "soar_sdk.decorators._es_poll_preparation",
     "soar_sdk.models.finding",
     "soar_sdk.params",
     "typing",
@@ -24,20 +25,15 @@ from soar_sdk.decorators._es_poll_attachments import (
     _queue_poll_attachment_links,
     _upload_poll_attachments,
 )
+from soar_sdk.decorators._es_poll_preparation import (
+    _default_finding_source,
+    _finding_default_updates,
+)
 from soar_sdk.models.finding import Finding
 from soar_sdk.params import OnESPollParams
 
 if TYPE_CHECKING:
     from soar_sdk.app import App
-
-
-def _default_finding_source(app_name: str, asset_name: str) -> str:
-    """Preserve the classic asset-qualified source and its name fallbacks."""
-    return (
-        f"{app_name} - {asset_name}"
-        if app_name and asset_name
-        else app_name or asset_name
-    )
 
 
 def _run_direct_es_poll(
@@ -88,18 +84,7 @@ def _run_direct_es_poll(
                     }
                 )
                 continue
-            for field in (
-                "security_domain",
-                "urgency",
-                "investigation_type",
-                "drilldown_searches",
-                "drilldown_dashboards",
-            ):
-                if field not in payload and ingest.get("es_" + field) is not None:
-                    payload[field] = ingest["es_" + field]
-            for field in ("run_threat_analysis", "launch_automation"):
-                if not payload.get(field):
-                    payload[field] = ingest.get("es_" + field, False)
+            payload.update(_finding_default_updates(payload, ingest, finding_source))
             # Association needs the future finding ID, and its queue ACK does
             # not make attachments readable. Reject before allocating files
             # until the integration supplies a readiness guarantee.
@@ -120,8 +105,6 @@ def _run_direct_es_poll(
                     }
                 )
                 continue
-            if finding_source:
-                payload.setdefault("finding_source", finding_source)
             payloads.append(payload)
             indexes.append(index)
             findings.append(item)
