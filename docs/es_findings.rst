@@ -203,9 +203,17 @@ An attachment or link failure makes an otherwise successful poll ``partial``.
 
 An association ACK confirms queueing through bundle → orchestrator → SQS. It
 does not confirm that Timeline has saved the mapping. ES/SAA may try reading
-before that save and receive a missing-file response. This change provides no
-readiness barrier or SAA retry policy; verify that race in the target environment
-before enabling automatic threat analysis. Classic polling is unchanged.
+before that save and receive a missing-file response. Until the integration
+provides a readiness guarantee, direct polling rejects a finding that has local
+``Finding.attachments`` and enables either ``run_threat_analysis`` or
+``launch_automation``. This includes flags inherited from saved ingestion
+settings. The result has ``error_code="attachment_readiness"``; no uploads,
+finding POST, or association are attempted for that finding. The failed batch
+retains its checkpoint for replay, and other findings in the batch continue.
+The SDK does not silently change flags or schedule deferred analysis. Disable
+both flags to create findings with local attachments through this flow.
+Findings without local attachments retain their requested flags. Classic
+polling is unchanged.
 
 Request Model Fields
 --------------------
@@ -343,10 +351,12 @@ without attachment references. The direct polling decorator continues and report
 ``partial``. An individual failed upload must be excluded from both
 finding references and associations; other files/findings continue.
 
-ES requires ``email.raw_email_link`` when ``run_threat_analysis=True``. If the
-raw email upload fails, that requested analysis may cause ES to reject the
-finding. The SDK preserves analysis flags and reports the creation failure.
-Callers may explicitly disable analysis to create a finding without raw email.
+ES requires ``email.raw_email_link`` when ``run_threat_analysis=True``.
+The direct polling decorator rejects immediate analysis or automation with
+local attachments as described above. Callers composing the lower-level SDK
+APIs must independently guarantee attachment readability before enabling these
+flags. Those APIs preserve the requested flags; a failed raw email upload can
+therefore cause ES to reject a finding requesting analysis.
 
 Finding errors are recorded per input; failed findings must never be linked.
 If association fails, report the affected finding-ID/attachment-ID pairs and keep
@@ -371,8 +381,10 @@ changing classic SOAR container and vault behavior.
 
    Association is asynchronous. An ES consumer can attempt a download before
    Timeline has saved the finding-to-attachment link. The inspected SAA code
-   treats download failures as terminal. The integration must handle that race
-   before enabling immediate threat analysis or automation on new findings.
+   treats download failures as terminal. Direct polling gates this combination
+   before uploading or creating the finding. Queue acknowledgement alone must
+   never be used to lift that gate; doing so requires a proven integration
+   readiness mechanism and validation against delayed association persistence.
 
 Errors and Retries
 ------------------

@@ -594,6 +594,120 @@ def attached_finding(title="mail", names=("email.eml",), *, raw=True):
     )
 
 
+@pytest.mark.parametrize("is_async", [False, True])
+@pytest.mark.parametrize(
+    "source, analysis, automation",
+    [("omitted", False, False)]
+    + [
+        (source, analysis, automation)
+        for source in ("finding", "asset")
+        for analysis, automation in (
+            (False, False),
+            (True, False),
+            (False, True),
+            (True, True),
+        )
+    ],
+)
+def test_poll_gates_attachment_consumers_before_async_association(
+    direct_app, poll_attachments, respx_mock, source, analysis, automation, is_async
+):
+    from soar_sdk.models.finding import FindingEmail
+
+    app = direct_app
+    context = poll_attachments
+    state = AssetState(app.actions_manager, "ingest", "1")
+    app.asset._ingest_state = state
+    items = [
+        attached_finding(),
+        Finding(
+            rule_title="already readable",
+            email=FindingEmail(raw_email_link="https://files.example/ready"),
+        ),
+    ]
+    if source == "asset":
+        app._es_ingest_config.update(
+            es_run_threat_analysis=analysis, es_launch_automation=automation
+        )
+    elif source == "finding":
+        for item in items:
+            item.run_threat_analysis = analysis
+            item.launch_automation = automation
+    for item in items:
+        item.automation_rule = "playbook"
+    pending_links = []
+    persisted_links = []
+    seen = []
+
+    def create(request):
+        payload = json.loads(request.content)
+        seen.append(payload)
+        context.events.append("create")
+        if payload["email"].get("attachments"):
+            # A consumer triggered by this POST would read before even enqueueing.
+            assert not persisted_links
+            assert not payload["run_threat_analysis"]
+            assert not payload["launch_automation"]
+        else:
+            assert payload["run_threat_analysis"] is analysis
+            assert payload["launch_automation"] is automation
+        return httpx.Response(
+            201, json={"_time": "now", "finding_id": f"finding-{len(seen)}"}
+        )
+
+    def enqueue(associations):
+        context.events.append("link_ack")
+        pending_links.extend(associations)
+        return "queue-message"
+
+    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    context.bridge.associate_subject_attachments.side_effect = enqueue
+
+    def findings():
+        for index, item in enumerate(items):
+            state["cursor"] = index + 1
+            yield item
+
+    if is_async:
+
+        @app.on_es_poll()
+        async def poll(params: OnESPollParams) -> AsyncGenerator[Finding, int | None]:
+            for item in findings():
+                yield item
+    else:
+
+        @app.on_es_poll()
+        def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+            yield from findings()
+
+    assert poll(OnESPollParams())
+    result = outcome(app)
+    gated = analysis or automation
+    if gated:
+        assert context.events == ["create"]
+        context.bridge.get_upload_targets.assert_not_called()
+        context.upload_mock.assert_not_called()
+        context.bridge.associate_subject_attachments.assert_not_called()
+        assert result.get_data()[0]["error_code"] == "attachment_readiness"
+        assert result.get_data()[1]["finding_id"] == "finding-1"
+        assert "cursor" not in state
+    else:
+        assert context.events == ["reserve", "upload", "create", "create", "link_ack"]
+        assert pending_links == [
+            {"subject_id": "finding-1", "attachment_ids": context.issued}
+        ]
+        # The queue has ACKed, but Timeline still cannot serve the attachment.
+        assert not persisted_links
+        assert result.get_data()[0]["attachment_links"]["status"] == "queued"
+        assert state["cursor"] == 2
+    summary = result.get_summary()
+    assert summary["created"] == (1 if gated else 2)
+    assert summary["failed"] == int(gated)
+    assert summary["status"] == ("partial" if gated else "success")
+    assert not state.in_transaction
+    assert all(not path.exists() for path in context.paths)
+
+
 @pytest.mark.parametrize("link_fails", [False, True])
 def test_poll_upload_create_and_link_preserve_ownership(
     direct_app, poll_attachments, respx_mock, link_fails, caplog
