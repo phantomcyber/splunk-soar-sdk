@@ -31,6 +31,15 @@ if TYPE_CHECKING:
     from soar_sdk.app import App
 
 
+def _default_finding_source(app_name: str, asset_name: str) -> str:
+    """Preserve the classic asset-qualified source and its name fallbacks."""
+    return (
+        f"{app_name} - {asset_name}"
+        if app_name and asset_name
+        else app_name or asset_name
+    )
+
+
 def _run_direct_es_poll(
     app: "App",
     generator: Any,  # noqa: ANN401
@@ -49,6 +58,9 @@ def _run_direct_es_poll(
     count = 0
     used_attachment_ids: set[str] = set()
     attachment_count = 0
+    finding_source = _default_finding_source(
+        str(app.app_meta_info.get("name", "")), app._asset_name
+    )
 
     def flush() -> bool:
         nonlocal attachment_count, batch_failed
@@ -108,7 +120,8 @@ def _run_direct_es_poll(
                     }
                 )
                 continue
-            payload.setdefault("finding_source", str(app.app_meta_info.get("name", "")))
+            if finding_source:
+                payload.setdefault("finding_source", finding_source)
             payloads.append(payload)
             indexes.append(index)
             findings.append(item)

@@ -31,7 +31,7 @@ from pydantic import SecretStr, ValidationError
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
 from soar_sdk.concurrency import parallel_map
-from soar_sdk.decorators._es_poll import _run_direct_es_poll
+from soar_sdk.decorators._es_poll import _default_finding_source, _run_direct_es_poll
 from soar_sdk.exceptions import ActionFailure, FindingAPIError
 from soar_sdk.logging import getLogger
 from soar_sdk.meta.actions import ActionMeta
@@ -275,11 +275,7 @@ class OnESPollDecorator:
             es_investigation_type = ingest_config.get("es_investigation_type")
             app_name = str(self.app.app_meta_info.get("name", ""))
             asset_name: str = asset_data.get("name", "")
-            finding_source: str = (
-                f"{app_name} - {asset_name}"
-                if app_name and asset_name
-                else app_name or asset_name
-            )
+            finding_source = _default_finding_source(app_name, asset_name)
 
             if not es_security_domain:
                 return self.app._adapt_action_result(

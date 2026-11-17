@@ -237,6 +237,85 @@ def test_direct_poll_preserves_explicit_analysis_and_automation_flags(
     assert payload["launch_automation"] is True
 
 
+@pytest.mark.parametrize("transport", ["classic", "direct"])
+@pytest.mark.parametrize("explicit_source", [None, "authored source", ""])
+@pytest.mark.parametrize(
+    "app_name, asset_name, expected_default",
+    [
+        ("mail", "production mailbox", "mail - production mailbox"),
+        ("mail", "", "mail"),
+        ("", "production mailbox", "production mailbox"),
+        ("", "", None),
+        ("mail", None, "mail"),
+    ],
+)
+def test_finding_source_parity_through_runtime_input(
+    direct_app,
+    simple_action_input,
+    mocker,
+    transport,
+    explicit_source,
+    app_name,
+    asset_name,
+    expected_default,
+):
+    app = direct_app
+    app.app_meta_info["name"] = app_name
+    if transport == "classic":
+        mocker.patch.object(
+            app.soar_client, "_get_es_finding_context", return_value=None
+        )
+
+        def get(endpoint, **kwargs):
+            if endpoint == "/rest/system_info":
+                return SimpleNamespace(
+                    json=lambda: {"base_url": "https://soar.example"}
+                )
+            return SimpleNamespace(
+                json=lambda: {
+                    "name": asset_name or "",
+                    "configuration": {"ingest": {"es_security_domain": "threat"}},
+                }
+            )
+
+        mocker.patch.object(app.soar_client, "get", side_effect=get)
+    created = mocker.patch.object(
+        app.soar_client,
+        "create_findings_bulk",
+        return_value={
+            "status": "success",
+            "created": 1,
+            "failed": 0,
+            "findings": ["created"],
+            "container_ids": [],
+            "errors": [],
+            "results": [{"index": 0, "success": True, "finding_id": "created"}],
+        },
+    )
+    mocker.stop(app.actions_manager.add_result)
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="mail", finding_source=explicit_source)
+
+    raw = simple_action_input.model_dump()
+    raw.update(
+        identifier="on_es_poll",
+        action="on es poll",
+        parameters=[{"es_security_domain": "threat"}],
+    )
+    if asset_name is None:
+        raw.pop("asset_name", None)
+    else:
+        raw["asset_name"] = asset_name
+    app.handle(json.dumps(raw))
+    assert app.actions_manager.get_action_results()[-1].get_status()
+    assert created.call_args.args[0][0].get("finding_source") == (
+        expected_default if explicit_source is None else explicit_source
+    )
+    assert "asset_name" not in app._raw_asset_config
+
+
 def test_partial_failures_are_reported_and_checkpoint_rolls_back(
     direct_app, respx_mock
 ):

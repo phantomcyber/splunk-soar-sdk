@@ -8,6 +8,14 @@ the ingestion bundle supplies the execution's paired ES context for direct publi
 API calls. The polling decorator selects this path when that context is present.
 Connectors do not choose endpoints or pass credentials.
 
+When ``finding_source`` is omitted, both polling transports use
+``<app name> - <asset name>``, falling back to either available name and omitting
+the field when both are empty. Direct polling reads the asset name from the
+runtime's optional top-level ``asset_name`` input, separate from connector
+configuration. Runtimes must supply that saved name to distinguish assets using
+the same connector; older runtimes without it retain the app-name fallback.
+An explicit ``finding_source``, including an empty string, is preserved.
+
 The source of truth is the `ES public OpenAPI specification
 <https://cd.splunkdev.com/EnterpriseSecurity/app-ess/-/blob/0eb5d6679945524c0e101fc5d67482773f46ae51/packages/missioncontrol/packages/app/public_openapi_specs/mcopenapi_public.yaml>`_,
 particularly ``POST /public/v2/findings``, ``CreateManualFindingRequest``,
