@@ -401,11 +401,13 @@ by the finding creation API. This feature is unreleased in the 7.1.3 checkout.
 
 .. autoclass:: soar_sdk.models.attachment_upload.AttachmentUploadResult
 
-These methods provide the attachment capability independently of automatic
-polling. The ``@app.on_es_poll()`` decorator still uses its classic SOAR path.
-Automatic runtime selection, the ES finding/reference schema, and checkpoint
-and retry behavior across finding creation and queued association require the
-corresponding integration contracts before that path can be connected.
+These methods are also composed by ``@app.on_es_poll()`` when the execution
+runtime supplies the paired ES context. Direct polling uploads attachments,
+creates findings, and queues their attachment associations through the existing
+SDK APIs. Classic SOAR retains its container and vault polling behavior.
+See :doc:`es_findings` for runtime selection, reference compatibility,
+batch checkpoints, error behavior, and the attachment-readiness restriction
+on immediate threat analysis and automation.
 
 .. autoclass:: soar_sdk.apis.attachments.Attachments
    :members: get_upload_targets, upload_file, upload_files, associate_subject_attachments

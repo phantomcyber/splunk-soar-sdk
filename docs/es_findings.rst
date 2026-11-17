@@ -38,11 +38,12 @@ ignored. Invalid or credential-echoing success responses raise ``FindingAPIError
 For existing ``Finding.to_dict()`` payloads, in direct mode only,
 the SDK wraps a single reporter ``to``, ``cc`` or ``bcc`` address in a list and
 converts an ``additional_fields`` mapping into ES name/value entries. String
-values are required for those entries. These adaptations do not mutate the
-finding or the caller's dictionary. The OpenAPI models retain their strict
-wire types, and classic SOAR receives the original payload unchanged. Other
-fields must match the public ES contract; classic dashboard objects are not
-converted because their wire mapping has not been confirmed.
+values are required for those entries. Legacy dashboard objects combine ``app``
+and ``dashboard_id`` into ``dashboard="app/dashboard_id"``; their token mappings
+with string ``name`` and ``value`` become ``"name=value"`` strings. These
+adaptations do not mutate the finding or the caller's dictionary. The OpenAPI
+models retain their strict wire types, and classic SOAR receives the original
+payload unchanged. Other fields must match the public ES contract.
 
 ``create_findings_bulk([request.to_dict(), ...])`` preserves its existing
 25-finding limit and dictionary envelope: ``status``, ``created``, ``failed``,
