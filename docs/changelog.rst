@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.2.1 (2026-11-17)
+
+   * Fix: Reuse uploaded attachments during bounded retries of transient finding creation failures in direct ES polling.
+
    .. rubric:: 7.2.0 (2026-11-17)
 
    * Feature: Add runtime-bound ES finding creation and polling with typed models,

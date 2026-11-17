@@ -1290,7 +1290,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "7.2.0"
+version = "7.2.1"
 source = { directory = "../../" }
 dependencies = [
     { name = "anyio" },
