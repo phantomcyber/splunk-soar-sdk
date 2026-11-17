@@ -163,6 +163,7 @@ class App:
         self._encrypt_ingest_state = encrypt_ingest_state
         self._raw_asset_config: dict[str, Any] = {}
         self._es_ingest_config: dict[str, Any] = {}
+        self._asset_name = ""
         self.__logger = getLogger()
         if not is_valid_uuid(appid):
             raise ValueError(f"Appid is not a valid uuid: {appid}")
@@ -268,6 +269,7 @@ class App:
                     }
                 )
         input_data = InputSpecification.model_validate(raw_input)
+        self._asset_name = input_data.asset_name
         self._raw_asset_config = input_data.config.get_asset_config()
 
         # Resolve credentials from an external manager (e.g. Hashicorp Vault,

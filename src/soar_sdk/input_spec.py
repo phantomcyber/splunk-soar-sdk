@@ -145,6 +145,7 @@ class InputSpecification(BaseModel):
     action_run_id: int = Field(default_factory=id_factory)
     app_config: Any | None = None
     asset_id: str = Field(default_factory=lambda: str(id_factory()))
+    asset_name: str = ""
     config: AppConfig
     connector_run_id: int = Field(default_factory=id_factory)
     container_id: int = Field(default_factory=id_factory)

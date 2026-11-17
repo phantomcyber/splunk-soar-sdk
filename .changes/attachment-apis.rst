@@ -7,3 +7,4 @@
   Apply ES ingest settings supplied as polling parameters by the execution runtime.
   Reject immediate analysis or automation with local polling attachments until
   attachment readability is guaranteed, retaining failed batches for replay.
+  Preserve asset-qualified finding sources across classic and direct polling.
