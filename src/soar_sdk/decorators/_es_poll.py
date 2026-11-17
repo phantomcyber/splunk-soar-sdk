@@ -88,6 +88,26 @@ def _run_direct_es_poll(
             for field in ("run_threat_analysis", "launch_automation"):
                 if not payload.get(field):
                     payload[field] = ingest.get("es_" + field, False)
+            # Association needs the future finding ID, and its queue ACK does
+            # not make attachments readable. Reject before allocating files
+            # until the integration supplies a readiness guarantee.
+            if item.attachments and (
+                payload["run_threat_analysis"] or payload["launch_automation"]
+            ):
+                results.append(
+                    {
+                        "index": index,
+                        "success": False,
+                        "error_code": "attachment_readiness",
+                        "message": (
+                            "Immediate threat analysis or automation is unavailable "
+                            "for findings with local attachments until attachment "
+                            "readiness is guaranteed. Disable both flags to create "
+                            "the finding."
+                        ),
+                    }
+                )
+                continue
             payload.setdefault("finding_source", str(app.app_meta_info.get("name", "")))
             payloads.append(payload)
             indexes.append(index)

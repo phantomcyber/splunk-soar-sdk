@@ -5,3 +5,5 @@
   Adapt existing Finding dashboard identities and token mappings to the ES format.
   Checkpoint successful ES polling batches and retain failed batches for replay.
   Apply ES ingest settings supplied as polling parameters by the execution runtime.
+  Reject immediate analysis or automation with local polling attachments until
+  attachment readability is guaranteed, retaining failed batches for replay.
