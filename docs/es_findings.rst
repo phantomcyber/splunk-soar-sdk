@@ -16,8 +16,8 @@ configuration. Runtimes must supply that saved name to distinguish assets using
 the same connector; older runtimes without it retain the app-name fallback.
 An explicit ``finding_source``, including an empty string, is preserved.
 
-The source of truth is the `ES public OpenAPI specification
-<https://cd.splunkdev.com/EnterpriseSecurity/app-ess/-/blob/0eb5d6679945524c0e101fc5d67482773f46ae51/packages/missioncontrol/packages/app/public_openapi_specs/mcopenapi_public.yaml>`_,
+The source of truth is the ES public OpenAPI specification
+(``mcopenapi_public.yaml``),
 particularly ``POST /public/v2/findings``, ``CreateManualFindingRequest``,
 ``CreateManualFindingResponse``, ``DrilldownSearch`` and ``DrilldownDashboard``.
 The test fixture records the source revision and copies the referenced schemas.
@@ -432,9 +432,10 @@ Compatibility and Verification
 
 This API is introduced after SDK 7.1.3; use a released SDK containing this
 feature. Release automation assigns the version. The models and schema tests
-target ES OpenAPI version 8.8.0 at the revision linked above. Compatibility with
-ES 8.2 or other releases is not implied: verify their public findings contracts
-before declaring support. Python 3.13 and 3.15 follow the SDK's support policy.
+target ES OpenAPI version 8.8.0 at the source revision recorded in the test fixture.
+Compatibility with ES 8.2 or other releases is not implied: verify their public
+findings contracts before declaring support. Python 3.13 and 3.15 follow the SDK's
+support policy.
 
 Local schema tests check serialized requests against the copied ES schema;
 HTTP tests check IDs, mixed batch outcomes, errors and secret handling. Polling
