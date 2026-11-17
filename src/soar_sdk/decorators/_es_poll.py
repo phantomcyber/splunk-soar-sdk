@@ -11,12 +11,14 @@ __lazy_modules__ = {
     "soar_sdk.decorators._es_poll_preparation",
     "soar_sdk.models.finding",
     "soar_sdk.params",
+    "time",
     "typing",
 }
 
 import asyncio
 from contextlib import suppress
 from copy import deepcopy
+from time import sleep
 from typing import TYPE_CHECKING, Any
 
 from soar_sdk.abstract import SOARClient
@@ -34,6 +36,32 @@ from soar_sdk.params import OnESPollParams
 
 if TYPE_CHECKING:
     from soar_sdk.app import App
+
+
+def _create_poll_findings(
+    soar: SOARClient, payloads: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Retry failed creates in memory without reserving or uploading files again.
+
+    A timeout or lost response can hide a successful create, so these bounded
+    retries can create duplicate findings. Successful results are never replayed.
+    """
+    results = soar.create_findings_bulk(payloads)["results"]
+    for delay in (1, 2):
+        pending = [
+            index
+            for index, result in enumerate(results)
+            if not result["success"]
+            and result.get("error_code") in {"rate_limit", "unavailable", "timeout"}
+        ]
+        if not pending:
+            break
+        sleep(delay)
+        retried = soar.create_findings_bulk([payloads[index] for index in pending])
+        for result in retried["results"]:
+            index = pending[result["index"]]
+            results[index] = {**result, "index": index}
+    return results
 
 
 def _run_direct_es_poll(
@@ -112,9 +140,9 @@ def _run_direct_es_poll(
             attachments = _upload_poll_attachments(
                 soar, findings, payloads, params.base_url or "", used_attachment_ids
             )
-            response = soar.create_findings_bulk(payloads)
+            response = _create_poll_findings(soar, payloads)
             batch_results = []
-            for result in response["results"]:
+            for result in response:
                 position = result["index"]
                 entry = {**result, "index": indexes[position]}
                 if attachments[position]:

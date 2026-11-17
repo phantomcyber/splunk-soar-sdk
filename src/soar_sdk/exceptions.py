@@ -112,7 +112,7 @@ class FindingAuthorizationError(FindingAPIError):
 
 
 class FindingRateLimitError(FindingAPIError):
-    """ES returned 429; the SDK does not retry the request."""
+    """ES returned 429; direct polling may retry this creation."""
 
     error_code = "rate_limit"
 
@@ -124,7 +124,7 @@ class FindingUnavailableError(FindingAPIError):
 
 
 class FindingTimeoutError(FindingUnavailableError):
-    """ES timed out; the finding may already exist, so no retry is attempted."""
+    """ES timed out; the finding may already exist if creation is retried."""
 
     error_code = "timeout"
 
