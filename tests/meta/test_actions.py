@@ -1,7 +1,9 @@
 import pytest
 from pydantic import ValidationError
 
+from soar_sdk.action_results import ActionOutput, OutputField
 from soar_sdk.meta.actions import ActionLock, ActionMeta
+from soar_sdk.params import Param, Params
 
 
 def test_action_meta_dict_with_view_handler():
@@ -74,6 +76,50 @@ def test_action_meta_dict_without_view_handler():
 
     assert "render" not in result
     assert "view_handler" not in result
+
+
+def test_action_meta_emits_native_schema_pair_and_legacy_datapaths():
+    """Native output shape and Phantom declarations describe the same action."""
+
+    class LookupParams(Params):
+        ip: str = Param(cef_types=["ip"])
+
+    class LookupOutput(ActionOutput):
+        ip: str = OutputField(cef_types=["ip"], example_values=["192.0.2.1"])
+        is_exit_node: bool
+
+    meta = ActionMeta(
+        action="lookup ip",
+        identifier="lookup_ip",
+        description="Look up an IP address.",
+        type="investigate",
+        read_only=True,
+        parameters=LookupParams,
+        output=LookupOutput,
+    )
+
+    result = meta.model_dump()
+    schemas = meta.to_schema_manifest()
+    assert set(schemas) == {"inputSchema", "outputSchema"}
+    assert schemas["inputSchema"]["properties"]["ip"]["x-soar-contains"] == ["ip"]
+    assert "outputSchema" not in result
+    assert "outputSchemaMetadata" not in result
+    schema = schemas["outputSchema"]
+    output_ref = schema["properties"]["data"]["items"]["$ref"]
+    output_definition = schema["$defs"][output_ref.removeprefix("#/$defs/")]
+    params_ref = schema["properties"]["parameter"]["$ref"]
+    params_definition = schema["$defs"][params_ref.removeprefix("#/$defs/")]
+
+    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+    assert schema["properties"]["status"]["enum"] == ["success", "failed"]
+    assert output_definition["properties"]["ip"]["x-soar-contains"] == ["ip"]
+    assert output_definition["properties"]["ip"]["examples"] == ["192.0.2.1"]
+    assert output_definition["properties"]["is_exit_node"]["type"] == "boolean"
+    assert params_definition["properties"]["ip"]["x-soar-contains"] == ["ip"]
+    assert schema["properties"]["extra_data"]["type"] == "array"
+    assert any(
+        field["data_path"] == "action_result.data.*.ip" for field in result["output"]
+    )
 
 
 def test_action_meta_dict_with_concurrency_lock():

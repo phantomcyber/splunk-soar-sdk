@@ -63,7 +63,7 @@
                     "data_type": "string",
                     "example_values": [
                         "success",
-                        "failure"
+                        "failed"
                     ]
                 },
                 {
@@ -111,7 +111,7 @@
                     "data_type": "string",
                     "example_values": [
                         "success",
-                        "failure"
+                        "failed"
                     ]
                 },
                 {
@@ -860,5 +860,203 @@
                 "input_file_aarch64": "wheels/python315/yarl-1.22.0-py3-none-any.whl"
             }
         ]
+    },
+    "actionSchemasLookup": {
+        "test connectivity": {
+            "inputSchema": {
+                "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                "properties": {},
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ActionOutput": {
+                        "description": "Base class for defining structured action output schemas.\n\nActionOutput defines the JSON schema that an action is expected to output.\nIt is translated into datapaths, example values, and CEF fields for\nintegration with the SOAR platform.\n\nSubclasses should define fields using type annotations and OutputField()\nfor metadata. The schema is automatically converted to SOAR-compatible\nformat for manifest generation and data validation.\n\nExample:\n    >>> class MyActionOutput(ActionOutput):\n    ...     hostname: str = OutputField(\n    ...         cef_types=[\"destinationHostName\"],\n    ...         example_values=[\"server1.example.com\"],\n    ...     )\n    ...     port: int = OutputField(example_values=[80, 443, 8080])\n    ...     is_secure: bool  # Automatically gets True/False examples\n    ...\n    ...     under_field: str = OutputField(\n    ...         alias=\"_under_field\"\n    ...     )  # Model fields can't start with an underscore, so we're using an alias to create the proper JSON key\n\nNote:\n    Fields cannot be Union types other than Optional.\n    Nested ActionOutput classes are supported for complex data structures.",
+                        "properties": {},
+                        "title": "ActionOutput",
+                        "type": "object"
+                    },
+                    "Params": {
+                        "description": "Params defines the full set of inputs for an action.\n\nIt can contain strings, booleans, or numbers -- no lists or dictionaries.\nParams fields can be optional if desired, or optionally have a default value, CEF type, and other metadata defined in :func:`soar_sdk.params.Param`.",
+                        "properties": {},
+                        "title": "Params",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failed"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/Params"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ActionOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        },
+        "reverse string": {
+            "inputSchema": {
+                "properties": {
+                    "input_string": {
+                        "title": "Input String",
+                        "type": "string",
+                        "x-soar-order": 0
+                    }
+                },
+                "required": [
+                    "input_string"
+                ],
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema"
+            },
+            "outputSchema": {
+                "$defs": {
+                    "ReverseStringOutput": {
+                        "properties": {
+                            "reversed_string": {
+                                "title": "Reversed String",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "reversed_string"
+                        ],
+                        "title": "ReverseStringOutput",
+                        "type": "object"
+                    },
+                    "ReverseStringParams": {
+                        "properties": {
+                            "input_string": {
+                                "title": "Input String",
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "input_string"
+                        ],
+                        "title": "ReverseStringParams",
+                        "type": "object"
+                    }
+                },
+                "properties": {
+                    "status": {
+                        "enum": [
+                            "success",
+                            "failed"
+                        ],
+                        "title": "Status",
+                        "type": "string"
+                    },
+                    "message": {
+                        "title": "Message",
+                        "type": "string"
+                    },
+                    "parameter": {
+                        "$ref": "#/$defs/ReverseStringParams"
+                    },
+                    "context": {
+                        "additionalProperties": true,
+                        "title": "Context",
+                        "type": "object"
+                    },
+                    "data": {
+                        "items": {
+                            "$ref": "#/$defs/ReverseStringOutput"
+                        },
+                        "title": "Data",
+                        "type": "array"
+                    },
+                    "extra_data": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "title": "Extra Data",
+                        "type": "array"
+                    },
+                    "summary": {
+                        "additionalProperties": true,
+                        "title": "Summary",
+                        "type": "object"
+                    },
+                    "result_summary": {
+                        "type": "object",
+                        "properties": {
+                            "total_objects": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            },
+                            "total_objects_successful": {
+                                "type": "number",
+                                "examples": [
+                                    1
+                                ]
+                            }
+                        },
+                        "additionalProperties": true
+                    }
+                },
+                "type": "object",
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "additionalProperties": true
+            }
+        }
     }
 }
