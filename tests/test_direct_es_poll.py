@@ -22,6 +22,7 @@ TOKEN = "private-runtime-secret"
 @pytest.fixture
 def direct_app(app_with_action, monkeypatch, mocker):
     app = app_with_action
+    mocker.patch("soar_sdk.decorators._es_poll.sleep")
     monkeypatch.setitem(
         sys.modules,
         "es_poll_api",
@@ -483,6 +484,10 @@ def test_partial_failures_are_reported_and_checkpoint_rolls_back(
             httpx.ReadTimeout(TOKEN),
             httpx.Response(503, text=TOKEN),
             httpx.Response(201, json={"_time": "now", "finding_id": "last"}),
+            httpx.ReadTimeout(TOKEN),
+            httpx.Response(503, text=TOKEN),
+            httpx.ReadTimeout(TOKEN),
+            httpx.Response(503, text=TOKEN),
         ]
     )
 
@@ -511,7 +516,7 @@ def test_partial_failures_are_reported_and_checkpoint_rolls_back(
         "unavailable",
         None,
     ]
-    assert route.call_count == 5
+    assert route.call_count == 9
     assert "cursor" not in state
     assert not state.in_transaction
     assert TOKEN not in repr(vars(result))
@@ -563,7 +568,7 @@ def test_only_failed_batch_is_replayed(
             )
 
     assert poll(OnESPollParams())
-    assert seen == [0, 1, 2, 3]
+    assert seen == ([0, 1, 2, 3] if failure == 403 else [0, 1, 2, 3, 2, 2])
     assert state["cursor"] == 2
     assert not state.in_transaction
     assert outcome(app).get_summary()["failed"] == 1
@@ -969,7 +974,7 @@ def test_poll_upload_create_and_link_preserve_ownership(
         ).validate(payload)
         seen.append(payload)
         index = len(seen)
-        if index == 2:
+        if payload["rule_title"] == "rejected":
             return httpx.Response(503, text=TOKEN)
         return httpx.Response(
             201, json={"_time": "now", "finding_id": f"finding-{index}"}
@@ -1310,3 +1315,157 @@ def test_poll_replaces_local_references_and_selects_last_successful_raw_email(
     assert outcome(direct_app).get_summary()["attachments_failed"] == int(
         first_write_fails
     )
+
+
+@pytest.mark.parametrize("failure", [429, 503, "timeout", "connection"])
+@pytest.mark.parametrize("success_on", [2, 3, None])
+@pytest.mark.parametrize("with_attachments", [False, True])
+def test_create_retries_reuse_uploads_and_preserve_finding_identity(
+    direct_app,
+    poll_attachments,
+    respx_mock,
+    mocker,
+    failure,
+    success_on,
+    with_attachments,
+):
+    app = direct_app
+    context = poll_attachments
+    requests = {title: [] for title in ("created", "retry", "forbidden")}
+
+    def create(request):
+        title = json.loads(request.content)["rule_title"]
+        requests[title].append(request.content)
+        if title == "forbidden":
+            return httpx.Response(403, text=TOKEN)
+        if title == "retry" and len(requests[title]) != success_on:
+            if failure == "timeout":
+                raise httpx.ReadTimeout(TOKEN)
+            if failure == "connection":
+                raise httpx.ConnectError(TOKEN)
+            return httpx.Response(failure, text=TOKEN)
+        return httpx.Response(201, json={"_time": "now", "finding_id": title + "-id"})
+
+    respx_mock.post(ENDPOINT).mock(side_effect=create)
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        for title in requests:
+            yield (
+                attached_finding(title, names=("email.eml", "failed.eml"))
+                if with_attachments
+                else Finding(rule_title=title)
+            )
+
+    assert poll(OnESPollParams())
+    rows = outcome(app).get_data()
+    assert [row["index"] for row in rows] == [0, 1, 2]
+    assert rows[0]["finding_id"] == "created-id"
+    assert rows[1]["success"] is (success_on is not None)
+    if success_on:
+        assert rows[1]["finding_id"] == "retry-id"
+    assert rows[2]["error_code"] == "authorization"
+    assert [len(items) for items in requests.values()] == [1, success_on or 3, 1]
+    assert (
+        len(set(requests["retry"])) == 1
+    )  # Identical payload, including attachment IDs.
+    from soar_sdk.decorators._es_poll import sleep
+
+    assert (
+        sleep.call_args_list
+        == [mocker.call(1), mocker.call(2)][: (success_on or 3) - 1]
+    )
+    if with_attachments:
+        context.bridge.get_upload_targets.assert_called_once()
+        assert context.upload_mock.call_count == 6
+        expected = [{"subject_id": "created-id", "attachment_ids": [context.issued[0]]}]
+        if success_on:
+            expected.append(
+                {"subject_id": "retry-id", "attachment_ids": [context.issued[2]]}
+            )
+        context.bridge.associate_subject_attachments.assert_called_once_with(expected)
+        assert all(not path.exists() for path in context.paths)
+        for row in rows:
+            assert [a["success"] for a in row["attachments"]] == [True, False]
+    else:
+        context.bridge.get_upload_targets.assert_not_called()
+        context.upload_mock.assert_not_called()
+        context.bridge.associate_subject_attachments.assert_not_called()
+    rendered = repr(vars(outcome(app)))
+    for secret in (TOKEN, "signed-secret", "form-secret", "private-file-contents"):
+        assert secret not in rendered
+
+
+def test_successful_create_retry_commits_checkpoint(direct_app, respx_mock):
+    app = direct_app
+    state = AssetState(app.actions_manager, "ingest", "1")
+    app.asset._ingest_state = state
+    route = respx_mock.post(ENDPOINT).mock(
+        side_effect=[
+            httpx.Response(429),
+            httpx.Response(201, json={"_time": "now", "finding_id": "recovered"}),
+        ]
+    )
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        state["cursor"] = 1
+        yield Finding(rule_title="retry")
+
+    assert poll(OnESPollParams())
+    assert state["cursor"] == 1
+    assert not state.in_transaction
+    assert outcome(app).get_summary()["status"] == "success"
+    assert route.call_count == 2
+
+
+@pytest.mark.parametrize("status", [400, 401, 403, 422, 201])
+def test_create_retry_stops_on_non_retryable_error(
+    direct_app, respx_mock, mocker, status
+):
+    route = respx_mock.post(ENDPOINT).mock(
+        side_effect=[
+            httpx.Response(429),
+            httpx.Response(status, json={"invalid": "response"}),
+        ]
+    )
+
+    @direct_app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="retry stops")
+
+    assert not poll(OnESPollParams())
+    assert route.call_count == 2
+    assert outcome(direct_app).get_data()[0]["status_code"] == status
+    from soar_sdk.decorators._es_poll import sleep
+
+    sleep.assert_called_once_with(1)
+
+
+def test_create_retries_remap_changing_subset_indexes(direct_app, respx_mock):
+    calls = []
+    attempts = {title: 0 for title in ("first", "second", "third")}
+
+    def create(request):
+        title = json.loads(request.content)["rule_title"]
+        calls.append(title)
+        attempts[title] += 1
+        if (title == "first" and attempts[title] < 2) or (
+            title == "third" and attempts[title] < 3
+        ):
+            return httpx.Response(503)
+        return httpx.Response(201, json={"_time": "now", "finding_id": title})
+
+    respx_mock.post(ENDPOINT).mock(side_effect=create)
+
+    @direct_app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        for title in attempts:
+            yield Finding(rule_title=title)
+
+    assert poll(OnESPollParams())
+    assert calls == ["first", "second", "third", "first", "third", "third"]
+    assert [row["finding_id"] for row in outcome(direct_app).get_data()] == list(
+        attempts
+    )
+    assert outcome(direct_app).get_summary()["created"] == 3

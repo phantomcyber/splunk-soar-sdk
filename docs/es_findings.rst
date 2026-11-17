@@ -164,7 +164,9 @@ Each successful batch commits its ingest-state checkpoint. A finding creation or
 validation failure stops polling after the current batch and rolls back that
 batch's state. The next scheduled poll can replay it, including findings already
 created within that batch. Timeouts can also replay a request that ES completed.
-Previously checkpointed batches are retained. There are no immediate POST retries.
+Previously checkpointed batches are retained. Direct polling retries transient
+creation failures as described under Errors and Retries before deciding whether
+the batch failed.
 Handler or state failures roll back the current batch where possible.
 
 Connectors must stage source progress in ``asset.ingest_state`` before each
@@ -192,7 +194,8 @@ For each yielded ``Finding``, local ``Finding.attachments`` are handled in order
    paired with their own successful attachment IDs in one bulk
    ``soar.attachments.associate_subject_attachments`` call per finding batch.
    Failed findings are never linked. Findings without files make no attachment
-   calls. Neither findings nor attachment operations are automatically retried.
+   calls. Transient finding creation failures are retried with the same uploaded
+   attachment references. Attachment operations are not automatically retried.
 
 The reference URL is provisional, pending the final ES attachment contract. Its
 base route comes from the private execution bundle's
@@ -369,8 +372,9 @@ therefore cause ES to reject a finding requesting analysis.
 
 Finding errors are recorded per input; failed findings must never be linked.
 If association fails, report the affected finding-ID/attachment-ID pairs and keep
-the already-created findings. Do not recreate findings to retry linking. Neither
-connectors nor the SDK retry ambiguous create POSTs automatically.
+the already-created findings. Do not recreate findings to retry linking.
+Connectors must not add their own retries around direct polling; its bounded
+creation retries are described below.
 
 Connector code must use SDK APIs for reservations (AR-2060), byte uploads
 (AR-2063), creation (AR-2061), and associations (AR-2060), without direct gRPC,
@@ -422,10 +426,30 @@ All finding exceptions inherit ``FindingAPIError`` and SDK ``ActionFailure``.
 
 Errors retain the HTTP status when available, but not ES response bodies or
 upstream transport exceptions. Tokens are excluded from errors and results.
-Payload validation failures occur before any HTTP call. The SDK performs no
-automatic retries and does not refresh tokens. After timeout or lost response,
-the finding may already exist: retrying a POST can create duplicates. Attachment
-reservation's idempotency key does not make finding creation idempotent.
+Payload validation failures occur before any HTTP call. The SDK does not refresh
+tokens. Standalone ``soar.create_finding`` and ``soar.create_findings_bulk`` calls
+perform no automatic retries, and classic polling is unchanged.
+
+Runtime-selected direct ``@app.on_es_poll()`` retries failed finding creation for
+``rate_limit`` (429), ``unavailable`` (5xx or transport errors), and ``timeout``.
+There are at most three attempts per finding in each batch, with a one-second
+pause before the first retry and a two-second pause before the second retry.
+Only findings still failing with one of these errors are retried; successful
+findings and other failures (including validation and 401/403) are not replayed.
+The final outcome for each finding is reported once. A recovered creation counts
+as successful when deciding whether to commit the batch checkpoint.
+
+These retries reuse the prepared payload and successfully uploaded attachment
+IDs in memory. They do not request more upload targets, reupload files (including
+failed uploads), or retry linking. Only successfully uploaded attachments are
+referenced, and association is queued once for the final successful results.
+No retry state is persisted: a new execution or scheduled poll can upload files
+again if it replays an uncommitted batch.
+
+After a timeout or lost response, the finding may already exist: these retries
+can create duplicate findings. Attachment reservation's idempotency key does not
+make finding creation idempotent. These bounded retries also do not fix permanent
+transport problems such as an untrusted certificate.
 
 Compatibility and Verification
 ------------------------------
