@@ -181,13 +181,16 @@ class OnESPollDecorator:
         Usage:
         The generator should yield a `Finding`. Upon receiving an event from the generator, the SDK will submit the Finding to Splunk Enterprise Security and create a linked SOAR Container.
         The generator should accept a "send type" of `int | None`. When a Finding is successfully delivered to ES and linked to a Container, the SDK will send the Container ID back into the generator. The Container is useful for storing large attachments included with the Finding.
-        If the Finding cannot be successfully delivered to ES, the SDK will stop polling and return a failed result for the action run.
+        In classic SOAR polling, if bulk creation raises an exception, the SDK will stop polling and return a failed result for the action run.
 
         With bundle-provided ES execution context, findings are created directly
         without SOAR containers. The generator receives None; ordered creation
         outcomes are returned in action-result data and mixed outcomes report
         partial success. Local attachments are uploaded before finding creation;
         successful finding/file pairs are then queued for association.
+        After bounded retries, direct creation failures are skipped and staged
+        source checkpoints are committed so later messages can be ingested.
+        Connectors must handle source read/parse errors before yielding separately.
         """
         if self.app.actions_manager.get_action("on_es_poll"):
             raise TypeError(

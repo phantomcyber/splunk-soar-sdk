@@ -10,6 +10,7 @@ __lazy_modules__ = {
     "soar_sdk.decorators._es_poll_attachments",
     "soar_sdk.decorators._es_poll_preparation",
     "soar_sdk.models.finding",
+    "soar_sdk.logging",
     "soar_sdk.params",
     "time",
     "typing",
@@ -31,6 +32,7 @@ from soar_sdk.decorators._es_poll_preparation import (
     _default_finding_source,
     _finding_default_updates,
 )
+from soar_sdk.logging import getLogger
 from soar_sdk.models.finding import Finding
 from soar_sdk.params import OnESPollParams
 
@@ -78,7 +80,6 @@ def _run_direct_es_poll(
     ingest = app._es_ingest_config
     state = app.asset._ingest_state
     polling_failed = False
-    batch_failed = False
     count = 0
     used_attachment_ids: set[str] = set()
     attachment_count = 0
@@ -86,10 +87,10 @@ def _run_direct_es_poll(
         str(app.app_meta_info.get("name", "")), app._asset_name
     )
 
-    def flush() -> bool:
-        nonlocal attachment_count, batch_failed
+    def flush() -> None:
+        nonlocal attachment_count
         if not batch:
-            return True
+            return
         start = len(results)
         payloads = []
         indexes = []
@@ -152,11 +153,20 @@ def _run_direct_es_poll(
             results.extend(batch_results)
         batch.clear()
         attachment_count = 0
-        batch_failed = any(not result["success"] for result in results[start:])
-        if not batch_failed and state is not None:
+        # Source messages have been processed even when ES rejects their findings.
+        # Persist their staged cursors so a poison message cannot block later mail.
+        if state is not None:
             state.commit()
             state.begin_transaction()
-        return not batch_failed
+        for outcome in results[start:]:
+            if not outcome["success"]:
+                getLogger().warning(
+                    "ES polling skipped finding at index %s (error_code=%s, "
+                    "status_code=%s); continuing without replay after checkpoint.",
+                    outcome["index"],
+                    outcome.get("error_code"),
+                    outcome.get("status_code"),
+                )
 
     try:
         if state is not None:
@@ -178,17 +188,15 @@ def _run_direct_es_poll(
                 if state is not None:
                     next_state = state.get_all()
                     state.put_all(checkpoint)
-                if not flush():
-                    break
+                flush()
                 if state is not None:
                     state.put_all(next_state)
             batch.append((count, item))
             attachment_count += file_count
             count += 1
-            if len(batch) == soar.MAX_BULK_FINDINGS and not flush():
-                break
-        if not batch_failed:
-            flush()
+            if len(batch) == soar.MAX_BULK_FINDINGS:
+                flush()
+        flush()
     except Exception:
         # Handler exceptions can contain credentials or message contents.
         polling_failed = True
@@ -202,10 +210,10 @@ def _run_direct_es_poll(
             polling_failed = True
         if state is not None and state.in_transaction:
             try:
-                if polling_failed or batch_failed:
+                if polling_failed:
                     state.rollback()
                 else:
-                    # Save trailing handler changes only after successful batches.
+                    # Save trailing source progress, including skipped messages.
                     state.commit()
             except Exception:
                 polling_failed = True
