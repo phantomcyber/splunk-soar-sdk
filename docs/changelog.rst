@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.2.2 (2026-11-18)
+
+   * Fix: Keep direct ES ingestion moving by skipping failed findings after bounded retries and saving their staged source checkpoints, with safe diagnostics for skipped findings.
+
    .. rubric:: 7.2.1 (2026-11-17)
 
    * Fix: Reuse uploaded attachments during bounded retries of transient finding creation failures in direct ES polling.
