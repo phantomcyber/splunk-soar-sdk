@@ -156,24 +156,29 @@ Each action-result data row contains the input index and the created finding ID
 or safe failure details. The summary includes ``created``, ``failed``,
 ``polling_failed``, ``attachments_uploaded``, ``attachments_failed``, ``links_queued``,
 ``links_failed`` and ``status``. Mixed outcomes report ``partial``; all findings
-in the current batch are attempted. All-failed or handler/state failures report
+in every processed batch are attempted. All-failed or handler/state failures report
 an unsuccessful action.
 An empty poll succeeds. Generators are closed on exit, including a count limit.
 
-Each successful batch commits its ingest-state checkpoint. A finding creation or
-validation failure stops polling after the current batch and rolls back that
-batch's state. The next scheduled poll can replay it, including findings already
-created within that batch. Timeouts can also replay a request that ES completed.
-Previously checkpointed batches are retained. Direct polling retries transient
-creation failures as described under Errors and Retries before deciding whether
-the batch failed.
+Each processed batch commits its ingest-state checkpoint, including finding
+creation and validation failures. After the bounded retries described under
+Errors and Retries, failed findings are skipped and polling continues with later
+source messages. The next scheduled poll does not replay these checkpointed
+messages. This favors continued ingestion over guaranteed delivery: skipped
+messages can be lost, and the SDK does not provide a dead letter queue or
+automatic replay. Safe warning logs record each skipped finding's input index,
+error code and HTTP status when available, without source message contents.
+Timeouts during the bounded retries can repeat a request that ES completed.
 Handler or state failures roll back the current batch where possible.
 
 Connectors must stage source progress in ``asset.ingest_state`` before each
 ``yield Finding`` and retain any unprocessed source IDs when polling out of order.
 Updating the cursor only after the whole generator completes cannot provide
-per-batch checkpoints. Attachment upload or association failures alone do not
-replay created findings. Classic SDK polling behavior is unchanged.
+per-batch checkpoints. The SDK sees findings, not source email identities; an
+exception while fetching or parsing an email before yielding a finding must be
+handled by the connector to skip that email safely. Attachment upload or
+association failures alone do not replay created findings. Classic SDK polling
+behavior is unchanged.
 
 For each yielded ``Finding``, local ``Finding.attachments`` are handled in order:
 
@@ -220,8 +225,8 @@ provides a readiness guarantee, direct polling rejects a finding that has local
 ``Finding.attachments`` and enables either ``run_threat_analysis`` or
 ``launch_automation``. This includes flags inherited from saved ingestion
 settings. The result has ``error_code="attachment_readiness"``; no uploads,
-finding POST, or association are attempted for that finding. The failed batch
-retains its checkpoint for replay, and other findings in the batch continue.
+finding POST, or association are attempted for that finding. The finding is
+skipped, its staged source checkpoint is committed, and other findings continue.
 The SDK does not silently change flags or schedule deferred analysis. Disable
 both flags to create findings with local attachments through this flow.
 Findings without local attachments retain their requested flags. Classic
@@ -436,8 +441,10 @@ There are at most three attempts per finding in each batch, with a one-second
 pause before the first retry and a two-second pause before the second retry.
 Only findings still failing with one of these errors are retried; successful
 findings and other failures (including validation and 401/403) are not replayed.
-The final outcome for each finding is reported once. A recovered creation counts
-as successful when deciding whether to commit the batch checkpoint.
+The final outcome for each finding is reported once. After these attempts, any
+remaining failures are skipped and the batch checkpoint is committed, even if
+every finding failed. An all-failed action still reports an error for visibility;
+this does not roll back its checkpoint.
 
 These retries reuse the prepared payload and successfully uploaded attachment
 IDs in memory. They do not request more upload targets, reupload files (including

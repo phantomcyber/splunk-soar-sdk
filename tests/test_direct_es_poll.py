@@ -471,9 +471,7 @@ def test_uploaded_email_metadata_and_raw_selection_match_across_transports(
     assert email["body"] == "body"
 
 
-def test_partial_failures_are_reported_and_checkpoint_rolls_back(
-    direct_app, respx_mock
-):
+def test_partial_failures_are_reported_and_checkpoint_advances(direct_app, respx_mock):
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
     app.asset._ingest_state = state
@@ -517,14 +515,14 @@ def test_partial_failures_are_reported_and_checkpoint_rolls_back(
         None,
     ]
     assert route.call_count == 9
-    assert "cursor" not in state
+    assert state["cursor"] == 5
     assert not state.in_transaction
     assert TOKEN not in repr(vars(result))
 
 
 @pytest.mark.parametrize("with_attachments", [False, True])
 @pytest.mark.parametrize("failure", [403, 429, 503, "timeout"])
-def test_only_failed_batch_is_replayed(
+def test_failed_emails_are_skipped_and_not_replayed_on_next_poll(
     direct_app,
     poll_attachments,
     respx_mock,
@@ -568,18 +566,89 @@ def test_only_failed_batch_is_replayed(
             )
 
     assert poll(OnESPollParams())
-    assert seen == ([0, 1, 2, 3] if failure == 403 else [0, 1, 2, 3, 2, 2])
-    assert state["cursor"] == 2
+    assert seen == ([0, 1, 2, 3, 4, 5] if failure == 403 else [0, 1, 2, 3, 2, 2, 4, 5])
+    assert state["cursor"] == 6
+    assert saved["ingest"]["cursor"] == 6
     assert not state.in_transaction
     assert outcome(app).get_summary()["failed"] == 1
     reject = False
     seen.clear()
     assert poll(OnESPollParams())
-    assert seen == [2, 3, 4, 5]
+    assert seen == []
     assert state["cursor"] == 6
     assert not state.in_transaction
 
 
+@pytest.mark.parametrize("is_async", [False, True])
+@pytest.mark.parametrize("limit", [0, 3])
+def test_rejected_email_batch_does_not_block_later_mail(
+    direct_app, respx_mock, mocker, monkeypatch, capsys, is_async, limit
+):
+    app = direct_app
+    saved = {}
+    mocker.patch.object(
+        app.actions_manager, "load_state", side_effect=lambda: dict(saved)
+    )
+    mocker.patch.object(app.actions_manager, "save_state", side_effect=saved.update)
+    app.asset._ingest_state = AssetState(
+        app.actions_manager, "ingest", "1", encrypted=False
+    )
+    monkeypatch.setattr(app.soar_client, "MAX_BULK_FINDINGS", 2)
+    seen = []
+
+    def create(request):
+        index = int(json.loads(request.content)["rule_title"])
+        seen.append(index)
+        if index < 3:
+            return httpx.Response(422, text=TOKEN)
+        return httpx.Response(201, json={"_time": "now", "finding_id": str(index)})
+
+    respx_mock.post(ENDPOINT).mock(side_effect=create)
+
+    def emails():
+        state = app.asset.ingest_state
+        for index in range(state.get("cursor", 0), 5):
+            state["cursor"] = index + 1
+            yield Finding(rule_title=str(index))
+
+    if is_async:
+
+        @app.on_es_poll()
+        async def poll(params: OnESPollParams) -> AsyncGenerator[Finding, int | None]:
+            for finding in emails():
+                yield finding
+    else:
+
+        @app.on_es_poll()
+        def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+            yield from emails()
+
+    assert poll(OnESPollParams(container_count=limit)) is (limit == 0)
+    assert seen == list(range(limit or 5))
+    assert saved["ingest"]["cursor"] == (limit or 5)
+    summary = outcome(app).get_summary()
+    assert summary["created"] == (0 if limit else 2)
+    assert summary["failed"] == 3
+    assert summary["status"] == ("error" if limit else "partial")
+    assert not summary["polling_failed"]
+    logs = capsys.readouterr().out
+    assert logs.count("ES polling skipped finding at index") == 3
+    assert "error_code=validation" in logs
+    assert "status_code=422" in logs
+    assert TOKEN not in logs
+
+    # Reconstruct state to prove progress survives the next execution, including
+    # an all-failed run. The later emails are read without replaying rejected ones.
+    app.asset._ingest_state = AssetState(
+        app.actions_manager, "ingest", "1", encrypted=False
+    )
+    seen.clear()
+    assert poll(OnESPollParams())
+    assert seen == ([3, 4] if limit else [])
+    assert saved["ingest"]["cursor"] == 5
+
+
+@pytest.mark.parametrize("rejected", [False, True])
 @pytest.mark.parametrize("is_async", [False, True])
 def test_handler_failure_preserves_previous_batch_checkpoint(
     direct_app,
@@ -587,6 +656,7 @@ def test_handler_failure_preserves_previous_batch_checkpoint(
     mocker,
     monkeypatch,
     is_async,
+    rejected,
 ):
     app = direct_app
     saved = {}
@@ -597,7 +667,9 @@ def test_handler_failure_preserves_previous_batch_checkpoint(
     state = AssetState(app.actions_manager, "ingest", "1", encrypted=False)
     app.asset._ingest_state = state
     monkeypatch.setattr(app.soar_client, "MAX_BULK_FINDINGS", 2)
-    respx_mock.post(ENDPOINT).respond(201, json={"_time": "now", "finding_id": "id"})
+    respx_mock.post(ENDPOINT).respond(
+        422 if rejected else 201, json={"_time": "now", "finding_id": "id"}
+    )
 
     def findings():
         for index in range(3):
@@ -619,7 +691,9 @@ def test_handler_failure_preserves_previous_batch_checkpoint(
 
     assert not poll(OnESPollParams())
     assert state["cursor"] == 2
-    assert outcome(app).get_summary()["created"] == 2
+    assert saved["ingest"]["cursor"] == 2
+    assert outcome(app).get_summary()["created"] == (0 if rejected else 2)
+    assert outcome(app).get_summary()["failed"] == (2 if rejected else 0)
     assert not state.in_transaction
 
 
@@ -645,7 +719,9 @@ def test_invalid_items_do_not_abort_poll(direct_app, respx_mock, all_invalid):
     assert "private contents" not in repr(vars(result))
 
 
-def test_invalid_yield_does_not_checkpoint_source_progress(direct_app, respx_mock):
+def test_invalid_yield_is_skipped_and_checkpoints_source_progress(
+    direct_app, respx_mock
+):
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
     app.asset._ingest_state = state
@@ -656,7 +732,7 @@ def test_invalid_yield_does_not_checkpoint_source_progress(direct_app, respx_moc
         yield "invalid"
 
     assert not poll(OnESPollParams())
-    assert "cursor" not in state
+    assert state["cursor"] == 1
     assert not respx_mock.calls
     assert not state.in_transaction
 
@@ -928,7 +1004,7 @@ def test_poll_gates_attachment_consumers_before_async_association(
         context.bridge.associate_subject_attachments.assert_not_called()
         assert result.get_data()[0]["error_code"] == "attachment_readiness"
         assert result.get_data()[1]["finding_id"] == "finding-1"
-        assert "cursor" not in state
+        assert state["cursor"] == 2
     else:
         assert context.events == ["reserve", "upload", "create", "create", "link_ack"]
         assert pending_links == [
