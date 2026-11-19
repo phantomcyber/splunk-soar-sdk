@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.3.0 (2026-11-19)
+
+   * Feature: Add ``diagnose_es_poll`` and ``PollingError`` for shared, safe ES polling diagnostics with connector-specific error classification.
+
    .. rubric:: 7.2.4 (2026-11-19)
 
    * Fix: Allow direct ES polling to ingest local email attachments while preserving threat-analysis and automation flags, require ES attachment-readiness retries for threat analysis, and report safe authentication or mailbox failure reasons provided by connectors.

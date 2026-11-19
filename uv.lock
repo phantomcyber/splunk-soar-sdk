@@ -1623,7 +1623,7 @@ wheels = [
 
 [[package]]
 name = "splunk-soar-sdk"
-version = "7.2.4"
+version = "7.3.0"
 source = { editable = "." }
 dependencies = [
     { name = "anyio" },
