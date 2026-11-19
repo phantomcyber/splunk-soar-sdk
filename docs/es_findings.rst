@@ -206,11 +206,11 @@ behavior is unchanged.
 For each yielded ``Finding``, local ``Finding.attachments`` are handled in order:
 
 #. The decorator writes their bytes to SDK-owned temporary files and requests
-   targets through ``soar.attachments.get_upload_targets`` (AR-2060). Each
+   targets through ``soar.attachments.get_upload_targets``. Each
    attachment batch makes one bulk reservation with a new UUID idempotency key.
    A finding with more than 20 files uses consecutive reservations of at most 20.
    Returned IDs must be UUIDs and must not be reused anywhere in the run.
-#. ``soar.attachments.upload_files`` (AR-2063) uploads the files with at most four
+#. ``soar.attachments.upload_files`` uploads the files with at most four
    workers. Temporary files are removed on success and failure. Input names are
    metadata only; they are never used as local paths.
 #. Only successful uploads populate ``email.attachments`` entries with
@@ -241,18 +241,18 @@ success or safe failure details; failures before reservation have no ID.
 ``attachment_links`` records ``queued`` or ``failed`` with the affected IDs.
 An attachment or link failure makes an otherwise successful poll ``partial``.
 
-An association ACK confirms queueing through bundle → orchestrator → SQS. It
-does not confirm that Timeline has saved the mapping. Findings with local
-attachments may enable ``run_threat_analysis``: ES submits their raw email
-through its SAA worker, which must support bounded retries for Lunar Base
-attachment availability (AR-2254). Deploy that ES fix before upgrading the SDK
+An attachment association acknowledgement confirms queued processing; it does
+not guarantee that the attachment is readable. Findings with local attachments
+may enable ``run_threat_analysis``: ES submits their raw email to Splunk Attack
+Analyzer (SAA). This requires an ES version that retries reads of attachments
+that are not yet available. Deploy that ES support before upgrading the SDK
 for assets using this option. The SDK preserves the requested analysis flag;
 it does not wait for analysis completion.
 
 The SDK also preserves ``launch_automation`` without rejecting findings with
-local attachments. ES owns automation-rule support and dispatch; Lunar Base
-currently does not support automation rules. Successful ingestion and an
-association ACK do not guarantee immediate attachment availability or automation
+local attachments. ES owns automation-rule support and dispatch, which depend
+on the active automation provider. Successful ingestion and an association
+acknowledgement do not guarantee immediate attachment availability or automation
 execution. Classic polling is unchanged.
 
 Request Model Fields
@@ -351,18 +351,19 @@ Callers managing files explicitly can use the same SDK APIs without yielding
 those files again; they own the batch, references, outcomes and cleanup:
 
 1. Collect findings and download their attachments to temporary files.
-2. Use one AR-2060 ``soar.attachments.get_upload_targets`` call per connector
+2. Use one ``soar.attachments.get_upload_targets`` call per connector
    batch, with exactly the total number of attachment filenames in that batch.
    Assign each file exactly one returned ID; never reuse an ID. The
    reservation service accepts at most 20 files per request, so connector batch
-   sizing must respect that attachment limit or the limit must be agreed with
-   AR-2060. Do not request targets separately for each finding.
-3. Upload bytes using AR-2063. Track success for each attachment ID. Presigned
-   URLs and multipart field values are credentials, not permanent finding links.
+   sizing must respect that attachment limit. Do not request targets separately
+   for each finding.
+3. Upload bytes using ``soar.attachments.upload_files``. Track success for each
+   attachment ID. Presigned URLs and multipart field values are credentials,
+   not permanent finding links.
 4. Populate the ES attachment-reference fields with successful
    uploads, then call ``soar.create_findings_bulk`` (or ``soar.create_finding`` for one finding).
 5. For successfully created findings only, pass the returned IDs unchanged to
-   AR-2060's association API:
+   ``soar.attachments.associate_subject_attachments``:
 
    .. code-block:: python
 
@@ -381,9 +382,8 @@ those files again; they own the batch, references, outcomes and cleanup:
 
 6. Report counts and per-finding/per-attachment failures, then delete temporary
    files in a ``finally`` block, whether the run succeeds or fails. Association
-   returns a durable queue message ID; bundle → orchestrator → SQS → Timeline
-   processing completes the link asynchronously. Enqueueing does not confirm
-   completed linking.
+   returns a durable queue message ID; the attachment service completes the
+   link asynchronously. Enqueueing does not confirm completed linking.
 
 When there are no attachments, skip upload target creation, uploads and linking.
 If upload URL reservation fails, mark those attachments failed and create findings
@@ -404,8 +404,8 @@ the already-created findings. Do not recreate findings to retry linking.
 Connectors must not add their own retries around direct polling; its bounded
 creation retries are described below.
 
-Connector code must use SDK APIs for reservations (AR-2060), byte uploads
-(AR-2063), creation (AR-2061), and associations (AR-2060), without direct gRPC,
+Connector code must use SDK APIs for reservations, byte uploads, finding
+creation, and associations, without direct gRPC,
 S3, ES REST calls or hard-coded endpoints. ES tokens, presigned URLs and file
 contents must be excluded from logs, errors and run results across all stages.
 Connector migrations and durable association verification belong to the shared
@@ -417,15 +417,14 @@ changing classic SOAR container and vault behavior.
    The inspected OpenAPI does not define an attachment-ID property. It declares
    ``email.raw_email_link`` and attachment URLs as URIs. The runtime-supplied
    reference format is temporary and requires the matching ES reader update.
-   AR-2060 association accepts stable IDs separately. Successful schema
+   The association API accepts stable IDs separately. Successful schema
    validation alone does not prove the reference is readable.
 
    Association is asynchronous. An ES consumer can attempt a download before
-   Timeline has saved the finding-to-attachment link. The inspected SAA code
-   treats download failures as terminal. Direct polling gates this combination
-   before uploading or creating the finding. Queue acknowledgement alone must
-   never be used to lift that gate; doing so requires a proven integration
-   readiness mechanism and validation against delayed association persistence.
+   the attachment service has saved the finding-to-attachment link. Consumers
+   must handle temporary unavailability; ES threat analysis requires the
+   attachment-read retries described above. Queue acknowledgement is not a
+   readiness guarantee.
 
 Errors and Retries
 ------------------
@@ -493,10 +492,11 @@ support policy.
 
 Local schema tests check serialized requests against the copied ES schema;
 HTTP tests check IDs, mixed batch outcomes, errors and secret handling. Polling
-tests compose AR-2060/AR-2063 with creation, per-file outcomes and queued links.
-Runtime action-data delivery and actual ES/Timeline
-behavior must be verified on ``feature/phishing-sdk-changes`` after
-the related changes merge. The classic models and proxy API remain available;
+tests compose attachment reservations and uploads with finding creation,
+per-file outcomes and queued links.
+Runtime action-data delivery and end-to-end ES attachment behavior require
+integration testing against the deployed SDK and ES versions. The classic
+models and proxy API remain available;
 the direct methods adapt the supported legacy payload shapes internally.
 
 .. automethod:: soar_sdk.abstract.SOARClient.create_finding
