@@ -160,6 +160,24 @@ in every processed batch are attempted. All-failed or handler/state failures rep
 an unsuccessful action.
 An empty poll succeeds. Generators are closed on exit, including a count limit.
 
+Handler, batch and checkpoint exceptions add ``polling_errors`` to the summary.
+Each entry identifies the SDK ``stage`` and an allowlisted ``error_type``; a valid
+HTTP ``status_code`` or recognized gRPC ``rpc_code`` is included when available.
+The action message includes the first error's details. Later cleanup errors are
+retained in the summary without replacing the first failure. Error logs also
+include counts of findings accepted from the connector, recorded outcomes and
+pending batch entries. These are SDK counters, not counts of source emails read
+or skipped, and recorded outcomes do not prove whether an interrupted ES request
+created a finding.
+
+For example, ``ES polling error: 0 created, 0 failed. stage=state_commit
+error_type=RpcError rpc_code=UNAVAILABLE`` identifies a checkpoint-save failure
+whose transport reported unavailability. A generic ``RuntimeError`` identifies
+only the exception category; it does not establish its underlying cause. The
+``poll`` stage includes connector-owned fetching, parsing and state access before
+the next finding is yielded. Exception messages, arbitrary exception class names,
+tracebacks, HTTP bodies, URLs, credentials and checkpoint values are omitted.
+
 Each processed batch commits its ingest-state checkpoint, including finding
 creation and validation failures. After the bounded retries described under
 Errors and Retries, failed findings are skipped and polling continues with later
