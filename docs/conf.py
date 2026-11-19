@@ -111,6 +111,7 @@ html_theme_options = {
 html_logo = "_static/logo.svg"
 html_favicon = "_static/favicon.png"
 html_static_path = ["_static"]
+html_css_files = ["console.css"]
 
 html_context = {
     "display_github": True,
