@@ -168,6 +168,34 @@ code ``authentication`` or ``mailbox``. Recognized codes are exposed as
 ``reason`` in the summary, action message and error log; arbitrary values and
 exception messages are never copied. Without a recognized code the SDK does
 not guess the cause of a generic exception.
+Use the SDK's ``PollingError`` for explicit failures, or wrap a polling generator
+with ``diagnose_es_poll`` and supply a connector-specific classifier::
+
+    from soar_sdk.exceptions import PollingError
+    from soar_sdk.polling import diagnose_es_poll
+
+    def classify_mail_error(error):
+        # Match errors from this connector's API client only.
+        if isinstance(error, MailClientAuthenticationError):
+            return ("authentication", None)
+        return None
+
+    @app.on_es_poll()
+    @diagnose_es_poll(classify_mail_error)
+    def poll(params, soar, asset):
+        yield from fetch_findings(params, soar, asset)
+
+A classifier returns ``("authentication", status_code)``, ``("mailbox", status_code)``,
+or ``None`` for an unknown failure. HTTP status codes must be integers from 100
+through 599, or ``None``. The SDK supplies fixed messages and suppresses upstream
+exception chaining for converted errors. Unknown failures, invalid classifier
+results and classifier exceptions preserve the original failure. Existing
+``PollingError`` instances pass through unchanged. Classification of service-specific
+exceptions belongs in the connector; the SDK does not infer their meaning.
+The decorator preserves yielded findings and generator cleanup without retrying
+or changing checkpoints. For an explicit failure, raise
+``PollingError("mailbox")`` instead of attaching diagnostic fields manually.
+
 The action message includes the first error's details. Later cleanup errors are
 retained in the summary without replacing the first failure. Error logs also
 include counts of findings accepted from the connector, recorded outcomes and

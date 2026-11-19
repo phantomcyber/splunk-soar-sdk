@@ -510,6 +510,11 @@ Logging
 .. autoexception:: soar_sdk.logging.critical
    :show-inheritance:
 
+ES polling diagnostics
+----------------------
+
+.. autofunction:: soar_sdk.polling.diagnose_es_poll
+
 .. _api_ref_exceptions_label:
 
 Exceptions
