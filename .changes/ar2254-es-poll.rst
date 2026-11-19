@@ -1,0 +1,1 @@
+* Fix: Allow direct ES polling with local email attachments and threat analysis enabled when ES supports attachment-readiness retries, and report safe authentication or mailbox failure reasons provided by connectors.

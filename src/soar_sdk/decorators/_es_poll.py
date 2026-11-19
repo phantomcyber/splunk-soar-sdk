@@ -69,6 +69,12 @@ def _poll_error_details(stage: str, error: Exception) -> dict[str, str | int]:
         if isinstance(error, kind)
     )
     details: dict[str, str | int] = {"stage": stage, "error_type": error_type}
+    # Connectors may identify a failure before yielding their first finding.
+    # Accept fixed codes only; never copy their exception text or class name.
+    with suppress(Exception):
+        code = getattr(error, "polling_error_code", None)
+        if type(code) is str and code in {"authentication", "mailbox"}:
+            details["reason"] = code
     with suppress(Exception):
         status = getattr(error, "status_code", None)
         if status is None:
@@ -157,12 +163,13 @@ def _run_direct_es_poll(
         details = _poll_error_details(error_stage, error)
         polling_errors.append(details)
         getLogger().error(
-            "ES polling failure: stage=%s error_type=%s status_code=%s rpc_code=%s "
+            "ES polling failure: stage=%s error_type=%s status_code=%s rpc_code=%s reason=%s "
             "findings_accepted=%s findings_recorded=%s pending_findings=%s",
             details["stage"],
             details["error_type"],
             details.get("status_code"),
             details.get("rpc_code"),
+            details.get("reason"),
             count,
             len(results),
             len(batch),
@@ -196,21 +203,18 @@ def _run_direct_es_poll(
                 )
                 continue
             payload.update(_finding_default_updates(payload, ingest, finding_source))
-            # Association needs the future finding ID, and its queue ACK does
-            # not make attachments readable. Reject before allocating files
-            # until the integration supplies a readiness guarantee.
-            if item.attachments and (
-                payload["run_threat_analysis"] or payload["launch_automation"]
-            ):
+            # ES's SAA worker waits for the raw email with bounded download
+            # retries. Immediate automation still has no readiness guarantee.
+            if item.attachments and payload["launch_automation"]:
                 results.append(
                     {
                         "index": index,
                         "success": False,
                         "error_code": "attachment_readiness",
                         "message": (
-                            "Immediate threat analysis or automation is unavailable "
+                            "Immediate automation is unavailable "
                             "for findings with local attachments until attachment "
-                            "readiness is guaranteed. Disable both flags to create "
+                            "readiness is guaranteed. Disable launch_automation to create "
                             "the finding."
                         ),
                     }
@@ -351,6 +355,8 @@ def _run_direct_es_poll(
             message += f" status_code={first['status_code']}"
         if "rpc_code" in first:
             message += f" rpc_code={first['rpc_code']}"
+        if "reason" in first:
+            message += f" reason={first['reason']}"
     result = ActionResult(
         status=status != "error",
         message=message,

@@ -1118,7 +1118,7 @@ def attached_finding(title="mail", names=("email.eml",), *, raw=True):
         )
     ],
 )
-def test_poll_gates_attachment_consumers_before_async_association(
+def test_poll_allows_analysis_but_gates_automation_before_async_association(
     direct_app, poll_attachments, respx_mock, source, analysis, automation, is_async
 ):
     from soar_sdk.models.finding import FindingEmail
@@ -1155,7 +1155,7 @@ def test_poll_gates_attachment_consumers_before_async_association(
         if payload["email"].get("attachments"):
             # A consumer triggered by this POST would read before even enqueueing.
             assert not persisted_links
-            assert not payload["run_threat_analysis"]
+            assert payload["run_threat_analysis"] is analysis
             assert not payload["launch_automation"]
         else:
             assert payload["run_threat_analysis"] is analysis
@@ -1191,7 +1191,7 @@ def test_poll_gates_attachment_consumers_before_async_association(
 
     assert poll(OnESPollParams())
     result = outcome(app)
-    gated = analysis or automation
+    gated = automation
     if gated:
         assert context.events == ["create"]
         context.bridge.get_upload_targets.assert_not_called()
@@ -1740,3 +1740,48 @@ def test_create_retries_remap_changing_subset_indexes(direct_app, respx_mock):
         attempts
     )
     assert outcome(direct_app).get_summary()["created"] == 3
+
+
+@pytest.mark.parametrize("code", ["authentication", "mailbox"])
+def test_poll_reports_allowlisted_connector_setup_reason(
+    direct_app, code, caplog, capsys
+):
+    error = Exception(TOKEN)
+    error.polling_error_code = code
+
+    @direct_app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        raise error
+        yield  # pragma: no cover
+
+    assert not poll(OnESPollParams())
+    result = outcome(direct_app)
+    assert result.get_summary()["polling_errors"] == [
+        {"stage": "poll", "error_type": "Exception", "reason": code}
+    ]
+    assert result.get_summary()["created"] == result.get_summary()["failed"] == 0
+    assert f"reason={code}" in result.get_message()
+    assert f"reason={code}" in caplog.text + capsys.readouterr().out
+    assert TOKEN not in repr(vars(result)) + caplog.text
+
+
+@pytest.mark.parametrize("code", [None, TOKEN, [], 403])
+def test_poll_drops_unrecognized_connector_reason(code):
+    error = Exception(TOKEN)
+    error.polling_error_code = code
+    assert _poll_error_details("poll", error) == {
+        "stage": "poll",
+        "error_type": "Exception",
+    }
+
+
+def test_poll_ignores_raising_connector_reason_property():
+    class ConnectorError(Exception):
+        @property
+        def polling_error_code(self):
+            raise RuntimeError(TOKEN)
+
+    assert _poll_error_details("poll", ConnectorError(TOKEN)) == {
+        "stage": "poll",
+        "error_type": "Exception",
+    }
