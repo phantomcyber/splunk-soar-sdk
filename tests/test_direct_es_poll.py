@@ -10,7 +10,12 @@ from pydantic import SecretStr, ValidationError
 
 from soar_sdk.apis._es_findings import _get_runtime_es_context
 from soar_sdk.asset_state import AssetState
-from soar_sdk.exceptions import FindingConfigurationError
+from soar_sdk.decorators._es_poll import _poll_error_details
+from soar_sdk.exceptions import (
+    ActionFailure,
+    FindingAPIError,
+    FindingConfigurationError,
+)
 from soar_sdk.models.finding import Finding
 from soar_sdk.params import OnESPollParams
 
@@ -741,7 +746,7 @@ def test_invalid_yield_is_skipped_and_checkpoints_source_progress(
     "failure", ["iteration", "close", "begin", "commit", "rollback"]
 )
 def test_handler_and_state_errors_are_safe_and_close_execution(
-    direct_app, mocker, failure, caplog
+    direct_app, mocker, failure, caplog, capsys
 ):
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
@@ -776,9 +781,199 @@ def test_handler_and_state_errors_are_safe_and_close_execution(
     )
     assert not poll(params)
     assert outcome(app).get_summary()["polling_failed"]
+    first = outcome(app).get_summary()["polling_errors"][0]
+    assert first == {
+        "stage": {
+            "iteration": "poll",
+            "close": "generator_close",
+            "begin": "state_begin",
+            "commit": "state_commit",
+            "rollback": "poll",
+        }[failure],
+        "error_type": "RuntimeError",
+    }
+    if failure == "rollback":
+        assert all(
+            error["stage"] == "state_rollback"
+            for error in outcome(app).get_summary()["polling_errors"][1:]
+        )
+    assert (
+        f"stage={first['stage']} error_type=RuntimeError" in outcome(app).get_message()
+    )
     assert TOKEN not in repr(vars(outcome(app)))
     assert TOKEN not in caplog.text
+    assert TOKEN not in capsys.readouterr().out
     assert params.access_token is None
+
+
+@pytest.mark.parametrize(
+    "error, expected_type",
+    [
+        (
+            httpx.HTTPStatusError(
+                TOKEN, request=httpx.Request("GET", URL), response=httpx.Response(403)
+            ),
+            "HTTPStatusError",
+        ),
+        (httpx.ReadTimeout(TOKEN), "TimeoutException"),
+        (httpx.ConnectError(TOKEN), "TransportError"),
+        (FindingAPIError(TOKEN, status_code=429), "FindingAPIError"),
+        (ActionFailure(TOKEN), "ActionFailure"),
+        (TimeoutError(TOKEN), "TimeoutError"),
+        (ConnectionError(TOKEN), "ConnectionError"),
+        (KeyError(TOKEN), "KeyError"),
+        (TypeError(TOKEN), "TypeError"),
+        (ValueError(TOKEN), "ValueError"),
+        (RuntimeError(TOKEN), "RuntimeError"),
+        (OSError(TOKEN), "OSError"),
+        (type(TOKEN, (Exception,), {})(TOKEN), "Exception"),
+    ],
+)
+def test_poll_diagnostics_allowlist_exception_types(error, expected_type):
+    details = _poll_error_details("poll", error)
+    assert details["error_type"] == expected_type
+    assert TOKEN not in repr(details)
+    if isinstance(error, httpx.HTTPStatusError):
+        assert details["status_code"] == 403
+    elif isinstance(error, FindingAPIError):
+        assert details["status_code"] == 429
+
+
+@pytest.mark.parametrize("status", [True, 99, 600, TOKEN])
+def test_poll_diagnostics_reject_invalid_http_status(status):
+    error = FindingAPIError(TOKEN, status_code=status)
+    assert _poll_error_details("poll", error) == {
+        "stage": "poll",
+        "error_type": "FindingAPIError",
+    }
+
+
+def test_poll_diagnostics_never_format_or_trust_exception_properties():
+    class PrivateError(Exception):
+        @property
+        def status_code(self):
+            raise RuntimeError(TOKEN)
+
+        def __str__(self):
+            raise AssertionError("diagnostics must not format exceptions")
+
+    assert _poll_error_details("poll", PrivateError(TOKEN)) == {
+        "stage": "poll",
+        "error_type": "Exception",
+    }
+
+
+@pytest.mark.parametrize("code", ["UNAVAILABLE", TOKEN, None])
+def test_poll_diagnostics_allowlist_optional_rpc_codes(monkeypatch, code):
+    class RpcError(Exception):
+        def code(self):
+            if code is None:
+                raise RuntimeError(TOKEN)
+            return SimpleNamespace(name=code)
+
+        def __str__(self):
+            raise AssertionError("diagnostics must not format exceptions")
+
+    monkeypatch.setitem(sys.modules, "grpc", SimpleNamespace(RpcError=RpcError))
+    details = _poll_error_details("state_commit", RpcError(TOKEN))
+    assert details == {
+        "stage": "state_commit",
+        "error_type": "RpcError",
+        **({"rpc_code": code} if code == "UNAVAILABLE" else {}),
+    }
+
+
+@pytest.mark.parametrize(
+    "target, stage",
+    [
+        ("_finding_default_updates", "prepare_findings"),
+        ("_upload_poll_attachments", "upload_attachments"),
+        ("_create_poll_findings", "create_findings"),
+        ("_queue_poll_attachment_links", "associate_attachments"),
+    ],
+)
+def test_batch_exception_reports_phase_without_claiming_no_work(
+    direct_app, mocker, target, stage, capsys
+):
+    app = direct_app
+    mocker.patch(
+        "soar_sdk.decorators._es_poll._create_poll_findings",
+        return_value=[{"index": 0, "success": True, "finding_id": "id"}],
+    )
+    mocker.patch(
+        f"soar_sdk.decorators._es_poll.{target}", side_effect=RuntimeError(TOKEN)
+    )
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield Finding(rule_title="synthetic")
+
+    assert not poll(OnESPollParams())
+    result = outcome(app)
+    assert result.get_summary()["polling_errors"] == [
+        {"stage": stage, "error_type": "RuntimeError"}
+    ]
+    assert f"stage={stage}" in result.get_message()
+    output = capsys.readouterr().out
+    assert "findings_accepted=1 findings_recorded=0 pending_findings=1" in output
+    assert TOKEN not in output + repr(vars(result))
+
+
+def test_primary_http_error_survives_generator_cleanup_failure(direct_app, mocker):
+    app = direct_app
+    mocker.patch.object(app.soar_client, "MAX_BULK_FINDINGS", 1)
+    mocker.patch(
+        "soar_sdk.decorators._es_poll._create_poll_findings",
+        side_effect=FindingAPIError(TOKEN, status_code=503),
+    )
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        try:
+            yield Finding(rule_title="synthetic")
+        finally:
+            raise RuntimeError(TOKEN)
+
+    assert not poll(OnESPollParams())
+    result = outcome(app)
+    assert result.get_summary()["polling_errors"] == [
+        {
+            "stage": "create_findings",
+            "error_type": "FindingAPIError",
+            "status_code": 503,
+        },
+        {"stage": "generator_close", "error_type": "RuntimeError"},
+    ]
+    assert result.get_message().endswith(
+        "stage=create_findings error_type=FindingAPIError status_code=503"
+    )
+    assert TOKEN not in repr(vars(result))
+
+
+def test_commit_rpc_failure_is_visible_in_run_message(direct_app, monkeypatch, mocker):
+    class RpcError(Exception):
+        def code(self):
+            return SimpleNamespace(name="UNAVAILABLE")
+
+    monkeypatch.setitem(sys.modules, "grpc", SimpleNamespace(RpcError=RpcError))
+    app = direct_app
+    state = AssetState(app.actions_manager, "ingest", "1")
+    app.asset._ingest_state = state
+    mocker.patch.object(state, "commit", side_effect=RpcError(TOKEN))
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield from ()
+
+    assert not poll(OnESPollParams())
+    result = outcome(app)
+    assert result.get_summary()["created"] == result.get_summary()["failed"] == 0
+    assert result.get_message().endswith(
+        "stage=state_commit error_type=RpcError rpc_code=UNAVAILABLE"
+    )
+    assert result.get_summary()["polling_errors"] == [
+        {"stage": "state_commit", "error_type": "RpcError", "rpc_code": "UNAVAILABLE"}
+    ]
 
 
 def test_runtime_context_failure_never_enters_handler(direct_app, monkeypatch):
