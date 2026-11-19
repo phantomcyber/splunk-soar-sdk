@@ -1,0 +1,4 @@
+/* Pygments' dark palette leaves Generic.Output set to the light palette's gray. */
+.highlight-console .highlight .go {
+    color: inherit;
+}
