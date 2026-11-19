@@ -203,23 +203,6 @@ def _run_direct_es_poll(
                 )
                 continue
             payload.update(_finding_default_updates(payload, ingest, finding_source))
-            # ES's SAA worker waits for the raw email with bounded download
-            # retries. Immediate automation still has no readiness guarantee.
-            if item.attachments and payload["launch_automation"]:
-                results.append(
-                    {
-                        "index": index,
-                        "success": False,
-                        "error_code": "attachment_readiness",
-                        "message": (
-                            "Immediate automation is unavailable "
-                            "for findings with local attachments until attachment "
-                            "readiness is guaranteed. Disable launch_automation to create "
-                            "the finding."
-                        ),
-                    }
-                )
-                continue
             payloads.append(payload)
             indexes.append(index)
             findings.append(item)

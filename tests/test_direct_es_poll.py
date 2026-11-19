@@ -1118,7 +1118,7 @@ def attached_finding(title="mail", names=("email.eml",), *, raw=True):
         )
     ],
 )
-def test_poll_allows_analysis_but_gates_automation_before_async_association(
+def test_poll_preserves_consumer_flags_before_async_association(
     direct_app, poll_attachments, respx_mock, source, analysis, automation, is_async
 ):
     from soar_sdk.models.finding import FindingEmail
@@ -1152,14 +1152,11 @@ def test_poll_allows_analysis_but_gates_automation_before_async_association(
         payload = json.loads(request.content)
         seen.append(payload)
         context.events.append("create")
-        if payload["email"].get("attachments"):
-            # A consumer triggered by this POST would read before even enqueueing.
-            assert not persisted_links
-            assert payload["run_threat_analysis"] is analysis
-            assert not payload["launch_automation"]
-        else:
-            assert payload["run_threat_analysis"] is analysis
-            assert payload["launch_automation"] is automation
+        # ES owns consumer capabilities; flags must not prevent ingestion while
+        # attachment associations are still queued asynchronously.
+        assert not persisted_links
+        assert payload["run_threat_analysis"] is analysis
+        assert payload["launch_automation"] is automation
         return httpx.Response(
             201, json={"_time": "now", "finding_id": f"finding-{len(seen)}"}
         )
@@ -1191,28 +1188,20 @@ def test_poll_allows_analysis_but_gates_automation_before_async_association(
 
     assert poll(OnESPollParams())
     result = outcome(app)
-    gated = automation
-    if gated:
-        assert context.events == ["create"]
-        context.bridge.get_upload_targets.assert_not_called()
-        context.upload_mock.assert_not_called()
-        context.bridge.associate_subject_attachments.assert_not_called()
-        assert result.get_data()[0]["error_code"] == "attachment_readiness"
-        assert result.get_data()[1]["finding_id"] == "finding-1"
-        assert state["cursor"] == 2
-    else:
-        assert context.events == ["reserve", "upload", "create", "create", "link_ack"]
-        assert pending_links == [
-            {"subject_id": "finding-1", "attachment_ids": context.issued}
-        ]
-        # The queue has ACKed, but Timeline still cannot serve the attachment.
-        assert not persisted_links
-        assert result.get_data()[0]["attachment_links"]["status"] == "queued"
-        assert state["cursor"] == 2
+    assert context.events == ["reserve", "upload", "create", "create", "link_ack"]
+    assert pending_links == [
+        {"subject_id": "finding-1", "attachment_ids": context.issued}
+    ]
+    # The queue has ACKed, but Timeline still cannot serve the attachment.
+    assert not persisted_links
+    assert result.get_data()[0]["finding_id"] == "finding-1"
+    assert result.get_data()[1]["finding_id"] == "finding-2"
+    assert result.get_data()[0]["attachment_links"]["status"] == "queued"
+    assert state["cursor"] == 2
     summary = result.get_summary()
-    assert summary["created"] == (1 if gated else 2)
-    assert summary["failed"] == int(gated)
-    assert summary["status"] == ("partial" if gated else "success")
+    assert summary["created"] == 2
+    assert summary["failed"] == 0
+    assert summary["status"] == "success"
     assert not state.in_transaction
     assert all(not path.exists() for path in context.paths)
 
