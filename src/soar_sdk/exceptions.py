@@ -19,6 +19,29 @@ class ActionFailure(Exception):
         )
 
 
+class PollingError(ActionFailure):
+    """A polling failure with a fixed reason and an optional HTTP status.
+
+    Only ``authentication`` and ``mailbox`` are accepted. Messages are supplied
+    by the SDK; callers must not pass upstream exception text or responses.
+    """
+
+    def __init__(self, code: str, status_code: int | None = None) -> None:
+        messages = {
+            "authentication": "Mail authentication or authorization failed. Check asset credentials and permissions.",
+            "mailbox": "Mailbox or folder is unavailable. Check the configured mailbox and access permissions.",
+        }
+        if type(code) is not str or code not in messages:
+            raise ValueError("Unsupported polling error code")
+        if status_code is not None and (
+            type(status_code) is not int or not 100 <= status_code <= 599
+        ):
+            raise ValueError("Polling HTTP status must be an integer from 100 to 599")
+        self.polling_error_code = code
+        self.status_code = status_code
+        super().__init__(messages[code])
+
+
 class AssetMisconfiguration(ActionFailure):
     """Exception raised when an asset is misconfigured."""
 
@@ -159,5 +182,6 @@ __all__ = [
     "FindingTimeoutError",
     "FindingUnavailableError",
     "FindingValidationError",
+    "PollingError",
     "SoarAPIError",
 ]
