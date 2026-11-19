@@ -249,11 +249,11 @@ attachment availability (AR-2254). Deploy that ES fix before upgrading the SDK
 for assets using this option. The SDK preserves the requested analysis flag;
 it does not wait for analysis completion.
 
-Immediate ``launch_automation`` still has no attachment-readiness guarantee.
-Findings with local attachments and that flag enabled are rejected with
-``error_code="attachment_readiness"`` before uploading or creating anything.
-Disable ``launch_automation`` to ingest these findings. Findings without local
-attachments retain their requested flags. Classic polling is unchanged.
+The SDK also preserves ``launch_automation`` without rejecting findings with
+local attachments. ES owns automation-rule support and dispatch; Lunar Base
+currently does not support automation rules. Successful ingestion and an
+association ACK do not guarantee immediate attachment availability or automation
+execution. Classic polling is unchanged.
 
 Request Model Fields
 --------------------
