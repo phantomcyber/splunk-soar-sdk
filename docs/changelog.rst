@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.2.3 (2026-11-19)
+
+   * Fix: Include safe failure stages and HTTP or gRPC status codes in direct ES polling logs and run results to distinguish handler, batch and checkpoint failures without exposing exception details.
+
    .. rubric:: 7.2.2 (2026-11-18)
 
    * Fix: Keep direct ES ingestion moving by skipping failed findings after bounded retries and saving their staged source checkpoints, with safe diagnostics for skipped findings.
