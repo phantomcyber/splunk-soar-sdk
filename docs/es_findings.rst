@@ -163,6 +163,11 @@ An empty poll succeeds. Generators are closed on exit, including a count limit.
 Handler, batch and checkpoint exceptions add ``polling_errors`` to the summary.
 Each entry identifies the SDK ``stage`` and an allowlisted ``error_type``; a valid
 HTTP ``status_code`` or recognized gRPC ``rpc_code`` is included when available.
+Connectors may set ``polling_error_code`` on a setup exception to the fixed
+code ``authentication`` or ``mailbox``. Recognized codes are exposed as
+``reason`` in the summary, action message and error log; arbitrary values and
+exception messages are never copied. Without a recognized code the SDK does
+not guess the cause of a generic exception.
 The action message includes the first error's details. Later cleanup errors are
 retained in the summary without replacing the first failure. Error logs also
 include counts of findings accepted from the connector, recorded outcomes and
@@ -237,18 +242,18 @@ success or safe failure details; failures before reservation have no ID.
 An attachment or link failure makes an otherwise successful poll ``partial``.
 
 An association ACK confirms queueing through bundle → orchestrator → SQS. It
-does not confirm that Timeline has saved the mapping. ES/SAA may try reading
-before that save and receive a missing-file response. Until the integration
-provides a readiness guarantee, direct polling rejects a finding that has local
-``Finding.attachments`` and enables either ``run_threat_analysis`` or
-``launch_automation``. This includes flags inherited from saved ingestion
-settings. The result has ``error_code="attachment_readiness"``; no uploads,
-finding POST, or association are attempted for that finding. The finding is
-skipped, its staged source checkpoint is committed, and other findings continue.
-The SDK does not silently change flags or schedule deferred analysis. Disable
-both flags to create findings with local attachments through this flow.
-Findings without local attachments retain their requested flags. Classic
-polling is unchanged.
+does not confirm that Timeline has saved the mapping. Findings with local
+attachments may enable ``run_threat_analysis``: ES submits their raw email
+through its SAA worker, which must support bounded retries for Lunar Base
+attachment availability (AR-2254). Deploy that ES fix before upgrading the SDK
+for assets using this option. The SDK preserves the requested analysis flag;
+it does not wait for analysis completion.
+
+Immediate ``launch_automation`` still has no attachment-readiness guarantee.
+Findings with local attachments and that flag enabled are rejected with
+``error_code="attachment_readiness"`` before uploading or creating anything.
+Disable ``launch_automation`` to ingest these findings. Findings without local
+attachments retain their requested flags. Classic polling is unchanged.
 
 Request Model Fields
 --------------------
