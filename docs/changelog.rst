@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.2.4 (2026-11-19)
+
+   * Fix: Allow direct ES polling to ingest local email attachments while preserving threat-analysis and automation flags, require ES attachment-readiness retries for threat analysis, and report safe authentication or mailbox failure reasons provided by connectors.
+
    .. rubric:: 7.2.3 (2026-11-19)
 
    * Fix: Include safe failure stages and HTTP or gRPC status codes in direct ES polling logs and run results to distinguish handler, batch and checkpoint failures without exposing exception details.
