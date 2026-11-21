@@ -2,6 +2,7 @@ __lazy_modules__ = {
     "collections.abc",
     "functools",
     "inspect",
+    "soar_sdk._action_context",
     "soar_sdk.abstract",
     "soar_sdk.action_results",
     "soar_sdk.app",
@@ -21,6 +22,7 @@ from collections.abc import Callable
 from functools import wraps
 from typing import TYPE_CHECKING, Any
 
+from soar_sdk._action_context import isolate_action_context
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput, ActionResult, MakeRequestOutput
 from soar_sdk.async_utils import run_async_if_needed
@@ -106,6 +108,7 @@ class MakeRequestDecorator:
 
         @action_protocol
         @wraps(function)
+        @isolate_action_context(self.app.soar_client)
         def inner(
             params: MakeRequestParams,
             soar: SOARClient = self.app.soar_client,
@@ -128,7 +131,7 @@ class MakeRequestDecorator:
             except ActionFailure as e:
                 e.set_action_name(action_name)
                 return self.app._adapt_action_result(
-                    ActionResult(status=False, message=str(e)),
+                    e._to_action_result(action_params.model_dump(), soar.get_summary()),
                     self.app.actions_manager,
                 )
             except Exception as e:

@@ -749,12 +749,20 @@ def test_es_on_poll_action_failure_during_iteration(
     def on_es_poll_function(
         params: OnESPollParams, client=None
     ) -> Generator[Finding, int | None]:
-        raise ActionFailure("Custom action failure message")
+        raise ActionFailure(
+            "Custom action failure message",
+            data=[{"checkpoint": 42}],
+            summary={"saved": True},
+        )
         yield
 
     params = OnESPollParams(start_time=0, end_time=1)
     result = on_es_poll_function(params, client=app_with_action.soar_client)
     assert result is False
+    failure = app_with_action.actions_manager.get_results()[-1]
+    assert failure.get_param() == params.model_dump()
+    assert failure.get_data() == [{"checkpoint": 42}]
+    assert failure.get_summary() == {"saved": True}
 
 
 def test_es_on_poll_create_findings_bulk_failure(
