@@ -515,10 +515,28 @@ referenced, and association is queued once for the final successful results.
 No retry state is persisted: a new execution or scheduled poll can upload files
 again if it replays an uncommitted batch.
 
-After a timeout or lost response, the finding may already exist: these retries
-can create duplicate findings. Attachment reservation's idempotency key does not
-make finding creation idempotent. These bounded retries also do not fix permanent
-transport problems such as an untrusted certificate.
+For keyed direct ES creation, yield a ``Finding`` with a stable
+``source_record_id`` from the source system. Include the source namespace if
+IDs can repeat across mailboxes or folders on the same asset. The SDK derives
+the same key for that record and asset across automatic retries, scheduled polls
+and manual polls. Direct callers can also supply a UUID as ``idempotency_key``
+to ``soar.create_finding`` and reuse it when replaying that logical request.
+Without a source record ID, the decorator creates a random key for the automatic
+attempts in the current run. A later run generates a new key.
+
+This protection requires an ES version that honors ``Idempotency-Key`` and
+replays under the same authenticated ES user. ES returns the original finding
+ID and creation time. A replay preserves the initial finding's content,
+including the initial attachment references. Requests on older ES versions
+and replays that use a different key can create duplicates. Attachment
+reservation protects file reservation independently.
+
+The IMAP connector uses the selected mailbox's ``UIDVALIDITY`` and message UID.
+Gmail and Microsoft 365 use mailbox-scoped message IDs. Microsoft 365 requests
+immutable IDs for new checkpoints and preserves the Graph ID format of existing
+checkpoints. A move can change the default Graph ID or the EWS ItemId and give
+the item a different key. Connector builds with the older SDK need an upgrade
+for deduplication across runs.
 
 Compatibility and Verification
 ------------------------------

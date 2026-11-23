@@ -14,6 +14,7 @@ __lazy_modules__ = {
     "threading",
     "typing",
     "urllib.parse",
+    "uuid",
 }
 
 import json
@@ -25,6 +26,7 @@ from importlib import import_module
 from threading import Thread
 from typing import Any, cast
 from urllib.parse import urlsplit
+from uuid import UUID
 
 import httpx2
 from pydantic import SecretStr, ValidationError
@@ -155,6 +157,7 @@ def _create_es_finding(
     base_url: str,
     token: str | SecretStr,
     timeout: float = _ES_FINDING_TIMEOUT,
+    idempotency_key: UUID | None = None,
     client: httpx2.Client | None = None,
 ) -> dict[str, Any]:
     """Create one finding and return the validated ES response dictionary.
@@ -167,6 +170,7 @@ def _create_es_finding(
         token: Execution-scoped ES bearer token from automationOrchestrator.
             Used only for this call, never stored on the API instance.
         timeout: Positive HTTP timeout in seconds; defaults to 30.
+        idempotency_key: Optional stable key reused when replaying this create.
         client: Optional connection pool owned by a direct bulk request.
 
     Raises:
@@ -212,6 +216,8 @@ def _create_es_finding(
     if url.path in {"", "/"}:
         url = url.copy_with(path="/servicesNS/nobody/missioncontrol")
     endpoint = str(url).rstrip("/") + "/public/v2/findings"
+    if idempotency_key is not None and not isinstance(idempotency_key, UUID):
+        raise FindingConfigurationError("ES finding idempotency key must be a UUID.")
     response = None
     failure = None
     try:
@@ -225,6 +231,8 @@ def _create_es_finding(
             headers = transport.headers.copy()
             headers["Authorization"] = f"Bearer {secret}"
             headers["Content-Type"] = "application/json"
+            if idempotency_key is not None:
+                headers["Idempotency-Key"] = str(idempotency_key)
             request = httpx2.Request(
                 "POST",
                 endpoint,
@@ -286,7 +294,11 @@ def _create_es_finding(
 
 
 def _create_es_findings_bulk(
-    findings: Sequence[Mapping[str, Any]], *, base_url: str, token: str | SecretStr
+    findings: Sequence[Mapping[str, Any]],
+    *,
+    base_url: str,
+    token: str | SecretStr,
+    idempotency_keys: Sequence[UUID | None] | None = None,
 ) -> dict[str, Any]:
     """Use single POSTs and preserve the classic bulk envelope with ordered results.
 
@@ -301,7 +313,13 @@ def _create_es_findings_bulk(
         index, finding = item
         try:
             response = _create_es_finding(
-                finding, base_url=base_url, token=token, client=client
+                finding,
+                base_url=base_url,
+                token=token,
+                idempotency_key=idempotency_keys[index]
+                if idempotency_keys is not None
+                else None,
+                client=client,
             )
         except FindingAPIError as error:
             return FindingCreateResult(

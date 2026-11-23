@@ -6,7 +6,7 @@ __lazy_modules__ = {
 from typing import Any
 
 import pydantic
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class DrilldownSearch(BaseModel):
@@ -129,6 +129,8 @@ class Finding(BaseModel):
     finding_source: str | None = None
     additional_fields: dict[str, Any] | None = None
     attachments: list[FindingAttachment] | None = None
+    source_record_id: str | None = Field(default=None, min_length=1, exclude=True)
+    """Immutable source record ID, reused across polls and replay for the same asset."""
 
     def to_dict(self) -> dict[str, Any]:
         """Convert the finding to a dictionary (excludes attachments)."""
