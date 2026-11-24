@@ -49,25 +49,3 @@ the SDK:
     import sys
 
     sys.set_lazy_imports_filter(lambda importer, imported, fromlist: False)
-
-Upgrading connectors to HTTPX2
-------------------------------
-
-The SDK's HTTP clients and authentication helpers use HTTPX2. Update your app's
-HTTP dependency and imports to ``httpx2`` wherever the app works with SDK HTTP
-clients. Use ``httpx2[http2]`` if your app enables HTTP/2.
-
-Update custom auth classes, injected clients, transports, timeouts, and
-exception handlers to use the corresponding HTTPX2 types. If you intercept SDK
-requests in tests, configure the mocks for HTTPX2.
-
-HTTPX2 uses the operating system's CA store by default. For private CAs,
-configure ``SSL_CERT_FILE`` or ``SSL_CERT_DIR``, or pass an ``ssl.SSLContext``
-when you create your client.
-
-Regenerate the lockfile and rebuild the package from your app directory.
-
-.. code-block:: bash
-
-    uv lock
-    soarapps package build
