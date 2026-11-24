@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 7
    :open:
 
+   .. rubric:: 7.3.1 (2026-11-24)
+
+   * Fix: Raise minimum dependency versions for requests, urllib3, idna, certifi, soupsieve, and joserfc for SDK consumers.
+
    .. rubric:: 7.3.0 (2026-11-19)
 
    * Feature: Add ``diagnose_es_poll`` and ``PollingError`` for shared, safe ES polling diagnostics with connector-specific error classification.
