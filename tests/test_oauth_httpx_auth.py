@@ -1,8 +1,7 @@
 import time
 
-import httpx
+import httpx2
 import pytest
-import respx
 
 from soar_sdk.auth.client import (
     SOARAssetOAuthClient,
@@ -48,7 +47,7 @@ def oauth_client(oauth_config, mock_auth_state):
 class TestBasicAuth:
     def test_auth_encodes_credentials(self):
         auth = BasicAuth("user", "pass")
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
         # base64("user:pass") = "dXNlcjpwYXNz"
@@ -56,27 +55,29 @@ class TestBasicAuth:
 
     def test_auth_handles_special_characters(self):
         auth = BasicAuth("user@domain.com", "p@ss:word!")
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
         assert authenticated_request.headers["Authorization"].startswith("Basic ")
 
-    @respx.mock
-    def test_integration_with_httpx_client(self):
-        respx.get("https://api.example.com/data").mock(
-            return_value=httpx.Response(200, json={"data": "value"})
+    def test_integration_with_httpx_client(self, httpx2_mock):
+        httpx2_mock.get("https://api.example.com/data").respond(
+            200, json={"data": "value"}
         )
         auth = BasicAuth("user", "pass")
-        with httpx.Client(auth=auth) as client:
+        with httpx2.Client(auth=auth) as client:
             response = client.get("https://api.example.com/data")
         assert response.status_code == 200
-        assert respx.calls.last.request.headers["Authorization"] == "Basic dXNlcjpwYXNz"
+        assert (
+            httpx2_mock.calls.last.request.headers["Authorization"]
+            == "Basic dXNlcjpwYXNz"
+        )
 
 
 class TestStaticTokenAuth:
     def test_auth_with_string_token(self):
         auth = StaticTokenAuth("my_api_key")
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
         assert authenticated_request.headers["Authorization"] == "Bearer my_api_key"
@@ -84,42 +85,43 @@ class TestStaticTokenAuth:
     def test_auth_with_oauth_token(self):
         token = OAuthToken(access_token="test_token", token_type="Bearer")
         auth = StaticTokenAuth(token)
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
         assert authenticated_request.headers["Authorization"] == "Bearer test_token"
 
     def test_auth_with_custom_token_type(self):
         auth = StaticTokenAuth("api_key_value", token_type="ApiKey")
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
         assert authenticated_request.headers["Authorization"] == "ApiKey api_key_value"
 
     def test_auth_without_token_type(self):
         auth = StaticTokenAuth("raw_token_value", token_type=None)
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
         assert authenticated_request.headers["Authorization"] == "raw_token_value"
 
-    @respx.mock
-    def test_integration_with_httpx_client(self):
-        respx.get("https://api.example.com/data").mock(
-            return_value=httpx.Response(200, json={"data": "value"})
+    def test_integration_with_httpx_client(self, httpx2_mock):
+        httpx2_mock.get("https://api.example.com/data").respond(
+            200, json={"data": "value"}
         )
         auth = StaticTokenAuth("my_api_token")
-        with httpx.Client(auth=auth) as client:
+        with httpx2.Client(auth=auth) as client:
             response = client.get("https://api.example.com/data")
         assert response.status_code == 200
         assert (
-            respx.calls.last.request.headers["Authorization"] == "Bearer my_api_token"
+            httpx2_mock.calls.last.request.headers["Authorization"]
+            == "Bearer my_api_token"
         )
 
 
 class TestOAuthBearerAuth:
-    @respx.mock
-    def test_auth_fetches_token_when_none(self, oauth_client, mock_auth_state):
+    def test_auth_fetches_token_when_none(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -135,15 +137,16 @@ class TestOAuthBearerAuth:
         auth = OAuthBearerAuth(oauth_client)
         assert auth._token is None
 
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
 
         assert authenticated_request.headers["Authorization"] == "Bearer fresh_token"
         assert auth._token is not None
 
-    @respx.mock
-    def test_auth_injects_bearer_token(self, oauth_client, mock_auth_state):
+    def test_auth_injects_bearer_token(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -157,14 +160,15 @@ class TestOAuthBearerAuth:
         )
 
         auth = OAuthBearerAuth(oauth_client)
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
 
         assert authenticated_request.headers["Authorization"] == "Bearer valid_token"
 
-    @respx.mock
-    def test_auth_uses_existing_valid_token(self, oauth_client, mock_auth_state):
+    def test_auth_uses_existing_valid_token(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -183,7 +187,7 @@ class TestOAuthBearerAuth:
             expires_at=time.time() + 3600,
         )
 
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
 
@@ -191,8 +195,9 @@ class TestOAuthBearerAuth:
             authenticated_request.headers["Authorization"] == "Bearer pre_cached_token"
         )
 
-    @respx.mock
-    def test_auth_refreshes_expired_token(self, oauth_client, mock_auth_state):
+    def test_auth_refreshes_expired_token(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -206,15 +211,13 @@ class TestOAuthBearerAuth:
             }
         )
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "refreshed_token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "refreshed_token", "expires_in": 3600},
         )
 
         auth = OAuthBearerAuth(oauth_client)
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
         authenticated_request = next(flow)
 
@@ -222,8 +225,9 @@ class TestOAuthBearerAuth:
             authenticated_request.headers["Authorization"] == "Bearer refreshed_token"
         )
 
-    @respx.mock
-    def test_auth_refreshes_on_401_response(self, oauth_client, mock_auth_state):
+    def test_auth_refreshes_on_401_response(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -237,26 +241,25 @@ class TestOAuthBearerAuth:
             }
         )
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "new_token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "new_token", "expires_in": 3600},
         )
 
         auth = OAuthBearerAuth(oauth_client, auto_refresh=True)
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
 
         first_request = next(flow)
         assert first_request.headers["Authorization"] == "Bearer token_that_will_fail"
 
-        response_401 = httpx.Response(401)
+        response_401 = httpx2.Response(401)
         retry_request = flow.send(response_401)
         assert retry_request.headers["Authorization"] == "Bearer new_token"
 
-    @respx.mock
-    def test_auth_no_refresh_when_disabled(self, oauth_client, mock_auth_state):
+    def test_auth_no_refresh_when_disabled(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -271,17 +274,18 @@ class TestOAuthBearerAuth:
         )
 
         auth = OAuthBearerAuth(oauth_client, auto_refresh=False)
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
 
         next(flow)
-        response_401 = httpx.Response(401)
+        response_401 = httpx2.Response(401)
 
         with pytest.raises(StopIteration):
             flow.send(response_401)
 
-    @respx.mock
-    def test_auth_no_refresh_without_refresh_token(self, oauth_client, mock_auth_state):
+    def test_auth_no_refresh_without_refresh_token(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -295,11 +299,11 @@ class TestOAuthBearerAuth:
         )
 
         auth = OAuthBearerAuth(oauth_client, auto_refresh=True)
-        request = httpx.Request("GET", "https://api.example.com/data")
+        request = httpx2.Request("GET", "https://api.example.com/data")
         flow = auth.auth_flow(request)
 
         next(flow)
-        response_401 = httpx.Response(401)
+        response_401 = httpx2.Response(401)
 
         with pytest.raises(StopIteration):
             flow.send(response_401)
@@ -310,8 +314,9 @@ class TestOAuthBearerAuth:
 
 
 class TestIntegrationWithHttpxClient:
-    @respx.mock
-    def test_bearer_auth_with_httpx_client(self, oauth_client, mock_auth_state):
+    def test_bearer_auth_with_httpx_client(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -324,15 +329,15 @@ class TestIntegrationWithHttpxClient:
             }
         )
 
-        respx.get("https://api.example.com/data").mock(
-            return_value=httpx.Response(200, json={"data": "value"})
+        httpx2_mock.get("https://api.example.com/data").respond(
+            200, json={"data": "value"}
         )
 
         auth = OAuthBearerAuth(oauth_client)
 
-        with httpx.Client(auth=auth) as client:
+        with httpx2.Client(auth=auth) as client:
             response = client.get("https://api.example.com/data")
 
         assert response.status_code == 200
-        request = respx.calls.last.request
+        request = httpx2_mock.calls.last.request
         assert request.headers["Authorization"] == "Bearer bearer_token"

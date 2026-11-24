@@ -1,5 +1,6 @@
 import pytest
-from httpx import RequestError, Response
+from httpx2 import RequestError
+from respx import MockResponse
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
@@ -11,7 +12,7 @@ from soar_sdk.params import Params
 @pytest.mark.parametrize(
     "mock_response",
     [
-        Response(
+        MockResponse(
             201,
             json={
                 "message": "Mocked container created",
@@ -19,7 +20,7 @@ from soar_sdk.params import Params
                 "artifacts": [{"id": "2"}],
             },
         ),
-        Response(
+        MockResponse(
             201,
             json={
                 "message": "Mocked container created",
@@ -27,7 +28,7 @@ from soar_sdk.params import Params
                 "artifacts": [{"existing_artifact_id": "2"}],
             },
         ),
-        Response(
+        MockResponse(
             201,
             json={
                 "message": "Mocked container created",
@@ -35,7 +36,7 @@ from soar_sdk.params import Params
                 "artifacts": [{"failed": "error"}],
             },
         ),
-        Response(
+        MockResponse(
             201,
             json={
                 "message": "Mocked container created",
@@ -43,7 +44,7 @@ from soar_sdk.params import Params
                 "artifacts": [{"random_failure": "error"}],
             },
         ),
-        Response(
+        MockResponse(
             201,
             json={
                 "message": "Mocked container created",
@@ -89,7 +90,7 @@ def test_malformed_container(app_connector):
 
 
 def test_create_container_failed(app_connector, mock_post_container):
-    mock_post_container.return_value = Response(
+    mock_post_container.return_value = MockResponse(
         status_code=200, json={"failed": "something went wrong"}
     )
 
@@ -103,7 +104,7 @@ def test_create_container_failed(app_connector, mock_post_container):
     with pytest.raises(SoarAPIError):
         app_connector.container.create(container)
 
-    mock_post_container.return_value = Response(
+    mock_post_container.return_value = MockResponse(
         status_code=201, json={"existing_container_id": "2"}
     )
 

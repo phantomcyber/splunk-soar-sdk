@@ -2,7 +2,7 @@ __lazy_modules__ = {
     "asyncio",
     "contextlib",
     "datetime",
-    "httpx",
+    "httpx2",
     "humanize",
     "io",
     "itertools",
@@ -35,7 +35,7 @@ from itertools import chain
 from pathlib import Path
 from typing import Annotated
 
-import httpx
+import httpx2
 import humanize
 import typer
 from rich.console import Console
@@ -282,7 +282,7 @@ async def upload_app(
     password: str = "",
     token: str = "",
     verify: bool = True,
-) -> httpx.Response:
+) -> httpx2.Response:
     """Asynchronously upload an app tgz to a Splunk SOAR system, via REST API."""
     base_url = (
         soar_instance

@@ -4,9 +4,10 @@ import traceback
 from collections.abc import AsyncGenerator, Generator
 from types import SimpleNamespace
 
-import httpx
+import httpx2
 import pytest
 from pydantic import SecretStr, ValidationError
+from respx import MockResponse
 
 from soar_sdk.apis._es_findings import _get_runtime_es_context
 from soar_sdk.asset_state import AssetState
@@ -66,11 +67,11 @@ def test_app_handle_retains_input_validation(direct_app, raw):
 
 
 def test_app_handle_preserves_es_settings_and_returns_ids(
-    direct_app, simple_action_input, respx_mock, mocker
+    direct_app, simple_action_input, httpx2_mock, mocker
 ):
     app = direct_app
     mocker.stop(app.actions_manager.add_result)
-    route = respx_mock.post(ENDPOINT).respond(
+    route = httpx2_mock.post(ENDPOINT).respond(
         201, json={"_time": "now", "finding_id": "through-handle"}
     )
 
@@ -96,11 +97,11 @@ def test_app_handle_preserves_es_settings_and_returns_ids(
 
 @pytest.mark.parametrize("asset_defaults", [False, True])
 def test_polling_parameters_supply_es_settings(
-    direct_app, simple_action_input, respx_mock, mocker, asset_defaults
+    direct_app, simple_action_input, httpx2_mock, mocker, asset_defaults
 ):
     app = direct_app
     mocker.stop(app.actions_manager.add_result)
-    route = respx_mock.post(ENDPOINT).respond(
+    route = httpx2_mock.post(ENDPOINT).respond(
         201, json={"_time": "now", "finding_id": "polling-settings"}
     )
 
@@ -135,11 +136,12 @@ def test_polling_parameters_supply_es_settings(
     assert app._raw_asset_config.get("ingest") is None
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 @pytest.mark.parametrize(
     "count, limit, expected", [(0, None, 0), (1, None, 1), (28, None, 28), (3, 1, 1)]
 )
 def test_poll_creates_findings_without_soar_calls(
-    direct_app, respx_mock, count, limit, expected
+    direct_app, httpx2_mock, count, limit, expected
 ):
     app = direct_app
     seen = []
@@ -147,11 +149,11 @@ def test_poll_creates_findings_without_soar_calls(
 
     def respond(request):
         seen.append(json.loads(request.content))
-        return httpx.Response(
+        return MockResponse(
             201, json={"_time": "now", "finding_id": f"finding-{len(seen)}"}
         )
 
-    route = respx_mock.post(ENDPOINT).mock(side_effect=respond)
+    route = httpx2_mock.post(ENDPOINT).mock(side_effect=respond)
 
     @app.on_es_poll()
     def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
@@ -190,14 +192,14 @@ def test_poll_creates_findings_without_soar_calls(
     )
 
 
-def test_async_poll_uses_same_direct_transport(direct_app, respx_mock, monkeypatch):
+def test_async_poll_uses_same_direct_transport(direct_app, httpx2_mock, monkeypatch):
     app = direct_app
     monkeypatch.setitem(
         sys.modules,
         "es_poll_api",
         SimpleNamespace(get_es_context=lambda: (URL, SecretStr(TOKEN))),
     )
-    route = respx_mock.post(ENDPOINT).respond(
+    route = httpx2_mock.post(ENDPOINT).respond(
         201, json={"_time": "now", "finding_id": "async-id"}
     )
     closed = []
@@ -218,12 +220,12 @@ def test_async_poll_uses_same_direct_transport(direct_app, respx_mock, monkeypat
 
 
 def test_direct_poll_preserves_explicit_analysis_and_automation_flags(
-    direct_app, respx_mock
+    direct_app, httpx2_mock
 ):
     from soar_sdk.models.finding import FindingEmail
 
     app = direct_app
-    route = respx_mock.post(ENDPOINT).respond(
+    route = httpx2_mock.post(ENDPOINT).respond(
         201, json={"_time": "now", "finding_id": "flagged"}
     )
 
@@ -476,21 +478,21 @@ def test_uploaded_email_metadata_and_raw_selection_match_across_transports(
     assert email["body"] == "body"
 
 
-def test_partial_failures_are_reported_and_checkpoint_advances(direct_app, respx_mock):
+def test_partial_failures_are_reported_and_checkpoint_advances(direct_app, httpx2_mock):
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
     app.asset._ingest_state = state
-    route = respx_mock.post(ENDPOINT).mock(
+    route = httpx2_mock.post(ENDPOINT).mock(
         side_effect=[
-            httpx.Response(201, json={"_time": "now", "finding_id": "first"}),
-            httpx.Response(403, text=TOKEN),
-            httpx.ReadTimeout(TOKEN),
-            httpx.Response(503, text=TOKEN),
-            httpx.Response(201, json={"_time": "now", "finding_id": "last"}),
-            httpx.ReadTimeout(TOKEN),
-            httpx.Response(503, text=TOKEN),
-            httpx.ReadTimeout(TOKEN),
-            httpx.Response(503, text=TOKEN),
+            MockResponse(201, json={"_time": "now", "finding_id": "first"}),
+            MockResponse(403, text=TOKEN),
+            httpx2.ReadTimeout(TOKEN),
+            MockResponse(503, text=TOKEN),
+            MockResponse(201, json={"_time": "now", "finding_id": "last"}),
+            httpx2.ReadTimeout(TOKEN),
+            MockResponse(503, text=TOKEN),
+            httpx2.ReadTimeout(TOKEN),
+            MockResponse(503, text=TOKEN),
         ]
     )
 
@@ -530,7 +532,7 @@ def test_partial_failures_are_reported_and_checkpoint_advances(direct_app, respx
 def test_failed_emails_are_skipped_and_not_replayed_on_next_poll(
     direct_app,
     poll_attachments,
-    respx_mock,
+    httpx2_mock,
     mocker,
     monkeypatch,
     with_attachments,
@@ -554,11 +556,11 @@ def test_failed_emails_are_skipped_and_not_replayed_on_next_poll(
         seen.append(index)
         if reject and index == 2:
             if failure == "timeout":
-                raise httpx.ReadTimeout(TOKEN)
-            return httpx.Response(failure, text=TOKEN)
-        return httpx.Response(201, json={"_time": "now", "finding_id": str(index)})
+                raise httpx2.ReadTimeout(TOKEN)
+            return MockResponse(failure, text=TOKEN)
+        return MockResponse(201, json={"_time": "now", "finding_id": str(index)})
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
 
     @app.on_es_poll()
     def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
@@ -587,7 +589,7 @@ def test_failed_emails_are_skipped_and_not_replayed_on_next_poll(
 @pytest.mark.parametrize("is_async", [False, True])
 @pytest.mark.parametrize("limit", [0, 3])
 def test_rejected_email_batch_does_not_block_later_mail(
-    direct_app, respx_mock, mocker, monkeypatch, capsys, is_async, limit
+    direct_app, httpx2_mock, mocker, monkeypatch, capsys, is_async, limit
 ):
     app = direct_app
     saved = {}
@@ -605,10 +607,10 @@ def test_rejected_email_batch_does_not_block_later_mail(
         index = int(json.loads(request.content)["rule_title"])
         seen.append(index)
         if index < 3:
-            return httpx.Response(422, text=TOKEN)
-        return httpx.Response(201, json={"_time": "now", "finding_id": str(index)})
+            return MockResponse(422, text=TOKEN)
+        return MockResponse(201, json={"_time": "now", "finding_id": str(index)})
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
 
     def emails():
         state = app.asset.ingest_state
@@ -657,7 +659,7 @@ def test_rejected_email_batch_does_not_block_later_mail(
 @pytest.mark.parametrize("is_async", [False, True])
 def test_handler_failure_preserves_previous_batch_checkpoint(
     direct_app,
-    respx_mock,
+    httpx2_mock,
     mocker,
     monkeypatch,
     is_async,
@@ -672,7 +674,7 @@ def test_handler_failure_preserves_previous_batch_checkpoint(
     state = AssetState(app.actions_manager, "ingest", "1", encrypted=False)
     app.asset._ingest_state = state
     monkeypatch.setattr(app.soar_client, "MAX_BULK_FINDINGS", 2)
-    respx_mock.post(ENDPOINT).respond(
+    httpx2_mock.post(ENDPOINT).respond(
         422 if rejected else 201, json={"_time": "now", "finding_id": "id"}
     )
 
@@ -702,10 +704,11 @@ def test_handler_failure_preserves_previous_batch_checkpoint(
     assert not state.in_transaction
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 @pytest.mark.parametrize("all_invalid", [False, True])
-def test_invalid_items_do_not_abort_poll(direct_app, respx_mock, all_invalid):
+def test_invalid_items_do_not_abort_poll(direct_app, httpx2_mock, all_invalid):
     app = direct_app
-    route = respx_mock.post(ENDPOINT).respond(
+    route = httpx2_mock.post(ENDPOINT).respond(
         201, json={"_time": "now", "finding_id": "valid"}
     )
 
@@ -725,7 +728,7 @@ def test_invalid_items_do_not_abort_poll(direct_app, respx_mock, all_invalid):
 
 
 def test_invalid_yield_is_skipped_and_checkpoints_source_progress(
-    direct_app, respx_mock
+    direct_app, httpx2_mock
 ):
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
@@ -738,7 +741,7 @@ def test_invalid_yield_is_skipped_and_checkpoints_source_progress(
 
     assert not poll(OnESPollParams())
     assert state["cursor"] == 1
-    assert not respx_mock.calls
+    assert not httpx2_mock.calls
     assert not state.in_transaction
 
 
@@ -810,13 +813,13 @@ def test_handler_and_state_errors_are_safe_and_close_execution(
     "error, expected_type",
     [
         (
-            httpx.HTTPStatusError(
-                TOKEN, request=httpx.Request("GET", URL), response=httpx.Response(403)
+            httpx2.HTTPStatusError(
+                TOKEN, request=httpx2.Request("GET", URL), response=httpx2.Response(403)
             ),
             "HTTPStatusError",
         ),
-        (httpx.ReadTimeout(TOKEN), "TimeoutException"),
-        (httpx.ConnectError(TOKEN), "TransportError"),
+        (httpx2.ReadTimeout(TOKEN), "TimeoutException"),
+        (httpx2.ConnectError(TOKEN), "TransportError"),
         (FindingAPIError(TOKEN, status_code=429), "FindingAPIError"),
         (ActionFailure(TOKEN), "ActionFailure"),
         (TimeoutError(TOKEN), "TimeoutError"),
@@ -833,7 +836,7 @@ def test_poll_diagnostics_allowlist_exception_types(error, expected_type):
     details = _poll_error_details("poll", error)
     assert details["error_type"] == expected_type
     assert TOKEN not in repr(details)
-    if isinstance(error, httpx.HTTPStatusError):
+    if isinstance(error, httpx2.HTTPStatusError):
         assert details["status_code"] == 403
     elif isinstance(error, FindingAPIError):
         assert details["status_code"] == 429
@@ -1119,7 +1122,7 @@ def attached_finding(title="mail", names=("email.eml",), *, raw=True):
     ],
 )
 def test_poll_preserves_consumer_flags_before_async_association(
-    direct_app, poll_attachments, respx_mock, source, analysis, automation, is_async
+    direct_app, poll_attachments, httpx2_mock, source, analysis, automation, is_async
 ):
     from soar_sdk.models.finding import FindingEmail
 
@@ -1157,7 +1160,7 @@ def test_poll_preserves_consumer_flags_before_async_association(
         assert not persisted_links
         assert payload["run_threat_analysis"] is analysis
         assert payload["launch_automation"] is automation
-        return httpx.Response(
+        return MockResponse(
             201, json={"_time": "now", "finding_id": f"finding-{len(seen)}"}
         )
 
@@ -1166,7 +1169,7 @@ def test_poll_preserves_consumer_flags_before_async_association(
         pending_links.extend(associations)
         return "queue-message"
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
     context.bridge.associate_subject_attachments.side_effect = enqueue
 
     def findings():
@@ -1208,7 +1211,7 @@ def test_poll_preserves_consumer_flags_before_async_association(
 
 @pytest.mark.parametrize("link_fails", [False, True])
 def test_poll_upload_create_and_link_preserve_ownership(
-    direct_app, poll_attachments, respx_mock, link_fails, caplog
+    direct_app, poll_attachments, httpx2_mock, link_fails, caplog
 ):
     from pathlib import Path
 
@@ -1235,12 +1238,12 @@ def test_poll_upload_create_and_link_preserve_ownership(
         seen.append(payload)
         index = len(seen)
         if payload["rule_title"] == "rejected":
-            return httpx.Response(503, text=TOKEN)
-        return httpx.Response(
+            return MockResponse(503, text=TOKEN)
+        return MockResponse(
             201, json={"_time": "now", "finding_id": f"finding-{index}"}
         )
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
     items = [
         attached_finding(names=("email.eml", "failed.eml")),
         attached_finding("rejected"),
@@ -1292,10 +1295,10 @@ def test_poll_upload_create_and_link_preserve_ownership(
 
 @pytest.mark.parametrize("count", [1, 20, 21, 41])
 def test_poll_attachment_reservations_are_bounded_and_unique(
-    direct_app, poll_attachments, respx_mock, count
+    direct_app, poll_attachments, httpx2_mock, count
 ):
     app = direct_app
-    respx_mock.post(ENDPOINT).respond(
+    httpx2_mock.post(ENDPOINT).respond(
         201, json={"_time": "now", "finding_id": "created"}
     )
 
@@ -1318,7 +1321,7 @@ def test_poll_attachment_reservations_are_bounded_and_unique(
     ["reference", "reservation", "duplicate", "invalid_id", "tempdir", "write"],
 )
 def test_poll_attachment_preparation_failures_still_create_findings(
-    direct_app, poll_attachments, respx_mock, mocker, failure
+    direct_app, poll_attachments, httpx2_mock, mocker, failure
 ):
     from soar_sdk.decorators import _es_poll_attachments as module
 
@@ -1353,9 +1356,9 @@ def test_poll_attachment_preparation_failures_still_create_findings(
 
     def create(request):
         seen.append(json.loads(request.content))
-        return httpx.Response(201, json={"_time": "now", "finding_id": "created"})
+        return MockResponse(201, json={"_time": "now", "finding_id": "created"})
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
 
     @app.on_es_poll()
     def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
@@ -1404,7 +1407,7 @@ def test_reference_route_is_trusted_same_origin(direct_app, monkeypatch, route):
 
 
 def test_poll_splits_finding_batches_before_attachment_limit(
-    direct_app, poll_attachments, respx_mock
+    direct_app, poll_attachments, httpx2_mock
 ):
     from uuid import UUID
 
@@ -1412,9 +1415,9 @@ def test_poll_splits_finding_batches_before_attachment_limit(
 
     def create(request):
         seen.append(json.loads(request.content))
-        return httpx.Response(201, json={"_time": "now", "finding_id": str(len(seen))})
+        return MockResponse(201, json={"_time": "now", "finding_id": str(len(seen))})
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
 
     @direct_app.on_es_poll()
     def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
@@ -1528,7 +1531,7 @@ def test_poll_composes_upload_and_finding_http_transports(
 
 @pytest.mark.parametrize("first_write_fails", [False, True])
 def test_poll_replaces_local_references_and_selects_last_successful_raw_email(
-    direct_app, poll_attachments, respx_mock, mocker, first_write_fails
+    direct_app, poll_attachments, httpx2_mock, mocker, first_write_fails
 ):
     from pathlib import Path
 
@@ -1552,7 +1555,7 @@ def test_poll_replaces_local_references_and_selects_last_successful_raw_email(
             return write(path, data)
 
         mocker.patch.object(Path, "write_bytes", autospec=True, side_effect=fail_first)
-    route = respx_mock.post(ENDPOINT).respond(
+    route = httpx2_mock.post(ENDPOINT).respond(
         201, json={"_time": "now", "finding_id": "created"}
     )
 
@@ -1583,7 +1586,7 @@ def test_poll_replaces_local_references_and_selects_last_successful_raw_email(
 def test_create_retries_reuse_uploads_and_preserve_finding_identity(
     direct_app,
     poll_attachments,
-    respx_mock,
+    httpx2_mock,
     mocker,
     failure,
     success_on,
@@ -1597,16 +1600,16 @@ def test_create_retries_reuse_uploads_and_preserve_finding_identity(
         title = json.loads(request.content)["rule_title"]
         requests[title].append(request.content)
         if title == "forbidden":
-            return httpx.Response(403, text=TOKEN)
+            return MockResponse(403, text=TOKEN)
         if title == "retry" and len(requests[title]) != success_on:
             if failure == "timeout":
-                raise httpx.ReadTimeout(TOKEN)
+                raise httpx2.ReadTimeout(TOKEN)
             if failure == "connection":
-                raise httpx.ConnectError(TOKEN)
-            return httpx.Response(failure, text=TOKEN)
-        return httpx.Response(201, json={"_time": "now", "finding_id": title + "-id"})
+                raise httpx2.ConnectError(TOKEN)
+            return MockResponse(failure, text=TOKEN)
+        return MockResponse(201, json={"_time": "now", "finding_id": title + "-id"})
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
 
     @app.on_es_poll()
     def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
@@ -1656,14 +1659,14 @@ def test_create_retries_reuse_uploads_and_preserve_finding_identity(
         assert secret not in rendered
 
 
-def test_successful_create_retry_commits_checkpoint(direct_app, respx_mock):
+def test_successful_create_retry_commits_checkpoint(direct_app, httpx2_mock):
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
     app.asset._ingest_state = state
-    route = respx_mock.post(ENDPOINT).mock(
+    route = httpx2_mock.post(ENDPOINT).mock(
         side_effect=[
-            httpx.Response(429),
-            httpx.Response(201, json={"_time": "now", "finding_id": "recovered"}),
+            MockResponse(429),
+            MockResponse(201, json={"_time": "now", "finding_id": "recovered"}),
         ]
     )
 
@@ -1681,12 +1684,12 @@ def test_successful_create_retry_commits_checkpoint(direct_app, respx_mock):
 
 @pytest.mark.parametrize("status", [400, 401, 403, 422, 201])
 def test_create_retry_stops_on_non_retryable_error(
-    direct_app, respx_mock, mocker, status
+    direct_app, httpx2_mock, mocker, status
 ):
-    route = respx_mock.post(ENDPOINT).mock(
+    route = httpx2_mock.post(ENDPOINT).mock(
         side_effect=[
-            httpx.Response(429),
-            httpx.Response(status, json={"invalid": "response"}),
+            MockResponse(429),
+            MockResponse(status, json={"invalid": "response"}),
         ]
     )
 
@@ -1702,7 +1705,7 @@ def test_create_retry_stops_on_non_retryable_error(
     sleep.assert_called_once_with(1)
 
 
-def test_create_retries_remap_changing_subset_indexes(direct_app, respx_mock):
+def test_create_retries_remap_changing_subset_indexes(direct_app, httpx2_mock):
     calls = []
     attempts = {title: 0 for title in ("first", "second", "third")}
 
@@ -1713,10 +1716,10 @@ def test_create_retries_remap_changing_subset_indexes(direct_app, respx_mock):
         if (title == "first" and attempts[title] < 2) or (
             title == "third" and attempts[title] < 3
         ):
-            return httpx.Response(503)
-        return httpx.Response(201, json={"_time": "now", "finding_id": title})
+            return MockResponse(503)
+        return MockResponse(201, json={"_time": "now", "finding_id": title})
 
-    respx_mock.post(ENDPOINT).mock(side_effect=create)
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
 
     @direct_app.on_es_poll()
     def poll(params: OnESPollParams) -> Generator[Finding, int | None]:

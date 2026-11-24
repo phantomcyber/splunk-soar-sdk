@@ -8,13 +8,14 @@ from threading import Thread
 from typing import Any
 from unittest.mock import patch
 
-import httpx
+import httpx2
 import pytest
 import respx
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.x509.oid import NameOID
+from respx import MockResponse
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionOutput
@@ -29,13 +30,13 @@ class ConcreteSOARClient(SOARClient[ActionOutput]):
     """Minimal concrete implementation for testing SOARClient base methods."""
 
     def __init__(self, base_url: str = "https://localhost:9999") -> None:
-        self._client = httpx.Client(base_url=base_url, verify=False)
+        self._client = httpx2.Client(base_url=base_url, verify=False)
         self._artifact = Artifact(soar_client=self)
         self._container = Container(soar_client=self)
         self._vault = Vault(soar_client=self)
 
     @property
-    def client(self) -> httpx.Client:
+    def client(self) -> httpx2.Client:
         return self._client
 
     @property
@@ -91,7 +92,7 @@ def test_off_platform_tls_verification_defaults_to_enabled():
 def test_app_client_uses_platform_tls_setting(verify_ssl: bool):
     with (
         patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=verify_ssl),
-        patch("soar_sdk.app_client.httpx.Client") as mock_client,
+        patch("soar_sdk.app_client.httpx2.Client") as mock_client,
         patch.object(
             AppClient,
             "get_soar_base_url",
@@ -118,7 +119,7 @@ def test_authenticate_soar_client_uses_platform_tls_setting(
 
     with (
         patch("soar_sdk.app_client.get_verify_ssl_setting", return_value=verify_ssl),
-        patch("soar_sdk.app_client.httpx.Client") as mock_client,
+        patch("soar_sdk.app_client.httpx2.Client") as mock_client,
         patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True),
     ):
         simple_connector.authenticate_soar_client(auth)
@@ -216,9 +217,9 @@ def test_native_loopback_skips_certificate_check_only_for_loopback(
         app_client = AppClient()
         try:
             assert app_client.client.get("/ok").status_code == 200
-            with pytest.raises(httpx.ConnectError, match="IP address mismatch"):
+            with pytest.raises(httpx2.ConnectError, match="IP address mismatch"):
                 app_client.client.get(alternate_url)
-            with pytest.raises(httpx.ConnectError, match="Hostname mismatch"):
+            with pytest.raises(httpx2.ConnectError, match="Hostname mismatch"):
                 app_client.client.get("/redirect", follow_redirects=True)
 
             app_client.authenticate_soar_client(
@@ -241,33 +242,30 @@ def test_broker_loopback_keeps_certificate_verification(
     ):
         app_client = AppClient()
         try:
-            with pytest.raises(httpx.ConnectError, match="IP address mismatch"):
+            with pytest.raises(httpx2.ConnectError, match="IP address mismatch"):
                 app_client.client.get("/ok")
         finally:
             app_client.client.close()
 
 
-@respx.mock
-def test_soar_client_get(soar_client: ConcreteSOARClient):
-    route = respx.get("https://localhost:9999/rest/test").mock(
-        return_value=httpx.Response(200, json={"ok": True})
+def test_soar_client_get(httpx2_mock, soar_client: ConcreteSOARClient):
+    route = httpx2_mock.get("https://localhost:9999/rest/test").respond(
+        200, json={"ok": True}
     )
     response = soar_client.get("/rest/test")
     assert route.called
     assert response.json() == {"ok": True}
 
 
-@respx.mock
-def test_soar_client_get_raises_on_error(soar_client: ConcreteSOARClient):
-    respx.get("https://localhost:9999/rest/test").mock(return_value=httpx.Response(500))
-    with pytest.raises(httpx.HTTPStatusError):
+def test_soar_client_get_raises_on_error(httpx2_mock, soar_client: ConcreteSOARClient):
+    httpx2_mock.get("https://localhost:9999/rest/test").respond(500)
+    with pytest.raises(httpx2.HTTPStatusError):
         soar_client.get("/rest/test")
 
 
-@respx.mock
-def test_soar_client_post(soar_client: ConcreteSOARClient):
-    route = respx.post("https://localhost:9999/rest/data").mock(
-        return_value=httpx.Response(200, json={"id": 1})
+def test_soar_client_post(httpx2_mock, soar_client: ConcreteSOARClient):
+    route = httpx2_mock.post("https://localhost:9999/rest/data").respond(
+        200, json={"id": 1}
     )
     response = soar_client.post("/rest/data", json={"name": "test"})
     assert route.called
@@ -276,19 +274,15 @@ def test_soar_client_post(soar_client: ConcreteSOARClient):
     assert "Referer" in request.headers
 
 
-@respx.mock
-def test_soar_client_post_raises_on_error(soar_client: ConcreteSOARClient):
-    respx.post("https://localhost:9999/rest/data").mock(
-        return_value=httpx.Response(403)
-    )
-    with pytest.raises(httpx.HTTPStatusError):
+def test_soar_client_post_raises_on_error(httpx2_mock, soar_client: ConcreteSOARClient):
+    httpx2_mock.post("https://localhost:9999/rest/data").respond(403)
+    with pytest.raises(httpx2.HTTPStatusError):
         soar_client.post("/rest/data", json={"name": "test"})
 
 
-@respx.mock
-def test_soar_client_put(soar_client: ConcreteSOARClient):
-    route = respx.put("https://localhost:9999/rest/data/1").mock(
-        return_value=httpx.Response(200, json={"updated": True})
+def test_soar_client_put(httpx2_mock, soar_client: ConcreteSOARClient):
+    route = httpx2_mock.put("https://localhost:9999/rest/data/1").respond(
+        200, json={"updated": True}
     )
     response = soar_client.put("/rest/data/1", json={"name": "updated"})
     assert route.called
@@ -297,12 +291,9 @@ def test_soar_client_put(soar_client: ConcreteSOARClient):
     assert "Referer" in request.headers
 
 
-@respx.mock
-def test_soar_client_put_raises_on_error(soar_client: ConcreteSOARClient):
-    respx.put("https://localhost:9999/rest/data/1").mock(
-        return_value=httpx.Response(404)
-    )
-    with pytest.raises(httpx.HTTPStatusError):
+def test_soar_client_put_raises_on_error(httpx2_mock, soar_client: ConcreteSOARClient):
+    httpx2_mock.put("https://localhost:9999/rest/data/1").respond(404)
+    with pytest.raises(httpx2.HTTPStatusError):
         soar_client.put("/rest/data/1", json={"name": "updated"})
 
 
@@ -337,28 +328,28 @@ def test_authenticate_soar_client_on_platform(
     assert mock_get_any_soar_call.call_count == 1
 
 
-@pytest.mark.respx(assert_all_called=False)
+@pytest.mark.httpx2(assert_all_called=False)
 def test_session_csrf_bootstrap_avoids_authenticated_homepage(
     simple_connector: AppClient,
     soar_client_auth_token: SOARClientAuth,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
 ):
     """Fetch CSRF anonymously, then retain the execution session for REST writes."""
 
-    def login_response(request: httpx.Request) -> httpx.Response:
+    def login_response(request) -> MockResponse:
         if "sessionid=" in request.headers.get("Cookie", ""):
-            return httpx.Response(302, headers={"Location": "/"})
-        return httpx.Response(
+            return MockResponse(302, headers={"Location": "/"})
+        return MockResponse(
             200,
             headers={"Set-Cookie": "csrftoken=login-csrf; Path=/"},
         )
 
-    login = respx_mock.get("https://10.34.5.6/login").mock(side_effect=login_response)
-    homepage = respx_mock.get("https://10.34.5.6/").mock(
-        side_effect=httpx.ReadTimeout("Slow authenticated homepage")
+    login = httpx2_mock.get("https://10.34.5.6/login").mock(side_effect=login_response)
+    homepage = httpx2_mock.get("https://10.34.5.6/").mock(
+        side_effect=httpx2.ReadTimeout("Slow authenticated homepage")
     )
-    rest_write = respx_mock.post("https://10.34.5.6/rest/container").mock(
-        return_value=httpx.Response(200, json={"id": 1})
+    rest_write = httpx2_mock.post("https://10.34.5.6/rest/container").respond(
+        200, json={"id": 1}
     )
 
     simple_connector.authenticate_soar_client(soar_client_auth_token)
@@ -374,11 +365,11 @@ def test_session_csrf_bootstrap_avoids_authenticated_homepage(
     assert simple_connector.client.cookies.get("sessionid") == "example_token"
 
 
-@pytest.mark.respx(assert_all_called=False)
+@pytest.mark.httpx2(assert_all_called=False)
 @pytest.mark.parametrize("use_session", [True, False])
 def test_csrf_bootstrap_uses_redirect_cookie(
     simple_connector: AppClient,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     use_session: bool,
 ):
     """Use CSRF from the redirect itself without requesting its destination."""
@@ -388,23 +379,19 @@ def test_csrf_bootstrap_uses_redirect_cookie(
         username="" if use_session else "user",
         password="" if use_session else "password",
     )
-    login = respx_mock.get("https://10.34.5.6/login").mock(
-        return_value=httpx.Response(
-            302,
-            headers={
-                "Location": "/",
-                "Set-Cookie": "csrftoken=redirect-csrf; Path=/",
-            },
-        )
+    login = httpx2_mock.get("https://10.34.5.6/login").respond(
+        302,
+        headers={
+            "Location": "/",
+            "Set-Cookie": "csrftoken=redirect-csrf; Path=/",
+        },
     )
-    homepage = respx_mock.get("https://10.34.5.6/").mock(
-        side_effect=httpx.ReadTimeout("Slow authenticated homepage")
+    homepage = httpx2_mock.get("https://10.34.5.6/").mock(
+        side_effect=httpx2.ReadTimeout("Slow authenticated homepage")
     )
 
-    password_login = respx_mock.post("https://10.34.5.6/login").mock(
-        return_value=httpx.Response(
-            200, headers={"Set-Cookie": "sessionid=password-session; Path=/"}
-        )
+    password_login = httpx2_mock.post("https://10.34.5.6/login").respond(
+        200, headers={"Set-Cookie": "sessionid=password-session; Path=/"}
     )
 
     simple_connector.authenticate_soar_client(auth)
@@ -422,12 +409,12 @@ def test_csrf_bootstrap_uses_redirect_cookie(
     assert password_login.call_count == (0 if use_session else 1)
 
 
-@pytest.mark.respx(assert_all_called=False)
+@pytest.mark.httpx2(assert_all_called=False)
 @pytest.mark.parametrize("use_session", [True, False])
 @pytest.mark.parametrize("status_code", [200, 302])
 def test_csrf_bootstrap_requires_token(
     simple_connector: AppClient,
-    respx_mock: respx.MockRouter,
+    httpx2_mock: respx.MockRouter,
     use_session: bool,
     status_code: int,
 ):
@@ -438,32 +425,30 @@ def test_csrf_bootstrap_requires_token(
         username="" if use_session else "user",
         password="" if use_session else "password",
     )
-    respx_mock.get("https://10.34.5.6/login").mock(
-        return_value=httpx.Response(status_code, headers={"Location": "/"})
+    httpx2_mock.get("https://10.34.5.6/login").respond(
+        status_code, headers={"Location": "/"}
     )
 
     with pytest.raises(ValueError, match="did not include a CSRF token"):
         simple_connector.authenticate_soar_client(auth)
 
-    assert respx_mock.calls.call_count == 1
+    assert httpx2_mock.calls.call_count == 1
 
 
-@respx.mock
 @pytest.mark.parametrize("status_code", [403, 500])
 def test_csrf_bootstrap_rejects_http_errors(
+    httpx2_mock,
     simple_connector: AppClient,
     soar_client_auth_token: SOARClientAuth,
     status_code: int,
 ):
     """HTTP failures remain errors even if the response includes a CSRF cookie."""
-    respx.get("https://10.34.5.6/login").mock(
-        return_value=httpx.Response(
-            status_code,
-            headers={"Set-Cookie": "csrftoken=error-csrf; Path=/"},
-        )
+    httpx2_mock.get("https://10.34.5.6/login").respond(
+        status_code,
+        headers={"Set-Cookie": "csrftoken=error-csrf; Path=/"},
     )
 
-    with pytest.raises(httpx.HTTPStatusError) as exc_info:
+    with pytest.raises(httpx2.HTTPStatusError) as exc_info:
         simple_connector.authenticate_soar_client(soar_client_auth_token)
 
     assert exc_info.value.response.status_code == status_code
@@ -490,15 +475,14 @@ def test_authenticate_skips_login_on_broker(mock_broker, simple_connector: AppCl
 
 
 @patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
-@respx.mock
-def test_prepare_broker_request(mock_broker, simple_connector: AppClient):
+def test_prepare_broker_request(mock_broker, httpx2_mock, simple_connector: AppClient):
     """Test that broker requests are routed through api_proxy with auth headers."""
     simple_connector._broker_ph_auth_token = "broker-token"
     simple_connector._user_hash_key = "hash-key"
 
-    route = respx.get("https://localhost:9999/rest/broker/api_proxy/rest/version").mock(
-        return_value=httpx.Response(200, json={"version": "6.4.1"})
-    )
+    route = httpx2_mock.get(
+        "https://localhost:9999/rest/broker/api_proxy/rest/version"
+    ).respond(200, json={"version": "6.4.1"})
     response = simple_connector.get("/rest/version")
 
     assert route.called
@@ -510,15 +494,16 @@ def test_prepare_broker_request(mock_broker, simple_connector: AppClient):
 
 @patch("soar_sdk.app_client.is_onprem_broker_rpc_install", return_value=True)
 @patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
-@respx.mock
-def test_prepare_broker_request_rpc(mock_broker, mock_rpc, simple_connector: AppClient):
+def test_prepare_broker_request_rpc(
+    mock_broker, mock_rpc, httpx2_mock, simple_connector: AppClient
+):
     """Test that RPC broker requests use a Bearer token instead of ph-auth-token."""
     simple_connector._broker_ph_auth_token = "broker-token"
     simple_connector._user_hash_key = "hash-key"
 
-    route = respx.get("https://localhost:9999/rest/broker/api_proxy/rest/version").mock(
-        return_value=httpx.Response(200, json={"version": "6.4.1"})
-    )
+    route = httpx2_mock.get(
+        "https://localhost:9999/rest/broker/api_proxy/rest/version"
+    ).respond(200, json={"version": "6.4.1"})
     response = simple_connector.get("/rest/version")
 
     assert route.called
@@ -530,17 +515,16 @@ def test_prepare_broker_request_rpc(mock_broker, mock_rpc, simple_connector: App
 
 
 @patch("soar_sdk.app_client.is_onprem_broker_install", return_value=True)
-@respx.mock
 def test_prepare_broker_request_adds_leading_slash(
-    mock_broker, simple_connector: AppClient
+    mock_broker, httpx2_mock, simple_connector: AppClient
 ):
     """Test that broker request preparation adds a leading slash when missing."""
     simple_connector._broker_ph_auth_token = "broker-token"
     simple_connector._user_hash_key = "hash-key"
 
-    route = respx.get("https://localhost:9999/rest/broker/api_proxy/rest/version").mock(
-        return_value=httpx.Response(200, json={"ok": True})
-    )
+    route = httpx2_mock.get(
+        "https://localhost:9999/rest/broker/api_proxy/rest/version"
+    ).respond(200, json={"ok": True})
     simple_connector.get("rest/version")
 
     assert route.called

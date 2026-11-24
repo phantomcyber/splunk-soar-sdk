@@ -3,7 +3,7 @@ from __future__ import annotations
 __lazy_modules__ = {
     "authlib.oauth2.rfc7636",
     "hmac",
-    "httpx",
+    "httpx2",
     "secrets",
     "soar_sdk.asset_state",
     "soar_sdk.auth.models",
@@ -20,7 +20,7 @@ import urllib.parse
 import uuid
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 from authlib.oauth2.rfc7636 import (
     create_s256_code_challenge,
 )
@@ -69,7 +69,7 @@ class SOARAssetOAuthClient:
         config: OAuthConfig,
         auth_state: AssetState,
         *,
-        http_client: httpx.Client | None = None,
+        http_client: httpx2.Client | None = None,
         verify_ssl: bool = True,
         timeout: float = 30.0,
     ) -> None:
@@ -78,7 +78,7 @@ class SOARAssetOAuthClient:
         self._timeout = timeout
         self._verify_ssl = verify_ssl
 
-        self._http_client = http_client or httpx.Client(
+        self._http_client = http_client or httpx2.Client(
             verify=verify_ssl,
             timeout=timeout,
         )
@@ -170,7 +170,7 @@ class SOARAssetOAuthClient:
             response.raise_for_status()
             token_data = response.json()
 
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             error_detail = ""
             try:
                 error_body = e.response.json()
@@ -180,7 +180,7 @@ class SOARAssetOAuthClient:
 
             raise TokenRefreshError(f"Token refresh failed: {error_detail}") from e
 
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise TokenRefreshError(f"Token refresh request failed: {e}") from e
 
         if "refresh_token" not in token_data:
@@ -228,13 +228,13 @@ class SOARAssetOAuthClient:
             response.raise_for_status()
             token_data = response.json()
 
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             error_detail = self._extract_error_detail(e.response)
             raise OAuthClientError(
                 f"Client credentials token request failed: {error_detail}"
             ) from e
 
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise OAuthClientError(
                 f"Client credentials token request failed: {e}"
             ) from e
@@ -347,13 +347,13 @@ class SOARAssetOAuthClient:
             response.raise_for_status()
             token_data = response.json()
 
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             error_detail = self._extract_error_detail(e.response)
             raise OAuthClientError(
                 f"Authorization code exchange failed: {error_detail}"
             ) from e
 
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise OAuthClientError(
                 f"Authorization code exchange request failed: {e}"
             ) from e
@@ -453,7 +453,7 @@ class SOARAssetOAuthClient:
         self._save_state(state)
 
     @staticmethod
-    def _extract_error_detail(response: httpx.Response) -> str:
+    def _extract_error_detail(response: httpx2.Response) -> str:
         """Extract error details from an HTTP response."""
         try:
             error_body = response.json()
@@ -476,7 +476,7 @@ class CertificateOAuthClient(SOARAssetOAuthClient):
         auth_state: AssetState,
         certificate: CertificateCredentials,
         *,
-        http_client: httpx.Client | None = None,
+        http_client: httpx2.Client | None = None,
         verify_ssl: bool = True,
         timeout: float = 30.0,
     ) -> None:
@@ -546,13 +546,13 @@ class CertificateOAuthClient(SOARAssetOAuthClient):
             response.raise_for_status()
             token_data = response.json()
 
-        except httpx.HTTPStatusError as e:
+        except httpx2.HTTPStatusError as e:
             error_detail = self._extract_error_detail(e.response)
             raise OAuthClientError(
                 f"Certificate-based token request failed: {error_detail}"
             ) from e
 
-        except httpx.RequestError as e:
+        except httpx2.RequestError as e:
             raise OAuthClientError(
                 f"Certificate-based token request failed: {e}"
             ) from e

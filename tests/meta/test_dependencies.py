@@ -308,9 +308,7 @@ class TestUvLock:
         assert len(packages) == 1
         assert packages[0].name == "fakepkg"
 
-    def test_rejected_dependency(
-        self, wheel_resp_mock, fake_wheel: UvWheel, fake_uv_lockfile: UvLock
-    ):
+    def test_rejected_dependency(self, fake_wheel: UvWheel, fake_uv_lockfile: UvLock):
         fake_uv_lockfile.package.append(
             UvPackage(
                 name="simplejson",

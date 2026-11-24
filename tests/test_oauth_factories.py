@@ -1,6 +1,6 @@
 from unittest.mock import Mock
 
-import httpx
+import httpx2
 import pytest
 
 from soar_sdk.auth.factories import (
@@ -150,7 +150,7 @@ class TestCreateOAuthAuth:
 class TestCreateOAuthClient:
     def test_creates_httpx_client(self, mock_asset):
         with create_oauth_client(mock_asset) as client:
-            assert isinstance(client, httpx.Client)
+            assert isinstance(client, httpx2.Client)
 
     def test_client_has_oauth_auth(self, mock_asset):
         with create_oauth_client(mock_asset) as client:

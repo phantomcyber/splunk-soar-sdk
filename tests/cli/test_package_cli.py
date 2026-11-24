@@ -4,9 +4,8 @@ from pathlib import Path
 from unittest.mock import AsyncMock, patch
 from urllib.parse import urlparse
 
-import httpx
+import httpx2
 import pytest
-import respx
 import toml
 from typer.testing import CliRunner
 
@@ -93,6 +92,7 @@ def set_up_install_request_responses(mocked_session):
     return mock_get, mock_post
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 def test_install_command(mock_install_client, app_tarball: Path):
     result = runner.invoke(
         package,
@@ -120,6 +120,7 @@ def test_install_command(mock_install_client, app_tarball: Path):
     )
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 def test_install_username_prompt_password_env_var(
     mock_install_client, app_tarball: Path, monkeypatch
 ):
@@ -136,6 +137,7 @@ def test_install_username_prompt_password_env_var(
     assert result.exit_code == 0
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 def test_install_username_password_env_vars(
     mock_install_client, app_tarball: Path, monkeypatch
 ):
@@ -158,6 +160,7 @@ def test_install_username_password_env_vars(
     )
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 def test_install_with_ph_auth_token(
     mock_install_client, app_tarball: Path, monkeypatch
 ):
@@ -181,6 +184,7 @@ def test_install_with_ph_auth_token(
     )
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 def test_install_with_soar_instance_env_var(
     mock_install_client, app_tarball: Path, monkeypatch
 ):
@@ -208,24 +212,24 @@ def test_install_tls_verification(
     else:
         monkeypatch.delenv("PH_AUTH_TOKEN", raising=False)
 
-    response = httpx.Response(
+    response = httpx2.Response(
         200,
         headers={"Set-Cookie": "csrftoken=csrf-token"},
-        request=httpx.Request("GET", "https://10.1.23.4/"),
+        request=httpx2.Request("GET", "https://10.1.23.4/"),
     )
-    install_response = httpx.Response(
+    install_response = httpx2.Response(
         201,
-        request=httpx.Request("POST", "https://10.1.23.4/app_install"),
+        request=httpx2.Request("POST", "https://10.1.23.4/app_install"),
     )
 
     with patch(
-        "soar_sdk.cli.package.utils.httpx.AsyncClient", autospec=True
+        "soar_sdk.cli.package.utils.httpx2.AsyncClient", autospec=True
     ) as mock_client_class:
         client = mock_client_class.return_value.__aenter__.return_value
         client.get = AsyncMock(return_value=response)
         client.post = AsyncMock(return_value=install_response)
-        client.cookies = httpx.Cookies()
-        client.base_url = httpx.URL("https://10.1.23.4")
+        client.cookies = httpx2.Cookies()
+        client.base_url = httpx2.URL("https://10.1.23.4")
 
         args = ["install", app_tarball.as_posix(), "10.1.23.4"]
         if insecure:
@@ -242,14 +246,14 @@ def test_install_tls_verification(
 
 
 @pytest.mark.asyncio
-@respx.mock
-async def test_token_session_csrf_token_missing():
-    respx.get("https://10.1.23.4/").respond(status_code=200)
+async def test_token_session_csrf_token_missing(httpx2_mock):
+    httpx2_mock.get("https://10.1.23.4/").respond(status_code=200)
     with pytest.raises(RuntimeError, match="Could not obtain CSRF token"):
         async with phantom_get_token_session("https://10.1.23.4", "some_token"):
             pass
 
 
+@pytest.mark.httpx2(assert_all_called=False)
 def test_install_command_with_post_error(mock_install_client, app_tarball: Path):
     mock_install_client.post("app_install").respond(
         json={"status": "failed"}, status_code=403
@@ -282,9 +286,8 @@ def test_install_app_tarball_not_file():
 
 
 @pytest.mark.asyncio
-@respx.mock
-async def test_csrf_token_missing():
-    respx.get("https://10.1.23.4/").respond(status_code=200)
+async def test_csrf_token_missing(httpx2_mock):
+    httpx2_mock.get("https://10.1.23.4/").respond(status_code=200)
     with pytest.raises(RuntimeError, match="Could not obtain CSRF token"):
         async with phantom_get_login_session("https://10.1.23.4", "admin", "password"):
             pass
@@ -292,7 +295,7 @@ async def test_csrf_token_missing():
 
 @pytest.mark.asyncio
 async def test_csrf_token_not_in_cookies():
-    async with httpx.AsyncClient(base_url="https://10.1.23.4") as client:
+    async with httpx2.AsyncClient(base_url="https://10.1.23.4") as client:
         with pytest.raises(RuntimeError, match="CSRF token not found"):
             await phantom_install_app(client, "/app_install", {"file": b"test"})
 
@@ -623,7 +626,7 @@ def test_package_build_fetches_from_custom_index(
 
 
 def test_package_build_fails_with_clear_error_on_fetch_failure(
-    respx_mock, tmp_path: Path
+    httpx2_mock, tmp_path: Path
 ):
     """Test that package building produces a comprehensible error when wheel fetching fails.
 
@@ -634,7 +637,7 @@ def test_package_build_fails_with_clear_error_on_fetch_failure(
     example_app = Path.cwd() / "tests/example_app"
 
     # Mock wheel downloads to return 403 Forbidden
-    wheel_route = respx_mock.get(url__regex=r".+/.+\.whl")
+    wheel_route = httpx2_mock.get(url__regex=r".+/.+\.whl")
     wheel_route.respond(
         status_code=403, json={"error": "Forbidden - authentication required"}
     )
@@ -661,7 +664,7 @@ def test_package_build_fails_with_clear_error_on_fetch_failure(
 
 
 def test_package_build_fails_with_clear_error_on_connection_timeout(
-    respx_mock, tmp_path: Path
+    httpx2_mock, tmp_path: Path
 ):
     """Test that package building produces a clear error when connection times out.
 
@@ -671,8 +674,8 @@ def test_package_build_fails_with_clear_error_on_connection_timeout(
     example_app = Path.cwd() / "tests/example_app"
 
     # Mock wheel downloads to raise a timeout error
-    wheel_route = respx_mock.get(url__regex=r".+/.+\.whl")
-    wheel_route.side_effect = httpx.ReadTimeout("Connection timed out")
+    wheel_route = httpx2_mock.get(url__regex=r".+/.+\.whl")
+    wheel_route.side_effect = httpx2.ReadTimeout("Connection timed out")
 
     with (
         context_directory(tmp_path),

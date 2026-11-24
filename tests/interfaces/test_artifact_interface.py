@@ -1,4 +1,5 @@
-from httpx import RequestError, Response
+from httpx2 import RequestError
+from respx import MockResponse
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
@@ -38,7 +39,7 @@ def test_create_artifact_bad_json(app_with_action: App, app_connector):
 
 
 def test_save_artifact_failed(app_with_action: App, app_connector, mock_post_artifact):
-    mock_post_artifact.return_value = Response(
+    mock_post_artifact.return_value = MockResponse(
         status_code=200, json={"failed": "something went wrong"}
     )
 
@@ -60,7 +61,7 @@ def test_save_artifact_failed(app_with_action: App, app_connector, mock_post_art
 def test_create_artifact_exisiting_id(
     app_with_action: App, app_connector, mock_post_artifact
 ):
-    mock_post_artifact.return_value = Response(
+    mock_post_artifact.return_value = MockResponse(
         status_code=201, json={"existing_artifact_id": "2"}
     )
 

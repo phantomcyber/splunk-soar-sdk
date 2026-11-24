@@ -246,9 +246,7 @@ def test_parse_args_with_malformed_param_values(
         )
 
 
-def test_with_soar_authentication(
-    app_with_action: App, mock_get_any_soar_call, mock_post_any_soar_call
-):
+def test_with_soar_authentication(app_with_action: App):
     """Test parsing arguments for an action that requires both asset and parameters."""
     runner = AppCliRunner(app_with_action)
 

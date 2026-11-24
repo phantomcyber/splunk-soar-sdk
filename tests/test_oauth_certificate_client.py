@@ -1,6 +1,6 @@
-import httpx
+import httpx2
 import pytest
-import respx
+from respx import MockResponse
 
 from soar_sdk.auth.client import CertificateOAuthClient, OAuthClientError
 from soar_sdk.auth.models import CertificateCredentials, OAuthConfig
@@ -86,19 +86,16 @@ class TestCertificateOAuthClientInit:
 
 
 class TestFetchTokenWithCertificate:
-    @respx.mock
-    def test_fetch_token_success(self, certificate_client):
-        route = respx.post(
+    def test_fetch_token_success(self, httpx2_mock, certificate_client):
+        route = httpx2_mock.post(
             "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
-        ).mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "certificate_token",
-                    "expires_in": 3600,
-                    "token_type": "Bearer",
-                },
-            )
+        ).respond(
+            200,
+            json={
+                "access_token": "certificate_token",
+                "expires_in": 3600,
+                "token_type": "Bearer",
+            },
         )
 
         token = certificate_client.fetch_token_with_certificate()
@@ -115,8 +112,9 @@ class TestFetchTokenWithCertificate:
             in content
         )
 
-    @respx.mock
-    def test_fetch_token_without_scope(self, mock_auth_state, certificate_credentials):
+    def test_fetch_token_without_scope(
+        self, httpx2_mock, mock_auth_state, certificate_credentials
+    ):
         config = OAuthConfig(
             client_id="test_client_id",
             token_endpoint="https://login.microsoftonline.com/tenant/oauth2/v2.0/token",
@@ -125,13 +123,11 @@ class TestFetchTokenWithCertificate:
             config, mock_auth_state, certificate_credentials
         )
 
-        route = respx.post(
+        route = httpx2_mock.post(
             "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
-        ).mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        ).respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         client.fetch_token_with_certificate()
@@ -139,29 +135,23 @@ class TestFetchTokenWithCertificate:
         request = route.calls.last.request
         assert b"scope=" not in request.content
 
-    @respx.mock
-    def test_fetch_token_without_extra_params(self, certificate_client):
-        route = respx.post(
+    def test_fetch_token_without_extra_params(self, httpx2_mock, certificate_client):
+        route = httpx2_mock.post(
             "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
-        ).mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        ).respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         certificate_client.fetch_token_with_certificate()
         assert route.calls.last is not None
 
-    @respx.mock
-    def test_fetch_token_includes_scope(self, certificate_client):
-        route = respx.post(
+    def test_fetch_token_includes_scope(self, httpx2_mock, certificate_client):
+        route = httpx2_mock.post(
             "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
-        ).mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        ).respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         certificate_client.fetch_token_with_certificate()
@@ -169,15 +159,12 @@ class TestFetchTokenWithCertificate:
         request = route.calls.last.request
         assert b"scope=" in request.content
 
-    @respx.mock
-    def test_fetch_token_with_extra_params(self, certificate_client):
-        route = respx.post(
+    def test_fetch_token_with_extra_params(self, httpx2_mock, certificate_client):
+        route = httpx2_mock.post(
             "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
-        ).mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        ).respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         certificate_client.fetch_token_with_certificate(
@@ -187,13 +174,14 @@ class TestFetchTokenWithCertificate:
         request = route.calls.last.request
         assert b"resource=" in request.content
 
-    @respx.mock
-    def test_fetch_token_stores_token(self, certificate_client, mock_auth_state):
-        respx.post("https://login.microsoftonline.com/tenant/oauth2/v2.0/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "stored_token", "expires_in": 3600},
-            )
+    def test_fetch_token_stores_token(
+        self, httpx2_mock, certificate_client, mock_auth_state
+    ):
+        httpx2_mock.post(
+            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+        ).respond(
+            200,
+            json={"access_token": "stored_token", "expires_in": 3600},
         )
 
         certificate_client.fetch_token_with_certificate()
@@ -202,27 +190,25 @@ class TestFetchTokenWithCertificate:
         assert "oauth" in state_data
         assert state_data["oauth"]["token"]["access_token"] == "stored_token"
 
-    @respx.mock
-    def test_fetch_token_http_error(self, certificate_client):
-        respx.post("https://login.microsoftonline.com/tenant/oauth2/v2.0/token").mock(
-            return_value=httpx.Response(
-                401,
-                json={
-                    "error": "invalid_client",
-                    "error_description": "Certificate validation failed",
-                },
-            )
+    def test_fetch_token_http_error(self, httpx2_mock, certificate_client):
+        httpx2_mock.post(
+            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+        ).respond(
+            401,
+            json={
+                "error": "invalid_client",
+                "error_description": "Certificate validation failed",
+            },
         )
 
         with pytest.raises(OAuthClientError) as exc_info:
             certificate_client.fetch_token_with_certificate()
         assert "Certificate validation failed" in str(exc_info.value)
 
-    @respx.mock
-    def test_fetch_token_network_error(self, certificate_client):
-        respx.post("https://login.microsoftonline.com/tenant/oauth2/v2.0/token").mock(
-            side_effect=httpx.ConnectError("Connection failed")
-        )
+    def test_fetch_token_network_error(self, httpx2_mock, certificate_client):
+        httpx2_mock.post(
+            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+        ).mock(side_effect=httpx2.ConnectError("Connection failed"))
 
         with pytest.raises(OAuthClientError) as exc_info:
             certificate_client.fetch_token_with_certificate()
@@ -230,8 +216,7 @@ class TestFetchTokenWithCertificate:
 
 
 class TestJWTAssertion:
-    @respx.mock
-    def test_jwt_contains_required_claims(self, certificate_client):
+    def test_jwt_contains_required_claims(self, httpx2_mock, certificate_client):
         import jwt
 
         captured_assertion = None
@@ -245,13 +230,11 @@ class TestJWTAssertion:
                     from urllib.parse import unquote
 
                     captured_assertion = unquote(captured_assertion)
-            return httpx.Response(
-                200, json={"access_token": "token", "expires_in": 3600}
-            )
+            return MockResponse(200, json={"access_token": "token", "expires_in": 3600})
 
-        respx.post("https://login.microsoftonline.com/tenant/oauth2/v2.0/token").mock(
-            side_effect=capture_request
-        )
+        httpx2_mock.post(
+            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+        ).mock(side_effect=capture_request)
 
         certificate_client.fetch_token_with_certificate()
 
@@ -272,8 +255,7 @@ class TestJWTAssertion:
         assert "iat" in decoded
         assert "jti" in decoded
 
-    @respx.mock
-    def test_jwt_header_contains_thumbprint(self, certificate_client):
+    def test_jwt_header_contains_thumbprint(self, httpx2_mock, certificate_client):
         import jwt
 
         captured_assertion = None
@@ -287,13 +269,11 @@ class TestJWTAssertion:
                     from urllib.parse import unquote
 
                     captured_assertion = unquote(captured_assertion)
-            return httpx.Response(
-                200, json={"access_token": "token", "expires_in": 3600}
-            )
+            return MockResponse(200, json={"access_token": "token", "expires_in": 3600})
 
-        respx.post("https://login.microsoftonline.com/tenant/oauth2/v2.0/token").mock(
-            side_effect=capture_request
-        )
+        httpx2_mock.post(
+            "https://login.microsoftonline.com/tenant/oauth2/v2.0/token"
+        ).mock(side_effect=capture_request)
 
         certificate_client.fetch_token_with_certificate()
 

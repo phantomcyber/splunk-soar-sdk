@@ -3,7 +3,7 @@
 __lazy_modules__ = {
     "collections.abc",
     "contextlib",
-    "httpx",
+    "httpx2",
     "importlib",
     "json",
     "pydantic",
@@ -20,7 +20,7 @@ from importlib import import_module
 from typing import Any, cast
 from urllib.parse import urlsplit
 
-import httpx
+import httpx2
 from pydantic import SecretStr, ValidationError
 
 from soar_sdk.exceptions import (
@@ -155,9 +155,9 @@ def _create_es_finding(
 
     secret = token.get_secret_value() if isinstance(token, SecretStr) else token
     url = None
-    with suppress(TypeError, ValueError, httpx.InvalidURL):
+    with suppress(TypeError, ValueError, httpx2.InvalidURL):
         urlsplit(base_url)
-        url = httpx.URL(base_url)
+        url = httpx2.URL(base_url)
     if (
         url is None
         or url.scheme not in {"https", "http"}
@@ -180,7 +180,7 @@ def _create_es_finding(
     response = None
     failure = None
     try:
-        with httpx.Client(timeout=timeout, follow_redirects=False) as client:
+        with httpx2.Client(timeout=timeout, follow_redirects=False) as client:
             response = client.post(
                 endpoint,
                 content=payload,
@@ -189,15 +189,15 @@ def _create_es_finding(
                     "Content-Type": "application/json",
                 },
             )
-    except httpx.TimeoutException:
+    except httpx2.TimeoutException:
         failure = FindingTimeoutError("ES finding creation timed out.")
-    except httpx.RequestError:
+    except httpx2.RequestError:
         failure = FindingUnavailableError("ES finding service is unavailable.")
     # Raise outside the handlers: neither cause nor context retains an
     # upstream exception that could include credentials or response bodies.
     if failure is not None:
         raise failure
-    response = cast(httpx.Response, response)
+    response = cast(httpx2.Response, response)
 
     status = response.status_code
     if status in {401, 403}:

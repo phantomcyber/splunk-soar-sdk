@@ -2,7 +2,7 @@
 
 __lazy_modules__ = {
     "contextlib",
-    "httpx",
+    "httpx2",
     "importlib",
     "pathlib",
     "soar_sdk.abstract",
@@ -20,20 +20,20 @@ from tempfile import TemporaryDirectory
 from typing import Any
 from uuid import UUID, uuid4
 
-import httpx
+import httpx2
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.decorators._es_poll_preparation import _add_uploaded_attachment
 from soar_sdk.models.finding import Finding
 
 
-def _reference_base_url(es_base_url: str) -> httpx.URL:
+def _reference_base_url(es_base_url: str) -> httpx2.URL:
     """Obtain the deployment's provisional reference route from its bundle."""
     url = None
     with suppress(Exception):
         value = import_module("es_poll_api").get_attachment_reference_base_url()
-        candidate = httpx.URL(value)
-        origin = httpx.URL(es_base_url)
+        candidate = httpx2.URL(value)
+        origin = httpx2.URL(es_base_url)
         if (
             (candidate.scheme, candidate.host, candidate.port)
             == (origin.scheme, origin.host, origin.port)

@@ -56,8 +56,8 @@ For user-delegated access requiring browser authorization:
     logger.progress(f"Please authorize: {auth_url}")
     token = flow.wait_for_authorization()
 
-Using with HTTPX
-----------------
+Using with HTTPX2
+-----------------
 
 For automatic token injection in HTTP requests, use ``create_oauth_client``:
 
@@ -69,9 +69,9 @@ For automatic token injection in HTTP requests, use ``create_oauth_client``:
         response = client.get("https://api.example.com/resource")
 
 The factory infers ``client_id``, ``client_secret``, and ``token_endpoint`` from common
-asset field names and returns a fully configured ``httpx.Client``.
+asset field names and returns a fully configured ``httpx2.Client``.
 
-For more control over the client, you can pass additional httpx options:
+For more control over the client, you can pass additional httpx2 options:
 
 .. code-block:: python
 
@@ -82,12 +82,13 @@ If you need just the auth handler (e.g., for async clients), use ``create_oauth_
 
 .. code-block:: python
 
+    import httpx2
+
     from soar_sdk.auth import create_oauth_auth
-    import httpx
 
     auth = create_oauth_auth(asset)
 
-    with httpx.Client(auth=auth) as client:
+    with httpx2.Client(auth=auth) as client:
         response = client.get("https://api.example.com/resource")
 
 For custom configuration:

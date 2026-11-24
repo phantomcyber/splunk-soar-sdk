@@ -16,15 +16,17 @@ For example:
 
 .. code-block:: python
 
+    import httpx2
+
     @app.test_connectivity()
     def test_connectivity(asset: Asset) -> None:
         logger.info("Testing connectivity")
 
-        with httpx.Client() as client:
+        with httpx2.Client() as client:
             response = client.get("https://example.com/api/health", headers={
                 "Authorization": f"Bearer {asset.api_token}"
             })
-            if not response.ok:
+            if not response.is_success:
                 raise ActionFailure(
                     f"Connectivity test failed with status code {response.status_code}"
                 )

@@ -1,22 +1,22 @@
 __lazy_modules__ = {
     "collections.abc",
-    "httpx",
+    "httpx2",
     "typing",
 }
 
 from collections.abc import Generator
 from typing import Any
 
-import httpx
+import httpx2
 
 
-def is_client_authenticated(client: httpx.Client) -> bool:
-    """Check whether the httpx client is authenticated to Splunk SOAR via CSRFToken."""
+def is_client_authenticated(client: httpx2.Client) -> bool:
+    """Check whether the httpx2 client is authenticated to Splunk SOAR via CSRFToken."""
     return client.headers.get("X-CSRFToken") is not None
 
 
 def get_request_iter_pages(
-    client: httpx.Client,
+    client: httpx2.Client,
     endpoint: str,
     params: dict | None = None,
     page_size: int = 50,

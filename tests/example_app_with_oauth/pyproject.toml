@@ -9,7 +9,7 @@ authors = [
     { name = "John Smith", email = "jsmith@example.com" }
 ]
 dependencies = [
-    "httpx[http2]>=0.28.1",
+    "httpx2[http2]>=2.16.2,<3",
     "requests>=2.34.2",
     "splunk-soar-sdk",
 ]

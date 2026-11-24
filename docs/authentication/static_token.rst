@@ -3,16 +3,17 @@
 Static Token Authentication
 ===========================
 
-For APIs that use API keys or pre-obtained tokens, use ``StaticTokenAuth`` with httpx:
+For APIs that use API keys or pre-obtained tokens, use ``StaticTokenAuth`` with httpx2:
 
 .. code-block:: python
 
+    import httpx2
+
     from soar_sdk.auth import StaticTokenAuth
-    import httpx
 
     auth = StaticTokenAuth(asset.api_key)
 
-    with httpx.Client(auth=auth) as client:
+    with httpx2.Client(auth=auth) as client:
         response = client.get("https://api.example.com/data")
 
 Custom Token Types
