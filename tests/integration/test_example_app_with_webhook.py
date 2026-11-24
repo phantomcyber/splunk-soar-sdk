@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 
 from .soar_client import AppOnStackClient
 
@@ -14,6 +14,6 @@ def test_webhook_request(webhook_app_client: AppOnStackClient):
     webhook_url = f"{webhook_app_client.webhook_base_url}test_webhook"
 
     print(f"trying to hit webhook {webhook_url=}")
-    response = httpx.get(webhook_url, verify=webhook_app_client.phantom.verify_certs)
+    response = httpx2.get(webhook_url, verify=webhook_app_client.phantom.verify_certs)
     response.raise_for_status()
     assert response.text == "Webhook received"

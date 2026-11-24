@@ -1,7 +1,7 @@
 __lazy_modules__ = {
     "abc",
     "collections.abc",
-    "httpx",
+    "httpx2",
     "pydantic",
     "pydantic.dataclasses",
     "soar_sdk.action_results",
@@ -18,7 +18,7 @@ from abc import abstractmethod
 from collections.abc import AsyncIterable, Iterable, Mapping
 from typing import Any, Generic, TypeVar
 
-import httpx
+import httpx2
 from pydantic import SecretStr, field_validator
 from pydantic.dataclasses import dataclass
 
@@ -66,7 +66,7 @@ class SOARClient(Generic[SummaryType]):
 
     @property
     @abstractmethod
-    def client(self) -> httpx.Client:
+    def client(self) -> httpx2.Client:
         """Generic HTTP client. Subclasses must define."""
         pass
 
@@ -240,14 +240,14 @@ class SOARClient(Generic[SummaryType]):
         self,
         endpoint: str,
         *,
-        params: dict[str, Any] | httpx.QueryParams | None = None,
+        params: dict[str, Any] | httpx2.QueryParams | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        timeout: httpx.Timeout | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: httpx2.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
         follow_redirects: bool = False,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a GET request to the specific endpoint using the SOAR client."""
         response = self.client.get(
             endpoint,
@@ -255,7 +255,7 @@ class SOARClient(Generic[SummaryType]):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth or httpx2.USE_CLIENT_DEFAULT,
             follow_redirects=follow_redirects,
             extensions=extensions,
         )
@@ -273,11 +273,11 @@ class SOARClient(Generic[SummaryType]):
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
-        timeout: float | httpx.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx2.Timeout | None = None,
         follow_redirects: bool = True,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a POST request to the specific endpoint using the SOAR client."""
         headers = headers or {}
         headers.update({"Referer": f"{self.client.base_url}/{endpoint}"})
@@ -290,7 +290,7 @@ class SOARClient(Generic[SummaryType]):
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth or httpx2.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -309,11 +309,11 @@ class SOARClient(Generic[SummaryType]):
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
-        timeout: float | httpx.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx2.Timeout | None = None,
         follow_redirects: bool = True,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a PUT request to the specific endpoint using the SOAR client."""
         headers = headers or {}
         headers.update({"Referer": f"{self.client.base_url}/{endpoint}"})
@@ -326,7 +326,7 @@ class SOARClient(Generic[SummaryType]):
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth or httpx2.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -338,14 +338,14 @@ class SOARClient(Generic[SummaryType]):
         self,
         endpoint: str,
         *,
-        params: dict[str, Any] | httpx.QueryParams | None = None,
+        params: dict[str, Any] | httpx2.QueryParams | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
-        timeout: httpx.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
+        timeout: httpx2.Timeout | None = None,
         follow_redirects: bool = False,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a DELETE request to the specific endpoint using the SOAR client."""
         headers = headers or {}
         headers.update({"Referer": f"{self.client.base_url}/{endpoint}"})
@@ -354,7 +354,7 @@ class SOARClient(Generic[SummaryType]):
             params=params,
             headers=headers,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth or httpx2.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,

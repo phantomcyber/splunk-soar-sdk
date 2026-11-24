@@ -3,7 +3,7 @@ __lazy_modules__ = {
     "collections.abc",
     "functools",
     "hashlib",
-    "httpx",
+    "httpx2",
     "io",
     "logging",
     "os",
@@ -26,7 +26,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 import build
-import httpx
+import httpx2
 from pydantic import BaseModel
 
 logger = getLogger("soar_sdk.meta.dependencies")
@@ -101,7 +101,7 @@ class UvWheel(BaseModel):
             raise ValueError(
                 f"Cannot fetch wheel {self.filename or 'unknown'}: no URL provided (local file reference?)"
             )
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             response = await client.get(self.url, timeout=10)
             response.raise_for_status()
             wheel_bytes: bytes = response.content
@@ -127,7 +127,7 @@ class UvSourceDistribution(BaseModel):
 
     async def fetch_and_build(self) -> tuple[str, bytes]:
         """Download the source distribution and build a wheel from it."""
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             response = await client.get(self.url, timeout=10)
             response.raise_for_status()
             sdist_bytes: bytes = response.content

@@ -7,7 +7,7 @@ import uuid
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
-import httpx
+import httpx2
 import urllib3
 import websockets
 
@@ -38,13 +38,15 @@ class PhantomInstance(SOARClient):
         if not verify_certs:
             urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-        transport = httpx.HTTPTransport(retries=5, verify=verify_certs)
-        self._client = httpx.Client(
+        transport = httpx2.HTTPTransport(retries=5, verify=verify_certs)
+        self._client = httpx2.Client(
             base_url=self.base_url,
             auth=(ph_user, ph_pass),
             verify=verify_certs,
             transport=transport,
-            timeout=httpx.Timeout(phantom_constants.DEFAULT_REQUEST_TIMEOUT_IN_SECONDS),
+            timeout=httpx2.Timeout(
+                phantom_constants.DEFAULT_REQUEST_TIMEOUT_IN_SECONDS
+            ),
         )
 
         self._vault_api = Vault(soar_client=self)
@@ -52,7 +54,7 @@ class PhantomInstance(SOARClient):
         self._containers_api = Container(soar_client=self)
 
     @property
-    def client(self) -> httpx.Client:
+    def client(self) -> httpx2.Client:
         """The HTTP client used for making requests to the SOAR API."""
         return self._client
 
@@ -110,7 +112,7 @@ class PhantomInstance(SOARClient):
         response = self.get(
             endpoint,
             params=params,
-            timeout=httpx.Timeout(timeout),
+            timeout=httpx2.Timeout(timeout),
         )
         if raise_on_fail:
             response.raise_for_status()
@@ -129,7 +131,7 @@ class PhantomInstance(SOARClient):
             endpoint,
             data=data,
             json=json_data,
-            timeout=httpx.Timeout(timeout),
+            timeout=httpx2.Timeout(timeout),
         )
         if raise_on_fail:
             response.raise_for_status()
@@ -145,7 +147,7 @@ class PhantomInstance(SOARClient):
         """Send a DELETE request to the specified endpoint on the phantom instance."""
         response = self.delete(
             f"{endpoint}/{object_id}",
-            timeout=httpx.Timeout(timeout),
+            timeout=httpx2.Timeout(timeout),
         )
         if raise_on_fail:
             response.raise_for_status()

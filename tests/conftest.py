@@ -6,7 +6,6 @@ from unittest import mock
 
 import pytest
 from extract_msg.ole_writer import OleWriter
-from httpx import Response
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionOutput
@@ -467,10 +466,10 @@ def fake_uv_lockfile(fake_wheel) -> UvLock:
 
 
 @pytest.fixture
-def wheel_resp_mock(respx_mock):
+def wheel_resp_mock(httpx2_mock):
     """Fixture that automatically mocks requests to download wheels. Useful for keeping tests for package builds fast and reliable."""
     # Create the mock route for wheel downloads
-    mock_route = respx_mock.get(url__regex=r".+/.+\.whl")
+    mock_route = httpx2_mock.get(url__regex=r".+/.+\.whl")
     mock_route.respond(content=b"dummy wheel content")
 
     # Provide the mock route to the test so it can make assertions
@@ -478,10 +477,10 @@ def wheel_resp_mock(respx_mock):
 
 
 @pytest.fixture
-def sdist_resp_mock(respx_mock):
+def sdist_resp_mock(httpx2_mock):
     """Fixture that automatically mocks requests to download source distributions. Useful for keeping tests for package builds fast and reliable."""
     # Create the mock route for source distribution downloads
-    mock_route = respx_mock.get(url__regex=r".+/.+\.tar\.gz")
+    mock_route = httpx2_mock.get(url__regex=r".+/.+\.tar\.gz")
 
     with Path("tests/test_assets/splunk-sdk-2.1.0.tar.gz").open("rb") as f:
         mock_route.respond(content=f.read())
@@ -510,25 +509,25 @@ def sdist_build_mock():
 
 
 @pytest.fixture
-def mock_install_client(respx_mock):
+def mock_install_client(httpx2_mock):
     """Fixture to mock requests.Session."""
     # Mock the home page GET request for CSRF token
-    respx_mock.get("/").respond(
+    httpx2_mock.get("/").respond(
         cookies={"csrftoken": "fake_csrf_token"}, status_code=200
     )
 
-    respx_mock.get("login").respond(
+    httpx2_mock.get("login").respond(
         cookies={"csrftoken": "mocked_csrf_token"}, status_code=200
     )
 
-    respx_mock.post("login").respond(
+    httpx2_mock.post("login").respond(
         cookies={"csrftoken": "fake_csrf_token", "sessionid": "fake_session_id"},
         status_code=200,
     )
 
     # Mock the POST request for app upload at /app_install
-    respx_mock.post("app_install").respond(json={"status": "success"}, status_code=201)
-    return respx_mock
+    httpx2_mock.post("app_install").respond(json={"status": "success"}, status_code=201)
+    return httpx2_mock
 
 
 @pytest.fixture
@@ -559,147 +558,137 @@ def soar_client_auth_token() -> SOARClientAuth:
 
 
 @pytest.fixture
-def mock_post_artifact(respx_mock):
+def mock_post_artifact(httpx2_mock):
     """Fixture to mock POST requests to create artifacts."""
-    mock_route = respx_mock.post(re.compile(r".*/rest/artifact/?$")).mock(
-        return_value=Response(201, json={"message": "Mocked artifact created", "id": 1})
+    mock_route = httpx2_mock.post(re.compile(r".*/rest/artifact/?$")).respond(
+        201, json={"message": "Mocked artifact created", "id": 1}
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_get_any_soar_call(respx_mock):
+def mock_get_any_soar_call(httpx2_mock):
     """Fixture to mock GET requests to any SOAR endpoint."""
-    mock_route = respx_mock.get(re.compile(r".*")).mock(
-        return_value=Response(
-            200,
-            json={"message": "Mocked GET response"},
-            headers={"Set-Cookie": "csrftoken=mocked_csrf_token; Path=/; HttpOnly"},
-        )
+    mock_route = httpx2_mock.get(re.compile(r".*")).respond(
+        200,
+        json={"message": "Mocked GET response"},
+        headers={"Set-Cookie": "csrftoken=mocked_csrf_token; Path=/; HttpOnly"},
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_put_any_call(respx_mock):
+def mock_put_any_call(httpx2_mock):
     """Fixture to mock PUT requests to any SOAR endpoint."""
-    mock_route = respx_mock.put(re.compile(r".*")).mock(
-        return_value=Response(200, json={"message": "Mocked PUT response"})
+    mock_route = httpx2_mock.put(re.compile(r".*")).respond(
+        200, json={"message": "Mocked PUT response"}
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_post_any_soar_call(respx_mock):
+def mock_post_any_soar_call(httpx2_mock):
     """Fixture to mock POST requests to any SOAR endpoint."""
-    mock_route = respx_mock.post(re.compile(r".*")).mock(
-        return_value=Response(
-            200,
-            json={"message": "Mocked POST response"},
-            headers={"Set-Cookie": "sessionid=mocked_session_id; Path=/; HttpOnly"},
-        )
+    mock_route = httpx2_mock.post(re.compile(r".*")).respond(
+        200,
+        json={"message": "Mocked POST response"},
+        headers={"Set-Cookie": "sessionid=mocked_session_id; Path=/; HttpOnly"},
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_delete_any_soar_call(respx_mock):
+def mock_delete_any_soar_call(httpx2_mock):
     """Fixture to mock DELETE requests to any SOAR endpoint."""
-    mock_route = respx_mock.delete(re.compile(r".*")).mock(
-        return_value=Response(
-            200,
-            json={"message": "Mocked Deleted response"},
-            headers={"Set-Cookie": "sessionid=mocked_session_id; Path=/; HttpOnly"},
-        )
+    mock_route = httpx2_mock.delete(re.compile(r".*")).respond(
+        200,
+        json={"message": "Mocked Deleted response"},
+        headers={"Set-Cookie": "sessionid=mocked_session_id; Path=/; HttpOnly"},
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_post_container(respx_mock):
+def mock_post_container(httpx2_mock):
     """Fixture to mock POST requests to create containers."""
-    mock_route = respx_mock.post(re.compile(r".*/rest/container/?$")).mock(
-        return_value=Response(
-            201, json={"message": "Mocked container created", "id": 1}
-        )
+    mock_route = httpx2_mock.post(re.compile(r".*/rest/container/?$")).respond(
+        201, json={"message": "Mocked container created", "id": 1}
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_delete_container(respx_mock):
+def mock_delete_container(httpx2_mock):
     """Fixture to mock DELETE requests to delete containers."""
-    mock_route = respx_mock.delete(re.compile(r".*/rest/container/\d+/?$")).mock(
-        return_value=Response(200, json={"message": "Container deleted"})
+    mock_route = httpx2_mock.delete(re.compile(r".*/rest/container/\d+/?$")).respond(
+        200, json={"message": "Container deleted"}
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_post_vault(respx_mock):
+def mock_post_vault(httpx2_mock):
     """Fixture to mock POST requests to add attachments to vault."""
-    mock_route = respx_mock.post(re.compile(r".*/rest/container_attachment/?$")).mock(
-        return_value=Response(
-            201,
-            json={
-                "message": "Attachment added",
-                "id": 1,
-                "vault_id": "mock-vault-id",
-            },
-        )
+    mock_route = httpx2_mock.post(
+        re.compile(r".*/rest/container_attachment/?$")
+    ).respond(
+        201,
+        json={
+            "message": "Attachment added",
+            "id": 1,
+            "vault_id": "mock-vault-id",
+        },
     )
     return mock_route
 
 
 @pytest.fixture
-def mock_get_vault(respx_mock):
+def mock_get_vault(httpx2_mock):
     """Fixture to mock GET requests to retrieve attachments from vault."""
-    mock_route = respx_mock.get(re.compile(r".*/rest/container_attachment.*")).mock(
-        return_value=Response(
-            201,
-            json={
-                "message": "Retrieved attachment",
-                "id": 1,
-                "num_pages": 1,
-                "data": [
-                    {
-                        "id": 1,
-                        "created_via": "manual upload",
-                        "container": "test_1",
-                        "task": "",
-                        "create_time": "3 minutes ago",
-                        "name": "test.txt",
-                        "user": "Phantom Admin",
-                        "vault_document": 214,
-                        "mime_type": "text/plain",
-                        "es_attachment_id": None,
-                        "hash": "f1245088566efd873af926569ab5788a8ae280d0",
-                        "vault_id": "f1245088566efd873af926569ab5788a8ae280d0",
+    mock_route = httpx2_mock.get(re.compile(r".*/rest/container_attachment.*")).respond(
+        201,
+        json={
+            "message": "Retrieved attachment",
+            "id": 1,
+            "num_pages": 1,
+            "data": [
+                {
+                    "id": 1,
+                    "created_via": "manual upload",
+                    "container": "test_1",
+                    "task": "",
+                    "create_time": "3 minutes ago",
+                    "name": "test.txt",
+                    "user": "Phantom Admin",
+                    "vault_document": 214,
+                    "mime_type": "text/plain",
+                    "es_attachment_id": None,
+                    "hash": "f1245088566efd873af926569ab5788a8ae280d0",
+                    "vault_id": "f1245088566efd873af926569ab5788a8ae280d0",
+                    "size": 237612,
+                    "path": "/opt/phantom/vault/f1/24/f1245088566efd873af926569ab5788a8ae280d0",
+                    "metadata": {
+                        "sha1": "f1245088566efd873af926569ab5788a8ae280d0",
                         "size": 237612,
-                        "path": "/opt/phantom/vault/f1/24/f1245088566efd873af926569ab5788a8ae280d0",
-                        "metadata": {
-                            "sha1": "f1245088566efd873af926569ab5788a8ae280d0",
-                            "size": 237612,
-                            "sha256": "d7116a30339ad6eca05b6abd9f9d9d0002b23704fcf8fc85fa209d0947541b4f",
-                            "contains": ["vault id"],
-                        },
-                        "aka": ["test.txt"],
-                        "container_id": 1,
+                        "sha256": "d7116a30339ad6eca05b6abd9f9d9d0002b23704fcf8fc85fa209d0947541b4f",
                         "contains": ["vault id"],
-                    }
-                ],
-            },
-        )
+                    },
+                    "aka": ["test.txt"],
+                    "container_id": 1,
+                    "contains": ["vault id"],
+                }
+            ],
+        },
     )
 
     return mock_route
 
 
 @pytest.fixture
-def mock_delete_vault(respx_mock):
+def mock_delete_vault(httpx2_mock):
     """Fixture to mock DELETE requests to remove attachments from vault."""
-    mock_route = respx_mock.delete(re.compile(r".*/rest/container_attachment.*")).mock(
-        return_value=Response(200, json={"message": "Attachment deleted", "id": 1})
-    )
+    mock_route = httpx2_mock.delete(
+        re.compile(r".*/rest/container_attachment.*")
+    ).respond(200, json={"message": "Attachment deleted", "id": 1})
 
     return mock_route

@@ -1,9 +1,7 @@
 import time
 from unittest.mock import patch
 
-import httpx
 import pytest
-import respx
 
 from soar_sdk.auth.client import AuthorizationRequiredError, OAuthClientError
 from soar_sdk.auth.flows import (
@@ -38,17 +36,14 @@ class TestClientCredentialsFlow:
             scope=["read", "write"],
         )
 
-    @respx.mock
-    def test_authenticate_success(self, cc_flow):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "cc_access_token",
-                    "expires_in": 3600,
-                    "token_type": "Bearer",
-                },
-            )
+    def test_authenticate_success(self, httpx2_mock, cc_flow):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={
+                "access_token": "cc_access_token",
+                "expires_in": 3600,
+                "token_type": "Bearer",
+            },
         )
 
         token = cc_flow.authenticate()
@@ -56,8 +51,7 @@ class TestClientCredentialsFlow:
         assert token.access_token == "cc_access_token"
         assert token.expires_in == 3600
 
-    @respx.mock
-    def test_authenticate_with_extra_params(self, mock_auth_state):
+    def test_authenticate_with_extra_params(self, httpx2_mock, mock_auth_state):
         flow = ClientCredentialsFlow(
             mock_auth_state,
             client_id="test_client",
@@ -66,11 +60,9 @@ class TestClientCredentialsFlow:
             extra_params={"resource": "https://api.example.com"},
         )
 
-        route = respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        route = httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         flow.authenticate()
@@ -78,8 +70,9 @@ class TestClientCredentialsFlow:
         request = route.calls.last.request
         assert b"resource=" in request.content
 
-    @respx.mock
-    def test_get_token_returns_valid_stored_token(self, cc_flow, mock_auth_state):
+    def test_get_token_returns_valid_stored_token(
+        self, httpx2_mock, cc_flow, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -95,8 +88,9 @@ class TestClientCredentialsFlow:
         token = cc_flow.get_token()
         assert token.access_token == "stored_token"
 
-    @respx.mock
-    def test_get_token_fetches_new_when_expired(self, cc_flow, mock_auth_state):
+    def test_get_token_fetches_new_when_expired(
+        self, httpx2_mock, cc_flow, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -109,23 +103,18 @@ class TestClientCredentialsFlow:
             }
         )
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "new_token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "new_token", "expires_in": 3600},
         )
 
         token = cc_flow.get_token()
         assert token.access_token == "new_token"
 
-    @respx.mock
-    def test_get_token_fetches_new_when_none(self, cc_flow):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "fresh_token", "expires_in": 3600},
-            )
+    def test_get_token_fetches_new_when_none(self, httpx2_mock, cc_flow):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "fresh_token", "expires_in": 3600},
         )
 
         token = cc_flow.get_token()
@@ -200,17 +189,14 @@ class TestAuthorizationCodeFlow:
 
         assert "prompt=consent" in url
 
-    @respx.mock
-    def test_exchange_code_for_token(self, auth_code_flow):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "exchanged_token",
-                    "refresh_token": "refresh",
-                    "expires_in": 3600,
-                },
-            )
+    def test_exchange_code_for_token(self, httpx2_mock, auth_code_flow):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={
+                "access_token": "exchanged_token",
+                "refresh_token": "refresh",
+                "expires_in": 3600,
+            },
         )
 
         token = auth_code_flow.exchange_code_for_token("auth_code_value")
@@ -218,8 +204,7 @@ class TestAuthorizationCodeFlow:
         assert token.access_token == "exchanged_token"
         assert token.refresh_token == "refresh"
 
-    @respx.mock
-    def test_exchange_code_with_extra_token_params(self, mock_auth_state):
+    def test_exchange_code_with_extra_token_params(self, httpx2_mock, mock_auth_state):
         flow = AuthorizationCodeFlow(
             mock_auth_state,
             asset_id="asset-123",
@@ -230,11 +215,9 @@ class TestAuthorizationCodeFlow:
             extra_token_params={"resource": "https://api.example.com"},
         )
 
-        route = respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        route = httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         flow.exchange_code_for_token("auth_code")
@@ -249,8 +232,9 @@ class TestAuthorizationCodeFlow:
         assert "authorization required" in str(exc_info.value).lower()
         assert "https://auth.example.com/authorize" in str(exc_info.value)
 
-    @respx.mock
-    def test_get_token_returns_valid_token(self, auth_code_flow, mock_auth_state):
+    def test_get_token_returns_valid_token(
+        self, httpx2_mock, auth_code_flow, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -266,8 +250,9 @@ class TestAuthorizationCodeFlow:
         token = auth_code_flow.get_token()
         assert token.access_token == "stored_token"
 
-    @respx.mock
-    def test_get_token_auto_refreshes(self, auth_code_flow, mock_auth_state):
+    def test_get_token_auto_refreshes(
+        self, httpx2_mock, auth_code_flow, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -281,11 +266,9 @@ class TestAuthorizationCodeFlow:
             }
         )
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "refreshed_token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "refreshed_token", "expires_in": 3600},
         )
 
         token = auth_code_flow.get_token()
@@ -296,8 +279,9 @@ class TestAuthorizationCodeFlow:
         assert client is not None
         assert client.config.client_id == "test_client"
 
-    @respx.mock
-    def test_wait_for_authorization_success(self, auth_code_flow, mock_auth_state):
+    def test_wait_for_authorization_success(
+        self, httpx2_mock, auth_code_flow, mock_auth_state
+    ):
         auth_code_flow.get_authorization_url()
 
         state_data = mock_auth_state.get_all()
@@ -306,11 +290,9 @@ class TestAuthorizationCodeFlow:
         session["auth_complete"] = True
         session["auth_code"] = "received_code"
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "waited_token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "waited_token", "expires_in": 3600},
         )
 
         with patch("time.sleep"):
@@ -339,9 +321,8 @@ class TestAuthorizationCodeFlow:
 
         assert "timed out" in str(exc_info.value)
 
-    @respx.mock
     def test_wait_for_authorization_with_progress_callback(
-        self, auth_code_flow, mock_auth_state
+        self, httpx2_mock, auth_code_flow, mock_auth_state
     ):
         auth_code_flow.get_authorization_url()
 
@@ -355,11 +336,9 @@ class TestAuthorizationCodeFlow:
             session["auth_complete"] = True
             session["auth_code"] = "code"
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         with patch("time.sleep"):

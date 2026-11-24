@@ -4,7 +4,7 @@ __lazy_modules__ = {
     "collections.abc",
     "contextlib",
     "hmac",
-    "httpx",
+    "httpx2",
     "soar_sdk.asset",
     "soar_sdk.auth.client",
     "soar_sdk.auth.httpx_auth",
@@ -19,7 +19,7 @@ from contextlib import contextmanager
 from hmac import compare_digest
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 
 from soar_sdk.auth.client import SOARAssetOAuthClient
 from soar_sdk.auth.httpx_auth import OAuthBearerAuth
@@ -85,8 +85,8 @@ def create_oauth_client(
     auto_refresh: bool = True,
     timeout: float = 30.0,
     **httpx_kwargs: Any,  # noqa: ANN401
-) -> Iterator[httpx.Client]:
-    """Create an httpx.Client with OAuth authentication from an asset."""
+) -> Iterator[httpx2.Client]:
+    """Create an httpx2.Client with OAuth authentication from an asset."""
     auth = create_oauth_auth(
         asset,
         client_id=client_id,
@@ -95,7 +95,7 @@ def create_oauth_client(
         scope=scope,
         auto_refresh=auto_refresh,
     )
-    with httpx.Client(auth=auth, timeout=timeout, **httpx_kwargs) as client:
+    with httpx2.Client(auth=auth, timeout=timeout, **httpx_kwargs) as client:
         yield client
 
 

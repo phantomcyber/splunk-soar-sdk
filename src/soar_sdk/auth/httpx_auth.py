@@ -3,7 +3,7 @@ from __future__ import annotations
 __lazy_modules__ = {
     "base64",
     "collections.abc",
-    "httpx",
+    "httpx2",
     "soar_sdk.auth.client",
     "soar_sdk.auth.models",
 }
@@ -12,14 +12,14 @@ __lazy_modules__ = {
 import base64
 from collections.abc import Generator
 
-import httpx
+import httpx2
 
 from soar_sdk.auth.client import SOARAssetOAuthClient
 from soar_sdk.auth.models import OAuthToken
 
 
-class BasicAuth(httpx.Auth):
-    """HTTPX authentication using HTTP Basic Authentication."""
+class BasicAuth(httpx2.Auth):
+    """HTTPX2 authentication using HTTP Basic Authentication."""
 
     def __init__(self, username: str, password: str) -> None:
         self._username = username
@@ -27,8 +27,8 @@ class BasicAuth(httpx.Auth):
 
     def auth_flow(
         self,
-        request: httpx.Request,
-    ) -> Generator[httpx.Request, httpx.Response]:
+        request: httpx2.Request,
+    ) -> Generator[httpx2.Request, httpx2.Response]:
         """Add Basic authentication header to the request."""
         credentials = f"{self._username}:{self._password}"
         encoded = base64.b64encode(credentials.encode()).decode("ascii")
@@ -36,8 +36,8 @@ class BasicAuth(httpx.Auth):
         yield request
 
 
-class StaticTokenAuth(httpx.Auth):
-    """HTTPX authentication using a static token."""
+class StaticTokenAuth(httpx2.Auth):
+    """HTTPX2 authentication using a static token."""
 
     def __init__(
         self,
@@ -56,8 +56,8 @@ class StaticTokenAuth(httpx.Auth):
 
     def auth_flow(
         self,
-        request: httpx.Request,
-    ) -> Generator[httpx.Request, httpx.Response]:
+        request: httpx2.Request,
+    ) -> Generator[httpx2.Request, httpx2.Response]:
         """Add authentication header to the request."""
         if self._token_type:
             request.headers[self._header_name] = (
@@ -68,8 +68,8 @@ class StaticTokenAuth(httpx.Auth):
         yield request
 
 
-class OAuthBearerAuth(httpx.Auth):
-    """HTTPX authentication using OAuth Bearer tokens."""
+class OAuthBearerAuth(httpx2.Auth):
+    """HTTPX2 authentication using OAuth Bearer tokens."""
 
     requires_response_body = True
 
@@ -85,8 +85,8 @@ class OAuthBearerAuth(httpx.Auth):
 
     def auth_flow(
         self,
-        request: httpx.Request,
-    ) -> Generator[httpx.Request, httpx.Response]:
+        request: httpx2.Request,
+    ) -> Generator[httpx2.Request, httpx2.Response]:
         """Handle authentication flow for a request."""
         if self._token is None or self._token.is_expired():
             self._token = self._oauth_client.get_valid_token(

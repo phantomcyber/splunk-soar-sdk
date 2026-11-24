@@ -2,7 +2,7 @@ import asyncio
 import time
 from typing import TYPE_CHECKING
 
-import httpx
+import httpx2
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionOutput
@@ -38,7 +38,7 @@ async def async_process(
             return 0
 
     # Make concurrent HTTP requests to demonstrate async
-    async with httpx.AsyncClient() as client:
+    async with httpx2.AsyncClient() as client:
         tasks = [fetch_request(client) for _ in range(params.num_requests)]
         status_codes = await asyncio.gather(*tasks)
 
@@ -72,7 +72,7 @@ def sync_process(
     def fetch_request():
         url = "https://httpbin.org/delay/1"
         try:
-            response = httpx.get(url, timeout=10)
+            response = httpx2.get(url, timeout=10)
             return response.status_code
         except Exception:
             return 0

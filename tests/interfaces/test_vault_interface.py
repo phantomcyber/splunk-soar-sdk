@@ -4,7 +4,8 @@ import types
 from unittest.mock import MagicMock, Mock
 
 import pytest
-from httpx import RequestError, Response
+from httpx2 import RequestError
+from respx import MockResponse
 
 from soar_sdk.apis.utils import get_request_iter_pages
 from soar_sdk.app_client import BasicAuth
@@ -221,7 +222,7 @@ def test_vault_create_attachment_exception(app_connector, mock_post_vault):
 
 
 def test_vault_create_attachment_failed(app_connector, mock_post_vault):
-    mock_post_vault.return_value = Response(
+    mock_post_vault.return_value = MockResponse(
         500, json={"failed": "something went wrong"}
     )
     with pytest.raises(SoarAPIError):
@@ -287,7 +288,7 @@ def test_vault_add_attachment_exception(app_connector, mock_post_vault):
 
 
 def test_vault_add_attachment_failed(app_connector, mock_post_vault):
-    mock_post_vault.return_value = Response(
+    mock_post_vault.return_value = MockResponse(
         500, json={"failed": "something went wrong"}
     )
     with pytest.raises(SoarAPIError):
@@ -345,7 +346,7 @@ def test_vault_delete_attachment_authenticated_client_error(
 def test_vault_delete_attachment_authenticated_client_failed(
     app_connector, mock_get_vault, mock_delete_vault
 ):
-    mock_delete_vault.return_value = Response(
+    mock_delete_vault.return_value = MockResponse(
         401, json={"failed": "something went wrong", "message": "Authentication error"}
     )
     with pytest.raises(SoarAPIError):

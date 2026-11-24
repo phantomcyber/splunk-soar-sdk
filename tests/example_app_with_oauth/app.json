@@ -268,19 +268,14 @@
                 "input_file_aarch64": "wheels/shared/hpack-4.2.0-py3-none-any.whl"
             },
             {
-                "module": "httpcore",
-                "input_file": "wheels/shared/httpcore-1.0.9-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpcore-1.0.9-py3-none-any.whl"
+                "module": "httpcore2",
+                "input_file": "wheels/shared/httpcore2-2.16.2-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpcore2-2.16.2-py3-none-any.whl"
             },
             {
-                "module": "httpx",
-                "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
-            },
-            {
-                "module": "httpx-retries",
-                "input_file": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl"
+                "module": "httpx2",
+                "input_file": "wheels/shared/httpx2-2.16.2-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpx2-2.16.2-py3-none-any.whl"
             },
             {
                 "module": "humanize",
@@ -443,6 +438,11 @@
                 "input_file_aarch64": "wheels/shared/trove_classifiers-2026.1.14.14-py3-none-any.whl"
             },
             {
+                "module": "truststore",
+                "input_file": "wheels/shared/truststore-0.10.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/truststore-0.10.5-py3-none-any.whl"
+            },
+            {
                 "module": "typer",
                 "input_file": "wheels/shared/typer-0.17.5-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/typer-0.17.5-py3-none-any.whl"
@@ -588,19 +588,14 @@
                 "input_file_aarch64": "wheels/shared/hpack-4.2.0-py3-none-any.whl"
             },
             {
-                "module": "httpcore",
-                "input_file": "wheels/shared/httpcore-1.0.9-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpcore-1.0.9-py3-none-any.whl"
+                "module": "httpcore2",
+                "input_file": "wheels/shared/httpcore2-2.16.2-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpcore2-2.16.2-py3-none-any.whl"
             },
             {
-                "module": "httpx",
-                "input_file": "wheels/shared/httpx-0.28.1-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx-0.28.1-py3-none-any.whl"
-            },
-            {
-                "module": "httpx-retries",
-                "input_file": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl",
-                "input_file_aarch64": "wheels/shared/httpx_retries-0.4.6-py3-none-any.whl"
+                "module": "httpx2",
+                "input_file": "wheels/shared/httpx2-2.16.2-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/httpx2-2.16.2-py3-none-any.whl"
             },
             {
                 "module": "humanize",
@@ -761,6 +756,11 @@
                 "module": "trove-classifiers",
                 "input_file": "wheels/shared/trove_classifiers-2026.1.14.14-py3-none-any.whl",
                 "input_file_aarch64": "wheels/shared/trove_classifiers-2026.1.14.14-py3-none-any.whl"
+            },
+            {
+                "module": "truststore",
+                "input_file": "wheels/shared/truststore-0.10.5-py3-none-any.whl",
+                "input_file_aarch64": "wheels/shared/truststore-0.10.5-py3-none-any.whl"
             },
             {
                 "module": "typer",

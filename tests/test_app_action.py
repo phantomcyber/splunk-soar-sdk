@@ -4,7 +4,7 @@ import types
 from unittest import mock
 from uuid import uuid4
 
-import httpx
+import httpx2
 import pytest
 import pytest_mock
 
@@ -377,7 +377,7 @@ def test_delete(
     class TestClient(SOARClient):
         @property
         def client(self):
-            return httpx.Client(base_url="https://example.com", verify=False)
+            return httpx2.Client(base_url="https://example.com", verify=False)
 
         def update_client(self, soar_auth, asset_id):
             pass

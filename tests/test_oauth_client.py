@@ -1,8 +1,7 @@
 import time
 
-import httpx
+import httpx2
 import pytest
-import respx
 
 from soar_sdk.auth.client import (
     AuthorizationRequiredError,
@@ -53,7 +52,7 @@ class TestSOARAssetOAuthClientInit:
         assert client.config == oauth_config
 
     def test_client_with_custom_http_client(self, oauth_config, mock_auth_state):
-        custom_http = httpx.Client(timeout=60.0)
+        custom_http = httpx2.Client(timeout=60.0)
         client = SOARAssetOAuthClient(
             oauth_config, mock_auth_state, http_client=custom_http
         )
@@ -200,8 +199,9 @@ class TestGetValidToken:
         with pytest.raises(TokenExpiredError):
             oauth_client.get_valid_token(auto_refresh=False)
 
-    @respx.mock
-    def test_get_valid_token_auto_refreshes(self, oauth_client, mock_auth_state):
+    def test_get_valid_token_auto_refreshes(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         mock_auth_state._data.update(
             {
                 "oauth": {
@@ -215,14 +215,12 @@ class TestGetValidToken:
             }
         )
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "new_token",
-                    "expires_in": 3600,
-                },
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={
+                "access_token": "new_token",
+                "expires_in": 3600,
+            },
         )
 
         token = oauth_client.get_valid_token()
@@ -230,67 +228,58 @@ class TestGetValidToken:
 
 
 class TestRefreshToken:
-    @respx.mock
-    def test_refresh_token_success(self, oauth_client, mock_auth_state):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "refreshed_token",
-                    "expires_in": 3600,
-                },
-            )
+    def test_refresh_token_success(self, httpx2_mock, oauth_client, mock_auth_state):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={
+                "access_token": "refreshed_token",
+                "expires_in": 3600,
+            },
         )
 
         token = oauth_client.refresh_token("old_refresh_token")
         assert token.access_token == "refreshed_token"
         assert token.refresh_token == "old_refresh_token"
 
-    @respx.mock
     def test_refresh_token_preserves_new_refresh_token(
-        self, oauth_client, mock_auth_state
+        self, httpx2_mock, oauth_client, mock_auth_state
     ):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "refreshed_token",
-                    "refresh_token": "new_refresh_token",
-                    "expires_in": 3600,
-                },
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={
+                "access_token": "refreshed_token",
+                "refresh_token": "new_refresh_token",
+                "expires_in": 3600,
+            },
         )
 
         token = oauth_client.refresh_token("old_refresh_token")
         assert token.refresh_token == "new_refresh_token"
 
-    @respx.mock
-    def test_refresh_token_http_error(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                400,
-                json={"error": "invalid_grant", "error_description": "Token expired"},
-            )
+    def test_refresh_token_http_error(self, httpx2_mock, oauth_client):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            400,
+            json={"error": "invalid_grant", "error_description": "Token expired"},
         )
 
         with pytest.raises(TokenRefreshError) as exc_info:
             oauth_client.refresh_token("invalid_refresh_token")
         assert "Token expired" in str(exc_info.value)
 
-    @respx.mock
-    def test_refresh_token_http_error_non_json_response(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(400, content=b"Bad Request - Invalid token")
+    def test_refresh_token_http_error_non_json_response(
+        self, httpx2_mock, oauth_client
+    ):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            400, content=b"Bad Request - Invalid token"
         )
 
         with pytest.raises(TokenRefreshError) as exc_info:
             oauth_client.refresh_token("invalid_refresh_token")
         assert "Bad Request" in str(exc_info.value)
 
-    @respx.mock
-    def test_refresh_token_network_error(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            side_effect=httpx.ConnectError("Connection failed")
+    def test_refresh_token_network_error(self, httpx2_mock, oauth_client):
+        httpx2_mock.post("https://auth.example.com/token").mock(
+            side_effect=httpx2.ConnectError("Connection failed")
         )
 
         with pytest.raises(TokenRefreshError) as exc_info:
@@ -299,29 +288,23 @@ class TestRefreshToken:
 
 
 class TestClientCredentialsFlow:
-    @respx.mock
-    def test_fetch_token_with_client_credentials(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "cc_token",
-                    "expires_in": 3600,
-                    "token_type": "Bearer",
-                },
-            )
+    def test_fetch_token_with_client_credentials(self, httpx2_mock, oauth_client):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={
+                "access_token": "cc_token",
+                "expires_in": 3600,
+                "token_type": "Bearer",
+            },
         )
 
         token = oauth_client.fetch_token_with_client_credentials()
         assert token.access_token == "cc_token"
 
-    @respx.mock
-    def test_fetch_token_with_extra_params(self, oauth_client):
-        route = respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "cc_token", "expires_in": 3600},
-            )
+    def test_fetch_token_with_extra_params(self, httpx2_mock, oauth_client):
+        route = httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "cc_token", "expires_in": 3600},
         )
 
         oauth_client.fetch_token_with_client_credentials(
@@ -331,41 +314,34 @@ class TestClientCredentialsFlow:
         request = route.calls.last.request
         assert b"resource=https" in request.content
 
-    @respx.mock
-    def test_fetch_token_without_client_secret(self, mock_auth_state):
+    def test_fetch_token_without_client_secret(self, httpx2_mock, mock_auth_state):
         config = OAuthConfig(
             client_id="test_client",
             token_endpoint="https://auth.example.com/token",
         )
         client = SOARAssetOAuthClient(config, mock_auth_state)
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         token = client.fetch_token_with_client_credentials()
         assert token.access_token == "token"
 
-    @respx.mock
-    def test_fetch_token_http_error(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                401,
-                json={"error": "invalid_client"},
-            )
+    def test_fetch_token_http_error(self, httpx2_mock, oauth_client):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            401,
+            json={"error": "invalid_client"},
         )
 
         with pytest.raises(OAuthClientError) as exc_info:
             oauth_client.fetch_token_with_client_credentials()
         assert "failed" in str(exc_info.value)
 
-    @respx.mock
-    def test_fetch_token_network_error(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            side_effect=httpx.ConnectError("Connection refused")
+    def test_fetch_token_network_error(self, httpx2_mock, oauth_client):
+        httpx2_mock.post("https://auth.example.com/token").mock(
+            side_effect=httpx2.ConnectError("Connection refused")
         )
 
         with pytest.raises(OAuthClientError) as exc_info:
@@ -444,29 +420,25 @@ class TestAuthorizationCodeFlow:
 
         assert "scope" not in url
 
-    @respx.mock
-    def test_fetch_token_with_authorization_code(self, oauth_client, mock_auth_state):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={
-                    "access_token": "auth_code_token",
-                    "refresh_token": "refresh",
-                    "expires_in": 3600,
-                },
-            )
+    def test_fetch_token_with_authorization_code(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={
+                "access_token": "auth_code_token",
+                "refresh_token": "refresh",
+                "expires_in": 3600,
+            },
         )
 
         token = oauth_client.fetch_token_with_authorization_code("auth_code_123")
         assert token.access_token == "auth_code_token"
 
-    @respx.mock
-    def test_fetch_token_with_code_verifier(self, oauth_client):
-        route = respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+    def test_fetch_token_with_code_verifier(self, httpx2_mock, oauth_client):
+        route = httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         oauth_client.fetch_token_with_authorization_code(
@@ -476,17 +448,14 @@ class TestAuthorizationCodeFlow:
         request = route.calls.last.request
         assert b"code_verifier=verifier_value" in request.content
 
-    @respx.mock
     def test_fetch_token_retrieves_code_verifier_from_session(
-        self, oauth_client, mock_auth_state
+        self, httpx2_mock, oauth_client, mock_auth_state
     ):
         oauth_client.create_authorization_url("asset-123", use_pkce=True)
 
-        route = respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        route = httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         oauth_client.fetch_token_with_authorization_code("auth_code")
@@ -494,15 +463,14 @@ class TestAuthorizationCodeFlow:
         request = route.calls.last.request
         assert b"code_verifier=" in request.content
 
-    @respx.mock
-    def test_fetch_token_clears_session(self, oauth_client, mock_auth_state):
+    def test_fetch_token_clears_session(
+        self, httpx2_mock, oauth_client, mock_auth_state
+    ):
         oauth_client.create_authorization_url("asset-123")
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         oauth_client.fetch_token_with_authorization_code("auth_code")
@@ -510,8 +478,7 @@ class TestAuthorizationCodeFlow:
         state = oauth_client._load_state()
         assert state.session is None
 
-    @respx.mock
-    def test_fetch_token_without_redirect_uri(self, mock_auth_state):
+    def test_fetch_token_without_redirect_uri(self, httpx2_mock, mock_auth_state):
         config = OAuthConfig(
             client_id="test_client",
             client_secret="test_secret",
@@ -520,11 +487,9 @@ class TestAuthorizationCodeFlow:
         )
         client = SOARAssetOAuthClient(config, mock_auth_state)
 
-        route = respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "token", "expires_in": 3600},
-            )
+        route = httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "token", "expires_in": 3600},
         )
 
         client.fetch_token_with_authorization_code("auth_code")
@@ -532,23 +497,19 @@ class TestAuthorizationCodeFlow:
         request = route.calls.last.request
         assert b"redirect_uri" not in request.content
 
-    @respx.mock
-    def test_fetch_token_http_error_auth_code(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                400,
-                json={"error": "invalid_grant", "error_description": "Code expired"},
-            )
+    def test_fetch_token_http_error_auth_code(self, httpx2_mock, oauth_client):
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            400,
+            json={"error": "invalid_grant", "error_description": "Code expired"},
         )
 
         with pytest.raises(OAuthClientError) as exc_info:
             oauth_client.fetch_token_with_authorization_code("expired_code")
         assert "Code expired" in str(exc_info.value)
 
-    @respx.mock
-    def test_fetch_token_network_error_auth_code(self, oauth_client):
-        respx.post("https://auth.example.com/token").mock(
-            side_effect=httpx.ConnectError("Connection refused")
+    def test_fetch_token_network_error_auth_code(self, httpx2_mock, oauth_client):
+        httpx2_mock.post("https://auth.example.com/token").mock(
+            side_effect=httpx2.ConnectError("Connection refused")
         )
 
         with pytest.raises(OAuthClientError) as exc_info:
@@ -557,15 +518,12 @@ class TestAuthorizationCodeFlow:
 
 
 class TestHandleAuthorizationCallback:
-    @respx.mock
-    def test_handle_callback_success(self, oauth_client, mock_auth_state):
+    def test_handle_callback_success(self, httpx2_mock, oauth_client, mock_auth_state):
         oauth_client.create_authorization_url("asset-123")
 
-        respx.post("https://auth.example.com/token").mock(
-            return_value=httpx.Response(
-                200,
-                json={"access_token": "callback_token", "expires_in": 3600},
-            )
+        httpx2_mock.post("https://auth.example.com/token").respond(
+            200,
+            json={"access_token": "callback_token", "expires_in": 3600},
         )
 
         state = oauth_client._load_state()
@@ -684,7 +642,7 @@ class TestSessionManagement:
 
 class TestExtractErrorDetail:
     def test_extract_error_description(self, oauth_client):
-        response = httpx.Response(
+        response = httpx2.Response(
             400,
             json={"error": "invalid_grant", "error_description": "Token expired"},
         )
@@ -692,7 +650,7 @@ class TestExtractErrorDetail:
         assert detail == "Token expired"
 
     def test_extract_error_only(self, oauth_client):
-        response = httpx.Response(
+        response = httpx2.Response(
             400,
             json={"error": "invalid_grant"},
         )
@@ -700,27 +658,27 @@ class TestExtractErrorDetail:
         assert detail == "invalid_grant"
 
     def test_extract_from_non_json(self, oauth_client):
-        response = httpx.Response(400, content=b"Bad Request")
+        response = httpx2.Response(400, content=b"Bad Request")
         detail = oauth_client._extract_error_detail(response)
         assert "Bad Request" in detail
 
     def test_extract_from_empty_response(self, oauth_client):
-        response = httpx.Response(500, content=b"")
+        response = httpx2.Response(500, content=b"")
         detail = oauth_client._extract_error_detail(response)
         assert "500" in detail
 
     def test_extract_from_json_non_dict(self, oauth_client):
-        response = httpx.Response(400, json="error string")
+        response = httpx2.Response(400, json="error string")
         detail = oauth_client._extract_error_detail(response)
         assert "error string" in detail
 
     def test_extract_from_json_list(self, oauth_client):
-        response = httpx.Response(400, json=["error1", "error2"])
+        response = httpx2.Response(400, json=["error1", "error2"])
         detail = oauth_client._extract_error_detail(response)
         assert "error1" in detail
 
     def test_extract_from_dict_without_error_keys(self, oauth_client):
-        response = httpx.Response(400, json={"status": "failed", "code": 123})
+        response = httpx2.Response(400, json={"status": "failed", "code": 123})
         detail = oauth_client._extract_error_detail(response)
         assert "failed" in detail or "123" in detail
 

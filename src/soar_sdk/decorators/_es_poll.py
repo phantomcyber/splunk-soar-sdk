@@ -4,7 +4,7 @@ __lazy_modules__ = {
     "asyncio",
     "contextlib",
     "copy",
-    "httpx",
+    "httpx2",
     "sys",
     "soar_sdk.abstract",
     "soar_sdk.action_results",
@@ -26,7 +26,7 @@ from copy import deepcopy
 from time import sleep
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 
 from soar_sdk.abstract import SOARClient
 from soar_sdk.action_results import ActionResult
@@ -52,9 +52,9 @@ def _poll_error_details(stage: str, error: Exception) -> dict[str, str | int]:
     error_type = next(
         kind.__name__
         for kind in (
-            httpx.HTTPStatusError,
-            httpx.TimeoutException,
-            httpx.TransportError,
+            httpx2.HTTPStatusError,
+            httpx2.TimeoutException,
+            httpx2.TransportError,
             FindingAPIError,
             ActionFailure,
             TimeoutError,

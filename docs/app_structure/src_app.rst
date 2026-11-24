@@ -163,13 +163,15 @@ For more advanced use cases, an action's return type can be a ``list``, ``Iterat
 
             from typing import AsyncGenerator
 
+            import httpx2
+
             @app.action()
             async def my_action_async_generator(
                 params: MyActionParams,
                 asset: Asset,
             ) -> AsyncGenerator[MyActionOutput]:
-                async with client = httpx.AsyncClient() as client:
-                    async for i in range(10):
+                async with httpx2.AsyncClient() as client:
+                    for i in range(10):
                         response = await client.get(
                             f"{asset.base_url}/data",
                             params={"page": i}

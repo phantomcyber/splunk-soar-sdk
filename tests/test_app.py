@@ -6,8 +6,8 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest import mock
 
-import httpx
 import pytest
+from respx import MockResponse
 
 from soar_sdk.abstract import SOARClient, SOARClientAuth
 from soar_sdk.action_results import ActionOutput, ActionResult
@@ -508,14 +508,14 @@ def test_handle_webhook_get_webhook_url_without_action_config(
     if include_directory:
         manifest["directory"] = directory
     responses = {
-        "/rest/system_info": httpx.Response(
+        "/rest/system_info": MockResponse(
             200, json={"base_url": "https://soar.example.com/"}
         ),
-        "/rest/feature_flag/webhooks": httpx.Response(
+        "/rest/feature_flag/webhooks": MockResponse(
             200, json={"config": {"webhooks_port": 4500}}
         ),
     }
-    login_response = httpx.Response(
+    login_response = MockResponse(
         200, headers={"Set-Cookie": "csrftoken=mocked_csrf_token; Path=/; HttpOnly"}
     )
     mock_get_any_soar_call.mock(
@@ -752,18 +752,14 @@ def test_create_soar_client_auth_token_object(auth_token_input):
     assert result.user_session_token == "example_token"
 
 
-def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
-    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
-        return_value=httpx.Response(
-            200,
-            json={"base_url": "https://soar.example.com/"},
-        )
+def test_get_webhook_url(app_with_asset_webhook: App, httpx2_mock):
+    httpx2_mock.get(url__regex=r".*rest/system_info.*").respond(
+        200,
+        json={"base_url": "https://soar.example.com/"},
     )
-    respx_mock.get(url__regex=r".*rest/feature_flag/webhooks.*").mock(
-        return_value=httpx.Response(
-            200,
-            json={"config": {"webhooks_port": 4500}},
-        )
+    httpx2_mock.get(url__regex=r".*rest/feature_flag/webhooks.*").respond(
+        200,
+        json={"config": {"webhooks_port": 4500}},
     )
 
     app_with_asset_webhook.soar_client.update_client(
@@ -801,14 +797,12 @@ def test_get_webhook_url(app_with_asset_webhook: App, respx_mock):
     ],
 )
 def test_get_webhook_url_without_directory(
-    app_with_asset_webhook: App, respx_mock, config, app_name, expected_name
+    app_with_asset_webhook: App, httpx2_mock, config, app_name, expected_name
 ):
     app_with_asset_webhook.app_meta_info["name"] = app_name
-    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
-        return_value=httpx.Response(
-            200,
-            json={"base_url": "https://soar.example.com"},
-        )
+    httpx2_mock.get(url__regex=r".*rest/system_info.*").respond(
+        200,
+        json={"base_url": "https://soar.example.com"},
     )
 
     app_with_asset_webhook.soar_client.update_client(
@@ -835,14 +829,12 @@ def test_get_webhook_url_without_directory(
 @pytest.mark.parametrize("config", [{}, None])
 @pytest.mark.parametrize("app_name", ["", "!!!"])
 def test_get_webhook_url_without_directory_rejects_unnormalizable_name(
-    app_with_asset_webhook: App, respx_mock, config, app_name
+    app_with_asset_webhook: App, httpx2_mock, config, app_name
 ):
     app_with_asset_webhook.app_meta_info["name"] = app_name
-    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
-        return_value=httpx.Response(
-            200,
-            json={"base_url": "https://soar.example.com"},
-        )
+    httpx2_mock.get(url__regex=r".*rest/system_info.*").respond(
+        200,
+        json={"base_url": "https://soar.example.com"},
     )
     app_with_asset_webhook.soar_client.update_client(
         SOARClientAuth(base_url="https://soar.example.com"),
@@ -876,14 +868,12 @@ def test_get_webhook_url_without_directory_rejects_unnormalizable_name(
     ],
 )
 def test_get_webhook_url_known_directory_ignores_unnormalizable_name(
-    app_with_asset_webhook: App, respx_mock, app_name, config, expected_directory
+    app_with_asset_webhook: App, httpx2_mock, app_name, config, expected_directory
 ):
     app_with_asset_webhook.app_meta_info["name"] = app_name
-    respx_mock.get(url__regex=r".*rest/system_info.*").mock(
-        return_value=httpx.Response(
-            200,
-            json={"base_url": "https://soar.example.com"},
-        )
+    httpx2_mock.get(url__regex=r".*rest/system_info.*").respond(
+        200,
+        json={"base_url": "https://soar.example.com"},
     )
     app_with_asset_webhook.soar_client.update_client(
         SOARClientAuth(base_url="https://soar.example.com"),

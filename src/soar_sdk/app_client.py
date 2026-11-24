@@ -1,7 +1,7 @@
 __lazy_modules__ = {
     "collections.abc",
     "dataclasses",
-    "httpx",
+    "httpx2",
     "soar_sdk.abstract",
     "soar_sdk.apis.artifact",
     "soar_sdk.apis.container",
@@ -15,7 +15,7 @@ from collections.abc import AsyncIterable, Iterable, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-import httpx
+import httpx2
 
 from soar_sdk.abstract import JSONType, SOARClient, SOARClientAuth, SummaryType
 from soar_sdk.apis.artifact import Artifact
@@ -40,15 +40,15 @@ class BasicAuth:
     password: str
 
 
-class _NativeLoopbackTransport(httpx.BaseTransport):
+class _NativeLoopbackTransport(httpx2.BaseTransport):
     """Use the TLS exception only for the configured local SOAR port."""
 
     def __init__(self, port: int | None) -> None:
         self._port = port
-        self._local = httpx.HTTPTransport(verify=False)
-        self._verified = httpx.HTTPTransport(verify=True)
+        self._local = httpx2.HTTPTransport(verify=False)
+        self._verified = httpx2.HTTPTransport(verify=True)
 
-    def handle_request(self, request: httpx.Request) -> httpx.Response:
+    def handle_request(self, request: httpx2.Request) -> httpx2.Response:
         transport = self._local if request.url.port == self._port else self._verified
         return transport.handle_request(request)
 
@@ -84,7 +84,7 @@ class AppClient(SOARClient[SummaryType]):
         self._broker_ph_auth_token: str = ""
 
     @property
-    def client(self) -> httpx.Client:
+    def client(self) -> httpx2.Client:
         """The HTTP client used for making requests to the SOAR API."""
         return self._client
 
@@ -153,22 +153,22 @@ class AppClient(SOARClient[SummaryType]):
             self._client.headers.update({"Cookie": update_cookies})
 
     @staticmethod
-    def _create_client(base_url: str) -> httpx.Client:
+    def _create_client(base_url: str) -> httpx2.Client:
         """Keep native loopback SOAR requests local without requiring an IP SAN."""
         verify = get_verify_ssl_setting()
-        url = httpx.URL(base_url)
+        url = httpx2.URL(base_url)
         if (
             verify
             and url.scheme == "https"
             and url.host == "127.0.0.1"
             and not is_onprem_broker_install()
         ):
-            return httpx.Client(
+            return httpx2.Client(
                 base_url=base_url,
                 verify=True,
                 mounts={"https://127.0.0.1": _NativeLoopbackTransport(url.port)},
             )
-        return httpx.Client(base_url=base_url, verify=verify)
+        return httpx2.Client(base_url=base_url, verify=verify)
 
     def __fetch_csrf_token(self) -> None:
         """Fetch CSRF from the login response without following redirects."""
@@ -231,14 +231,14 @@ class AppClient(SOARClient[SummaryType]):
         self,
         endpoint: str,
         *,
-        params: dict[str, Any] | httpx.QueryParams | None = None,
+        params: dict[str, Any] | httpx2.QueryParams | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        timeout: httpx.Timeout | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
+        timeout: httpx2.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
         follow_redirects: bool = False,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a GET request to the specific endpoint using the SOAR client."""
         endpoint, headers = self._prepare_broker_request(endpoint, headers)
         response = self._client.get(
@@ -247,7 +247,7 @@ class AppClient(SOARClient[SummaryType]):
             headers=headers,
             cookies=cookies,
             timeout=timeout,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth or httpx2.USE_CLIENT_DEFAULT,
             follow_redirects=follow_redirects,
             extensions=extensions,
         )
@@ -265,11 +265,11 @@ class AppClient(SOARClient[SummaryType]):
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
-        timeout: float | httpx.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx2.Timeout | None = None,
         follow_redirects: bool = True,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a POST request to the specific endpoint using the SOAR client."""
         endpoint, headers = self._prepare_broker_request(endpoint, headers)
         headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
@@ -282,7 +282,7 @@ class AppClient(SOARClient[SummaryType]):
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth or httpx2.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -301,11 +301,11 @@ class AppClient(SOARClient[SummaryType]):
         params: dict[str, Any] | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
-        timeout: float | httpx.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
+        timeout: float | httpx2.Timeout | None = None,
         follow_redirects: bool = True,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a PUT request to the specific endpoint using the SOAR client."""
         endpoint, headers = self._prepare_broker_request(endpoint, headers)
         headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
@@ -318,7 +318,7 @@ class AppClient(SOARClient[SummaryType]):
             json=json,
             params=params,
             cookies=cookies,
-            auth=auth or httpx.USE_CLIENT_DEFAULT,
+            auth=auth or httpx2.USE_CLIENT_DEFAULT,
             timeout=timeout,
             follow_redirects=follow_redirects,
             extensions=extensions,
@@ -330,14 +330,14 @@ class AppClient(SOARClient[SummaryType]):
         self,
         endpoint: str,
         *,
-        params: dict[str, Any] | httpx.QueryParams | None = None,
+        params: dict[str, Any] | httpx2.QueryParams | None = None,
         headers: dict[str, str] | None = None,
         cookies: dict[str, str] | None = None,
-        auth: httpx.Auth | tuple[str, str] | None = None,
-        timeout: httpx.Timeout | None = None,
+        auth: httpx2.Auth | tuple[str, str] | None = None,
+        timeout: httpx2.Timeout | None = None,
         follow_redirects: bool = False,
         extensions: Mapping[str, Any] | None = None,
-    ) -> httpx.Response:
+    ) -> httpx2.Response:
         """Perform a DELETE request to the specific endpoint using the SOAR client."""
         endpoint, headers = self._prepare_broker_request(endpoint, headers)
         headers.update({"Referer": f"{self._client.base_url}/{endpoint}"})
@@ -347,7 +347,7 @@ class AppClient(SOARClient[SummaryType]):
             headers=headers,
             cookies=cookies,
             auth=auth
-            or httpx.BasicAuth(self.__basic_auth.username, self.__basic_auth.password)
+            or httpx2.BasicAuth(self.__basic_auth.username, self.__basic_auth.password)
             if self.basic_auth
             else None,  # type: ignore[arg-type]
             timeout=timeout,
