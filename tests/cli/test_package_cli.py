@@ -1,6 +1,8 @@
+import hashlib
 import json
 import tarfile
 from pathlib import Path
+from shutil import copytree
 from unittest.mock import AsyncMock, patch
 from urllib.parse import urlparse
 
@@ -623,6 +625,94 @@ def test_package_build_fetches_from_custom_index(
     assert destination.is_file()
     # Verify that wheel downloads were attempted (mocked by wheel_resp_mock)
     assert wheel_resp_mock.called
+
+
+@pytest.mark.parametrize("credentials", ["index-url", "netrc"])
+def test_package_build_authenticates_to_locked_private_index(
+    httpx2_mock, sdist_build_mock, tmp_path, monkeypatch, credentials
+):
+    example_app = tmp_path / "authenticated_index_app"
+    copytree(Path("tests/example_app"), example_app)
+    lockfile = example_app / "uv.lock"
+    locked = toml.loads(lockfile.read_text())
+    artifact_content = b"test dependency wheel"
+    artifact_hash = f"sha256:{hashlib.sha256(artifact_content).hexdigest()}"
+    for dependency in locked["package"]:
+        for wheel in dependency.get("wheels", []):
+            wheel["hash"] = artifact_hash
+        if dependency["name"] == "annotated-types":
+            dependency["source"]["registry"] = "https://registry.example.org/simple/"
+            wheel = dependency["wheels"][0]
+            wheel_name = wheel["url"].rsplit("/", 1)[1]
+            private_url = f"https://registry.example.org/artifacts/{wheel_name}"
+            wheel["url"] = private_url
+    lockfile.write_text(toml.dumps(locked))
+
+    system_config = tmp_path / "system" / "uv" / "uv.toml"
+    system_config.parent.mkdir(parents=True)
+    netrc_file = tmp_path / "credentials.netrc"
+    userinfo = "user:pass@" if credentials == "index-url" else ""
+    system_config.write_text(
+        f'[[index]]\nurl = "https://{userinfo}registry.example.org/simple"\n'
+    )
+    if credentials == "netrc":
+        netrc_file.write_text("machine registry.example.org login user password pass\n")
+        netrc_file.chmod(0o600)
+    monkeypatch.setenv("NETRC", str(netrc_file))
+    monkeypatch.setenv("XDG_CONFIG_DIRS", str(system_config.parent.parent))
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path / "user"))
+    monkeypatch.delenv("UV_CONFIG_FILE", raising=False)
+    monkeypatch.delenv("UV_NO_CONFIG", raising=False)
+
+    private_route = httpx2_mock.get(
+        private_url, headers__contains={"Authorization": "Basic dXNlcjpwYXNz"}
+    ).respond(content=artifact_content)
+    if credentials == "netrc":
+        httpx2_mock.get(private_url).respond(status_code=401)
+    public_route = httpx2_mock.get(url__regex=r".+/.+\.whl").respond(
+        content=artifact_content
+    )
+    output = tmp_path / "app.tgz"
+    sdk_wheel = tmp_path / f"splunk_soar_sdk-{__version__}-py3-none-any.whl"
+    sdk_wheel.write_bytes(b"test SDK wheel")
+
+    result = runner.invoke(
+        package,
+        [
+            "build",
+            str(example_app),
+            "--output-file",
+            str(output),
+            "--with-sdk-wheel-from",
+            str(sdk_wheel),
+        ],
+    )
+
+    assert result.exit_code == 0, result.exception
+    assert private_route.call_count == 1
+    assert all(
+        "Authorization" not in call.request.headers for call in public_route.calls
+    )
+    with tarfile.open(output) as archive:
+        packaged_wheel = next(
+            path for path in archive.getnames() if path.endswith(f"/{wheel_name}")
+        )
+        assert archive.extractfile(packaged_wheel).read() == artifact_content
+
+
+def test_package_build_reports_invalid_uv_config_without_disclosing_credentials(
+    tmp_path, monkeypatch
+):
+    config = tmp_path / "uv.toml"
+    config.write_text('[[index]]\nurl = "https://user:secret@registry.example.org')
+    monkeypatch.setenv("UV_CONFIG_FILE", str(config))
+    monkeypatch.delenv("UV_NO_CONFIG", raising=False)
+
+    result = runner.invoke(package, ["build", str(tmp_path)])
+
+    assert result.exit_code == 2
+    assert "Could not read uv index configuration" in result.stderr
+    assert "secret" not in result.stderr
 
 
 def test_package_build_fails_with_clear_error_on_fetch_failure(

@@ -15,6 +15,7 @@ __lazy_modules__ = {
     "soar_sdk.cli.package.utils",
     "soar_sdk.cli.path_utils",
     "soar_sdk.meta.dependencies",
+    "soar_sdk.meta.dependencies.index_auth",
     "soar_sdk.paths",
     "tarfile",
     "time",
@@ -50,6 +51,7 @@ from soar_sdk.cli.package.utils import (
 )
 from soar_sdk.cli.path_utils import context_directory
 from soar_sdk.meta.dependencies import DependencyWheel
+from soar_sdk.meta.dependencies.index_auth import UvIndexAuth
 from soar_sdk.paths import (
     APP_LICENSE,
     APP_NOTICE,
@@ -63,7 +65,9 @@ package = typer.Typer()
 console = Console()  # For printing lots of pretty colors and stuff
 
 
-async def collect_all_wheels(wheels: list[DependencyWheel]) -> list[tuple[str, bytes]]:
+async def collect_all_wheels(
+    wheels: list[DependencyWheel], index_auth: UvIndexAuth
+) -> list[tuple[str, bytes]]:
     """Asynchronously collect all wheels from the given list of DependencyWheel objects.
 
     Downloads/builds each unique wheel once while updating every DependencyWheel instance
@@ -86,7 +90,8 @@ async def collect_all_wheels(wheels: list[DependencyWheel]) -> list[tuple[str, b
         cache_key: int, wheel: DependencyWheel
     ) -> tuple[int, list[tuple[str, bytes]]]:
         result: list[tuple[str, bytes]] = []
-        async for path, data in wheel.collect_wheels():  # pragma: no cover
+        auth = index_auth.for_registry(wheel.registry)
+        async for path, data in wheel.collect_wheels(auth=auth):  # pragma: no cover
             result.append((path, data))
         progress.update(1)
         return cache_key, result
@@ -157,6 +162,19 @@ def build(
         output_file = output_file.resolve()
         console.print(f"[blue]Output file:[/] {output_file}")
 
+    try:
+        index_auth = UvIndexAuth(project_context)
+    except (
+        OSError,
+        ValueError,
+        KeyError,
+        TypeError,
+        AttributeError,
+        httpx2.InvalidURL,
+    ):
+        # A configuration error or its traceback may contain an index URL with credentials.
+        raise typer.BadParameter("Could not read uv index configuration") from None
+
     with context_directory(project_context):
         app_meta = ManifestProcessor("manifest.json", ".").build(
             is_sdk_locally_built=with_sdk_wheel_from is not None
@@ -186,7 +204,7 @@ def build(
             console.print(
                 f"[yellow]Collecting [bold]{len(all_wheels)}[/bold] wheel{'' if len(set(all_wheels)) == 1 else 's'} for package[/]"
             )
-            wheel_data = asyncio.run(collect_all_wheels(all_wheels))
+            wheel_data = asyncio.run(collect_all_wheels(all_wheels, index_auth))
 
             # Add all collected wheel data to the tarball
             for path, data in tqdm(
