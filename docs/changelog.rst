@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 8
    :open:
 
+   .. rubric:: 8.0.2 (2026-11-25)
+
+   * Fix: Report safe TLS failure reasons in direct ES polling results and logs.
+
    .. rubric:: 8.0.1 (2026-11-25)
 
    * Fix: Speed up direct ES ingestion by creating findings concurrently while preserving their association with the source results and attachments.
