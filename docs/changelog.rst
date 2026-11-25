@@ -12,6 +12,10 @@ bugfix.
 .. dropdown:: SDK 8
    :open:
 
+   .. rubric:: 8.0.1 (2026-11-25)
+
+   * Fix: Speed up direct ES ingestion by creating findings concurrently while preserving their association with the source results and attachments.
+
    .. rubric:: 8.0.0 (2026-11-25)
 
    **Breaking changes:**
