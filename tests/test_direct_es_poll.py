@@ -148,9 +148,11 @@ def test_poll_creates_findings_without_soar_calls(
     closed = []
 
     def respond(request):
-        seen.append(json.loads(request.content))
+        payload = json.loads(request.content)
+        seen.append(payload)
+        index = int(payload["rule_title"].removeprefix("mail-"))
         return MockResponse(
-            201, json={"_time": "now", "finding_id": f"finding-{len(seen)}"}
+            201, json={"_time": "now", "finding_id": f"finding-{index + 1}"}
         )
 
     route = httpx2_mock.post(ENDPOINT).mock(side_effect=respond)
@@ -482,19 +484,16 @@ def test_partial_failures_are_reported_and_checkpoint_advances(direct_app, httpx
     app = direct_app
     state = AssetState(app.actions_manager, "ingest", "1")
     app.asset._ingest_state = state
-    route = httpx2_mock.post(ENDPOINT).mock(
-        side_effect=[
-            MockResponse(201, json={"_time": "now", "finding_id": "first"}),
-            MockResponse(403, text=TOKEN),
-            httpx2.ReadTimeout(TOKEN),
-            MockResponse(503, text=TOKEN),
-            MockResponse(201, json={"_time": "now", "finding_id": "last"}),
-            httpx2.ReadTimeout(TOKEN),
-            MockResponse(503, text=TOKEN),
-            httpx2.ReadTimeout(TOKEN),
-            MockResponse(503, text=TOKEN),
-        ]
-    )
+
+    def respond(request):
+        index = int(json.loads(request.content)["rule_title"])
+        if index == 2:
+            raise httpx2.ReadTimeout(TOKEN)
+        if index in {1, 3}:
+            return MockResponse({1: 403, 3: 503}[index], text=TOKEN)
+        return MockResponse(201, json={"_time": "now", "finding_id": str(index)})
+
+    route = httpx2_mock.post(ENDPOINT).mock(side_effect=respond)
 
     @app.on_es_poll()
     def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
@@ -573,7 +572,10 @@ def test_failed_emails_are_skipped_and_not_replayed_on_next_poll(
             )
 
     assert poll(OnESPollParams())
-    assert seen == ([0, 1, 2, 3, 4, 5] if failure == 403 else [0, 1, 2, 3, 2, 2, 4, 5])
+    assert sorted(seen[:2]) == [0, 1]
+    assert sorted(seen[2:4]) == [2, 3]
+    assert seen[4:-2] == ([] if failure == 403 else [2, 2])
+    assert sorted(seen[-2:]) == [4, 5]
     assert state["cursor"] == 6
     assert saved["ingest"]["cursor"] == 6
     assert not state.in_transaction
@@ -631,7 +633,7 @@ def test_rejected_email_batch_does_not_block_later_mail(
             yield from emails()
 
     assert poll(OnESPollParams(container_count=limit)) is (limit == 0)
-    assert seen == list(range(limit or 5))
+    assert sorted(seen) == list(range(limit or 5))
     assert saved["ingest"]["cursor"] == (limit or 5)
     summary = outcome(app).get_summary()
     assert summary["created"] == (0 if limit else 2)
@@ -651,7 +653,7 @@ def test_rejected_email_batch_does_not_block_later_mail(
     )
     seen.clear()
     assert poll(OnESPollParams())
-    assert seen == ([3, 4] if limit else [])
+    assert sorted(seen) == ([3, 4] if limit else [])
     assert saved["ingest"]["cursor"] == 5
 
 
@@ -743,6 +745,47 @@ def test_invalid_yield_is_skipped_and_checkpoints_source_progress(
     assert state["cursor"] == 1
     assert not httpx2_mock.calls
     assert not state.in_transaction
+
+
+def test_poll_interrupt_rolls_back_only_the_unfinished_batch(
+    direct_app, mocker, monkeypatch
+):
+    app = direct_app
+    state = AssetState(app.actions_manager, "ingest", "1")
+    app.asset._ingest_state = state
+    monkeypatch.setattr(app.soar_client, "MAX_BULK_FINDINGS", 2)
+    closed = []
+
+    mocker.patch.object(
+        app.soar_client,
+        "create_findings_bulk",
+        side_effect=[
+            {
+                "results": [
+                    {"index": index, "success": True, "finding_id": str(index)}
+                    for index in range(2)
+                ]
+            },
+            KeyboardInterrupt(),
+        ],
+    )
+
+    @app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        try:
+            for index in range(4):
+                state["cursor"] = index + 1
+                yield Finding(rule_title=str(index))
+        finally:
+            closed.append(True)
+
+    with pytest.raises(KeyboardInterrupt):
+        poll(OnESPollParams())
+
+    assert state["cursor"] == 2
+    assert not state.in_transaction
+    assert closed == [True]
+    app.actions_manager.add_result.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -1161,7 +1204,13 @@ def test_poll_preserves_consumer_flags_before_async_association(
         assert payload["run_threat_analysis"] is analysis
         assert payload["launch_automation"] is automation
         return MockResponse(
-            201, json={"_time": "now", "finding_id": f"finding-{len(seen)}"}
+            201,
+            json={
+                "_time": "now",
+                "finding_id": "finding-2"
+                if payload["rule_title"] == "already readable"
+                else "finding-1",
+            },
         )
 
     def enqueue(associations):
@@ -1219,7 +1268,7 @@ def test_poll_upload_create_and_link_preserve_ownership(
 
     app = direct_app
     context = poll_attachments
-    seen = []
+    seen = {}
     schemas = json.loads(
         (Path(__file__).parent / "fixtures/es_findings_openapi.json").read_text()
     )
@@ -1235,17 +1284,17 @@ def test_poll_upload_create_and_link_preserve_ownership(
             {**schemas, "$ref": "#/components/schemas/CreateManualFindingRequest"},
             format_checker=FormatChecker(),
         ).validate(payload)
-        seen.append(payload)
-        index = len(seen)
-        if payload["rule_title"] == "rejected":
+        title = payload["rule_title"]
+        seen[title] = payload
+        if title == "rejected":
             return MockResponse(503, text=TOKEN)
         return MockResponse(
-            201, json={"_time": "now", "finding_id": f"finding-{index}"}
+            201, json={"_time": "now", "finding_id": f"finding-{title}"}
         )
 
     httpx2_mock.post(ENDPOINT).mock(side_effect=create)
     items = [
-        attached_finding(names=("email.eml", "failed.eml")),
+        attached_finding("first", names=("email.eml", "failed.eml")),
         attached_finding("rejected"),
         attached_finding("last"),
         Finding(rule_title="no files"),
@@ -1264,16 +1313,16 @@ def test_poll_upload_create_and_link_preserve_ownership(
         "email.eml",
     ]
     expected = [
-        {"subject_id": "finding-1", "attachment_ids": [context.issued[0]]},
-        {"subject_id": "finding-3", "attachment_ids": [context.issued[3]]},
+        {"subject_id": "finding-first", "attachment_ids": [context.issued[0]]},
+        {"subject_id": "finding-last", "attachment_ids": [context.issued[3]]},
     ]
     context.bridge.associate_subject_attachments.assert_called_once_with(expected)
-    assert len(seen[0]["email"]["attachments"]) == 1
+    assert len(seen["first"]["email"]["attachments"]) == 1
     assert (
-        seen[0]["email"]["raw_email_link"]
+        seen["first"]["email"]["raw_email_link"]
         == URL + "/attachment-proxy?attachment_id=" + context.issued[0]
     )
-    assert "email" not in seen[3]
+    assert "email" not in seen["no files"]
     assert all(not path.exists() for path in context.paths)
     rows = outcome(app).get_data()
     assert rows[0]["attachment_links"]["status"] == (
@@ -1411,11 +1460,9 @@ def test_poll_splits_finding_batches_before_attachment_limit(
 ):
     from uuid import UUID
 
-    seen = []
-
     def create(request):
-        seen.append(json.loads(request.content))
-        return MockResponse(201, json={"_time": "now", "finding_id": str(len(seen))})
+        index = int(json.loads(request.content)["rule_title"])
+        return MockResponse(201, json={"_time": "now", "finding_id": str(index + 1)})
 
     httpx2_mock.post(ENDPOINT).mock(side_effect=create)
 
@@ -1474,9 +1521,10 @@ def test_poll_composes_upload_and_finding_http_transports(
                 assert events.count("upload") == 2
                 assert self.headers["Authorization"] == "Bearer " + TOKEN
                 events.append("create")
-                payloads.append(json.loads(body))
+                finding = json.loads(body)
+                payloads.append(finding)
                 response = json.dumps(
-                    {"_time": "now", "finding_id": f"created-{len(payloads)}"}
+                    {"_time": "now", "finding_id": f"created-{finding['rule_title']}"}
                 ).encode()
                 self.send_response(201)
                 self.send_header("Content-Length", str(len(response)))
@@ -1519,8 +1567,10 @@ def test_poll_composes_upload_and_finding_http_transports(
     assert events == ["upload", "upload", "create", "create"]
     poll_attachments.bridge.associate_subject_attachments.assert_called_once_with(
         [
-            {"subject_id": f"created-{index + 1}", "attachment_ids": [identifier]}
-            for index, identifier in enumerate(poll_attachments.issued)
+            {"subject_id": f"created-{title}", "attachment_ids": [identifier]}
+            for title, identifier in zip(
+                ("first", "second"), poll_attachments.issued, strict=True
+            )
         ]
     )
     assert outcome(direct_app).get_summary()["status"] == "success"
@@ -1727,7 +1777,9 @@ def test_create_retries_remap_changing_subset_indexes(direct_app, httpx2_mock):
             yield Finding(rule_title=title)
 
     assert poll(OnESPollParams())
-    assert calls == ["first", "second", "third", "first", "third", "third"]
+    assert sorted(calls[:3]) == ["first", "second", "third"]
+    assert sorted(calls[3:5]) == ["first", "third"]
+    assert calls[5:] == ["third"]
     assert [row["finding_id"] for row in outcome(direct_app).get_data()] == list(
         attempts
     )

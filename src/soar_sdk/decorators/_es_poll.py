@@ -282,6 +282,11 @@ def _run_direct_es_poll(
         # Handler exceptions can contain credentials or message contents.
         polling_failed = True
         record_error(stage, error)
+    except BaseException:
+        # A runtime deadline may interrupt a batch before every request starts.
+        # Keep the previous checkpoint and let the runtime report the timeout.
+        polling_failed = True
+        raise
     finally:
         try:
             if is_async:

@@ -2,6 +2,7 @@
 
 __lazy_modules__ = {
     "collections.abc",
+    "concurrent.futures",
     "contextlib",
     "httpx2",
     "importlib",
@@ -9,14 +10,17 @@ __lazy_modules__ = {
     "pydantic",
     "soar_sdk.exceptions",
     "soar_sdk.models.es_finding",
+    "threading",
     "typing",
     "urllib.parse",
 }
 
 import json
 from collections.abc import Mapping, Sequence
-from contextlib import suppress
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext, suppress
 from importlib import import_module
+from threading import Thread
 from typing import Any, cast
 from urllib.parse import urlsplit
 
@@ -37,6 +41,9 @@ from soar_sdk.models.es_finding import (
     CreateFindingResponse,
     FindingCreateResult,
 )
+
+_MAX_CONCURRENT_FINDING_CREATES = 5
+_ES_FINDING_TIMEOUT = 30.0
 
 
 def _get_runtime_es_context() -> tuple[str, str | SecretStr] | None:
@@ -121,7 +128,8 @@ def _create_es_finding(
     *,
     base_url: str,
     token: str | SecretStr,
-    timeout: float = 30.0,
+    timeout: float = _ES_FINDING_TIMEOUT,
+    client: httpx2.Client | None = None,
 ) -> dict[str, Any]:
     """Create one finding and return the validated ES response dictionary.
 
@@ -133,6 +141,7 @@ def _create_es_finding(
         token: Execution-scoped ES bearer token from automationOrchestrator.
             Used only for this call, never stored on the API instance.
         timeout: Positive HTTP timeout in seconds; defaults to 30.
+        client: Optional connection pool owned by a direct bulk request.
 
     Raises:
         FindingValidationError: Invalid payload or ES validation rejection.
@@ -180,15 +189,23 @@ def _create_es_finding(
     response = None
     failure = None
     try:
-        with httpx2.Client(timeout=timeout, follow_redirects=False) as client:
-            response = client.post(
+        with (
+            nullcontext(client)
+            if client is not None
+            else httpx2.Client(timeout=timeout, follow_redirects=False)
+        ) as transport:
+            # Building the request directly also keeps any response cookies
+            # from being sent on subsequent creates in the shared pool.
+            headers = transport.headers.copy()
+            headers["Authorization"] = f"Bearer {secret}"
+            headers["Content-Type"] = "application/json"
+            request = httpx2.Request(
+                "POST",
                 endpoint,
                 content=payload,
-                headers={
-                    "Authorization": f"Bearer {secret}",
-                    "Content-Type": "application/json",
-                },
+                headers=headers,
             )
+            response = transport.send(request)
     except httpx2.TimeoutException:
         failure = FindingTimeoutError("ES finding creation timed out.")
     except httpx2.RequestError:
@@ -243,28 +260,60 @@ def _create_es_findings_bulk(
     findings: Sequence[Mapping[str, Any]], *, base_url: str, token: str | SecretStr
 ) -> dict[str, Any]:
     """Use single POSTs and preserve the classic bulk envelope with ordered results."""
-    results = []
+
     # ES /public/v2/findings/bulk_create returns successful IDs without input
     # indexes. Its handler groups ordinary and suppressed findings separately,
     # so the returned IDs can be reordered. Use one POST per finding to preserve
     # its identity for attachment linking. Switch to ES bulk only after it returns
     # indexed successes or guarantees that successful IDs retain input order.
-    for index, finding in enumerate(findings):
+    def create(
+        item: tuple[int, Mapping[str, Any]], client: httpx2.Client | None = None
+    ) -> FindingCreateResult:
+        index, finding = item
         try:
-            response = _create_es_finding(finding, base_url=base_url, token=token)
+            response = _create_es_finding(
+                finding, base_url=base_url, token=token, client=client
+            )
         except FindingAPIError as error:
-            results.append(
-                FindingCreateResult(
-                    index=index,
-                    error_code=error.error_code,
-                    message=error.message,
-                    status_code=error.status_code,
-                )
+            return FindingCreateResult(
+                index=index,
+                error_code=error.error_code,
+                message=error.message,
+                status_code=error.status_code,
             )
+        return FindingCreateResult(index=index, finding_id=response["finding_id"])
+
+    if len(findings) < 2:
+        results = [create(item) for item in enumerate(findings)]
+    else:
+        workers = min(len(findings), _MAX_CONCURRENT_FINDING_CREATES)
+        executor = ThreadPoolExecutor(max_workers=workers)
+        client = httpx2.Client(
+            timeout=_ES_FINDING_TIMEOUT,
+            follow_redirects=False,
+            limits=httpx2.Limits(
+                max_connections=workers, max_keepalive_connections=workers
+            ),
+        )
+
+        def close_batch() -> None:
+            try:
+                executor.shutdown()
+            finally:
+                client.close()
+
+        try:
+            results = list(
+                executor.map(lambda item: create(item, client), enumerate(findings))
+            )
+        except BaseException:
+            # Let ingestion report its timeout immediately. Requests already
+            # in flight keep their deadlines and release the pool when done.
+            executor.shutdown(wait=False, cancel_futures=True)
+            Thread(target=close_batch, daemon=True).start()
+            raise
         else:
-            results.append(
-                FindingCreateResult(index=index, finding_id=response["finding_id"])
-            )
+            close_batch()
     successful = [result.finding_id for result in results if result.success]
     errors = [
         {

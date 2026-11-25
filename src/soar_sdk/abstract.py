@@ -171,8 +171,10 @@ class SOARClient(Generic[SummaryType]):
         ``failed``, ``findings`` (list of IDs), ``container_ids``
         (list of SOAR container IDs), and ``errors``.
 
-        Direct ES runtimes issue one POST per finding and additionally return
-        ordered ``results`` with input indexes, IDs or safe failure details.
+        Direct ES runtimes issue one POST per finding, with up to five requests
+        in flight per batch. Requests reuse connections within the batch.
+        Direct calls return ordered ``results`` with input indexes, IDs or safe
+        failure details.
         ES bulk creation can reorder successful IDs without returning their input
         indexes. Separate POSTs preserve the finding-to-attachment mapping until
         ES provides indexed successes or guarantees the successful ID order.

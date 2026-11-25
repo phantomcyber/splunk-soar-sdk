@@ -1,6 +1,8 @@
 import json
 import traceback
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Barrier, Event, Lock, Thread
 
 import httpx2
 import pytest
@@ -8,7 +10,7 @@ from jsonschema import Draft4Validator, FormatChecker
 from pydantic import SecretStr, ValidationError
 from respx import MockResponse
 
-from soar_sdk.apis._es_findings import _create_es_finding
+from soar_sdk.apis._es_findings import _create_es_finding, _create_es_findings_bulk
 from soar_sdk.exceptions import (
     ActionFailure,
     FindingAPIError,
@@ -604,14 +606,22 @@ def test_existing_bulk_api_has_ordered_results_and_opaque_ids(
 ):
     api = app_with_action.soar_client
     monkeypatch.setattr(api, "_get_es_finding_context", lambda: (BASE_URL, TOKEN))
-    route = httpx2_mock.post(ENDPOINT).mock(
-        side_effect=[
-            MockResponse(201, json={**CREATED, "finding_id": "first@@notable@@id"}),
-            MockResponse(403, text=TOKEN),
-            MockResponse(201, json={**CREATED, "finding_id": "third@@notable@@id"}),
+
+    def respond(request):
+        title = json.loads(request.content)["rule_title"]
+        if title == "forbidden":
+            return MockResponse(403, text=TOKEN)
+        return MockResponse(
+            201, json={**CREATED, "finding_id": f"{title}@@notable@@id"}
+        )
+
+    route = httpx2_mock.post(ENDPOINT).mock(side_effect=respond)
+    response = api.create_findings_bulk(
+        [
+            {**MINIMAL, "rule_title": title} if title else {}
+            for title in ("first", "forbidden", None, "third")
         ]
     )
-    response = api.create_findings_bulk([MINIMAL, MINIMAL, {}, MINIMAL])
     results = response["results"]
     assert [r["index"] for r in results] == [0, 1, 2, 3]
     assert [r["success"] for r in results] == [True, False, False, True]
@@ -649,6 +659,133 @@ def test_existing_bulk_api_has_ordered_results_and_opaque_ids(
     assert route.call_count == 3
     assert TOKEN not in repr(response)
     assert TOKEN not in json.dumps(response)
+
+
+def test_direct_bulk_bounds_concurrency_and_preserves_input_order(mocker):
+    lock = Lock()
+    workers_ready = Barrier(5, timeout=5)
+    later_finished = Event()
+    active = peak = 0
+    completed = []
+
+    def create(finding, *, base_url, token, client):
+        nonlocal active, peak
+        index = finding["index"]
+        with lock:
+            active += 1
+            peak = max(peak, active)
+        try:
+            if index < 5:
+                workers_ready.wait()
+            if index == 0:
+                assert later_finished.wait(timeout=5)
+            with lock:
+                completed.append(index)
+            if index == 1:
+                later_finished.set()
+            return {"finding_id": str(index)}
+        finally:
+            with lock:
+                active -= 1
+
+    mocker.patch("soar_sdk.apis._es_findings._create_es_finding", side_effect=create)
+    result = _create_es_findings_bulk(
+        [{"index": index} for index in range(9)], base_url=BASE_URL, token=TOKEN
+    )
+    assert peak == 5
+    assert completed.index(1) < completed.index(0)
+    assert result["findings"] == [str(index) for index in range(9)]
+    assert [item["index"] for item in result["results"]] == list(range(9))
+
+
+def test_direct_bulk_interrupt_cancels_pending_requests_without_waiting(mocker):
+    pool = mocker.patch("soar_sdk.apis._es_findings.ThreadPoolExecutor").return_value
+    client = mocker.patch("soar_sdk.apis._es_findings.httpx2.Client").return_value
+    cleanup = mocker.patch("soar_sdk.apis._es_findings.Thread")
+    pool.map.side_effect = KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        _create_es_findings_bulk([MINIMAL, MINIMAL], base_url=BASE_URL, token=TOKEN)
+
+    pool.shutdown.assert_called_once_with(wait=False, cancel_futures=True)
+    cleanup.return_value.start.assert_called_once_with()
+    client.close.assert_not_called()
+    cleanup.call_args.kwargs["target"]()
+    assert pool.shutdown.call_args_list == [
+        mocker.call(wait=False, cancel_futures=True),
+        mocker.call(),
+    ]
+    client.close.assert_called_once_with()
+
+
+def test_direct_bulk_uses_one_client_and_does_not_replay_response_cookies(mocker):
+    client_class = httpx2.Client
+    used_clients = []
+
+    def respond(request):
+        assert request.headers["Authorization"] == f"Bearer {TOKEN}"
+        assert "Cookie" not in request.headers
+        assert request.extensions["timeout"]["read"] == 30.0
+        return httpx2.Response(
+            201, json=CREATED, headers={"Set-Cookie": "server=value"}
+        )
+
+    def client_factory(**kwargs):
+        client = client_class(transport=httpx2.MockTransport(respond), **kwargs)
+        used_clients.append(client)
+        return client
+
+    factory = mocker.patch(
+        "soar_sdk.apis._es_findings.httpx2.Client", side_effect=client_factory
+    )
+    result = _create_es_findings_bulk([MINIMAL] * 12, base_url=BASE_URL, token=TOKEN)
+
+    assert result["created"] == 12
+    factory.assert_called_once()
+    limits = factory.call_args.kwargs["limits"]
+    assert limits.max_connections == limits.max_keepalive_connections == 5
+    assert used_clients[0].is_closed
+
+
+def test_direct_bulk_reuses_tcp_connections():
+    connections = set()
+    lock = Lock()
+    first_requests = Barrier(5, timeout=5)
+
+    class Handler(BaseHTTPRequestHandler):
+        protocol_version = "HTTP/1.1"
+
+        def do_POST(self):
+            self.rfile.read(int(self.headers["Content-Length"]))
+            with lock:
+                first_on_connection = self.client_address not in connections
+                connections.add(self.client_address)
+            if first_on_connection:
+                first_requests.wait()
+            body = json.dumps(CREATED).encode()
+            self.send_response(201)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, *_args):
+            pass
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+        thread = Thread(target=server.serve_forever)
+        thread.start()
+        try:
+            result = _create_es_findings_bulk(
+                [MINIMAL] * 12,
+                base_url=f"http://127.0.0.1:{server.server_port}",
+                token=TOKEN,
+            )
+        finally:
+            server.shutdown()
+            thread.join()
+
+    assert result["created"] == 12
+    assert len(connections) == 5
 
 
 @pytest.mark.parametrize(
