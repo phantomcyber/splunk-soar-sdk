@@ -143,7 +143,7 @@ class SOARClient(Generic[SummaryType]):
         Runtime adapters supply ES URL/token internally; connectors do not pass
         credentials. Classic runtimes retain the SOAR proxy behavior. Direct ES
         calls raise FindingAPIError subclasses and never retry POST requests.
-        Reuse ``idempotency_key`` to replay the same logical create on a supporting ES server.
+        Reuse ``idempotency_key`` to replay the same logical create. ES receives it as ``source_event_guid``.
 
         Example::
 

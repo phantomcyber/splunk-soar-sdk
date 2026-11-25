@@ -1,1 +1,1 @@
-* Feature: Reuse stable source record IDs across direct ES finding creation attempts on ES servers that support idempotency keys.
+* Feature: Reuse stable source record IDs when creating findings on ES servers that support the source_event_guid request field.

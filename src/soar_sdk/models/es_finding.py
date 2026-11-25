@@ -87,6 +87,11 @@ class CreateFindingRequest(_RequestModel):
 
     rule_title: str
     security_domain: str
+    source_event_guid: str | None = Field(
+        default=None,
+        pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+        description="Stable UUID for replaying the same logical finding.",
+    )
     rule_description: str | None = None
     risk_object: str | None = None
     risk_object_type: str | None = None

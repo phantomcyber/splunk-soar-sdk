@@ -524,12 +524,12 @@ to ``soar.create_finding`` and reuse it when replaying that logical request.
 Without a source record ID, the decorator creates a random key for the automatic
 attempts in the current run. A later run generates a new key.
 
-This protection requires an ES version that honors ``Idempotency-Key`` and
-replays under the same authenticated ES user. ES returns the original finding
-ID and creation time. A replay preserves the initial finding's content,
-including the initial attachment references. Requests on older ES versions
-and replays that use a different key can create duplicates. Attachment
-reservation protects file reservation independently.
+The SDK sends this UUID as ``source_event_guid`` in the JSON body. This
+protection requires an ES version that supports the field. A replay requires
+read access to the finding's queue. ES returns the original finding ID and
+creation time and preserves the original attachment references. Requests on
+older ES versions and replays that use a different GUID can create duplicates.
+Attachment reservation protects file reservation independently.
 
 The IMAP connector uses the selected mailbox's ``UIDVALIDITY`` and message UID.
 Gmail and Microsoft 365 use mailbox-scoped message IDs. Microsoft 365 requests

@@ -170,7 +170,7 @@ def _create_es_finding(
         token: Execution-scoped ES bearer token from automationOrchestrator.
             Used only for this call, never stored on the API instance.
         timeout: Positive HTTP timeout in seconds; defaults to 30.
-        idempotency_key: Optional stable key reused when replaying this create.
+        idempotency_key: Optional UUID sent as source_event_guid in the request body.
         client: Optional connection pool owned by a direct bulk request.
 
     Raises:
@@ -182,13 +182,24 @@ def _create_es_finding(
         FindingUnavailableError: Transport failure or ES returned 5xx.
         FindingAPIError: Unexpected status or invalid ES success response.
     """
+    if idempotency_key is not None and not isinstance(idempotency_key, UUID):
+        raise FindingConfigurationError("ES finding idempotency key must be a UUID.")
+
     payload = None
     with suppress(ValueError):
         # Serialize before transport so malformed text is a per-finding validation
         # failure, rather than an encoding exception that aborts the whole batch.
-        payload = CreateFindingRequest.model_validate(
+        request_data = CreateFindingRequest.model_validate(
             _normalize_legacy_finding(finding)
-        ).model_dump_json(by_alias=True, exclude_none=True)
+        )
+        if idempotency_key is not None:
+            guid = str(idempotency_key)
+            if request_data.source_event_guid not in (None, guid):
+                raise FindingConfigurationError(
+                    "ES finding source_event_guid must match the idempotency key."
+                )
+            request_data = request_data.model_copy(update={"source_event_guid": guid})
+        payload = request_data.model_dump_json(by_alias=True, exclude_none=True)
     if payload is None:
         raise FindingValidationError("Invalid ES finding payload.")
 
@@ -216,8 +227,6 @@ def _create_es_finding(
     if url.path in {"", "/"}:
         url = url.copy_with(path="/servicesNS/nobody/missioncontrol")
     endpoint = str(url).rstrip("/") + "/public/v2/findings"
-    if idempotency_key is not None and not isinstance(idempotency_key, UUID):
-        raise FindingConfigurationError("ES finding idempotency key must be a UUID.")
     response = None
     failure = None
     try:
@@ -231,8 +240,6 @@ def _create_es_finding(
             headers = transport.headers.copy()
             headers["Authorization"] = f"Bearer {secret}"
             headers["Content-Type"] = "application/json"
-            if idempotency_key is not None:
-                headers["Idempotency-Key"] = str(idempotency_key)
             request = httpx2.Request(
                 "POST",
                 endpoint,

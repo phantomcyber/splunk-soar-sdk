@@ -18,6 +18,7 @@ from soar_sdk.exceptions import (
     ActionFailure,
     FindingAPIError,
     FindingConfigurationError,
+    FindingValidationError,
 )
 from soar_sdk.models.finding import Finding
 from soar_sdk.params import OnESPollParams
@@ -62,7 +63,28 @@ def test_create_finding_accepts_explicit_replay_key(direct_app, httpx2_mock):
     finding = Finding(rule_title="replayed", security_domain="threat").to_dict()
     response = direct_app.soar_client.create_finding(finding, idempotency_key=key)
     assert response["finding_id"] == "existing"
-    assert route.calls[0].request.headers["Idempotency-Key"] == str(key)
+    request = route.calls[0].request
+    assert json.loads(request.content)["source_event_guid"] == str(key)
+    assert "Idempotency-Key" not in request.headers
+
+    for options in ({}, {"idempotency_key": key}):
+        direct_app.soar_client.create_finding(
+            {**finding, "source_event_guid": str(key)}, **options
+        )
+    assert all(
+        json.loads(call.request.content)["source_event_guid"] == str(key)
+        for call in route.calls
+    )
+
+    with pytest.raises(FindingConfigurationError, match="must match"):
+        direct_app.soar_client.create_finding(
+            {**finding, "source_event_guid": str(UUID(int=1))}, idempotency_key=key
+        )
+    with pytest.raises(FindingValidationError, match="Invalid ES finding payload"):
+        direct_app.soar_client.create_finding(
+            {**finding, "source_event_guid": "invalid"}
+        )
+    assert route.call_count == 3
 
     with pytest.raises(FindingConfigurationError, match="must be a UUID"):
         direct_app.soar_client.create_finding(finding, idempotency_key=str(key))
@@ -90,10 +112,8 @@ def test_parallel_bulk_keeps_each_idempotency_key_with_its_finding(
     assert result["findings"] == titles
     assert route.call_count == len(titles)
     assert {
-        json.loads(call.request.content)["rule_title"]: call.request.headers.get(
-            "Idempotency-Key"
-        )
-        for call in route.calls
+        payload["rule_title"]: payload.get("source_event_guid")
+        for payload in (json.loads(call.request.content) for call in route.calls)
     } == {"first": str(keys[0]), "unkeyed": None, "last": str(keys[2])}
 
 
@@ -1743,7 +1763,7 @@ def test_create_retries_reuse_uploads_and_preserve_finding_identity(
         if title == "forbidden":
             return MockResponse(403, text=TOKEN)
         if title == "retry":
-            retry_keys.append(request.headers["Idempotency-Key"])
+            retry_keys.append(json.loads(request.content)["source_event_guid"])
         if title == "retry" and len(requests[title]) != success_on:
             if failure == "timeout":
                 raise httpx2.ReadTimeout(TOKEN)
@@ -1813,8 +1833,8 @@ def test_keyed_poll_reuses_finding_after_lost_response_and_manual_rerun(
     title = "Original title"
 
     def create(request):
-        key = request.headers["Idempotency-Key"]
         payload = json.loads(request.content)
+        key = payload["source_event_guid"]
         assert "source_record_id" not in payload
         attempts.append(key)
         if key not in stored:
