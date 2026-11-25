@@ -88,13 +88,22 @@ class SOARAssetOAuthClient:
         """Return the OAuth configuration."""
         return self._config
 
+    @property
+    def _state_key(self) -> str:
+        """Keep password-grant tokens separate from other grant types."""
+        return (
+            "oauth_password"
+            if self._config.grant_type == OAuthGrantType.PASSWORD
+            else "oauth"
+        )
+
     def _load_state(self) -> OAuthState:
         """Load OAuth state from asset storage."""
         state_data = self._auth_state.get_all()
         if not state_data:
             return OAuthState()
 
-        oauth_data = state_data.get("oauth")
+        oauth_data = state_data.get(self._state_key)
         if oauth_data is None:
             return OAuthState()
 
@@ -105,31 +114,31 @@ class SOARAssetOAuthClient:
     def _save_state(self, state: OAuthState) -> None:
         """Save OAuth state to asset storage."""
         current = self._auth_state.get_all()
-        current["oauth"] = state.model_dump(mode="json", exclude_none=True)
+        current[self._state_key] = state.model_dump(mode="json", exclude_none=True)
         self._auth_state.put_all(current)
-
-    def _clear_tokens(self) -> None:
-        """Clear stored tokens from auth state."""
-        state = self._load_state()
-        state.token = None
-        self._save_state(state)
-
-    def _check_client_id_changed(self) -> bool:
-        """Check if the client_id has changed since tokens were stored."""
-        state = self._load_state()
-        if state.client_id is None:
-            return False
-        return state.client_id != self._config.client_id
 
     def get_stored_token(self) -> OAuthToken | None:
         """Retrieve the stored OAuth token if available."""
-        if self._check_client_id_changed():
-            self._clear_tokens()
-            raise ConfigurationChangedError(
-                "OAuth client credentials have changed. Re-authorization required."
-            )
-
         state = self._load_state()
+        if self._config.grant_type == OAuthGrantType.PASSWORD:
+            configuration_changed = state.token is not None and (
+                state.client_id != self._config.client_id
+                or state.token_endpoint != self._config.token_endpoint
+            )
+            changed = "client ID or token endpoint"
+        else:
+            configuration_changed = (
+                state.client_id is not None
+                and state.client_id != self._config.client_id
+            )
+            changed = "client credentials"
+
+        if configuration_changed:
+            state.token = None
+            self._save_state(state)
+            raise ConfigurationChangedError(
+                f"OAuth {changed} have changed. Re-authorization required."
+            )
         return state.token
 
     def get_valid_token(self, auto_refresh: bool = True) -> OAuthToken:
@@ -156,6 +165,15 @@ class SOARAssetOAuthClient:
 
     def refresh_token(self, refresh_token: str) -> OAuthToken:
         """Refresh an access token using a refresh token."""
+        if self._config.grant_type == OAuthGrantType.PASSWORD:
+            return self._request_password_grant_token(
+                {
+                    "grant_type": OAuthGrantType.REFRESH_TOKEN.value,
+                    "refresh_token": refresh_token,
+                },
+                error_type=TokenRefreshError,
+            )
+
         try:
             response = self._http_client.post(
                 self._config.token_endpoint,
@@ -196,7 +214,102 @@ class SOARAssetOAuthClient:
         state = self._load_state()
         state.token = token
         state.client_id = self._config.client_id
+        if self._config.grant_type == OAuthGrantType.PASSWORD:
+            state.token_endpoint = self._config.token_endpoint
         self._save_state(state)
+
+    def fetch_token_with_password(self, *, username: str, password: str) -> OAuthToken:
+        """Exchange resource owner credentials using the legacy password grant."""
+        if self._config.grant_type != OAuthGrantType.PASSWORD:
+            raise OAuthClientError("The password grant must be configured explicitly.")
+        if not username or not password:
+            raise OAuthClientError(
+                "The password grant requires a username and password."
+            )
+
+        data = {
+            "grant_type": OAuthGrantType.PASSWORD.value,
+            "username": username,
+            "password": password,
+        }
+        if scope := self._config.get_scope_string():
+            data["scope"] = scope
+        return self._request_password_grant_token(data, error_type=OAuthClientError)
+
+    def _request_password_grant_token(
+        self, data: dict[str, str], *, error_type: type[OAuthClientError]
+    ) -> OAuthToken:
+        """Send an exchange or refresh request without exposing credential details."""
+        try:
+            endpoint = httpx2.URL(self._config.token_endpoint)
+        except httpx2.InvalidURL:
+            raise error_type("The OAuth token endpoint is invalid.") from None
+        if (
+            not self._verify_ssl
+            or endpoint.scheme != "https"
+            or not endpoint.host
+            or endpoint.userinfo
+        ):
+            raise error_type(
+                "The password grant requires a verified HTTPS token endpoint without URL credentials."
+            )
+
+        client_id = self._config.client_id
+        client_secret = self._config.client_secret
+        auth_method = self._config.token_endpoint_auth_method or "client_secret_basic"
+        if not client_id:
+            raise error_type("The password grant requires a client ID.")
+        if auth_method != "none" and not client_secret:
+            raise error_type(
+                "The configured token endpoint authentication requires a client secret."
+            )
+
+        auth = None
+        if auth_method == "client_secret_basic":
+            # RFC 6749 section 2.3.1 applies form encoding before HTTP Basic.
+            auth = httpx2.BasicAuth(
+                urllib.parse.quote_plus(client_id),
+                urllib.parse.quote_plus(client_secret or ""),
+            )
+        else:
+            data["client_id"] = client_id
+            if auth_method == "client_secret_post":
+                data["client_secret"] = client_secret or ""
+
+        try:
+            request = self._http_client.build_request(
+                "POST", endpoint, data=data, timeout=self._timeout
+            )
+            request.headers.pop("Authorization", None)
+            response = self._http_client.send(
+                request, auth=auth, follow_redirects=False
+            )
+        except httpx2.RequestError:
+            raise error_type("OAuth token request failed.") from None
+        if not response.is_success:
+            raise error_type(
+                f"OAuth token request failed (HTTP {response.status_code})."
+            )
+
+        try:
+            payload = response.json()
+            if isinstance(payload, dict):
+                # Providers can echo credentials in extension fields.
+                payload = {
+                    key: payload[key]
+                    for key in OAuthToken.model_fields
+                    if key in payload
+                }
+                if "refresh_token" in data:
+                    payload.setdefault("refresh_token", data["refresh_token"])
+            token = OAuthToken.model_validate(payload)
+        except ValueError:
+            raise error_type("The OAuth token response is invalid.") from None
+        if not token.access_token:
+            raise error_type("The OAuth token response is missing an access token.")
+
+        self._store_token(token)
+        return token
 
     def fetch_token_with_client_credentials(
         self,

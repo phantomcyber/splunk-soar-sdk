@@ -1,8 +1,13 @@
 import time
+import traceback
+from base64 import b64decode
+from urllib.parse import parse_qs
 
 import httpx2
 import pytest
+from respx import MockResponse
 
+from soar_sdk.auth import OAuthBearerAuth, OAuthGrantType
 from soar_sdk.auth.client import (
     AuthorizationRequiredError,
     ConfigurationChangedError,
@@ -44,6 +49,311 @@ def oauth_config():
 @pytest.fixture
 def oauth_client(oauth_config, mock_auth_state):
     return SOARAssetOAuthClient(oauth_config, mock_auth_state)
+
+
+class TestPasswordGrant:
+    token_endpoint = "https://auth.example.com/token"
+    client_id = "test client:+é"
+    client_secret = "test secret:+雪"
+    username = "test user+é@example.com"
+    password = "test password+雪&="
+
+    @pytest.fixture
+    def make_client(self, mock_auth_state):
+        def make_client(*, http_client=None, verify_ssl=True, **overrides):
+            config = OAuthConfig(
+                **{
+                    "grant_type": OAuthGrantType.PASSWORD,
+                    "client_id": self.client_id,
+                    "client_secret": self.client_secret,
+                    "token_endpoint": self.token_endpoint,
+                    **overrides,
+                }
+            )
+            return SOARAssetOAuthClient(
+                config, mock_auth_state, http_client=http_client, verify_ssl=verify_ssl
+            )
+
+        return make_client
+
+    def enroll(self, client):
+        return client.fetch_token_with_password(
+            username=self.username, password=self.password
+        )
+
+    @pytest.mark.parametrize(
+        "auth_override, in_body",
+        [
+            ({}, {}),
+            ({"token_endpoint_auth_method": "client_secret_basic"}, {}),
+            (
+                {"token_endpoint_auth_method": "client_secret_post"},
+                {"client_id": [client_id], "client_secret": [client_secret]},
+            ),
+            (
+                {"token_endpoint_auth_method": "none", "client_secret": None},
+                {"client_id": [client_id]},
+            ),
+        ],
+    )
+    def test_exchange_and_refresh_authentication(
+        self, httpx2_mock, make_client, auth_override, in_body
+    ):
+        client = make_client(scope=["read", "write"], **auth_override)
+        endpoint = httpx2_mock.post(self.token_endpoint).mock(
+            side_effect=[
+                MockResponse(
+                    200, json={"access_token": "initial", "refresh_token": "saved"}
+                ),
+                MockResponse(200, json={"access_token": "renewed"}),
+                MockResponse(
+                    200,
+                    json={"access_token": "rotated", "refresh_token": "replacement"},
+                ),
+            ]
+        )
+
+        assert self.enroll(client).access_token == "initial"
+        assert client.refresh_token("saved").refresh_token == "saved"
+        assert client.refresh_token("saved").refresh_token == "replacement"
+        assert client.get_valid_token().access_token == "rotated"
+        assert client.get_valid_token().refresh_token == "replacement"
+
+        exchange, refresh, _ = (call.request for call in endpoint.calls)
+        assert parse_qs(exchange.content.decode()) == {
+            "grant_type": ["password"],
+            "username": [self.username],
+            "password": [self.password],
+            "scope": ["read write"],
+            **in_body,
+        }
+        assert parse_qs(refresh.content.decode()) == {
+            "grant_type": ["refresh_token"],
+            "refresh_token": ["saved"],
+            **in_body,
+        }
+        for request in (exchange, refresh):
+            assert (
+                request.headers["content-type"] == "application/x-www-form-urlencoded"
+            )
+            assert not request.url.query
+            if in_body:
+                assert "Authorization" not in request.headers
+            else:
+                scheme, encoded = request.headers["Authorization"].split()
+                assert scheme == "Basic"
+                assert (
+                    b64decode(encoded)
+                    == b"test+client%3A%2B%C3%A9:test+secret%3A%2B%E9%9B%AA"
+                )
+
+    @pytest.mark.parametrize("expires_in", [0, 3600])
+    def test_bearer_auth_refreshes_after_enrollment(
+        self, httpx2_mock, make_client, expires_in
+    ):
+        endpoint = httpx2_mock.post(self.token_endpoint).mock(
+            side_effect=[
+                MockResponse(
+                    200,
+                    json={
+                        "access_token": "initial",
+                        "refresh_token": "saved",
+                        "expires_in": expires_in,
+                    },
+                ),
+                MockResponse(200, json={"access_token": "renewed"}),
+            ]
+        )
+        api = httpx2_mock.get("https://api.example.com/resource")
+        if expires_in:
+            api.mock(side_effect=[MockResponse(401), MockResponse(200)])
+        else:
+            api.respond(200)
+
+        with pytest.raises(AuthorizationRequiredError):
+            make_client().get_valid_token()
+        assert not endpoint.called
+        self.enroll(make_client())
+        with httpx2.Client(auth=OAuthBearerAuth(make_client())) as client:
+            assert client.get("https://api.example.com/resource").status_code == 200
+
+        assert api.calls.last.request.headers["Authorization"] == "Bearer renewed"
+        assert endpoint.call_count == 2
+        assert b"grant_type=refresh_token" in endpoint.calls.last.request.content
+
+    def test_failed_refresh_allows_explicit_reacquisition(
+        self, httpx2_mock, make_client
+    ):
+        endpoint = httpx2_mock.post(self.token_endpoint).mock(
+            side_effect=[
+                MockResponse(
+                    200,
+                    json={
+                        "access_token": "expired",
+                        "refresh_token": "saved",
+                        "expires_in": 0,
+                    },
+                ),
+                MockResponse(
+                    400, json={"error": "invalid_grant", "error_description": "saved"}
+                ),
+                MockResponse(200, json={"access_token": "reacquired"}),
+            ]
+        )
+        client = make_client()
+        self.enroll(client)
+        with pytest.raises(TokenRefreshError, match=r"HTTP 400\)") as exc:
+            client.get_valid_token()
+        assert "saved" not in str(exc.value)
+        assert endpoint.call_count == 2
+        assert client.get_stored_token().access_token == "expired"
+        assert self.enroll(client).access_token == "reacquired"
+        assert client.get_valid_token().refresh_token is None
+
+    def test_state_is_separate_and_contains_only_token_data(
+        self, httpx2_mock, make_client, mock_auth_state, oauth_client
+    ):
+        existing_state = {"token": {"access_token": "other"}}
+        mock_auth_state.put_all({"oauth": existing_state})
+        httpx2_mock.post(self.token_endpoint).respond(
+            200,
+            json={
+                "access_token": "password-grant-token",
+                "echoed_password": self.password,
+            },
+        )
+
+        client = make_client()
+        assert client.get_stored_token() is None
+        assert self.enroll(client).model_extra == {}
+        assert make_client().get_valid_token().access_token == "password-grant-token"
+        assert oauth_client.get_valid_token().access_token == "other"
+        assert mock_auth_state.get_all() == {
+            "oauth": existing_state,
+            "oauth_password": {
+                "token": {
+                    "access_token": "password-grant-token",
+                    "token_type": "Bearer",
+                },
+                "client_id": self.client_id,
+                "token_endpoint": self.token_endpoint,
+            },
+        }
+
+    @pytest.mark.parametrize(
+        "changed",
+        [
+            {"client_id": "different"},
+            {"token_endpoint": "https://other.example.com/token"},
+        ],
+    )
+    def test_cache_binding(self, httpx2_mock, make_client, changed):
+        httpx2_mock.post(self.token_endpoint).respond(
+            200,
+            json={"access_token": "initial", "refresh_token": "saved", "expires_in": 0},
+        )
+        self.enroll(make_client())
+        client = make_client(**changed)
+        with pytest.raises(
+            ConfigurationChangedError, match="client ID or token endpoint"
+        ):
+            client.get_valid_token()
+        assert client.get_stored_token() is None
+        assert len(httpx2_mock.calls) == 1
+
+    @pytest.mark.parametrize(
+        "config, message",
+        [
+            (
+                {"grant_type": OAuthGrantType.AUTHORIZATION_CODE},
+                "configured explicitly",
+            ),
+            ({"token_endpoint": "http://auth.example.com/token"}, "verified HTTPS"),
+            ({"token_endpoint": "https:/token"}, "verified HTTPS"),
+            (
+                {"token_endpoint": "https://user:secret@auth.example.com/token"},
+                "verified HTTPS",
+            ),
+            ({"token_endpoint": "https://[invalid]/token"}, "endpoint is invalid"),
+            ({"verify_ssl": False}, "verified HTTPS"),
+            ({"client_id": ""}, "requires a client ID"),
+            ({"client_secret": None}, "requires a client secret"),
+            (
+                {
+                    "client_secret": None,
+                    "token_endpoint_auth_method": "client_secret_post",
+                },
+                "requires a client secret",
+            ),
+        ],
+    )
+    def test_rejects_invalid_configuration_before_sending(
+        self, httpx2_mock, make_client, config, message
+    ):
+        with pytest.raises(OAuthClientError, match=message):
+            self.enroll(make_client(**config))
+        assert not httpx2_mock.calls
+
+    @pytest.mark.parametrize(
+        "username,password", [("", "test password"), ("test user", "")]
+    )
+    def test_requires_resource_owner_credentials(
+        self, httpx2_mock, make_client, username, password
+    ):
+        with pytest.raises(OAuthClientError, match="requires a username and password"):
+            make_client().fetch_token_with_password(
+                username=username, password=password
+            )
+        assert not httpx2_mock.calls
+
+    def test_does_not_follow_redirects_or_inherit_client_auth(
+        self, httpx2_mock, make_client
+    ):
+        endpoint = httpx2_mock.post(self.token_endpoint).respond(
+            307, headers={"Location": "https://other.example.com/token"}
+        )
+        with httpx2.Client(
+            follow_redirects=True,
+            auth=("other-client", "other-secret"),
+            headers={"Authorization": "Bearer different"},
+        ) as http_client:
+            client = make_client(
+                http_client=http_client, token_endpoint_auth_method="none"
+            )
+            with pytest.raises(OAuthClientError, match=r"HTTP 307\)"):
+                self.enroll(client)
+        assert len(httpx2_mock.calls) == 1
+        assert "Authorization" not in endpoint.calls.last.request.headers
+
+    @pytest.mark.parametrize(
+        "failure",
+        [
+            httpx2.ConnectError(password),
+            MockResponse(400, json={"error_description": password}),
+            MockResponse(200, text=password),
+            MockResponse(200, json=[password]),
+            MockResponse(200, json={"access_token": "", "scope": password}),
+            MockResponse(200, json={"expires_in": password}),
+        ],
+    )
+    def test_failed_exchange_keeps_state_and_sanitizes_error(
+        self, httpx2_mock, make_client, mock_auth_state, failure
+    ):
+        httpx2_mock.post(self.token_endpoint).mock(
+            side_effect=[
+                MockResponse(200, json={"access_token": "initial"}),
+                failure,
+            ]
+        )
+        client = make_client()
+        self.enroll(client)
+        state_before = mock_auth_state.get_all().copy()
+
+        with pytest.raises(OAuthClientError) as exc:
+            self.enroll(client)
+
+        assert self.password not in "".join(traceback.format_exception(exc.value))
+        assert mock_auth_state.get_all() == state_before
 
 
 class TestSOARAssetOAuthClientInit:
