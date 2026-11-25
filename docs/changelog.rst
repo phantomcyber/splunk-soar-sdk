@@ -9,8 +9,20 @@ Increments to the major version number imply a breaking change, to the minor
 version imply a new feature, and to the patch version imply a non-breaking
 bugfix.
 
-.. dropdown:: SDK 7
+.. dropdown:: SDK 8
    :open:
+
+   .. rubric:: 8.0.0 (2026-11-25)
+
+   **Breaking changes:**
+
+   * Fix: Breaking: The SDK uses the maintained HTTPX2 client. Replace ``httpx``
+     with ``httpx2`` for clients, auth, timeouts, transports, and exceptions used
+     with the SDK, update HTTP mocks, then regenerate your app lockfile and rebuild
+     the app. HTTPX2 uses the operating system's CA store by default and honors
+     ``SSL_CERT_FILE`` and ``SSL_CERT_DIR``.
+
+.. dropdown:: SDK 7
 
    .. rubric:: 7.3.1 (2026-11-24)
 
