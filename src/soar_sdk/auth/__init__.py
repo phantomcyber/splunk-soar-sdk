@@ -28,6 +28,7 @@ from soar_sdk.auth.httpx_auth import (
 from soar_sdk.auth.models import (
     CertificateCredentials,
     OAuthConfig,
+    OAuthGrantType,
     OAuthToken,
 )
 
@@ -40,6 +41,7 @@ __all__ = [
     "OAuthBearerAuth",
     "OAuthClientError",
     "OAuthConfig",
+    "OAuthGrantType",
     "OAuthToken",
     "SOARAssetOAuthClient",
     "StaticTokenAuth",

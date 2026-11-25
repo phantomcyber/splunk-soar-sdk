@@ -4,11 +4,13 @@ __lazy_modules__ = {
     "enum",
     "pydantic",
     "time",
+    "typing",
 }
 
 
 import time
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -18,6 +20,7 @@ class OAuthGrantType(StrEnum):
 
     AUTHORIZATION_CODE = "authorization_code"
     CLIENT_CREDENTIALS = "client_credentials"
+    PASSWORD = "password"  # noqa: S105
     REFRESH_TOKEN = "refresh_token"  # noqa: S105
 
 
@@ -59,6 +62,12 @@ class OAuthConfig(BaseModel):
     redirect_uri: str | None = None
     scope: str | list[str] | None = None
     grant_type: OAuthGrantType = OAuthGrantType.AUTHORIZATION_CODE
+    token_endpoint_auth_method: (
+        Literal["client_secret_basic", "client_secret_post", "none"] | None
+    ) = Field(
+        default=None,
+        description="Client authentication for password grant requests. Defaults to client_secret_basic.",
+    )
 
     def get_scope_string(self) -> str | None:
         """Return scope as a space-separated string."""
@@ -96,6 +105,7 @@ class OAuthState(BaseModel):
         default=None,
         description="Stored client_id to detect credential changes",
     )
+    token_endpoint: str | None = None
 
 
 class CertificateCredentials(BaseModel):
