@@ -259,13 +259,13 @@ def _create_es_finding(
 def _create_es_findings_bulk(
     findings: Sequence[Mapping[str, Any]], *, base_url: str, token: str | SecretStr
 ) -> dict[str, Any]:
-    """Use single POSTs and preserve the classic bulk envelope with ordered results."""
+    """Use single POSTs and preserve the classic bulk envelope with ordered results.
 
-    # ES /public/v2/findings/bulk_create returns successful IDs without input
-    # indexes. Its handler groups ordinary and suppressed findings separately,
-    # so the returned IDs can be reordered. Use one POST per finding to preserve
-    # its identity for attachment linking. Switch to ES bulk only after it returns
-    # indexed successes or guarantees that successful IDs retain input order.
+    The ES bulk endpoint can reorder successful IDs and omits input indexes.
+    Individual requests preserve finding identity for attachment linking.
+    """
+    indexed_findings = enumerate(findings)
+
     def create(
         item: tuple[int, Mapping[str, Any]], client: httpx2.Client | None = None
     ) -> FindingCreateResult:
@@ -284,7 +284,7 @@ def _create_es_findings_bulk(
         return FindingCreateResult(index=index, finding_id=response["finding_id"])
 
     if len(findings) < 2:
-        results = [create(item) for item in enumerate(findings)]
+        results = [create(item) for item in indexed_findings]
     else:
         workers = min(len(findings), _MAX_CONCURRENT_FINDING_CREATES)
         executor = ThreadPoolExecutor(max_workers=workers)
@@ -304,7 +304,7 @@ def _create_es_findings_bulk(
 
         try:
             results = list(
-                executor.map(lambda item: create(item, client), enumerate(findings))
+                executor.map(lambda item: create(item, client), indexed_findings)
             )
         except BaseException:
             # Let ingestion report its timeout immediately. Requests already
