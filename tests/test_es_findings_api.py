@@ -700,8 +700,9 @@ def test_direct_bulk_bounds_concurrency_and_preserves_input_order(mocker):
     active = peak = 0
     completed = []
 
-    def create(finding, *, base_url, token, client):
+    def create(finding, *, base_url, token, idempotency_key, client):
         nonlocal active, peak
+        assert idempotency_key is None
         index = finding["index"]
         with lock:
             active += 1
