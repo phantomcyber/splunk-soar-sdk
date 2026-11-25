@@ -4,6 +4,7 @@ import sys
 import traceback
 from collections.abc import AsyncGenerator, Generator
 from types import SimpleNamespace
+from uuid import UUID
 
 import httpx2
 import pytest
@@ -17,6 +18,7 @@ from soar_sdk.exceptions import (
     ActionFailure,
     FindingAPIError,
     FindingConfigurationError,
+    FindingValidationError,
 )
 from soar_sdk.models.finding import Finding
 from soar_sdk.params import OnESPollParams
@@ -51,6 +53,83 @@ def direct_app(app_with_action, monkeypatch, mocker):
 
 def outcome(app):
     return app.actions_manager.add_result.call_args.args[0]
+
+
+def test_create_finding_accepts_explicit_replay_key(direct_app, httpx2_mock):
+    key = UUID("fea4847f-c832-433e-baaa-d137c5d05884")
+    route = httpx2_mock.post(ENDPOINT).respond(
+        201, json={"finding_id": "existing", "_time": "now"}
+    )
+    finding = Finding(rule_title="replayed", security_domain="threat").to_dict()
+    response = direct_app.soar_client.create_finding(finding, idempotency_key=key)
+    assert response["finding_id"] == "existing"
+    request = route.calls[0].request
+    assert json.loads(request.content)["source_event_guid"] == str(key)
+    assert "Idempotency-Key" not in request.headers
+
+    for options in ({}, {"idempotency_key": key}):
+        direct_app.soar_client.create_finding(
+            {**finding, "source_event_guid": str(key)}, **options
+        )
+    assert all(
+        json.loads(call.request.content)["source_event_guid"] == str(key)
+        for call in route.calls
+    )
+
+    with pytest.raises(FindingConfigurationError, match="must match"):
+        direct_app.soar_client.create_finding(
+            {**finding, "source_event_guid": str(UUID(int=1))}, idempotency_key=key
+        )
+    with pytest.raises(FindingValidationError, match="Invalid ES finding payload"):
+        direct_app.soar_client.create_finding(
+            {**finding, "source_event_guid": "invalid"}
+        )
+    assert route.call_count == 3
+
+    with pytest.raises(FindingConfigurationError, match="must be a UUID"):
+        direct_app.soar_client.create_finding(finding, idempotency_key=str(key))
+
+
+def test_parallel_bulk_keeps_each_idempotency_key_with_its_finding(
+    direct_app, httpx2_mock
+):
+    titles = ["first", "unkeyed", "last"]
+    keys = [UUID(int=1), None, UUID(int=3)]
+
+    def create(request):
+        title = json.loads(request.content)["rule_title"]
+        return MockResponse(201, json={"_time": "now", "finding_id": title})
+
+    route = httpx2_mock.post(ENDPOINT).mock(side_effect=create)
+    result = direct_app.soar_client.create_findings_bulk(
+        [
+            Finding(rule_title=title, security_domain="threat").to_dict()
+            for title in titles
+        ],
+        idempotency_keys=keys,
+    )
+
+    assert result["findings"] == titles
+    assert route.call_count == len(titles)
+    assert {
+        payload["rule_title"]: payload.get("source_event_guid")
+        for payload in (json.loads(call.request.content) for call in route.calls)
+    } == {"first": str(keys[0]), "unkeyed": None, "last": str(keys[2])}
+
+
+def test_create_finding_keys_require_direct_es_and_match_batch_length(
+    app_with_action, mocker
+):
+    client = app_with_action.soar_client
+    mocker.patch.object(client, "_get_es_finding_context", return_value=None)
+    key = UUID("fea4847f-c832-433e-baaa-d137c5d05884")
+    finding = Finding(rule_title="replayed").to_dict()
+    with pytest.raises(FindingConfigurationError, match="requires direct ES"):
+        client.create_finding(finding, idempotency_key=key)
+    with pytest.raises(FindingConfigurationError, match="requires direct ES"):
+        client.create_findings_bulk([finding], idempotency_keys=[key])
+    with pytest.raises(ValueError, match="one idempotency key per finding"):
+        client.create_findings_bulk([finding], idempotency_keys=[])
 
 
 @pytest.mark.parametrize(
@@ -1676,12 +1755,15 @@ def test_create_retries_reuse_uploads_and_preserve_finding_identity(
     app = direct_app
     context = poll_attachments
     requests = {title: [] for title in ("created", "retry", "forbidden")}
+    retry_keys = []
 
     def create(request):
         title = json.loads(request.content)["rule_title"]
         requests[title].append(request.content)
         if title == "forbidden":
             return MockResponse(403, text=TOKEN)
+        if title == "retry":
+            retry_keys.append(json.loads(request.content)["source_event_guid"])
         if title == "retry" and len(requests[title]) != success_on:
             if failure == "timeout":
                 raise httpx2.ReadTimeout(TOKEN)
@@ -1710,6 +1792,7 @@ def test_create_retries_reuse_uploads_and_preserve_finding_identity(
         assert rows[1]["finding_id"] == "retry-id"
     assert rows[2]["error_code"] == "authorization"
     assert [len(items) for items in requests.values()] == [1, success_on or 3, 1]
+    assert len(set(retry_keys)) == 1
     assert (
         len(set(requests["retry"])) == 1
     )  # Identical payload, including attachment IDs.
@@ -1738,6 +1821,46 @@ def test_create_retries_reuse_uploads_and_preserve_finding_identity(
     rendered = repr(vars(outcome(app)))
     for secret in (TOKEN, "signed-secret", "form-secret", "private-file-contents"):
         assert secret not in rendered
+
+
+def test_keyed_poll_reuses_finding_after_lost_response_and_manual_rerun(
+    direct_app, httpx2_mock, mocker
+):
+    client = direct_app.soar_client
+    asset = mocker.patch.object(client, "get_asset_id", return_value="asset-1")
+    stored = {}
+    attempts = []
+    title = "Original title"
+
+    def create(request):
+        payload = json.loads(request.content)
+        key = payload["source_event_guid"]
+        assert "source_record_id" not in payload
+        attempts.append(key)
+        if key not in stored:
+            stored[key] = f"finding-{len(stored) + 1}"
+            if len(stored) == 1:
+                raise httpx2.ReadTimeout("Response lost after write")
+        return MockResponse(201, json={"_time": "now", "finding_id": stored[key]})
+
+    httpx2_mock.post(ENDPOINT).mock(side_effect=create)
+
+    @direct_app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        yield Finding(rule_title=title, source_record_id="mailbox/message-1")
+
+    assert poll(OnESPollParams())
+    assert outcome(direct_app).get_data()[0]["finding_id"] == "finding-1"
+    title = "Changed title"
+    assert poll(OnESPollParams(container_count=1))
+    assert outcome(direct_app).get_data()[0]["finding_id"] == "finding-1"
+    assert attempts == [attempts[0]] * 3
+    assert len(stored) == 1
+
+    asset.return_value = "asset-2"
+    assert poll(OnESPollParams())
+    assert outcome(direct_app).get_data()[0]["finding_id"] == "finding-2"
+    assert attempts[-1] != attempts[0]
 
 
 def test_successful_create_retry_commits_checkpoint(direct_app, httpx2_mock):

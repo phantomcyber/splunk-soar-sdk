@@ -5,6 +5,7 @@ __lazy_modules__ = {
     "contextlib",
     "copy",
     "httpx2",
+    "json",
     "sys",
     "soar_sdk.abstract",
     "soar_sdk.action_results",
@@ -17,14 +18,17 @@ __lazy_modules__ = {
     "soar_sdk.params",
     "time",
     "typing",
+    "uuid",
 }
 
 import asyncio
+import json
 import sys
 from contextlib import suppress
 from copy import deepcopy
 from time import sleep
 from typing import TYPE_CHECKING, Any
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 import httpx2
 
@@ -111,14 +115,22 @@ def _poll_error_details(stage: str, error: Exception) -> dict[str, str | int]:
 
 
 def _create_poll_findings(
-    soar: SOARClient, payloads: list[dict[str, Any]]
+    soar: SOARClient,
+    payloads: list[dict[str, Any]],
+    idempotency_keys: list[UUID],
 ) -> list[dict[str, Any]]:
     """Retry failed creates in memory without reserving or uploading files again.
 
-    A timeout or lost response can hide a successful create, so these bounded
-    retries can create duplicate findings. Successful results are never replayed.
+    Reuse each finding's idempotency key on every attempt.
     """
-    results = soar.create_findings_bulk(payloads)["results"]
+
+    def create(indexes: list[int]) -> list[dict[str, Any]]:
+        return soar.create_findings_bulk(
+            [payloads[index] for index in indexes],
+            idempotency_keys=[idempotency_keys[index] for index in indexes],
+        )["results"]
+
+    results = create(list(range(len(payloads))))
     for delay in (1, 2):
         pending = [
             index
@@ -129,8 +141,8 @@ def _create_poll_findings(
         if not pending:
             break
         sleep(delay)
-        retried = soar.create_findings_bulk([payloads[index] for index in pending])
-        for result in retried["results"]:
+        retried = create(pending)
+        for result in retried:
             index = pending[result["index"]]
             results[index] = {**result, "index": index}
     return results
@@ -212,7 +224,23 @@ def _run_direct_es_poll(
                 soar, findings, payloads, params.base_url or "", used_attachment_ids
             )
             stage = "create_findings"
-            response = _create_poll_findings(soar, payloads)
+            keys = [
+                uuid5(
+                    NAMESPACE_URL,
+                    json.dumps(
+                        [
+                            "splunk-soar-es-finding",
+                            str(soar.get_asset_id()),
+                            item.source_record_id,
+                        ],
+                        ensure_ascii=True,
+                    ),
+                )
+                if item.source_record_id is not None
+                else uuid4()
+                for item in findings
+            ]
+            response = _create_poll_findings(soar, payloads, keys)
             stage = "process_response"
             batch_results = []
             for result in response:

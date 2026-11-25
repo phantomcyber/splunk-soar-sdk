@@ -14,6 +14,7 @@ __lazy_modules__ = {
     "threading",
     "typing",
     "urllib.parse",
+    "uuid",
 }
 
 import json
@@ -25,6 +26,7 @@ from importlib import import_module
 from threading import Thread
 from typing import Any, cast
 from urllib.parse import urlsplit
+from uuid import UUID
 
 import httpx2
 from pydantic import SecretStr, ValidationError
@@ -155,6 +157,7 @@ def _create_es_finding(
     base_url: str,
     token: str | SecretStr,
     timeout: float = _ES_FINDING_TIMEOUT,
+    idempotency_key: UUID | None = None,
     client: httpx2.Client | None = None,
 ) -> dict[str, Any]:
     """Create one finding and return the validated ES response dictionary.
@@ -167,6 +170,7 @@ def _create_es_finding(
         token: Execution-scoped ES bearer token from automationOrchestrator.
             Used only for this call, never stored on the API instance.
         timeout: Positive HTTP timeout in seconds; defaults to 30.
+        idempotency_key: Optional UUID sent as source_event_guid in the request body.
         client: Optional connection pool owned by a direct bulk request.
 
     Raises:
@@ -178,13 +182,24 @@ def _create_es_finding(
         FindingUnavailableError: Transport failure or ES returned 5xx.
         FindingAPIError: Unexpected status or invalid ES success response.
     """
+    if idempotency_key is not None and not isinstance(idempotency_key, UUID):
+        raise FindingConfigurationError("ES finding idempotency key must be a UUID.")
+
     payload = None
     with suppress(ValueError):
         # Serialize before transport so malformed text is a per-finding validation
         # failure, rather than an encoding exception that aborts the whole batch.
-        payload = CreateFindingRequest.model_validate(
+        request_data = CreateFindingRequest.model_validate(
             _normalize_legacy_finding(finding)
-        ).model_dump_json(by_alias=True, exclude_none=True)
+        )
+        if idempotency_key is not None:
+            guid = str(idempotency_key)
+            if request_data.source_event_guid not in (None, guid):
+                raise FindingConfigurationError(
+                    "ES finding source_event_guid must match the idempotency key."
+                )
+            request_data = request_data.model_copy(update={"source_event_guid": guid})
+        payload = request_data.model_dump_json(by_alias=True, exclude_none=True)
     if payload is None:
         raise FindingValidationError("Invalid ES finding payload.")
 
@@ -286,7 +301,11 @@ def _create_es_finding(
 
 
 def _create_es_findings_bulk(
-    findings: Sequence[Mapping[str, Any]], *, base_url: str, token: str | SecretStr
+    findings: Sequence[Mapping[str, Any]],
+    *,
+    base_url: str,
+    token: str | SecretStr,
+    idempotency_keys: Sequence[UUID | None] | None = None,
 ) -> dict[str, Any]:
     """Use single POSTs and preserve the classic bulk envelope with ordered results.
 
@@ -301,7 +320,13 @@ def _create_es_findings_bulk(
         index, finding = item
         try:
             response = _create_es_finding(
-                finding, base_url=base_url, token=token, client=client
+                finding,
+                base_url=base_url,
+                token=token,
+                idempotency_key=idempotency_keys[index]
+                if idempotency_keys is not None
+                else None,
+                client=client,
             )
         except FindingAPIError as error:
             return FindingCreateResult(

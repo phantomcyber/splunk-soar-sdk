@@ -12,11 +12,13 @@ __lazy_modules__ = {
     "soar_sdk.apis.vault",
     "soar_sdk.exceptions",
     "typing",
+    "uuid",
 }
 
 from abc import abstractmethod
 from collections.abc import AsyncIterable, Iterable, Mapping
 from typing import Any, Generic, TypeVar
+from uuid import UUID
 
 import httpx2
 from pydantic import SecretStr, field_validator
@@ -124,7 +126,9 @@ class SOARClient(Generic[SummaryType]):
 
     MAX_BULK_FINDINGS = 25
 
-    def create_finding(self, finding: dict[str, Any]) -> dict[str, Any]:
+    def create_finding(
+        self, finding: dict[str, Any], *, idempotency_key: UUID | None = None
+    ) -> dict[str, Any]:
         """Create one finding using the execution's configured ES transport.
 
         The ``finding`` argument should be the serialized form of a
@@ -139,6 +143,7 @@ class SOARClient(Generic[SummaryType]):
         Runtime adapters supply ES URL/token internally; connectors do not pass
         credentials. Classic runtimes retain the SOAR proxy behavior. Direct ES
         calls raise FindingAPIError subclasses and never retry POST requests.
+        Reuse ``idempotency_key`` to replay the same logical create. ES receives it as ``source_event_guid``.
 
         Example::
 
@@ -150,7 +155,13 @@ class SOARClient(Generic[SummaryType]):
         es_context = self._get_es_finding_context()
         if es_context is not None:
             base_url, token = es_context
-            return _create_es_finding(finding, base_url=base_url, token=token)
+            return _create_es_finding(
+                finding, base_url=base_url, token=token, idempotency_key=idempotency_key
+            )
+        if idempotency_key is not None:
+            raise FindingConfigurationError(
+                "Finding idempotency requires direct ES creation."
+            )
         response = self.post(
             "/rest/enterprise_security/findings", json=finding, timeout=30.0
         )
@@ -160,6 +171,8 @@ class SOARClient(Generic[SummaryType]):
         self,
         findings: list[dict[str, Any]],
         container_ids: list[int | None] | None = None,
+        *,
+        idempotency_keys: list[UUID | None] | None = None,
     ) -> dict[str, Any]:
         """Create findings using the execution's configured ES transport.
 
@@ -185,6 +198,8 @@ class SOARClient(Generic[SummaryType]):
             raise ValueError(
                 f"Maximum {self.MAX_BULK_FINDINGS} findings per request, got {len(findings)}"
             )
+        if idempotency_keys is not None and len(idempotency_keys) != len(findings):
+            raise ValueError("Provide one idempotency key per finding.")
         es_context = self._get_es_finding_context()
         if es_context is not None:
             if container_ids is not None:
@@ -192,7 +207,16 @@ class SOARClient(Generic[SummaryType]):
                     "SOAR container IDs are unsupported for direct ES finding creation."
                 )
             base_url, token = es_context
-            return _create_es_findings_bulk(findings, base_url=base_url, token=token)
+            return _create_es_findings_bulk(
+                findings,
+                base_url=base_url,
+                token=token,
+                idempotency_keys=idempotency_keys,
+            )
+        if idempotency_keys is not None:
+            raise FindingConfigurationError(
+                "Finding idempotency requires direct ES creation."
+            )
         if not findings:
             return {
                 "status": "success",
