@@ -237,10 +237,12 @@ def _run_direct_es_poll(
             if not outcome["success"]:
                 getLogger().warning(
                     "ES polling skipped finding at index %s (error_code=%s, "
-                    "status_code=%s); continuing without replay after checkpoint.",
+                    "status_code=%s, transport_reason=%s); "
+                    "continuing without replay after checkpoint.",
                     outcome["index"],
                     outcome.get("error_code"),
                     outcome.get("status_code"),
+                    outcome.get("transport_reason"),
                 )
 
     try:

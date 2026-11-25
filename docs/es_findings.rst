@@ -160,6 +160,18 @@ in every processed batch are attempted. All-failed or handler/state failures rep
 an unsuccessful action.
 An empty poll succeeds. Generators are closed on exit, including a count limit.
 
+A direct finding request that fails TLS verification includes a
+``transport_reason`` in the result row and the polling warning:
+
+* ``tls_self_signed_cert`` when OpenSSL verification code 18 identifies a
+  self-signed server certificate.
+* ``tls_self_signed_cert_in_chain`` when OpenSSL verification code 19 identifies
+  an untrusted self-signed certificate in the chain.
+* ``tls_certificate_verification_failed`` for other certificate verification failures.
+
+Other recognized TLS errors use ``tls_error``. These failures continue to
+report ``error_code=unavailable``. The SDK does not include the raw exception text.
+
 Handler, batch and checkpoint exceptions add ``polling_errors`` to the summary.
 Each entry identifies the SDK ``stage`` and an allowlisted ``error_type``; a valid
 HTTP ``status_code`` or recognized gRPC ``rpc_code`` is included when available.

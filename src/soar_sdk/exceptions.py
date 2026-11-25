@@ -145,6 +145,16 @@ class FindingUnavailableError(FindingAPIError):
 
     error_code = "unavailable"
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        status_code: int | None = None,
+        transport_reason: str | None = None,
+    ) -> None:
+        super().__init__(message, status_code=status_code)
+        self.transport_reason = transport_reason
+
 
 class FindingTimeoutError(FindingUnavailableError):
     """ES timed out; the finding may already exist if creation is retried."""

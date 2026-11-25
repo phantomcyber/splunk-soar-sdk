@@ -10,12 +10,14 @@ __lazy_modules__ = {
     "pydantic",
     "soar_sdk.exceptions",
     "soar_sdk.models.es_finding",
+    "ssl",
     "threading",
     "typing",
     "urllib.parse",
 }
 
 import json
+import ssl
 from collections.abc import Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext, suppress
@@ -44,6 +46,13 @@ from soar_sdk.models.es_finding import (
 
 _MAX_CONCURRENT_FINDING_CREATES = 5
 _ES_FINDING_TIMEOUT = 30.0
+
+# OpenSSL X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT and
+# X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN, respectively.
+_SELF_SIGNED_CERT_REASONS = {
+    18: "tls_self_signed_cert",
+    19: "tls_self_signed_cert_in_chain",
+}
 
 
 def _get_runtime_es_context() -> tuple[str, str | SecretStr] | None:
@@ -121,6 +130,23 @@ def _normalize_legacy_finding(
                     normalized_reporter[field] = [reporter[field]]
             payload["email"] = {**email, "reporter": normalized_reporter}
     return payload
+
+
+def _tls_failure_reason(error: httpx2.RequestError) -> str | None:
+    # The transport can preserve TLS errors as explicit causes or implicit context.
+    # Bound traversal in case a custom transport supplies a cyclic chain.
+    cause: BaseException | None = error
+    for _ in range(8):
+        if isinstance(cause, ssl.SSLCertVerificationError):
+            return _SELF_SIGNED_CERT_REASONS.get(
+                getattr(cause, "verify_code", 0), "tls_certificate_verification_failed"
+            )
+        if isinstance(cause, ssl.SSLError):
+            return "tls_error"
+        if cause is None:
+            break
+        cause = cause.__cause__ or cause.__context__
+    return None
 
 
 def _create_es_finding(
@@ -208,8 +234,11 @@ def _create_es_finding(
             response = transport.send(request)
     except httpx2.TimeoutException:
         failure = FindingTimeoutError("ES finding creation timed out.")
-    except httpx2.RequestError:
-        failure = FindingUnavailableError("ES finding service is unavailable.")
+    except httpx2.RequestError as error:
+        failure = FindingUnavailableError(
+            "ES finding service is unavailable.",
+            transport_reason=_tls_failure_reason(error),
+        )
     # Raise outside the handlers: neither cause nor context retains an
     # upstream exception that could include credentials or response bodies.
     if failure is not None:
@@ -280,6 +309,11 @@ def _create_es_findings_bulk(
                 error_code=error.error_code,
                 message=error.message,
                 status_code=error.status_code,
+                transport_reason=(
+                    error.transport_reason
+                    if isinstance(error, FindingUnavailableError)
+                    else None
+                ),
             )
         return FindingCreateResult(index=index, finding_id=response["finding_id"])
 
