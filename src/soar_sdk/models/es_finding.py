@@ -147,8 +147,9 @@ class FindingCreateResult(BaseModel):
     """One direct create_findings_bulk outcome, in input order; index is zero-based.
 
     Successful results have a finding_id. Failures have a safe error_code,
-    message, and an HTTP status_code when ES returned one. No request, response
-    body, credentials, or original transport exception is retained.
+    message, and an HTTP status_code when ES returned one. A recognized TLS
+    failure provides a transport_reason. No request, response body, credentials,
+    or original transport exception is retained.
     """
 
     index: int
@@ -156,6 +157,7 @@ class FindingCreateResult(BaseModel):
     error_code: str | None = None
     message: str | None = None
     status_code: int | None = None
+    transport_reason: str | None = None
 
     @property
     def success(self) -> bool:

@@ -1,4 +1,5 @@
 import json
+import ssl
 import sys
 import traceback
 from collections.abc import AsyncGenerator, Generator
@@ -586,6 +587,36 @@ def test_failed_emails_are_skipped_and_not_replayed_on_next_poll(
     assert seen == []
     assert state["cursor"] == 6
     assert not state.in_transaction
+
+
+@pytest.mark.parametrize("finding_count", [1, 2])
+def test_tls_failure_reason_is_in_poll_results_and_warning(
+    direct_app, mocker, capsys, finding_count
+):
+    def fail(_client, _request):
+        error = ssl.SSLCertVerificationError(TOKEN)
+        error.verify_code = 19
+        raise httpx2.ConnectError(TOKEN) from error
+
+    send = mocker.patch.object(httpx2.Client, "send", autospec=True, side_effect=fail)
+
+    @direct_app.on_es_poll()
+    def poll(params: OnESPollParams) -> Generator[Finding, int | None]:
+        for index in range(finding_count):
+            yield Finding(rule_title=f"IMAP message {index}")
+
+    assert not poll(OnESPollParams())
+    assert send.call_count == 3 * finding_count
+    rows = outcome(direct_app).get_data()
+    assert len(rows) == finding_count
+    for row in rows:
+        assert row["error_code"] == "unavailable"
+        assert row["transport_reason"] == "tls_self_signed_cert_in_chain"
+        assert "status_code" not in row
+        assert TOKEN not in repr(row)
+    logs = capsys.readouterr().out
+    assert logs.count("transport_reason=tls_self_signed_cert_in_chain") == finding_count
+    assert TOKEN not in logs
 
 
 @pytest.mark.parametrize("is_async", [False, True])

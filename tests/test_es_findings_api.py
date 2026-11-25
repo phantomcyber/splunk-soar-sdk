@@ -1,4 +1,5 @@
 import json
+import ssl
 import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -530,6 +531,37 @@ def test_transport_exceptions_are_not_retained(
     assert TOKEN not in repr(vars(caught.value))
     assert TOKEN not in "".join(traceback.format_exception(caught.value))
     assert TOKEN not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "ssl_error, verify_code, reason",
+    [
+        (ssl.SSLCertVerificationError, 18, "tls_self_signed_cert"),
+        (ssl.SSLCertVerificationError, 19, "tls_self_signed_cert_in_chain"),
+        (ssl.SSLCertVerificationError, 62, "tls_certificate_verification_failed"),
+        (ssl.SSLCertVerificationError, None, "tls_certificate_verification_failed"),
+        (ssl.SSLError, None, "tls_error"),
+    ],
+)
+def test_tls_error_exposes_only_safe_reason(mocker, ssl_error, verify_code, reason):
+    def fail(_client, _request):
+        error = ssl_error(TOKEN)
+        if verify_code is not None:
+            error.verify_code = verify_code
+        try:
+            raise error
+        except ssl.SSLError:
+            raise httpx2.ConnectError(TOKEN) from None
+
+    send = mocker.patch.object(httpx2.Client, "send", autospec=True, side_effect=fail)
+    with pytest.raises(FindingUnavailableError) as caught:
+        _create_es_finding(MINIMAL, base_url=BASE_URL, token=TOKEN)
+    send.assert_called_once()
+    assert caught.value.transport_reason == reason
+    assert caught.value.status_code is None
+    assert caught.value.__cause__ is None
+    assert caught.value.__context__ is None
+    assert TOKEN not in repr(vars(caught.value))
 
 
 @pytest.mark.parametrize(
