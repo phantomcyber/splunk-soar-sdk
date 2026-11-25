@@ -3,6 +3,7 @@ __lazy_modules__ = {
     "logging",
     "pathlib",
     "pydantic",
+    "soar_sdk.meta.dependencies.index_auth",
     "soar_sdk.meta.dependencies.sources",
 }
 
@@ -12,6 +13,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
+from .index_auth import RegistryAuth
 from .sources import UvSourceDirectory, UvSourceDistribution, UvWheel
 
 logger = getLogger("soar_sdk.meta.dependencies")
@@ -28,6 +30,7 @@ class DependencyWheel(BaseModel):
     wheel_aarch64: UvWheel | None = Field(exclude=True, default=None)
     sdist: UvSourceDistribution | None = Field(exclude=True, default=None)
     source_dir: UvSourceDirectory | None = Field(exclude=True, default=None)
+    registry: str | None = Field(exclude=True, repr=False, default=None)
 
     def _set_wheel_paths(self, wheel_name: str) -> str:
         """Assign the final wheel path (with any existing prefix) to both arches."""
@@ -50,11 +53,13 @@ class DependencyWheel(BaseModel):
         """Fill in missing wheel paths once a wheel has been built from source."""
         return self._set_wheel_paths(wheel_name)
 
-    async def collect_wheels(self) -> AsyncGenerator[tuple[str, bytes]]:
+    async def collect_wheels(
+        self, *, auth: RegistryAuth | None = None
+    ) -> AsyncGenerator[tuple[str, bytes]]:
         """Collect a list of wheel files to fetch for this dependency across all platforms."""
         if self.wheel is None and self.sdist is not None:
             logger.info(f"Building sdist for {self.input_file}")
-            wheel_name, wheel_bytes = await self.sdist.fetch_and_build()
+            wheel_name, wheel_bytes = await self.sdist.fetch_and_build(auth=auth)
             wheel_path = self._record_built_wheel(wheel_name)
             yield (wheel_path, wheel_bytes)
             return
@@ -71,7 +76,7 @@ class DependencyWheel(BaseModel):
                 f"Could not find a suitable wheel or source distribution for {self.module} in uv.lock"
             )
 
-        wheel_bytes = await self.wheel.fetch()
+        wheel_bytes = await self.wheel.fetch(auth=auth)
         yield (self.input_file, wheel_bytes)
 
         if (
@@ -79,7 +84,7 @@ class DependencyWheel(BaseModel):
             and self.wheel_aarch64 is not None
             and self.input_file_aarch64 != self.input_file
         ):
-            wheel_aarch64_bytes = await self.wheel_aarch64.fetch()
+            wheel_aarch64_bytes = await self.wheel_aarch64.fetch(auth=auth)
             yield (self.input_file_aarch64, wheel_aarch64_bytes)
 
     def add_platform_prefix(self, prefix: str) -> None:

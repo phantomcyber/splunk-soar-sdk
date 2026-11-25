@@ -9,6 +9,7 @@ __lazy_modules__ = {
     "os",
     "pathlib",
     "pydantic",
+    "soar_sdk.meta.dependencies.index_auth",
     "subprocess",
     "tarfile",
     "tempfile",
@@ -29,7 +30,18 @@ import build
 import httpx2
 from pydantic import BaseModel
 
+from .index_auth import RegistryAuth
+
 logger = getLogger("soar_sdk.meta.dependencies")
+
+
+async def _fetch_artifact(url: str, auth: RegistryAuth | None) -> bytes:
+    async with httpx2.AsyncClient() as client:
+        response = await client.get(
+            url, timeout=10, auth=auth.for_artifact(url) if auth else None
+        )
+        response.raise_for_status()
+        return response.content
 
 
 class UvWheel(BaseModel):
@@ -95,18 +107,15 @@ class UvWheel(BaseModel):
                 f"Retrieved wheel for {self.distribution}-{self.version} did not match the expected checksum. {expected_digest=}, {actual_digest=}, {self.url=}"
             )
 
-    async def fetch(self) -> bytes:
+    async def fetch(self, *, auth: RegistryAuth | None = None) -> bytes:
         """Download the wheel file from the specified URL."""
         if self.url is None:
             raise ValueError(
                 f"Cannot fetch wheel {self.filename or 'unknown'}: no URL provided (local file reference?)"
             )
-        async with httpx2.AsyncClient() as client:
-            response = await client.get(self.url, timeout=10)
-            response.raise_for_status()
-            wheel_bytes: bytes = response.content
-            self.validate_hash(wheel_bytes)
-            return wheel_bytes
+        wheel_bytes = await _fetch_artifact(self.url, auth)
+        self.validate_hash(wheel_bytes)
+        return wheel_bytes
 
 
 class UvSourceDistribution(BaseModel):
@@ -125,14 +134,13 @@ class UvSourceDistribution(BaseModel):
                 f"Retrieved sdist for {self.url} did not match the expected checksum. {expected_digest=}, {actual_digest=}, {self.url=}"
             )
 
-    async def fetch_and_build(self) -> tuple[str, bytes]:
+    async def fetch_and_build(
+        self, *, auth: RegistryAuth | None = None
+    ) -> tuple[str, bytes]:
         """Download the source distribution and build a wheel from it."""
-        async with httpx2.AsyncClient() as client:
-            response = await client.get(self.url, timeout=10)
-            response.raise_for_status()
-            sdist_bytes: bytes = response.content
-            self.validate_hash(sdist_bytes)
-            return self._build_wheel(sdist_bytes)
+        sdist_bytes = await _fetch_artifact(self.url, auth)
+        self.validate_hash(sdist_bytes)
+        return self._build_wheel(sdist_bytes)
 
     @staticmethod
     def _builder_runner(

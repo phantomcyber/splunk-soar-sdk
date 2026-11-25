@@ -135,6 +135,7 @@ class UvPackage(BaseModel):
         """Resolve the dependency wheel for the given ABI and Python version."""
         wheel = DependencyWheel(
             module=self.name,
+            registry=self.source.registry,
         )
 
         if (

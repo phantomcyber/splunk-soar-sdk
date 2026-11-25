@@ -19,9 +19,17 @@ Building an App Package
 
 Run ``soarapps package build`` to generate an app package. By default, this creates ``<appname>.tgz`` in the root directory of your app.
 
-This package contains all the code and metadata for your app. It also contains all the dependency wheels for your app, which are sourced from the PyPI CDN based on ``uv.lock``.
+The package contains your app's code, metadata, and dependency wheels. The build
+downloads dependencies from the URLs in ``uv.lock`` and verifies their checksums.
+Keep ``uv.lock`` up to date when you change dependencies or switch registries.
 
-Because of this, you should ensure that your ``uv.lock`` is always up to date.
+For a private index, the build reads the index configuration from uv's project,
+user, and system configuration files. It supports credentials in the configured
+index URL and the ``UV_INDEX_<NAME>_USERNAME`` and ``UV_INDEX_<NAME>_PASSWORD``
+environment variables for named indexes. It can also read credentials from the
+file named by ``NETRC`` or from ``~/.netrc`` when ``NETRC`` is unset.
+The build sends those credentials only to artifact URLs on the same scheme,
+host, and port as the locked index.
 
 Installing and Running the App
 ------------------------------
